@@ -305,7 +305,7 @@
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">🔌 Lector Inalámbrico</div>
                     <p style="font-size: 13px; color: var(--muted); margin-bottom: 15px;">Vincula un Lector de Caravana Bluetooth para cargar los tags automáticamente.</p>
-                    <button class="btn-guardar" style="background: #0284c7; margin-top: 0;" onclick="window.AndroidTaurus.conectarBLE()">Vincular Lector</button>
+                    <button class="btn-guardar" style="background: #0284c7; margin-top: 0;" onclick="if(window.AndroidTaurus){window.AndroidTaurus.conectarBLE();}else{conectarHardwareBLE();}">Vincular Lector</button>
                 </div>
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">📡 Estado del Sistema</div>
@@ -353,6 +353,19 @@
     </div>
 
     <!-- MODALES -->
+    <!-- MODAL DE VINCULACIÓN RFID NATIVO (NO BLOQUEABLE) -->
+    <div id="modal-vinculacion" class="modal">
+        <div class="modal-body">
+            <span class="cerrar" onclick="cerrarModal('modal-vinculacion')">&times;</span>
+            <h3>📡 Nuevo Chip Detectado</h3>
+            <p style="font-size: 14px; color: var(--muted); margin-bottom: 15px;">Este código interno no está registrado en el sistema. Ingrese el número de Caravana (RP) visible para vincularlo definitivamente.</p>
+            <div class="form-grupo">
+                <input type="text" class="form-control" id="input-rp-vinculacion" placeholder="Ej: 1540" style="text-align: center; font-size: 24px; font-weight: bold;">
+            </div>
+            <button class="btn-guardar" onclick="guardarVinculacionNFC()">Vincular y Abrir Ficha</button>
+        </div>
+    </div>
+
     <div id="modal-comentario" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-comentario')">&times;</span><h3>Anotación General</h3><div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-comentario', 'Comentario')">Guardar Nota</button></div></div>
     <div id="modal-perfil" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-perfil')">&times;</span><h3>Editar Perfil Base</h3><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"><div class="form-grupo"><label>Raza</label><input type="text" class="form-control" id="f-raza"></div><div class="form-grupo"><label>Edad</label><input type="text" class="form-control" id="f-edad"></div><div class="form-grupo"><label>Padre</label><input type="text" class="form-control" id="f-padre"></div><div class="form-grupo"><label>Madre</label><input type="text" class="form-control" id="f-madre"></div></div><button class="btn-guardar" onclick="guardarPerfilCompleto()">Guardar</button></div></div>
     <div id="modal-clasificacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-clasificacion')">&times;</span><h3>Clasificación</h3><div class="form-grupo"><label>Categoría</label><select class="form-control" id="input-cat-rapida"><option value="TH: Ternera Hembra">TH: Ternera Hembra</option><option value="TM: Ternero Macho">TM: Ternero Macho</option><option value="DH: Desmamante Hembra">DH: Desmamante Hembra</option><option value="DM: Desmamante Macho">DM: Desmamante Macho</option><option value="V: Vaca/Vaquilla">V: Vaca/Vaquilla</option><option value="VV: Vaca Vieja">VV: Vaca Vieja</option><option value="Toros">Toros</option><option value="Novillos">Novillos</option><option value="Bueyes y Señuelos">Bueyes y Señuelos</option></select></div><div class="form-grupo"><label>Lote / Grupo</label><input type="text" list="lista-lotes" class="form-control" id="input-lote-rapido"><datalist id="lista-lotes"><option value="Hacienda General"></option><option value="Lecheras"></option><option value="Preñadas"></option><option value="Inseminadas"></option></datalist></div><div class="form-grupo"><label>Carimbo</label><input type="text" class="form-control" id="input-carimbo-rapido"></div><button class="btn-guardar" onclick="guardarClasificacion()">Guardar</button></div></div>
@@ -376,6 +389,7 @@
         let rolUsuario = "";
         let rpPrint = "";
         let dispositivoBLE = null;
+        let tagHuerfano = ""; // Variable para guardar temporalmente el chip sin asignar
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -390,6 +404,7 @@
                 try {
                     const ndef = new NDEFReader();
                     await ndef.scan();
+                    // Alert no funcionará en webview, por eso esta función es de respaldo para Chrome
                     alert("✅ Lector NFC Activo. Acerca el celular a la caravana RFID/NFC...");
                     
                     ndef.onreading = event => {
@@ -586,19 +601,88 @@
             }
         }
 
-        function procesarTramaBLE(trama) {
-            const matchTag = trama.match(/TAG:([^|]+)/);
-            if(matchTag) {
-                const dato = matchTag[1].trim();
-                recibirTagNFC(dato); 
+        async function conectarHardwareBLE() {
+            const btn = document.querySelector('.btn-guardar');
+            try {
+                btn.innerText = "Buscando Lector...";
+                dispositivoBLE = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] 
+                });
+                
+                const server = await dispositivoBLE.gatt.connect();
+                const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+                const characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+                
+                characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', (e) => {
+                    let valor = new TextDecoder().decode(e.target.value);
+                    procesarTramaBLE(valor);
+                });
+                
+                btn.innerText = "📡 Lector Conectado";
+                btn.style.background = "var(--exito)";
+            } catch (e) {
+                console.error("Error BLE:", e);
+                btn.innerText = "Vincular Lector";
             }
         }
 
-        function recibirTagNFC(tagDato) {
-            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
-            document.getElementById('buscador-caravana').value = tagDato;
-            buscarCaravanaBtn();
+        // ==========================================
+        // MOTOR DE VINCULACIÓN INTELIGENTE (SIN POPUPS NATIVOS)
+        // ==========================================
+        function procesarTramaBLE(trama) {
+            const matchTag = trama.match(/TAG:([^|]+)/);
+            if(matchTag) {
+                recibirTagNFC(matchTag[1].trim()); 
+            }
         }
+
+        function recibirTagNFC(tagHex) {
+            // Buscar si este chip interno ya está anclado a un RP
+            const vinculacion = baseDeDatosCache.find(d => d.accion === 'Vinculacion_RFID' && d.valor === tagHex);
+            
+            if (vinculacion && vinculacion.caravana) {
+                // El animal existe, abrimos la ficha usando su caravana visual
+                cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+                document.getElementById('buscador-caravana').value = vinculacion.caravana;
+                buscarCaravanaBtn();
+            } else {
+                // Es un chip nuevo, abrimos el modal HTML para preguntar qué número de caravana es
+                tagHuerfano = tagHex;
+                document.getElementById('input-rp-vinculacion').value = '';
+                abrirModal('modal-vinculacion');
+            }
+        }
+
+        function guardarVinculacionNFC() {
+            const rpFinal = document.getElementById('input-rp-vinculacion').value.trim();
+            if(!rpFinal) {
+                // Indicador visual de error sin usar "alert"
+                const input = document.getElementById('input-rp-vinculacion');
+                input.style.borderColor = "var(--peligro)";
+                setTimeout(() => input.style.borderColor = "var(--borde)", 2000);
+                return; 
+            }
+            
+            caravanaActiva = rpFinal;
+            
+            // Guardamos el "anclaje" permanentemente
+            ejecutarAccion('Vinculacion_RFID', tagHuerfano, 'Chip vinculado a ' + rpFinal, event.target, 'modal-vinculacion');
+            
+            // Abrir la ficha del animal
+            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+            document.getElementById('buscador-caravana').value = rpFinal;
+            buscarCaravanaBtn();
+            
+            // Si el animal es totalmente nuevo, le abrimos la ventana para cargar la raza y categoría
+            const datosActivos = obtenerRegistrosActivos();
+            const historial = datosActivos.filter(d => String(d.caravana) === String(rpFinal));
+            if(historial.length <= 1) { 
+                setTimeout(() => abrirModal('modal-perfil'), 600);
+            }
+        }
+        // ==========================================
 
         function ejecutarAccion(tipoAccion, valor, detalles, btnActivo, modalId) {
             const accionObj = {
@@ -633,7 +717,6 @@
                 });
             } else {
                 encolarOffline(accionObj);
-                alert("Guardado en el teléfono. Se subirá automáticamente al recuperar el internet.");
                 if(modalId) cerrarModal(modalId);
                 if(btnActivo) btnActivo.innerText = "Guardar";
                 if(caravanaActiva !== "---") buscarCaravanaBtn(); 
@@ -671,11 +754,10 @@
         }
 
         function sincronizarPendientesManual() {
-            if(!navigator.onLine) { alert("Necesitas internet para forzar la sincronización."); return; }
+            if(!navigator.onLine) { return; }
             let p = JSON.parse(localStorage.getItem('taurus_pendientes')) || [];
-            if(p.length === 0) { alert("No hay datos pendientes. Todo está al día."); return; }
+            if(p.length === 0) { return; }
             sincronizarPendientesAuto();
-            alert("Sincronización manual completada.");
         }
 
         function prepararGuardado(modalId, tipoAccion) {
@@ -712,29 +794,29 @@
             if(!caravanaActiva) return;
             if(confirm(`¿Estás seguro de que deseas ELIMINAR el historial de la caravana ${caravanaActiva}? Esto anulará el registro actual en la app para permitir cargar a un nuevo animal.`)) {
                 ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null, null);
-                alert("Historial eliminado. El número quedó libre.");
                 cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]);
             }
         }
 
         function cambiarMiContrasena() {
-            if(!navigator.onLine) { alert("Necesitas internet para cambiar tu contraseña."); return; }
+            if(!navigator.onLine) { return; }
             const nueva = document.getElementById('nueva-clave').value.trim();
-            if(!nueva || nueva.length < 4) { alert("Mínimo 4 caracteres."); return; }
+            if(!nueva || nueva.length < 4) { return; }
             const btn = event.target; btn.innerText = "Cambiando...";
             const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usuarioActivo); fd.append('nuevo_pass', nueva);
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => {
-                alert("Contraseña actualizada."); document.getElementById('nueva-clave').value = ''; btn.innerText = "Actualizar mi Contraseña";
+                document.getElementById('nueva-clave').value = ''; btn.innerText = "Actualizar mi Contraseña";
                 let cred = JSON.parse(localStorage.getItem('taurus_cred')); cred.pass = nueva; localStorage.setItem('taurus_cred', JSON.stringify(cred));
             });
         }
+        
         function crearPeon() {
-            if(!navigator.onLine) { alert("Necesitas internet para crear usuarios."); return; }
+            if(!navigator.onLine) { return; }
             const pUsu = document.getElementById('peon-usu').value.trim(); const pPass = document.getElementById('peon-pass').value.trim();
-            if(!pUsu || !pPass) { alert("Faltan datos."); return; }
+            if(!pUsu || !pPass) { return; }
             const btn = event.target; btn.innerText = "Creando...";
             const fd = new URLSearchParams(); fd.append('accion', 'crear_peon'); fd.append('usuario', usuarioActivo); fd.append('peon_usu', pUsu); fd.append('peon_pass', pPass); fd.append('vencimiento', 'Heredado'); 
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { alert("Operador creado exitosamente."); document.getElementById('peon-usu').value = ''; document.getElementById('peon-pass').value = ''; btn.innerText = "Crear Operador"; });
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { document.getElementById('peon-usu').value = ''; document.getElementById('peon-pass').value = ''; btn.innerText = "Crear Operador"; });
         }
 
         function procesarDatosDashboard() {
@@ -793,7 +875,7 @@
             document.getElementById('contenedor-graficos-dinamicos').innerHTML = htmlGraficos;
         }
 
-        function verificarLimiteGraficos(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { alert('Máximo 3 gráficos.'); checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); localStorage.setItem('dash_graphs', JSON.stringify(prefs)); if(baseDeDatosCache.length > 0) procesarDatosDashboard(); } }
+        function verificarLimiteGraficos(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); localStorage.setItem('dash_graphs', JSON.stringify(prefs)); if(baseDeDatosCache.length > 0) procesarDatosDashboard(); } }
         function cambiarVista(idVista, tabElemento) { ['vista-dashboard', 'vista-manga', 'vista-registro', 'vista-informe', 'vista-config'].forEach(id => document.getElementById(id).classList.add('oculto')); document.getElementById(idVista).classList.remove('oculto'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('activo')); tabElemento.classList.add('activo'); }
         function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
         function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
@@ -813,7 +895,7 @@
                 const uNut = regs.find(d => d.accion === 'Nutrición'); if(uNut) nutricion = uNut.valor + " | " + uNut.detalles;
                 const uSan = regs.find(d => d.accion === 'Sanidad'); if(uSan) sanidad = uSan.valor + " | " + uSan.detalles;
                 
-                const ultimaReal = regs.find(d => d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master' && d.accion !== 'Comentario');
+                const ultimaReal = regs.find(d => d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master' && d.accion !== 'Comentario' && d.accion !== 'Vinculacion_RFID');
                 if(ultimaReal) { document.getElementById('panel-ultima-nota').classList.remove('oculto'); document.getElementById('nota-accion-titulo').innerText = `${new Date(ultimaReal.fecha).toLocaleDateString()} - ${ultimaReal.accion} (${ultimaReal.valor})`; document.getElementById('nota-accion-texto').innerText = ultimaReal.detalles.split('|')[0]; }
             }
             document.getElementById('val-categoria').innerText = cat; document.getElementById('val-raza').innerText = raza; document.getElementById('val-peso').innerText = peso; document.getElementById('val-dx').innerText = dx; document.getElementById('val-lote').innerText = lote; document.getElementById('val-carimbo').innerText = carimbo; document.getElementById('val-edad').innerText = edad; document.getElementById('val-genealogia').innerText = padre + " / " + madre; document.getElementById('val-comentario').innerText = comentario;
@@ -828,7 +910,7 @@
             const datosActivos = obtenerRegistrosActivos();
             const d = datosActivos.filter(f => String(f.caravana) === String(caravanaActiva)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
             let h = "<ul style='list-style:none; padding:0; margin:0;'>"; 
-            d.forEach(r => h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px;"><span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span><br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span></li>`); 
+            d.forEach(r => { if(r.accion !== 'Vinculacion_RFID') h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px;"><span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span><br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span></li>`; }); 
             document.getElementById('contenido-historial').innerHTML = h + "</ul>"; 
         }
 
@@ -852,7 +934,7 @@
             if(fRp !== "") {
                 rpPrint = fRp; document.querySelector('.btn-descargar').innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`;
                 document.getElementById('tabla-masiva').classList.add('oculto'); document.getElementById('tabla-individual').classList.remove('oculto');
-                const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === fRp).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+                const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === fRp && d.accion !== 'Vinculacion_RFID').sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
                 let hInd = ""; regs.forEach(r => { hInd+=`<tr><td style="color:#000; border-color:#cbd5e1;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1;"><strong>${r.accion}</strong></td><td style="color:#000; border-color:#cbd5e1;">${r.valor}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;">${r.detalles}</td></tr>`; });
                 tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.length; document.getElementById('inf-prenadas').innerText = "-";
             } else {
@@ -886,8 +968,8 @@
             
             if(rpPrint !== "") {
                 const datosActivos = obtenerRegistrosActivos();
-                const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === String(rpPrint).toLowerCase()).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
-                if(regs.length===0){alert("Sin registros para generar PDF."); btn.innerHTML = `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}`; return;}
+                const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === String(rpPrint).toLowerCase() && d.accion !== 'Vinculacion_RFID').sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
+                if(regs.length===0){ btn.innerHTML = `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}`; return;}
                 
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
                 const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = uP.valor.split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=uP.detalles.split('|')[0]||"-"; } 
@@ -998,10 +1080,15 @@
                 pagebreak: { mode: 'avoid-all', avoid: 'tr' }
             };
             
-            html2pdf().set(opt).from(htmlContent).save().then(()=>{ 
+            html2pdf().set(opt).from(htmlContent).toPdf().get('pdf').then(function(pdf) {
+                if (window.AndroidTaurus) {
+                    const base64 = pdf.output('datauristring');
+                    window.AndroidTaurus.guardarPDF(base64, opt.filename);
+                } else {
+                    pdf.save(opt.filename);
+                }
                 btn.innerHTML = rpPrint !== "" ? `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}` : "🖨️ Descargar Informe PDF"; 
             }).catch(e => {
-                alert("Hubo un error generando el PDF.");
                 btn.innerHTML = "🖨️ Reintentar Descarga";
             });
         }
@@ -1058,7 +1145,6 @@
                     let hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {};
                     hd.nombre = n; hd.logo = b64;
                     localStorage.setItem('tc_hacienda', JSON.stringify(hd));
-                    alert("Membrete oficial actualizado en todo el sistema.");
                 });
             };
             
