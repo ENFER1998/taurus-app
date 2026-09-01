@@ -267,7 +267,6 @@
                         </div>
                         <input type="file" id="input-logo" accept="image/*" style="display:none" onchange="cargarLogo(event)">
                         
-                        <!-- BLOQUE CORREGIDO PARA EL DESCUADRE DEL BOTÓN -->
                         <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:8px;">
                             <input type="text" id="nombre-estancia" class="input-estancia" placeholder="Nombre de la Estancia" style="width: 100%; box-sizing: border-box;">
                             <button class="btn-mini no-print" style="width:100%; background:var(--secundario); color:white; border:none; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" onclick="guardarDisenoInforme()">☁️ Guardar diseño para todos</button>
@@ -306,8 +305,7 @@
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">🔌 Lector Inalámbrico</div>
                     <p style="font-size: 13px; color: var(--muted); margin-bottom: 15px;">Vincula un Lector de Caravana Bluetooth para cargar los tags automáticamente.</p>
-                    <!-- BOTÓN INTELIGENTE: FUNCIONA EN WEB Y EN ANDROID NATIVO -->
-                    <button class="btn-guardar" style="background: #0284c7; margin-top: 0;" onclick="if(window.AndroidTaurus){window.AndroidTaurus.conectarBLE();}else{conectarHardwareBLE();}">Vincular Lector</button>
+                    <button class="btn-guardar" style="background: #0284c7; margin-top: 0;" onclick="window.AndroidTaurus.conectarBLE()">Vincular Lector</button>
                 </div>
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">📡 Estado del Sistema</div>
@@ -424,7 +422,7 @@
             const unicas = [...new Set(baseDeDatosCache.map(d => d.caravana).filter(c => c !== "---" && c !== null))];
             
             unicas.forEach(car => {
-                let regs = baseDeDatosCache.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(a.fecha) - new Date(b.fecha)); // Orden cronológico
+                let regs = baseDeDatosCache.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(a.fecha) - new Date(b.fecha)); 
                 let lastResetIdx = -1;
                 for(let i=regs.length-1; i>=0; i--){
                     if(regs[i].accion === 'Borrar_Caravana') { lastResetIdx = i; break; }
@@ -588,76 +586,18 @@
             }
         }
 
-        async function conectarHardwareBLE() {
-            const btn = document.querySelector('.btn-guardar');
-            try {
-                btn.innerText = "Buscando Lector...";
-                dispositivoBLE = await navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true,
-                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] 
-                });
-                
-                const server = await dispositivoBLE.gatt.connect();
-                const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
-                const characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
-                
-                characteristic.startNotifications();
-                characteristic.addEventListener('characteristicvaluechanged', (e) => {
-                    let valor = new TextDecoder().decode(e.target.value);
-                    procesarTramaBLE(valor);
-                });
-                
-                btn.innerText = "📡 Lector Conectado";
-                btn.style.background = "var(--exito)";
-                alert("Lector de caravanas vinculado correctamente.");
-            } catch (e) {
-                console.error("Error BLE:", e);
-                btn.innerText = "Vincular Lector";
-                alert("Asegúrate de que el lector esté encendido y tengas el Bluetooth activo.");
-            }
-        }
-
-        // MOTOR UNIFICADO DE VINCULACIÓN RFID (NUEVO)
         function procesarTramaBLE(trama) {
             const matchTag = trama.match(/TAG:([^|]+)/);
             if(matchTag) {
-                const uid = matchTag[1].trim();
-                recibirTagNFC(uid); 
+                const dato = matchTag[1].trim();
+                recibirTagNFC(dato); 
             }
         }
 
-        function recibirTagNFC(tagHex) {
-            // 1. Buscar si este chip interno ya está anclado a un RP
-            const vinculacion = baseDeDatosCache.find(d => d.accion === 'Vinculacion_RFID' && d.valor === tagHex);
-            
-            let rpFinal = "";
-            
-            if (vinculacion && vinculacion.caravana) {
-                rpFinal = vinculacion.caravana;
-            } else {
-                rpFinal = prompt("NUEVO CHIP DETECTADO 📡\nEste chip no está registrado en el sistema.\n\nIngrese el número de caravana (RP) visible para vincularlo definitivamente:");
-                
-                if (!rpFinal) return; 
-                
-                rpFinal = rpFinal.trim();
-                caravanaActiva = rpFinal;
-                
-                // Guardamos el "anclaje"
-                ejecutarAccion('Vinculacion_RFID', tagHex, 'Chip vinculado a ' + rpFinal, null, null);
-                alert("✅ Chip vinculado exitosamente a la caravana " + rpFinal);
-            }
-            
-            // 2. Abrir la ficha del animal
+        function recibirTagNFC(tagDato) {
             cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
-            document.getElementById('buscador-caravana').value = rpFinal;
+            document.getElementById('buscador-caravana').value = tagDato;
             buscarCaravanaBtn();
-            
-            // Si el animal es nuevo, abrir modal de perfil
-            const datosActivos = obtenerRegistrosActivos();
-            const historial = datosActivos.filter(d => String(d.caravana) === String(rpFinal));
-            if(historial.length === 1) { 
-                setTimeout(() => abrirModal('modal-perfil'), 600);
-            }
         }
 
         function ejecutarAccion(tipoAccion, valor, detalles, btnActivo, modalId) {
