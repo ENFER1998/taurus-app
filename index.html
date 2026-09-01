@@ -266,9 +266,11 @@
                             <span id="texto-subir-logo">📷 Subir Logo</span>
                         </div>
                         <input type="file" id="input-logo" accept="image/*" style="display:none" onchange="cargarLogo(event)">
-                        <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
-                            <input type="text" id="nombre-estancia" class="input-estancia" placeholder="Nombre de la Estancia">
-                            <button class="btn-mini no-print" style="width:fit-content; background:var(--secundario); color:white; border:none;" onclick="guardarDisenoInforme()">☁️ Guardar diseño para todos</button>
+                        
+                        <!-- BLOQUE CORREGIDO PARA EL DESCUADRE DEL BOTÓN -->
+                        <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:8px;">
+                            <input type="text" id="nombre-estancia" class="input-estancia" placeholder="Nombre de la Estancia" style="width: 100%; box-sizing: border-box;">
+                            <button class="btn-mini no-print" style="width:100%; background:var(--secundario); color:white; border:none; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" onclick="guardarDisenoInforme()">☁️ Guardar diseño para todos</button>
                         </div>
                     </div>
 
@@ -304,7 +306,8 @@
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">🔌 Lector Inalámbrico</div>
                     <p style="font-size: 13px; color: var(--muted); margin-bottom: 15px;">Vincula un Lector de Caravana Bluetooth para cargar los tags automáticamente.</p>
-                    <button class="btn-guardar" style="background: #0284c7; margin-top: 0;" onclick="window.AndroidTaurus.conectarBLE()">Vincular Lector</button>
+                    <!-- BOTÓN INTELIGENTE: FUNCIONA EN WEB Y EN ANDROID NATIVO -->
+                    <button class="btn-guardar" style="background: #0284c7; margin-top: 0;" onclick="if(window.AndroidTaurus){window.AndroidTaurus.conectarBLE();}else{conectarHardwareBLE();}">Vincular Lector</button>
                 </div>
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">📡 Estado del Sistema</div>
@@ -351,7 +354,7 @@
         </nav>
     </div>
 
-    <!-- MODALES (Se mantienen igual) -->
+    <!-- MODALES -->
     <div id="modal-comentario" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-comentario')">&times;</span><h3>Anotación General</h3><div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-comentario', 'Comentario')">Guardar Nota</button></div></div>
     <div id="modal-perfil" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-perfil')">&times;</span><h3>Editar Perfil Base</h3><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"><div class="form-grupo"><label>Raza</label><input type="text" class="form-control" id="f-raza"></div><div class="form-grupo"><label>Edad</label><input type="text" class="form-control" id="f-edad"></div><div class="form-grupo"><label>Padre</label><input type="text" class="form-control" id="f-padre"></div><div class="form-grupo"><label>Madre</label><input type="text" class="form-control" id="f-madre"></div></div><button class="btn-guardar" onclick="guardarPerfilCompleto()">Guardar</button></div></div>
     <div id="modal-clasificacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-clasificacion')">&times;</span><h3>Clasificación</h3><div class="form-grupo"><label>Categoría</label><select class="form-control" id="input-cat-rapida"><option value="TH: Ternera Hembra">TH: Ternera Hembra</option><option value="TM: Ternero Macho">TM: Ternero Macho</option><option value="DH: Desmamante Hembra">DH: Desmamante Hembra</option><option value="DM: Desmamante Macho">DM: Desmamante Macho</option><option value="V: Vaca/Vaquilla">V: Vaca/Vaquilla</option><option value="VV: Vaca Vieja">VV: Vaca Vieja</option><option value="Toros">Toros</option><option value="Novillos">Novillos</option><option value="Bueyes y Señuelos">Bueyes y Señuelos</option></select></div><div class="form-grupo"><label>Lote / Grupo</label><input type="text" list="lista-lotes" class="form-control" id="input-lote-rapido"><datalist id="lista-lotes"><option value="Hacienda General"></option><option value="Lecheras"></option><option value="Preñadas"></option><option value="Inseminadas"></option></datalist></div><div class="form-grupo"><label>Carimbo</label><input type="text" class="form-control" id="input-carimbo-rapido"></div><button class="btn-guardar" onclick="guardarClasificacion()">Guardar</button></div></div>
@@ -376,7 +379,6 @@
         let rpPrint = "";
         let dispositivoBLE = null;
 
-        // REGISTRO DEL SERVICE WORKER (Para GitHub Pages PWA)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').then(reg => {
@@ -385,7 +387,6 @@
             });
         }
 
-        // LECTOR NFC PARA CARAVANAS (Web / Fallback)
         async function leerNFC() {
             if ('NDEFReader' in window) {
                 try {
@@ -399,8 +400,7 @@
                             try {
                                 const rp = decoder.decode(record.data).trim();
                                 if(rp) {
-                                    document.getElementById('buscador-caravana').value = rp;
-                                    buscarCaravanaBtn();
+                                    recibirTagNFC(rp);
                                 }
                             } catch(e) {
                                 console.log("Error decodificando registro NFC:", e);
@@ -419,7 +419,6 @@
             }
         }
 
-        // FILTRO GLOBAL (Para ocultar caravanas borradas)
         function obtenerRegistrosActivos() {
             let validos = [];
             const unicas = [...new Set(baseDeDatosCache.map(d => d.caravana).filter(c => c !== "---" && c !== null))];
@@ -439,14 +438,12 @@
             return validos.concat(globalEvents);
         }
 
-        // MODO CLARO / OSCURO
         if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
         function toggleTema() {
             document.body.classList.toggle('tema-claro');
             localStorage.setItem('tc_tema', document.body.classList.contains('tema-claro') ? 'claro' : 'oscuro');
         }
 
-        // RED
         window.addEventListener('online', actualizarEstadoRed);
         window.addEventListener('offline', actualizarEstadoRed);
 
@@ -465,7 +462,6 @@
             }
         }
 
-        // LOGIN
         async function procesarIngreso() {
             const usu = document.getElementById('usuario').value.trim();
             const pass = document.getElementById('password').value.trim();
@@ -492,7 +488,6 @@
                     throw new Error("Su licencia ha vencido.");
                 }
 
-                // Guardado clave de la PC
                 localStorage.setItem('tc_hacienda', JSON.stringify({ nombre: res.hacienda, logo: res.logo }));
                 localStorage.setItem('taurus_cred', JSON.stringify({usu: usu, pass: pass, maestro: res.maestro, rol: res.rol, vencimiento: res.vencimiento}));
                 
@@ -547,7 +542,6 @@
             sincronizarPendientesAuto();
         }
 
-        // MOTOR DE SINCRONIZACIÓN DE LA VERSIÓN DE PC
         function fusionarDatos(nuevos) {
             let mapa = new Map();
             if(Array.isArray(baseDeDatosCache)) baseDeDatosCache.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
@@ -594,9 +588,8 @@
             }
         }
 
-        // BLUETOOTH API
         async function conectarHardwareBLE() {
-            const btn = document.getElementById('btn-ble');
+            const btn = document.querySelector('.btn-guardar');
             try {
                 btn.innerText = "Buscando Lector...";
                 dispositivoBLE = await navigator.bluetooth.requestDevice({
@@ -624,23 +617,49 @@
             }
         }
 
+        // MOTOR UNIFICADO DE VINCULACIÓN RFID (NUEVO)
         function procesarTramaBLE(trama) {
             const matchTag = trama.match(/TAG:([^|]+)/);
             if(matchTag) {
-                const rp = matchTag[1].trim();
-                cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
-                document.getElementById('buscador-caravana').value = rp;
-                buscarCaravanaBtn();
-                
-                const datosActivos = obtenerRegistrosActivos();
-                const historial = datosActivos.filter(d => String(d.caravana) === String(rp));
-                if(historial.length === 0) {
-                    setTimeout(() => abrirModal('modal-perfil'), 600);
-                }
+                const uid = matchTag[1].trim();
+                recibirTagNFC(uid); 
             }
         }
 
-        // GUARDADO Y SINCRONIZACIÓN
+        function recibirTagNFC(tagHex) {
+            // 1. Buscar si este chip interno ya está anclado a un RP
+            const vinculacion = baseDeDatosCache.find(d => d.accion === 'Vinculacion_RFID' && d.valor === tagHex);
+            
+            let rpFinal = "";
+            
+            if (vinculacion && vinculacion.caravana) {
+                rpFinal = vinculacion.caravana;
+            } else {
+                rpFinal = prompt("NUEVO CHIP DETECTADO 📡\nEste chip no está registrado en el sistema.\n\nIngrese el número de caravana (RP) visible para vincularlo definitivamente:");
+                
+                if (!rpFinal) return; 
+                
+                rpFinal = rpFinal.trim();
+                caravanaActiva = rpFinal;
+                
+                // Guardamos el "anclaje"
+                ejecutarAccion('Vinculacion_RFID', tagHex, 'Chip vinculado a ' + rpFinal, null, null);
+                alert("✅ Chip vinculado exitosamente a la caravana " + rpFinal);
+            }
+            
+            // 2. Abrir la ficha del animal
+            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+            document.getElementById('buscador-caravana').value = rpFinal;
+            buscarCaravanaBtn();
+            
+            // Si el animal es nuevo, abrir modal de perfil
+            const datosActivos = obtenerRegistrosActivos();
+            const historial = datosActivos.filter(d => String(d.caravana) === String(rpFinal));
+            if(historial.length === 1) { 
+                setTimeout(() => abrirModal('modal-perfil'), 600);
+            }
+        }
+
         function ejecutarAccion(tipoAccion, valor, detalles, btnActivo, modalId) {
             const accionObj = {
                 fecha: new Date().toISOString(),
@@ -758,7 +777,6 @@
             }
         }
 
-        // SEGURIDAD
         function cambiarMiContrasena() {
             if(!navigator.onLine) { alert("Necesitas internet para cambiar tu contraseña."); return; }
             const nueva = document.getElementById('nueva-clave').value.trim();
@@ -779,7 +797,6 @@
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { alert("Operador creado exitosamente."); document.getElementById('peon-usu').value = ''; document.getElementById('peon-pass').value = ''; btn.innerText = "Crear Operador"; });
         }
 
-        // ANÁLISIS E INFORMES
         function procesarDatosDashboard() {
             const datosActivos = obtenerRegistrosActivos();
             
@@ -914,7 +931,6 @@
             }
         }
 
-        // MOTOR DE DESCARGA PDF 
         function ejecutarDescargaPDF() {
             const btn = document.querySelector('.btn-descargar'); btn.innerText = "⏳ Generando PDF...";
             
@@ -1050,7 +1066,6 @@
             });
         }
 
-        // CARGA DE LOGO E INFORMES SINCRONIZADA
         function cargarDisenoDesdeDB() {
             const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {};
             document.getElementById('nombre-estancia').value = hd.nombre || '';
@@ -1129,13 +1144,6 @@
                 const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {};
                 p(hd.logo || "");
             }
-        }
-
-        // Función inyectada desde Android Studio para recibir el tag NFC nativo
-        function recibirTagNFC(tagHex) {
-            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
-            document.getElementById('buscador-caravana').value = tagHex;
-            buscarCaravanaBtn();
         }
     </script>
 </body>
