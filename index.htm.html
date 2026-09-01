@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Taurus Control - Creado por Fernando Rodriguez</title>
+    
+    <!-- Configuración PWA / GitHub Pages -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="icon" href="gemini-svg.ico">
+    <link rel="apple-touch-icon" href="gemini-svg.ico">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        /* ================= MODO OSCURO (POR DEFECTO) ================= */
+        :root { 
+            --primario: #0f172a; 
+            --secundario: #3b82f6; 
+            --exito: #10b981; 
+            --alerta: #f59e0b; 
+            --peligro: #ef4444; 
+            --borde: #334155;
+            --texto: #f8fafc;
+            --muted: #94a3b8;
+        }
+
+        /* ================= MODO CLARO ================= */
+        body.tema-claro {
+            --primario: #f8fafc;
+            --borde: #cbd5e1;
+            --texto: #0f172a;
+            --muted: #64748b;
+        }
+        body.tema-claro { background: #f1f5f9; color: var(--texto); }
+        body.tema-claro .login-contenedor, body.tema-claro .cabecera, body.tema-claro .tarjeta, body.tema-claro .kpi-caja, body.tema-claro .dato-min, body.tema-claro .btn-accion, body.tema-claro .filtro-sel, body.tema-claro .nav-inferior, body.tema-claro .modal-body, body.tema-claro .form-control { background: #ffffff; border-color: var(--borde); color: var(--texto); }
+        body.tema-claro .form-control-login { background: #f8fafc; border-color: var(--borde); color: var(--texto); }
+        body.tema-claro .buscador-input { background: #f8fafc; border-color: var(--borde); color: var(--texto); }
+        body.tema-claro .btn-mini { background: #f1f5f9; color: var(--texto); border-color: var(--borde); }
+        body.tema-claro .kpi-label { color: var(--muted); }
+        body.tema-claro .nav-item { color: var(--muted); }
+        body.tema-claro .nav-item.activo { color: var(--secundario); }
+        body.tema-claro .encabezado-impresion { background: #ffffff; border-color: var(--borde); }
+        body.tema-claro .logo-upload { background: #f1f5f9; border-color: var(--borde); }
+        body.tema-claro .input-estancia { color: var(--texto); border-bottom-color: var(--borde); }
+        body.tema-claro .input-estancia:focus { border-bottom-color: var(--secundario); }
+        
+        /* SOLUCIÓN AL BUG DEL TEMA CLARO EN CHECKBOX */
+        body.tema-claro .check-opcion { background: #f8fafc; border-color: var(--borde); color: var(--texto); }
+
+        body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; color: var(--texto); background: #1e293b; min-height: 100vh; transition: background 0.3s, color 0.3s; }
+        .oculto { display: none !important; }
+        
+        /* LOGIN */
+        #pantalla-login { display: flex; align-items: center; justify-content: center; height: 100vh; width: 100%; flex-direction: column; background: var(--primario); transition: background 0.3s;}
+        .login-contenedor { background: #1e293b; border-radius: 16px; padding: 40px 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 90%; max-width: 360px; text-align: center; border: 1px solid var(--borde); transition: 0.3s;}
+        .logo-icono img { width: 90px; height: 90px; margin-bottom: 10px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); object-fit: contain; }
+        .titulo-login { font-size: 24px; font-weight: 900; margin-bottom: 30px; color: var(--texto); }
+        .form-control-login { width: 100%; padding: 15px; border: 1px solid var(--borde); border-radius: 8px; box-sizing: border-box; font-size: 16px; margin-bottom: 15px; text-align: center; background: #0f172a; color: var(--texto); transition: 0.3s;}
+        .btn-ingresar { width: 100%; background: var(--secundario); color: white; border: none; padding: 15px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s;}
+        .btn-ingresar:disabled { background: var(--muted); }
+        .error-msj { color: var(--peligro); font-size: 14px; margin-bottom: 10px; display: none; font-weight: bold; }
+        #indicador-sync { margin-top: 20px; font-size: 14px; font-weight: bold; color: var(--secundario); display: none;}
+
+        /* HEADER */
+        #pantalla-app { padding-bottom: 80px; width: 100%; }
+        .cabecera { background-color: #0f172a; color: var(--texto); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--borde); position: sticky; top: 0; z-index: 100; transition: 0.3s;}
+        .cabecera h1 { margin: 0; font-size: 20px; display: flex; align-items: center; gap: 8px;}
+        
+        .badge-estado { font-size: 12px; background: var(--exito); padding: 5px 12px; border-radius: 20px; font-weight: bold; color: white; transition: 0.3s;}
+        .badge-estado.offline { background: var(--alerta); color: white; }
+        .alerta-offline-banner { background: var(--alerta); color: black; text-align: center; padding: 5px; font-size: 12px; font-weight: bold; display: none;}
+        
+        .contenedor { padding: 15px; max-width: 800px; margin: 0 auto; }
+        .tarjeta { background: #0f172a; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--borde); box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.3s;}
+        .tarjeta-titulo { font-size: 18px; font-weight: bold; margin: 0 0 15px 0; border-bottom: 1px solid var(--borde); padding-bottom: 10px; color: var(--texto); }
+        
+        /* KPIS & GRÁFICOS */
+        .grid-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .kpi-caja { background: #1e293b; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--borde); transition: 0.3s;}
+        .kpi-valor { font-size: 28px; font-weight: 900; color: var(--secundario); margin: 5px 0; }
+        .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: bold;}
+        
+        .grafico-flex { display: flex; align-items: center; gap: 20px; justify-content: space-around; flex-wrap: wrap;}
+        .torta-container { position: relative; width: 120px; height: 120px; }
+        .torta { width: 100%; height: 100%; border-radius: 50%; background: var(--borde); transition: background 1s ease-in-out;}
+        .torta-centro { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; background: var(--primario); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: var(--texto); transition: 0.3s;}
+        .leyenda-torta { font-size: 14px; line-height: 1.8; color: var(--texto);}
+        .punto { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px;}
+        
+        .barra-categoria { margin-bottom: 15px;}
+        .barra-header { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: var(--texto);}
+        .barra-fondo { width: 100%; background: var(--borde); height: 10px; border-radius: 5px; overflow: hidden;}
+        .barra-relleno { height: 100%; border-radius: 5px; width: 0%; transition: width 1s ease;}
+
+        /* ALERTAS */
+        #lista-alertas { max-height: 160px; overflow-y: auto; padding-right: 5px; }
+        .alerta-item { display: flex; align-items: center; gap: 10px; background: rgba(245,158,11,0.1); padding: 12px; border-radius: 8px; border-left: 4px solid var(--alerta); margin-bottom: 10px; font-size: 14px; cursor: pointer; border: 1px solid rgba(245,158,11,0.3); color: var(--texto);}
+        .alerta-item.peligro { background: rgba(239,68,68,0.1); border-left-color: var(--peligro); border-color: rgba(239,68,68,0.3);}
+
+        /* FICHA & BUSCADORES */
+        .buscador-contenedor { display: flex; gap: 10px; margin-bottom: 20px; align-items: stretch;}
+        .buscador-input { flex: 1; min-width: 0; padding: 12px; border: 2px solid var(--borde); border-radius: 8px; font-size: 16px; font-weight: bold; background: #0f172a; color: var(--texto); transition: 0.3s;}
+        .buscador-btn { flex-shrink: 0; background: var(--secundario); color: white; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold; cursor: pointer;}
+
+        .perfil-cabecera { text-align: center; margin-bottom: 25px;}
+        .perfil-id { font-size: 40px; font-weight: 900; letter-spacing: 2px; line-height: 1; color: var(--texto);}
+        .botones-perfil { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 20px;}
+        .btn-mini { background: #1e293b; border: 1px solid var(--borde); padding: 8px 15px; border-radius: 8px; font-size: 13px; font-weight: bold; color: var(--texto); cursor: pointer; transition: 0.3s;}
+        
+        .panel-notas { background: rgba(245, 158, 11, 0.1); border-left: 5px solid var(--alerta); padding: 15px; border-radius: 8px; margin-bottom: 15px; color: var(--texto); }
+        .panel-comentario { background: rgba(59, 130, 246, 0.1); border-left: 5px solid var(--secundario); padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; color: var(--texto);}
+        
+        .grid-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+        .dato-min { background: #1e293b; padding: 10px; border-radius: 8px; border: 1px solid var(--borde); transition: 0.3s;}
+        .dato-min span { display: block; font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: bold; margin-bottom: 4px;}
+        .dato-min strong { font-size: 13px; word-wrap: break-word; color: var(--texto);}
+
+        .grid-acciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top:20px;}
+        .btn-accion { background: #1e293b; border: 1px solid var(--borde); padding: 12px 10px; border-radius: 12px; font-weight: bold; color: var(--texto); display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; transition: 0.3s;}
+        .btn-accion span { font-size: 24px; }
+        
+        /* REGISTRO Y FILTROS */
+        .filtros-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;}
+        .filtro-sel { background: #1e293b; color: var(--texto); border: 1px solid var(--borde); padding: 12px; border-radius: 8px; font-size: 14px; transition: 0.3s;}
+        .lista-animales { list-style: none; padding: 0; margin: 0; }
+        .lista-animales li { padding: 15px; border-bottom: 1px solid var(--borde); display: flex; justify-content: space-between; align-items: center; cursor: pointer;}
+        
+        /* INFORME Y TABLA */
+        .btn-descargar { width: 100%; background: var(--exito); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; margin-bottom: 20px; cursor: pointer;}
+        .tabla-responsive { width: 100%; overflow-x: auto; border-radius: 8px;}
+        .tabla-informe { width: 100%; border-collapse: collapse; font-size: 13px; background: white; color: black; min-width: 400px;}
+        .tabla-informe th { background: #e2e8f0; padding: 10px; text-align: left; border: 1px solid #cbd5e1; color: black;}
+        .tabla-informe td { padding: 10px; border: 1px solid #cbd5e1; color: black;}
+
+        /* AJUSTES */
+        .check-opcion { display: flex; align-items: center; gap: 10px; color: var(--texto); margin-bottom: 15px; font-size: 14px; cursor: pointer; padding: 10px; border: 1px solid var(--borde); border-radius: 8px; background: #1e293b; transition: 0.3s;}
+        
+        /* NAVEGACIÓN INFERIOR */
+        .nav-inferior { position: fixed; bottom: 0; left: 0; width: 100%; background: #0f172a; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid var(--borde); z-index: 100; transition: 0.3s;}
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); font-size: 10px; font-weight: bold; width: 20%; cursor: pointer;}
+        .nav-item.activo { color: var(--secundario); }
+        .nav-icon { font-size: 22px; margin-bottom: 4px;}
+
+        /* MODALES */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 200; align-items: center; justify-content: center;}
+        .modal-body { background: #0f172a; width: 92%; max-width: 450px; border-radius: 20px; padding: 25px; box-sizing: border-box; max-height: 90vh; overflow-y: auto; border: 1px solid var(--borde); transition: 0.3s;}
+        .modal-body h3 { border-bottom: 1px solid var(--borde); padding-bottom: 10px; margin-top:0; color: var(--texto);}
+        .form-grupo { margin-bottom: 15px; text-align: left; }
+        .form-grupo label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 8px; color: var(--muted);}
+        .form-control { width: 100%; padding: 12px; border: 1px solid var(--borde); border-radius: 8px; box-sizing: border-box; font-size: 16px; background: #1e293b; color: var(--texto); transition: 0.3s;}
+        .form-control.textarea { resize: vertical; min-height: 80px; }
+        .btn-guardar { width: 100%; background: var(--secundario); color: white; padding: 15px; border-radius: 8px; border: none; font-weight: bold; margin-top: 10px; cursor: pointer;}
+        .cerrar { float: right; font-size: 30px; cursor: pointer; color: var(--muted);}
+
+        /* ENCABEZADO DE IMPRESIÓN */
+        .encabezado-impresion { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; padding: 15px; background: #1e293b; border-radius: 8px; border: 1px dashed var(--borde); transition: 0.3s; }
+        .logo-upload { width: 80px; height: 80px; background: #0f172a; border: 1px solid var(--borde); border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; text-align: center; flex-shrink: 0; transition: 0.3s;}
+        .logo-upload span { font-size: 11px; color: var(--muted); padding: 5px; }
+        .input-estancia { flex: 1; background: transparent; border: none; border-bottom: 2px solid var(--borde); color: var(--texto); font-size: 24px; font-weight: 900; outline: none; padding: 5px; font-family: inherit;}
+        .input-estancia:focus { border-bottom-color: var(--secundario); }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN -->
+    <div id="pantalla-login">
+        <div class="login-contenedor">
+            <div class="logo-icono">
+                <img src="gemini-svg.ico" alt="Logo Taurus">
+            </div>
+            <div class="titulo-login">Taurus Control</div>
+            <input type="text" id="usuario" class="form-control-login" placeholder="Usuario" autocomplete="off">
+            <input type="password" id="password" class="form-control-login" placeholder="Contraseña">
+            <div id="error-login" class="error-msj">Datos incorrectos</div>
+            <button id="btn-ingreso" class="btn-ingresar" onclick="procesarIngreso()">Iniciar Sesión</button>
+            <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">Taurus Control - Versión Mobile<br><strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">Desarrollado por Fernando Rodriguez &copy; 2026</strong></div>
+        </div>
+        <div id="indicador-sync">Verificando credenciales... ⏳</div>
+    </div>
+
+    <!-- APP -->
+    <div id="pantalla-app" class="oculto">
+        <div id="banner-offline" class="alerta-offline-banner">Estás sin internet. Los datos se guardan en el teléfono.</div>
+        <header class="cabecera">
+            <h1>
+                <img src="gemini-svg.ico" alt="Taurus" style="width: 26px; height: 26px; border-radius: 6px; margin-right: 8px; object-fit: contain;">
+                Taurus
+            </h1>
+            <div id="estado-red" class="badge-estado">🟢 Conectado</div>
+        </header>
+
+        <div class="contenedor">
+            
+            <!-- DASHBOARD -->
+            <div id="vista-dashboard">
+                <div class="grid-kpis">
+                    <div class="kpi-caja" onclick="cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2])"><div class="kpi-valor" id="dash-cabezas">0</div><div class="kpi-label">Cabezas Únicas</div></div>
+                    <div class="kpi-caja"><div class="kpi-valor" id="dash-acciones">0</div><div class="kpi-label">Registros Totales</div></div>
+                </div>
+                <div class="tarjeta" id="contenedor-alertas" style="display:none;"><div class="tarjeta-titulo" style="color:var(--alerta);">⚠️ Alertas (Deslizar)</div><div id="lista-alertas"></div></div>
+                <div id="contenedor-graficos-dinamicos"></div>
+            </div>
+
+            <!-- FICHA / MANGA -->
+            <div id="vista-manga" class="oculto">
+                <div class="buscador-contenedor">
+                    <input type="text" id="buscador-caravana" class="buscador-input" placeholder="Nº Caravana">
+                    <button class="buscador-btn" onclick="buscarCaravanaBtn()">Buscar</button>
+                    <!-- BOTÓN NFC AÑADIDO AQUÍ -->
+                    <button class="buscador-btn" style="background: #8b5cf6;" onclick="leerNFC()">📲 NFC</button>
+                </div>
+                <div id="ficha-animal" class="tarjeta oculto">
+                    <div class="perfil-cabecera"><div class="perfil-id" id="val-caravana">---</div></div>
+                    <div class="botones-perfil">
+                        <button class="btn-mini" onclick="abrirModal('modal-perfil')">✏️ Datos Base</button>
+                        <button class="btn-mini" onclick="abrirModal('modal-clasificacion')">🏷️ Cambiar Cat/Lote</button>
+                    </div>
+                    <div class="panel-comentario"><div style="flex:1;"><span style="font-size:12px; font-weight:bold; color:var(--secundario); display:block;">NOTAS</span><span id="val-comentario" style="font-size:14px; font-style:italic; display:block; margin-top:3px;">Sin comentarios.</span></div><button class="btn-mini" style="background:var(--secundario); color:white; border:none;" onclick="abrirModal('modal-comentario')">Editar</button></div>
+                    <div id="panel-ultima-nota" class="panel-notas oculto"><div style="font-weight:bold;font-size:12px;margin-bottom:5px;">Último Registro Médico/General</div><div id="nota-accion-titulo" style="font-size:14px;font-weight:bold;">---</div><div id="nota-accion-texto" style="font-size:13px;">---</div></div>
+                    
+                    <div class="grid-datos">
+                        <div class="dato-min"><span>Raza</span><strong id="val-raza">-</strong></div>
+                        <div class="dato-min"><span>Edad</span><strong id="val-edad">-</strong></div>
+                        <div class="dato-min"><span>Padre/Madre</span><strong id="val-genealogia">-</strong></div>
+                        <div class="dato-min"><span>Lote / Grupo</span><strong id="val-lote">-</strong></div>
+                        <div class="dato-min"><span>Categoría</span><strong id="val-categoria">-</strong></div>
+                        <div class="dato-min"><span>Carimbo</span><strong id="val-carimbo">-</strong></div>
+                        <div class="dato-min"><span>Dx Tacto</span><strong id="val-dx" style="color:var(--success);">-</strong></div>
+                        <div class="dato-min"><span>Peso Actual</span><strong id="val-peso">-</strong></div>
+                        <div class="dato-min" style="border-left: 3px solid #be185d;"><span>Últ. Inseminación</span><strong id="val-inseminacion">-</strong></div>
+                        <div class="dato-min" style="border-left: 3px solid var(--secundario);"><span>Régimen Nutricional</span><strong id="val-nutricion">-</strong></div>
+                        <div class="dato-min" style="border-left: 3px solid #c2410c;"><span>Última Sanidad</span><strong id="val-sanidad">-</strong></div>
+                    </div>
+                    
+                    <div class="grid-acciones">
+                        <button class="btn-accion" onclick="abrirModal('modal-diagnostico')"><span>🩺</span> Diagnóstico</button>
+                        <button class="btn-accion" onclick="abrirModal('modal-peso')"><span>⚖️</span> Pesaje</button>
+                        <button class="btn-accion" onclick="abrirModal('modal-sanidad')"><span>💉</span> Sanidad</button>
+                        <button class="btn-accion" onclick="abrirModal('modal-inseminacion')"><span>🧬</span> Inseminar</button>
+                        <button class="btn-accion" onclick="abrirModal('modal-nut')"><span>🌾</span> Nutrición</button>
+                        <button class="btn-accion" style="color: var(--peligro); border-color: var(--peligro);" onclick="borrarCaravana()"><span>🗑️</span> Resetear/Borrar</button>
+                        <button class="btn-accion" onclick="verHistorial()" style="grid-column: 1/-1; background:var(--secundario); color:white; border-color:var(--secundario);"><span>📋</span> Ver Historial</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LISTA BUSCAR -->
+            <div id="vista-registro" class="oculto">
+                <div class="tarjeta">
+                    <div class="tarjeta-titulo">📋 Base de Datos</div>
+                    <div class="buscador-contenedor"><input type="text" id="buscador-lista" class="buscador-input" placeholder="Filtrar..." onkeyup="filtrarLista(this.value)"></div>
+                    <ul class="lista-animales" id="ul-registro"></ul>
+                </div>
+            </div>
+
+            <!-- INFORMES -->
+            <div id="vista-informe" class="oculto">
+                <div class="tarjeta">
+                    <button class="btn-descargar no-print" onclick="ejecutarDescargaPDF()">🖨️ Descargar Informe PDF</button>
+
+                    <div class="encabezado-impresion">
+                        <div class="logo-upload no-print-border" onclick="document.getElementById('input-logo').click()">
+                            <img id="img-logo" src="" alt="Logo" style="display:none; max-width:80px; max-height:80px; object-fit:contain;">
+                            <span id="texto-subir-logo">📷 Subir Logo</span>
+                        </div>
+                        <input type="file" id="input-logo" accept="image/*" style="display:none" onchange="cargarLogo(event)">
+                        <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+                            <input type="text" id="nombre-estancia" class="input-estancia" placeholder="Nombre de la Estancia">
+                            <button class="btn-mini no-print" style="width:fit-content; background:var(--secundario); color:white; border:none;" onclick="guardarDisenoInforme()">☁️ Guardar diseño para todos</button>
+                        </div>
+                    </div>
+
+                    <div class="tarjeta-titulo no-print">📄 Reportes Analíticos</div>
+                    
+                    <div class="filtros-grid no-print">
+                        <select class="filtro-sel" id="f-inf-lote" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Lotes</option><option value="Hacienda General">Hacienda General</option><option value="Lecheras">Lecheras</option><option value="Preñadas">Preñadas</option><option value="Inseminadas">Inseminadas</option></select>
+                        <select class="filtro-sel" id="f-inf-cat" onchange="actualizarInformeAvanzado()"><option value="ALL">Todas las Categorías</option><option value="V:">Vacas / Vaquillas (V)</option><option value="VV:">Vacas Viejas (VV)</option><option value="T">Terneros/as (TH/TM)</option><option value="D">Desmamantes (DH/DM)</option><option value="Toros">Toros</option></select>
+                        <select class="filtro-sel" id="f-inf-dx" onchange="actualizarInformeAvanzado()"><option value="ALL">Cualquier Estado</option><option value="Preñada">Solo Preñadas</option><option value="Vacía">Solo Vacías</option></select>
+                        <input type="text" id="f-inf-rp" class="filtro-sel" style="border-color:var(--secundario);" placeholder="🔍 Ingrese Nº RP para Dossier Individual..." onkeyup="actualizarInformeAvanzado()">
+                    </div>
+                    <div class="grid-kpis">
+                        <div class="kpi-caja" style="background:var(--fondo-cuerpo); border-color:var(--borde);"><div class="kpi-valor" id="inf-total" style="color:var(--texto);">0</div><div class="kpi-label">Total en Filtro</div></div>
+                        <div class="kpi-caja" style="background:var(--fondo-cuerpo); border-color:var(--borde);"><div class="kpi-valor" id="inf-prenadas" style="color:var(--exito);">0</div><div class="kpi-label">Preñadas en Filtro</div></div>
+                    </div>
+                    <div class="tabla-responsive">
+                        <!-- TABLAS MASIVA E INDIVIDUAL -->
+                        <table class="tabla-informe" id="tabla-masiva"><thead><tr><th>RP</th><th>Categoría</th><th>Lote</th><th>Últ. Peso</th><th>Dx Actual</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
+                        <table class="tabla-informe oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Procedimiento</th><th>Valor Principal</th><th>Observaciones Adicionales</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AJUSTES -->
+            <div id="vista-config" class="oculto">
+                <div class="tarjeta">
+                    <div class="tarjeta-titulo">🎨 Apariencia de la App</div>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-weight: bold; color: var(--texto);">Tema Claro / Oscuro</span>
+                        <button class="btn-mini" onclick="toggleTema()">Cambiar Tema</button>
+                    </div>
+                </div>
+                <div class="tarjeta">
+                    <div class="tarjeta-titulo">🔌 Lector Inalámbrico</div>
+                    <p style="font-size: 13px; color: var(--muted); margin-bottom: 15px;">Vincula un Lector de Caravana Bluetooth para cargar los tags automáticamente.</p>
+                    <button class="btn-guardar" style="background: #0284c7; margin-top: 0;" onclick="window.AndroidTaurus.conectarBLE()">Vincular Lector</button>
+                </div>
+                <div class="tarjeta">
+                    <div class="tarjeta-titulo">📡 Estado del Sistema</div>
+                    <div class="form-grupo"><label>Pendientes de envío:</label><input type="text" id="lbl-pendientes" class="form-control" readonly style="font-weight:bold; color:var(--alerta);" value="0 registros pendientes"></div>
+                    <button class="btn-guardar" onclick="sincronizarPendientesManual()">Forzar Sincronización</button>
+                </div>
+                <div class="tarjeta">
+                    <div class="tarjeta-titulo">👤 Mi Perfil</div>
+                    <div class="form-grupo"><label>Sesión iniciada como:</label><input type="text" id="usuario-activo-lbl" class="form-control" readonly style="font-weight:bold; color:var(--exito);"></div>
+                    <div class="form-grupo" style="margin-top: 15px;"><label>Cambiar mi Contraseña</label><input type="password" id="nueva-clave" class="form-control" placeholder="Escribe tu nueva clave"></div>
+                    <button class="btn-guardar" onclick="cambiarMiContrasena()">Actualizar mi Contraseña</button>
+                </div>
+                <div class="tarjeta" id="panel-crear-peones">
+                    <div class="tarjeta-titulo">👷 Crear Operador</div>
+                    <p style="font-size: 13px; color: var(--muted); margin-bottom:15px;">Registrarán datos bajo tu hacienda.</p>
+                    <div class="form-grupo"><label>Usuario del Operador</label><input type="text" id="peon-usu" class="form-control" placeholder="Ej: juan"></div>
+                    <div class="form-grupo"><label>Contraseña</label><input type="password" id="peon-pass" class="form-control" placeholder="Clave"></div>
+                    <button class="btn-guardar" style="background:#10b981;" onclick="crearPeon()">Crear Operador</button>
+                </div>
+                <div class="tarjeta">
+                    <div class="tarjeta-titulo">📊 Gráficos (Máx 3)</div>
+                    <div id="contenedor-checkbox-graficos">
+                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="1" onchange="verificarLimiteGraficos(this)"> 1. Tasa de Preñez</label>
+                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="2" onchange="verificarLimiteGraficos(this)"> 2. Composición</label>
+                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="3" onchange="verificarLimiteGraficos(this)"> 3. Lotes</label>
+                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="4" onchange="verificarLimiteGraficos(this)"> 4. Condición Corporal</label>
+                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="5" onchange="verificarLimiteGraficos(this)"> 5. Causas Vacías</label>
+                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="6" onchange="verificarLimiteGraficos(this)"> 6. Cobertura Sanitaria</label>
+                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="7" onchange="verificarLimiteGraficos(this)"> 7. Preñez por Lote</label>
+                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="8" onchange="verificarLimiteGraficos(this)"> 8. Eficacia por Toro</label>
+                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="9" onchange="verificarLimiteGraficos(this)"> 9. Promedios</label>
+                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="10" onchange="verificarLimiteGraficos(this)"> 10. Volumen</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="nav-inferior">
+            <div class="nav-item activo" onclick="cambiarVista('vista-dashboard', this)"><span class="nav-icon">📊</span>Panel</div>
+            <div class="nav-item" onclick="cambiarVista('vista-manga', this)"><span class="nav-icon">🐄</span>Ficha</div>
+            <div class="nav-item" onclick="cambiarVista('vista-registro', this); cargarListaRegistro();"><span class="nav-icon">📋</span>Buscar</div>
+            <div class="nav-item" onclick="cambiarVista('vista-informe', this); actualizarInformeAvanzado();"><span class="nav-icon">📄</span>Informes</div>
+            <div class="nav-item" onclick="cambiarVista('vista-config', this)"><span class="nav-icon">⚙️</span>Ajustes</div>
+        </nav>
+    </div>
+
+    <!-- MODALES (Se mantienen igual) -->
+    <div id="modal-comentario" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-comentario')">&times;</span><h3>Anotación General</h3><div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-comentario', 'Comentario')">Guardar Nota</button></div></div>
+    <div id="modal-perfil" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-perfil')">&times;</span><h3>Editar Perfil Base</h3><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"><div class="form-grupo"><label>Raza</label><input type="text" class="form-control" id="f-raza"></div><div class="form-grupo"><label>Edad</label><input type="text" class="form-control" id="f-edad"></div><div class="form-grupo"><label>Padre</label><input type="text" class="form-control" id="f-padre"></div><div class="form-grupo"><label>Madre</label><input type="text" class="form-control" id="f-madre"></div></div><button class="btn-guardar" onclick="guardarPerfilCompleto()">Guardar</button></div></div>
+    <div id="modal-clasificacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-clasificacion')">&times;</span><h3>Clasificación</h3><div class="form-grupo"><label>Categoría</label><select class="form-control" id="input-cat-rapida"><option value="TH: Ternera Hembra">TH: Ternera Hembra</option><option value="TM: Ternero Macho">TM: Ternero Macho</option><option value="DH: Desmamante Hembra">DH: Desmamante Hembra</option><option value="DM: Desmamante Macho">DM: Desmamante Macho</option><option value="V: Vaca/Vaquilla">V: Vaca/Vaquilla</option><option value="VV: Vaca Vieja">VV: Vaca Vieja</option><option value="Toros">Toros</option><option value="Novillos">Novillos</option><option value="Bueyes y Señuelos">Bueyes y Señuelos</option></select></div><div class="form-grupo"><label>Lote / Grupo</label><input type="text" list="lista-lotes" class="form-control" id="input-lote-rapido"><datalist id="lista-lotes"><option value="Hacienda General"></option><option value="Lecheras"></option><option value="Preñadas"></option><option value="Inseminadas"></option></datalist></div><div class="form-grupo"><label>Carimbo</label><input type="text" class="form-control" id="input-carimbo-rapido"></div><button class="btn-guardar" onclick="guardarClasificacion()">Guardar</button></div></div>
+    <div id="modal-diagnostico" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-diagnostico')">&times;</span><h3>Diagnóstico (Dx)</h3><div class="form-grupo"><select class="form-control" id="i-dx-sel"><option>Preñada</option><option>Vacía</option><option>Vacía (Sangre)</option></select></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-dx-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-diagnostico', 'Diagnóstico')">Guardar</button></div></div>
+    <div id="modal-peso" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-peso')">&times;</span><h3>Pesaje</h3><div class="form-grupo"><input type="number" class="form-control" id="i-peso-val" placeholder="Peso Kg"></div><div class="form-grupo"><select class="form-control" id="i-peso-cond"><option>Óptima</option><option>Bajo Peso</option><option>Sobrepeso</option></select></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-peso-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-peso', 'Peso')">Guardar</button></div></div>
+    <div id="modal-sanidad" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-sanidad')">&times;</span><h3>Sanidad</h3><div class="form-grupo"><select class="form-control" id="i-sani-sel"><option>Antiparasitario</option><option>Vacuna Aftosa</option><option>Tratamiento</option></select></div><div class="form-grupo"><input type="text" class="form-control" id="i-sani-lote" placeholder="Marca/Lote"></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-sanidad', 'Sanidad')">Guardar</button></div></div>
+    <div id="modal-inseminacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-inseminacion')">&times;</span><h3>Inseminación</h3><div class="form-grupo"><input type="text" class="form-control" id="i-ins-quien" placeholder="Inseminador"></div><div class="form-grupo"><input type="text" class="form-control" id="i-ins-toro" placeholder="Toro/Pajuela"></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-ins-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-inseminacion', 'Inseminación')">Guardar</button></div></div>
+    
+    <div id="modal-nut" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-nut')">&times;</span><h3>Suplemento Nutricional</h3><div class="form-grupo"><label>Alimento Suministrado</label><input type="text" class="form-control" id="i-nut-prod" list="lista-alimentos"><datalist id="lista-alimentos"><option value="FOSFO Plus! 90f (Sal Mineral)"></option><option value="FOSFO Plus! Proteica Ternero"></option><option value="Forraje / Pastura"></option></datalist></div><div class="form-grupo"><label>Dosificación</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 0.50gr/kg/día..."></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-nut', 'Nutrición')">Guardar</button></div></div>
+
+    <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial</h3><div id="contenido-historial"></div></div></div>
+
+    <!-- JAVASCRIPT -->
+    <script>
+        const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbw_sTtXQ29It079gsN88RRKEUclXDygE_AMiDrJCTad_yOBKg2fnWoDzrhn5_NoVRMh/exec";
+        
+        let baseDeDatosCache = []; 
+        let caravanaActiva = null;
+        let usuarioActivo = "";
+        let propMaestro = "";
+        let rolUsuario = "";
+        let rpPrint = "";
+        let dispositivoBLE = null;
+
+        // REGISTRO DEL SERVICE WORKER (Para GitHub Pages PWA)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then(reg => {
+                    console.log('Taurus Control listo para instalar (PWA).', reg);
+                });
+            });
+        }
+
+        // LECTOR NFC PARA CARAVANAS (Web / Fallback)
+        async function leerNFC() {
+            if ('NDEFReader' in window) {
+                try {
+                    const ndef = new NDEFReader();
+                    await ndef.scan();
+                    alert("✅ Lector NFC Activo. Acerca el celular a la caravana RFID/NFC...");
+                    
+                    ndef.onreading = event => {
+                        const decoder = new TextDecoder();
+                        for (const record of event.message.records) {
+                            try {
+                                const rp = decoder.decode(record.data).trim();
+                                if(rp) {
+                                    document.getElementById('buscador-caravana').value = rp;
+                                    buscarCaravanaBtn();
+                                }
+                            } catch(e) {
+                                console.log("Error decodificando registro NFC:", e);
+                            }
+                        }
+                    };
+                    ndef.onreadingerror = () => {
+                        alert("⚠️ Error de lectura NFC. Intenta acercar la caravana nuevamente.");
+                    };
+                } catch (error) {
+                    console.error("Error NFC:", error);
+                    alert("❌ Error al iniciar el lector NFC. Asegúrate de tener permisos y el NFC activado en tu celular.");
+                }
+            } else {
+                alert("Tu dispositivo o navegador no soporta lectura NFC directa. Usa Google Chrome en un celular Android con NFC.");
+            }
+        }
+
+        // FILTRO GLOBAL (Para ocultar caravanas borradas)
+        function obtenerRegistrosActivos() {
+            let validos = [];
+            const unicas = [...new Set(baseDeDatosCache.map(d => d.caravana).filter(c => c !== "---" && c !== null))];
+            
+            unicas.forEach(car => {
+                let regs = baseDeDatosCache.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(a.fecha) - new Date(b.fecha)); // Orden cronológico
+                let lastResetIdx = -1;
+                for(let i=regs.length-1; i>=0; i--){
+                    if(regs[i].accion === 'Borrar_Caravana') { lastResetIdx = i; break; }
+                }
+                if(lastResetIdx !== -1) {
+                    regs = regs.slice(lastResetIdx + 1);
+                }
+                validos = validos.concat(regs);
+            });
+            const globalEvents = baseDeDatosCache.filter(d => d.caravana === "---" || !d.caravana);
+            return validos.concat(globalEvents);
+        }
+
+        // MODO CLARO / OSCURO
+        if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
+        function toggleTema() {
+            document.body.classList.toggle('tema-claro');
+            localStorage.setItem('tc_tema', document.body.classList.contains('tema-claro') ? 'claro' : 'oscuro');
+        }
+
+        // RED
+        window.addEventListener('online', actualizarEstadoRed);
+        window.addEventListener('offline', actualizarEstadoRed);
+
+        function actualizarEstadoRed() {
+            const badge = document.getElementById('estado-red');
+            const banner = document.getElementById('banner-offline');
+            if(navigator.onLine) {
+                badge.classList.remove('offline');
+                badge.innerHTML = '🟢 Conectado';
+                banner.style.display = 'none';
+                sincronizarPendientesAuto();
+            } else {
+                badge.classList.add('offline');
+                badge.innerHTML = '🟠 Sin Internet';
+                banner.style.display = 'block';
+            }
+        }
+
+        // LOGIN
+        async function procesarIngreso() {
+            const usu = document.getElementById('usuario').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const btn = document.getElementById('btn-ingreso');
+            const err = document.getElementById('error-login');
+            
+            if(!usu || !pass) return;
+
+            btn.disabled = true;
+            btn.innerText = "Verificando...";
+            err.style.display = 'none';
+
+            try {
+                if(!navigator.onLine) throw new Error("Offline");
+                
+                const url = `${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(usu)}&password=${encodeURIComponent(pass)}&t=${Date.now()}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("Error de conexión");
+                
+                const res = await response.json();
+                if(res.error) throw new Error(res.mensaje);
+                
+                if(res.vencimiento && new Date() > new Date(res.vencimiento)) {
+                    throw new Error("Su licencia ha vencido.");
+                }
+
+                // Guardado clave de la PC
+                localStorage.setItem('tc_hacienda', JSON.stringify({ nombre: res.hacienda, logo: res.logo }));
+                localStorage.setItem('taurus_cred', JSON.stringify({usu: usu, pass: pass, maestro: res.maestro, rol: res.rol, vencimiento: res.vencimiento}));
+                
+                let dataLimpia = Array.isArray(res.data) ? res.data : [];
+                localStorage.setItem('taurus_db', JSON.stringify(dataLimpia));
+                
+                iniciarSesionUI(dataLimpia, usu, res.maestro, res.rol);
+            } catch(e) {
+                console.warn("Fallo de red, revisando memoria local...", e);
+                const credStr = localStorage.getItem('taurus_cred');
+                if(credStr) {
+                    const cred = JSON.parse(credStr);
+                    if(cred.usu.toLowerCase() === usu.toLowerCase() && cred.pass === pass) {
+                        if(cred.vencimiento && new Date() > new Date(cred.vencimiento)) {
+                            err.innerText = "Licencia local vencida."; 
+                            err.style.display = 'block';
+                        } else {
+                            const dbLocal = JSON.parse(localStorage.getItem('taurus_db')) || [];
+                            iniciarSesionUI(dbLocal, cred.usu, cred.maestro, cred.rol);
+                        }
+                    } else {
+                        err.innerText = "Credenciales locales incorrectas."; err.style.display = 'block';
+                    }
+                } else {
+                    err.innerText = e.message === "Offline" || e.message.includes("token") ? "Sin internet y sin sesión guardada." : e.message;
+                    err.style.display = 'block';
+                }
+            } finally {
+                btn.disabled = false; 
+                btn.innerText = "Iniciar Sesión";
+            }
+        }
+
+        function iniciarSesionUI(datos, usu, maestro, rol) {
+            let dbValida = Array.isArray(datos) ? datos.filter(d => d && d.fecha) : [];
+            baseDeDatosCache = dbValida.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); 
+            
+            usuarioActivo = usu; propMaestro = maestro; rolUsuario = rol;
+            document.getElementById('usuario-activo-lbl').value = usuarioActivo.toUpperCase() + ` (${rolUsuario})`;
+            if(rolUsuario !== 'Dueño') document.getElementById('panel-crear-peones').style.display = 'none';
+            
+            const prefs = JSON.parse(localStorage.getItem('dash_graphs')) || ['1', '2'];
+            document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
+            
+            cargarDisenoDesdeDB();
+            actualizarEstadoRed();
+            procesarDatosDashboard();
+            actualizarContadorPendientes();
+            
+            document.getElementById('pantalla-login').classList.add('oculto');
+            document.getElementById('pantalla-app').classList.remove('oculto');
+            sincronizarPendientesAuto();
+        }
+
+        // MOTOR DE SINCRONIZACIÓN DE LA VERSIÓN DE PC
+        function fusionarDatos(nuevos) {
+            let mapa = new Map();
+            if(Array.isArray(baseDeDatosCache)) baseDeDatosCache.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
+            if(Array.isArray(nuevos)) nuevos.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
+            baseDeDatosCache = Array.from(mapa.values()).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            localStorage.setItem('taurus_db', JSON.stringify(baseDeDatosCache));
+        }
+
+        function sincronizarFondo(esManual = false) {
+            if(!usuarioActivo || !navigator.onLine) return;
+            const credStr = localStorage.getItem('taurus_cred');
+            if(!credStr) return;
+            const cred = JSON.parse(credStr);
+            if(esManual) document.getElementById('estado-red').innerText = '🔄 Actualizando...';
+
+            fetch(`${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(cred.usu)}&password=${encodeURIComponent(cred.pass)}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' })
+            .then(r => r.json()).then(res => {
+                if(!res.error) {
+                    fusionarDatos(Array.isArray(res.data) ? res.data : []);
+                    localStorage.setItem('tc_hacienda', JSON.stringify({ nombre: res.hacienda, logo: res.logo }));
+                    cargarDisenoDesdeDB();
+                    
+                    if(caravanaActiva && !document.getElementById('vista-manga').classList.contains('oculto')) { buscarCaravanaBtn(); }
+                    procesarDatosDashboard(); 
+                    if(!document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); 
+                    if(!document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
+                    setEstadoRed(true);
+                }
+            }).catch(e => { console.warn("Error de sincronización de fondo", e); });
+        }
+        setInterval(() => sincronizarFondo(false), 30000);
+
+        function setEstadoRed(online) {
+            const badge = document.getElementById('estado-red');
+            const banner = document.getElementById('banner-offline');
+            if(online) {
+                badge.classList.remove('offline');
+                badge.innerHTML = '🟢 Conectado';
+                banner.style.display = 'none';
+            } else {
+                badge.classList.add('offline');
+                badge.innerHTML = '🟠 Sin Internet';
+                banner.style.display = 'block';
+            }
+        }
+
+        // BLUETOOTH API
+        async function conectarHardwareBLE() {
+            const btn = document.getElementById('btn-ble');
+            try {
+                btn.innerText = "Buscando Lector...";
+                dispositivoBLE = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] 
+                });
+                
+                const server = await dispositivoBLE.gatt.connect();
+                const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+                const characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+                
+                characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', (e) => {
+                    let valor = new TextDecoder().decode(e.target.value);
+                    procesarTramaBLE(valor);
+                });
+                
+                btn.innerText = "📡 Lector Conectado";
+                btn.style.background = "var(--exito)";
+                alert("Lector de caravanas vinculado correctamente.");
+            } catch (e) {
+                console.error("Error BLE:", e);
+                btn.innerText = "Vincular Lector";
+                alert("Asegúrate de que el lector esté encendido y tengas el Bluetooth activo.");
+            }
+        }
+
+        function procesarTramaBLE(trama) {
+            const matchTag = trama.match(/TAG:([^|]+)/);
+            if(matchTag) {
+                const rp = matchTag[1].trim();
+                cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+                document.getElementById('buscador-caravana').value = rp;
+                buscarCaravanaBtn();
+                
+                const datosActivos = obtenerRegistrosActivos();
+                const historial = datosActivos.filter(d => String(d.caravana) === String(rp));
+                if(historial.length === 0) {
+                    setTimeout(() => abrirModal('modal-perfil'), 600);
+                }
+            }
+        }
+
+        // GUARDADO Y SINCRONIZACIÓN
+        function ejecutarAccion(tipoAccion, valor, detalles, btnActivo, modalId) {
+            const accionObj = {
+                fecha: new Date().toISOString(),
+                accion: tipoAccion,
+                caravana: caravanaActiva,
+                valor: valor,
+                detalles: detalles + ` | Resp: ${usuarioActivo}`,
+                maestro: propMaestro
+            };
+
+            baseDeDatosCache.unshift(accionObj); 
+            localStorage.setItem('taurus_db', JSON.stringify(baseDeDatosCache));
+
+            if(navigator.onLine) {
+                if(btnActivo) btnActivo.innerText = "Subiendo...";
+                const fd = new URLSearchParams();
+                for(let key in accionObj) fd.append(key, accionObj[key]);
+                fd.append('usuario', usuarioActivo); 
+                
+                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => {
+                    if(modalId) cerrarModal(modalId);
+                    if(btnActivo) btnActivo.innerText = "Guardar";
+                    if(caravanaActiva !== "---") buscarCaravanaBtn(); 
+                    procesarDatosDashboard();
+                }).catch(e => {
+                    encolarOffline(accionObj);
+                    if(modalId) cerrarModal(modalId);
+                    if(btnActivo) btnActivo.innerText = "Guardar";
+                    if(caravanaActiva !== "---") buscarCaravanaBtn(); 
+                    procesarDatosDashboard();
+                });
+            } else {
+                encolarOffline(accionObj);
+                alert("Guardado en el teléfono. Se subirá automáticamente al recuperar el internet.");
+                if(modalId) cerrarModal(modalId);
+                if(btnActivo) btnActivo.innerText = "Guardar";
+                if(caravanaActiva !== "---") buscarCaravanaBtn(); 
+                procesarDatosDashboard();
+            }
+        }
+
+        function encolarOffline(obj) {
+            let pendientes = JSON.parse(localStorage.getItem('taurus_pendientes')) || [];
+            pendientes.push(obj);
+            localStorage.setItem('taurus_pendientes', JSON.stringify(pendientes));
+            actualizarContadorPendientes();
+        }
+
+        function actualizarContadorPendientes() {
+            let p = JSON.parse(localStorage.getItem('taurus_pendientes')) || [];
+            document.getElementById('lbl-pendientes').value = `${p.length} registros pendientes de subir`;
+        }
+
+        function sincronizarPendientesAuto() {
+            let p = JSON.parse(localStorage.getItem('taurus_pendientes')) || [];
+            if(p.length === 0) return;
+            
+            const fd = new URLSearchParams();
+            fd.append('accion', 'sync_offline');
+            fd.append('maestro', propMaestro);
+            fd.append('usuario', usuarioActivo);
+            fd.append('datos', JSON.stringify(p));
+
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => {
+                localStorage.setItem('taurus_pendientes', '[]'); 
+                actualizarContadorPendientes();
+                sincronizarFondo(false);
+            });
+        }
+
+        function sincronizarPendientesManual() {
+            if(!navigator.onLine) { alert("Necesitas internet para forzar la sincronización."); return; }
+            let p = JSON.parse(localStorage.getItem('taurus_pendientes')) || [];
+            if(p.length === 0) { alert("No hay datos pendientes. Todo está al día."); return; }
+            sincronizarPendientesAuto();
+            alert("Sincronización manual completada.");
+        }
+
+        function prepararGuardado(modalId, tipoAccion) {
+            if(!caravanaActiva) return;
+            let v = "-", d = ""; 
+            const inputs = document.getElementById(modalId).querySelectorAll('.form-control, .textarea');
+            if(tipoAccion === 'Comentario') { d = inputs[0].value; }
+            else if(tipoAccion === 'Peso') { v = inputs[0].value + " Kg"; d = `Cond: ${inputs[1].value}. Notas: ${inputs[2].value}`; } 
+            else if(tipoAccion === 'Sanidad') { v = inputs[0].value; d = `Lote: ${inputs[1].value}. Notas: ${inputs[2].value}`; } 
+            else if(tipoAccion === 'Diagnóstico') { v = "Dx: " + inputs[0].value; d = inputs[1].value || "-"; }
+            else if(tipoAccion === 'Inseminación') { v = "Toro: " + inputs[1].value; d = `Ins: ${inputs[0].value}. Notas: ${inputs[2].value}`; } 
+            else if(tipoAccion === 'Nutrición') { v = inputs[0].value; d = `Ración: ${inputs[1].value}. Notas: ${inputs[2].value}`; }
+            
+            ejecutarAccion(tipoAccion, v, d, event.target, modalId);
+            inputs.forEach(i => i.value = '');
+        }
+
+        function guardarPerfilCompleto() {
+            if(!caravanaActiva) return;
+            const r = document.getElementById('f-raza').value || "-"; const e = document.getElementById('f-edad').value || "-";
+            const p = document.getElementById('f-padre').value || "-"; const m = document.getElementById('f-madre').value || "-";
+            const valorStr = `${r}|${e}|${p}|${m}`;
+            const detalleStr = document.getElementById('val-categoria').innerText;
+            ejecutarAccion('Perfil Master', valorStr, detalleStr, event.target, 'modal-perfil');
+        }
+
+        function guardarClasificacion() {
+            if(!caravanaActiva) return;
+            const cat = document.getElementById('input-cat-rapida').value; const car = document.getElementById('input-carimbo-rapido').value || "-"; const lot = document.getElementById('input-lote-rapido').value || "-";
+            ejecutarAccion('Actualización de Datos', `Cat: ${cat} | Carimbo: ${car}`, `Lote: ${lot}`, event.target, 'modal-clasificacion');
+        }
+
+        function borrarCaravana() {
+            if(!caravanaActiva) return;
+            if(confirm(`¿Estás seguro de que deseas ELIMINAR el historial de la caravana ${caravanaActiva}? Esto anulará el registro actual en la app para permitir cargar a un nuevo animal.`)) {
+                ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null, null);
+                alert("Historial eliminado. El número quedó libre.");
+                cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]);
+            }
+        }
+
+        // SEGURIDAD
+        function cambiarMiContrasena() {
+            if(!navigator.onLine) { alert("Necesitas internet para cambiar tu contraseña."); return; }
+            const nueva = document.getElementById('nueva-clave').value.trim();
+            if(!nueva || nueva.length < 4) { alert("Mínimo 4 caracteres."); return; }
+            const btn = event.target; btn.innerText = "Cambiando...";
+            const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usuarioActivo); fd.append('nuevo_pass', nueva);
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => {
+                alert("Contraseña actualizada."); document.getElementById('nueva-clave').value = ''; btn.innerText = "Actualizar mi Contraseña";
+                let cred = JSON.parse(localStorage.getItem('taurus_cred')); cred.pass = nueva; localStorage.setItem('taurus_cred', JSON.stringify(cred));
+            });
+        }
+        function crearPeon() {
+            if(!navigator.onLine) { alert("Necesitas internet para crear usuarios."); return; }
+            const pUsu = document.getElementById('peon-usu').value.trim(); const pPass = document.getElementById('peon-pass').value.trim();
+            if(!pUsu || !pPass) { alert("Faltan datos."); return; }
+            const btn = event.target; btn.innerText = "Creando...";
+            const fd = new URLSearchParams(); fd.append('accion', 'crear_peon'); fd.append('usuario', usuarioActivo); fd.append('peon_usu', pUsu); fd.append('peon_pass', pPass); fd.append('vencimiento', 'Heredado'); 
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { alert("Operador creado exitosamente."); document.getElementById('peon-usu').value = ''; document.getElementById('peon-pass').value = ''; btn.innerText = "Crear Operador"; });
+        }
+
+        // ANÁLISIS E INFORMES
+        function procesarDatosDashboard() {
+            const datosActivos = obtenerRegistrosActivos();
+            
+            const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))];
+            document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
+            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos-dinamicos').innerHTML = "<p style='text-align:center;color:gray;padding:20px;'>Aún no hay datos registrados.</p>"; return; }
+
+            let g1={p:0,v:0}, g2={v:0,t:0,o:0}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0};
+            let alertasHTML = "";
+
+            datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; });
+
+            unicas.forEach(car => {
+                const regs = datosActivos.filter(d => d.caravana === car).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
+                let cat = "", lote = "General";
+                const uP = regs.find(d => d.accion === 'Perfil Master'); const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                if(uC) { cat = uC.valor.split('|')[0].replace('Cat:','').trim(); lote = uC.detalles.split('|')[0].replace('Lote:','').trim(); } else if(uP) { cat = uP.detalles.split('|')[0].trim(); }
+                cat = cat.toLowerCase();
+                const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
+
+                if(uDx) {
+                    if(uDx.valor.includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = uIns.valor.replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } }
+                    if(uDx.valor.includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong>${car}</strong> Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(uDx.valor.includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = uIns.valor.replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } }
+                }
+                if(cat.includes('vaca') || cat.includes('vaquilla')) g2.v++; else if(cat.includes('terne') || cat.includes('desmamante')) g2.t++; else g2.o++;
+                g3[lote] = (g3[lote] || 0) + 1;
+                if(uPeso) {
+                    if(uPeso.detalles.includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong>${car}</strong> Bajo Peso.</div></div>`; } else if(uPeso.detalles.includes('Sobre')) g4.sp++; else g4.opt++;
+                    let pVal = parseFloat(uPeso.valor); if(!isNaN(pVal)) { if(cat.includes('vaca') || cat.includes('vaquilla')) { g9.vw += pVal; g9.vc++; } if(cat.includes('terne') || cat.includes('desmamante')) { g9.tw += pVal; g9.tc++; } }
+                }
+                if(uSan) g6.con++; else g6.sin++;
+            });
+
+            const contAlertas = document.getElementById('contenedor-alertas');
+            if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
+
+            const prefs = JSON.parse(localStorage.getItem('dash_graphs')) || ['1', '2']; let htmlGraficos = "";
+            const makeBar = (lbl, val, total, col) => { let p = total>0 ? Math.round((val/total)*100) : 0; return `<div class="barra-categoria"><div class="barra-header"><span>${lbl} (${val})</span> <span>${p}%</span></div><div class="barra-fondo"><div class="barra-relleno" style="background:${col}; width:${p}%;"></div></div></div>`; };
+
+            prefs.forEach(g => {
+                let html = `<div class="tarjeta">`;
+                if(g === '1') { let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; html += `<div class="tarjeta-titulo">📊 Tasa de Preñez</div><div class="grafico-flex"><div class="torta-container"><div class="torta" style="background: conic-gradient(var(--exito) 0% ${pp}%, var(--peligro) ${pp}% 100%);"></div><div class="torta-centro">${pp}%</div></div><div class="leyenda-torta"><div><span class="punto" style="background: var(--exito);"></span> Preñadas (${g1.p})</div><div><span class="punto" style="background: var(--peligro);"></span> Vacías (${g1.v})</div></div></div>`; }
+                else if(g === '2') { let t = g2.v + g2.t + g2.o || 1; html += `<div class="tarjeta-titulo">📈 Composición</div>${makeBar('Vacas/Vaquillas', g2.v, t, 'var(--secundario)')}${makeBar('Terneros/as', g2.t, t, '#f59e0b')}${makeBar('Toros/Otros', g2.o, t, '#8b5cf6')}`; }
+                else if(g === '3') { html += `<div class="tarjeta-titulo">📍 Distribución</div>`; let lKeys = Object.keys(g3).sort((a,b)=>g3[b]-g3[a]).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--secundario)':i===1?'#f59e0b':'#10b981'; html += makeBar(k, g3[k], unicas.length, col); }); }
+                else if(g === '4') { let t = g4.opt + g4.bp + g4.sp || 1; html += `<div class="tarjeta-titulo">⚖️ C. Corporal</div>${makeBar('Óptima', g4.opt, t, '#10b981')}${makeBar('Bajo Peso', g4.bp, t, '#ef4444')}${makeBar('Sobrepeso', g4.sp, t, '#f59e0b')}`; }
+                else if(g === '5') { let t = g5.norm + g5.san || 1; html += `<div class="tarjeta-titulo">🩸 Causas Vacías</div>${makeBar('Normal', g5.norm, t, '#f59e0b')}${makeBar('Sangre/Problema', g5.san, t, '#ef4444')}`; }
+                else if(g === '6') { let t = unicas.length; html += `<div class="tarjeta-titulo">💉 Sanidad</div>${makeBar('Con Registro', g6.con, t, '#10b981')}${makeBar('Sin Registros', g6.sin, t, '#64748b')}`; }
+                else if(g === '7') { html += `<div class="tarjeta-titulo">🏆 Preñez x Lote</div>`; let lKeys = Object.keys(g7).sort((a,b)=>g7[b].p-g7[a].p).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'#10b981':i===1?'var(--secundario)':'#f59e0b'; html += makeBar(k, g7[k].p, g7[k].t, col); }); }
+                else if(g === '8') { html += `<div class="tarjeta-titulo">🧬 Eficacia Toro</div>`; let lKeys = Object.keys(g8).sort((a,b)=>g8[b].p-g8[a].p).slice(0,3); if(lKeys.length===0) html += `<p style="color:var(--muted); font-size:14px;">No hay cruces.</p>`; lKeys.forEach((k, i) => { html += makeBar(k, g8[k].p, g8[k].t, '#be185d'); }); }
+                else if(g === '9') { let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; html += `<div class="tarjeta-titulo">⚖️ Promedio Peso</div><div class="grid-kpis" style="margin-bottom:0;"><div class="kpi-caja"><div class="kpi-valor">${pv} Kg</div><div class="kpi-label" style="color:var(--texto);">Vacas</div></div><div class="kpi-caja"><div class="kpi-valor">${pt} Kg</div><div class="kpi-label" style="color:var(--texto);">Terneros</div></div></div>`; }
+                else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins || 1; html += `<div class="tarjeta-titulo">⚡ Volumen</div>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Sanidad', g10.san, t, '#c2410c')}`; }
+                html += `</div>`; htmlGraficos += html;
+            });
+            document.getElementById('contenedor-graficos-dinamicos').innerHTML = htmlGraficos;
+        }
+
+        function verificarLimiteGraficos(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { alert('Máximo 3 gráficos.'); checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); localStorage.setItem('dash_graphs', JSON.stringify(prefs)); if(baseDeDatosCache.length > 0) procesarDatosDashboard(); } }
+        function cambiarVista(idVista, tabElemento) { ['vista-dashboard', 'vista-manga', 'vista-registro', 'vista-informe', 'vista-config'].forEach(id => document.getElementById(id).classList.add('oculto')); document.getElementById(idVista).classList.remove('oculto'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('activo')); tabElemento.classList.add('activo'); }
+        function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
+        
+        function buscarCaravanaBtn() {
+            const input = document.getElementById('buscador-caravana').value.trim(); if(!input) return; caravanaActiva = input; document.getElementById('ficha-animal').classList.remove('oculto'); document.getElementById('val-caravana').innerText = input;
+            const datosActivos = obtenerRegistrosActivos();
+            const regs = datosActivos.filter(d => String(d.caravana) === String(input)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
+            
+            let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", comentario="Sin comentarios.", inseminacion="-", nutricion="-", sanidad="-";
+            document.getElementById('panel-ultima-nota').classList.add('oculto');
+            if(regs.length > 0) {
+                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { const p = uP.valor.split('|'); raza = p[0]||"-"; edad = p[1]||"-"; padre = p[2]||"-"; madre = p[3]||"-"; cat = uP.detalles.split('|')[0].trim(); }
+                const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { cat = uC.valor.split('|')[0].replace('Cat:','').trim(); carimbo = uC.valor.split('|')[1].replace('Carimbo:','').trim(); lote = uC.detalles.split('|')[0].replace('Lote:','').trim(); }
+                const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor; const uCom = regs.find(d => d.accion === 'Comentario'); if(uCom) comentario = uCom.detalles.split('|')[0].trim();
+                const uIns = regs.find(d => d.accion === 'Inseminación'); if(uIns) inseminacion = uIns.valor + " | " + uIns.detalles;
+                const uNut = regs.find(d => d.accion === 'Nutrición'); if(uNut) nutricion = uNut.valor + " | " + uNut.detalles;
+                const uSan = regs.find(d => d.accion === 'Sanidad'); if(uSan) sanidad = uSan.valor + " | " + uSan.detalles;
+                
+                const ultimaReal = regs.find(d => d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master' && d.accion !== 'Comentario');
+                if(ultimaReal) { document.getElementById('panel-ultima-nota').classList.remove('oculto'); document.getElementById('nota-accion-titulo').innerText = `${new Date(ultimaReal.fecha).toLocaleDateString()} - ${ultimaReal.accion} (${ultimaReal.valor})`; document.getElementById('nota-accion-texto').innerText = ultimaReal.detalles.split('|')[0]; }
+            }
+            document.getElementById('val-categoria').innerText = cat; document.getElementById('val-raza').innerText = raza; document.getElementById('val-peso').innerText = peso; document.getElementById('val-dx').innerText = dx; document.getElementById('val-lote').innerText = lote; document.getElementById('val-carimbo').innerText = carimbo; document.getElementById('val-edad').innerText = edad; document.getElementById('val-genealogia').innerText = padre + " / " + madre; document.getElementById('val-comentario').innerText = comentario;
+            document.getElementById('val-inseminacion').innerText = inseminacion; document.getElementById('val-nutricion').innerText = nutricion; document.getElementById('val-sanidad').innerText = sanidad;
+            document.getElementById('f-raza').value = raza !== "-" ? raza : ""; document.getElementById('f-edad').value = edad !== "-" ? edad : ""; document.getElementById('f-padre').value = padre !== "-" ? padre : ""; document.getElementById('f-madre').value = madre !== "-" ? madre : ""; document.getElementById('input-carimbo-rapido').value = carimbo !== "-" ? carimbo : ""; document.getElementById('input-lote-rapido').value = lote !== "-" ? lote : ""; document.getElementById('f-comentario-txt').value = comentario !== "Sin comentarios." ? comentario : "";
+            let catSelect = document.getElementById('input-cat-rapida'); for(let i=0; i<catSelect.options.length; i++) { if(catSelect.options[i].value === cat) catSelect.selectedIndex = i; }
+        }
+
+        function verHistorial() { 
+            if(!caravanaActiva) return; 
+            abrirModal('modal-historial'); 
+            const datosActivos = obtenerRegistrosActivos();
+            const d = datosActivos.filter(f => String(f.caravana) === String(caravanaActiva)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
+            let h = "<ul style='list-style:none; padding:0; margin:0;'>"; 
+            d.forEach(r => h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px;"><span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span><br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span></li>`); 
+            document.getElementById('contenido-historial').innerHTML = h + "</ul>"; 
+        }
+
+        function cargarListaRegistro() {
+            const datosActivos = obtenerRegistrosActivos();
+            const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))]; 
+            const ul = document.getElementById('ul-registro'); ul.innerHTML = "";
+            unicas.forEach(car => { const regs = datosActivos.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); let info = "Sin datos", dxText = "", loteText = ""; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { info = c.valor.split('|')[0].replace('Cat:','').trim(); loteText = " | " + c.detalles.split('|')[0].replace('Lote:','').trim(); } else if(p) { info = p.detalles.split('|')[0].trim(); } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = ` - ${d.valor}`; ul.innerHTML += `<li onclick="navegarDesdeLista('${car}')"><div style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:18px; font-weight:bold; color:var(--texto);">${car}</span><span style="color:var(--muted); font-size:12px;">${info}${loteText}${dxText}</span></div><span style="color:var(--texto); font-size:20px;">›</span></li>`; });
+        }
+
+        function filtrarLista(t) { const lis = document.getElementById('ul-registro').getElementsByTagName('li'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "" : "none"; }
+        function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); buscarCaravanaBtn(); }
+        
+        function actualizarInformeAvanzado() {
+            const fLote = document.getElementById('f-inf-lote').value; const fCat = document.getElementById('f-inf-cat').value; const fDx = document.getElementById('f-inf-dx').value; 
+            const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
+            const datosActivos = obtenerRegistrosActivos();
+            const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))]; 
+            const tbodyMasivo = document.getElementById('tb-informe-masivo'); const tbodyIndiv = document.getElementById('tb-informe-individual');
+            
+            if(fRp !== "") {
+                rpPrint = fRp; document.querySelector('.btn-descargar').innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`;
+                document.getElementById('tabla-masiva').classList.add('oculto'); document.getElementById('tabla-individual').classList.remove('oculto');
+                const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === fRp).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+                let hInd = ""; regs.forEach(r => { hInd+=`<tr><td style="color:#000; border-color:#cbd5e1;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1;"><strong>${r.accion}</strong></td><td style="color:#000; border-color:#cbd5e1;">${r.valor}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;">${r.detalles}</td></tr>`; });
+                tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.length; document.getElementById('inf-prenadas').innerText = "-";
+            } else {
+                rpPrint = ""; document.querySelector('.btn-descargar').innerHTML = `🖨️ Descargar Informe PDF`;
+                document.getElementById('tabla-masiva').classList.remove('oculto'); document.getElementById('tabla-individual').classList.add('oculto');
+                tbodyMasivo.innerHTML = ""; let countTotal = 0, countPrenadas = 0;
+                unicas.forEach(car => {
+                    const regs = datosActivos.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); let cat = "-", peso = "-", dx = "-", lote = "-";
+                    const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = uP.detalles.split('|')[0].trim();
+                    const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { cat = uC.valor.split('|')[0].replace('Cat:','').trim(); lote = uC.detalles.split('|')[0].replace('Lote:','').trim(); }
+                    const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor;
+                    let pasaFiltro = true; if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; if(fCat !== "ALL" && !cat.includes(fCat)) pasaFiltro = false; if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false;
+                    if(pasaFiltro) { countTotal++; if(dx.includes('Preñada')) countPrenadas++; tbodyMasivo.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; word-wrap:break-word;"><strong>${car}</strong></td><td style="color:#000; border-color:#cbd5e1;">${cat}</td><td style="color:#000; border-color:#cbd5e1;">${lote}</td><td style="color:#000; border-color:#cbd5e1;">${peso}</td><td style="color:#000; border-color:#cbd5e1;">${dx}</td></tr>`; }
+                });
+                document.getElementById('inf-total').innerText = countTotal; document.getElementById('inf-prenadas').innerText = countPrenadas;
+            }
+        }
+
+        // MOTOR DE DESCARGA PDF 
+        function ejecutarDescargaPDF() {
+            const btn = document.querySelector('.btn-descargar'); btn.innerText = "⏳ Generando PDF...";
+            
+            const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {};
+            const h_nom = hd.nombre || 'TAURUS CONTROL';
+            const h_log = hd.logo || "";
+            
+            let htmlContent = `
+            <div style="background-color: #ffffff; padding: 20px; width: 700px; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;">
+                <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #000000; padding-bottom: 15px; margin-bottom: 20px;">
+                    <div>
+                        <h2 style="margin:0 0 10px 0; font-size:24px; text-transform:uppercase;">${h_nom}</h2>`;
+            
+            if(rpPrint !== "") {
+                const datosActivos = obtenerRegistrosActivos();
+                const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === String(rpPrint).toLowerCase()).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
+                if(regs.length===0){alert("Sin registros para generar PDF."); btn.innerHTML = `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}`; return;}
+                
+                let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
+                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = uP.valor.split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=uP.detalles.split('|')[0]||"-"; } 
+                const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { cat=uC.valor.split('|')[0].replace('Cat:','').trim(); carimbo=uC.valor.split('|')[1].replace('Carimbo:','').trim(); lote=uC.detalles.split('|')[0].replace('Lote:','').trim(); } 
+                const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
+                const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
+                const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nut = (uNut.valor || "") + " | " + (uNut.detalles || "");
+                const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "") + " | " + (uSan.detalles || "");
+                const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) ins = (uIns.valor || "") + " | " + (uIns.detalles || "");
+
+                htmlContent += `
+                            <p style="margin:0; font-size:14px;">Dossier Clínico Histórico - RP: <strong>${rpPrint.toUpperCase()}</strong></p>
+                            <p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p>
+                        </div>
+                        ${h_log ? `<img src="${h_log}" style="max-height:60px; max-width: 150px;">` : ''}
+                    </div>
+                    
+                    <h3 style="font-size:16px; margin: 0 0 10px 0;">Resumen del Perfil</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 11px; table-layout: fixed; word-wrap: break-word;">
+                        <tr>
+                            <td style="border: 1px solid #000000; padding: 6px;"><strong>Categoría:</strong> ${cat}</td>
+                            <td style="border: 1px solid #000000; padding: 6px;"><strong>Lote:</strong> ${lote}</td>
+                            <td style="border: 1px solid #000000; padding: 6px;"><strong>Carimbo:</strong> ${carimbo}</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #000000; padding: 6px;"><strong>Raza:</strong> ${raza}</td>
+                            <td style="border: 1px solid #000000; padding: 6px;"><strong>Edad:</strong> ${edad}</td>
+                            <td style="border: 1px solid #000000; padding: 6px;"><strong>Último Peso:</strong> ${peso}</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #000000; padding: 6px;"><strong>Dx Actual:</strong> ${dx}</td>
+                            <td style="border: 1px solid #000000; padding: 6px;"><strong>Genealogía:</strong> ${pa} / ${ma}</td>
+                            <td style="border: 1px solid #000000; padding: 6px;"><strong>Régimen:</strong> ${nut}</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #000000; padding: 6px;"><strong>Últ. Sanidad:</strong> ${san}</td>
+                            <td style="border: 1px solid #000000; padding: 6px;" colspan="2"><strong>Últ. Inseminación:</strong> ${ins}</td>
+                        </tr>
+                    </table>
+                    
+                    <h3 style="font-size:16px; margin: 0 0 10px 0;">Trazabilidad Histórica de Sucesos</h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; word-wrap: break-word;">
+                        <thead>
+                            <tr>
+                                <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Fecha</th>
+                                <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 20%;">Procedimiento</th>
+                                <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 25%;">Valor Principal</th>
+                                <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 40%;">Observaciones Adicionales</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                
+                let rows = document.getElementById('tb-informe-individual').querySelectorAll('tr');
+                rows.forEach(tr => {
+                    htmlContent += `<tr>`;
+                    tr.querySelectorAll('td').forEach(td => {
+                        htmlContent += `<td style="border: 1px solid #000000; padding: 6px; overflow: hidden;">${td.innerHTML}</td>`;
+                    });
+                    htmlContent += `</tr>`;
+                });
+                
+                htmlContent += `</tbody></table></div>`;
+            } else {
+                htmlContent += `
+                            <p style="margin:0; font-size:14px;">Reporte Analítico de Inventario General</p>
+                            <p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p>
+                        </div>
+                        ${h_log ? `<img src="${h_log}" style="max-height:60px; max-width: 150px;">` : ''}
+                    </div>
+                    
+                    <table style="width: 50%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
+                        <tr>
+                            <td style="border: 1px solid #000000; padding: 6px;"><strong>Total Cabezas Filtradas:</strong> ${document.getElementById('inf-total').innerText}</td>
+                            <td style="border: 1px solid #000000; padding: 6px;"><strong>Total Preñadas:</strong> ${document.getElementById('inf-prenadas').innerText}</td>
+                        </tr>
+                    </table>
+                    
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; word-wrap: break-word;">
+                        <thead>
+                            <tr>
+                                <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Caravana</th>
+                                <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 25%;">Categoría</th>
+                                <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 25%;">Ubicación / Lote</th>
+                                <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Último Peso</th>
+                                <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 20%;">Dx Actual</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                        
+                let rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr');
+                rows.forEach(tr => {
+                    htmlContent += `<tr>`;
+                    tr.querySelectorAll('td').forEach(td => {
+                        htmlContent += `<td style="border: 1px solid #000000; padding: 6px; overflow: hidden;">${td.innerHTML}</td>`;
+                    });
+                    htmlContent += `</tr>`;
+                });
+                
+                htmlContent += `</tbody></table></div>`;
+            }
+            
+            const opt = { 
+                margin: 10, 
+                filename: rpPrint !== "" ? `Dossier_RP_${rpPrint.toUpperCase()}.pdf` : 'Reporte_Inventario.pdf',
+                image: { type: 'jpeg', quality: 0.98 }, 
+                html2canvas: { scale: 2, useCORS: true }, 
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: 'avoid-all', avoid: 'tr' }
+            };
+            
+            html2pdf().set(opt).from(htmlContent).save().then(()=>{ 
+                btn.innerHTML = rpPrint !== "" ? `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}` : "🖨️ Descargar Informe PDF"; 
+            }).catch(e => {
+                alert("Hubo un error generando el PDF.");
+                btn.innerHTML = "🖨️ Reintentar Descarga";
+            });
+        }
+
+        // CARGA DE LOGO E INFORMES SINCRONIZADA
+        function cargarDisenoDesdeDB() {
+            const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {};
+            document.getElementById('nombre-estancia').value = hd.nombre || '';
+            if (hd.logo && hd.logo !== "sin-logo") {
+                mostrarLogo(hd.logo);
+            }
+        }
+
+        function cargarLogo(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    const maxW = 200, maxH = 200;
+                    if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } 
+                    else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } }
+                    canvas.width = w; canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    const base64 = canvas.toDataURL('image/png'); 
+                    mostrarLogo(base64);
+                }
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function mostrarLogo(base64) {
+            document.getElementById('img-logo').src = base64;
+            document.getElementById('img-logo').style.display = 'block';
+            document.getElementById('texto-subir-logo').style.display = 'none';
+        }
+
+        function guardarDisenoInforme() {
+            const n = document.getElementById('nombre-estancia').value.trim() || "Sin Nombre";
+            const f = document.getElementById('input-logo');
+            
+            let p = (b64) => {
+                const fd = new URLSearchParams();
+                fd.append('accion', 'guardar_diseno');
+                fd.append('maestro', propMaestro);
+                fd.append('nombre_hacienda', n);
+                fd.append('logo_hacienda', b64);
+                
+                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => {
+                    let hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {};
+                    hd.nombre = n; hd.logo = b64;
+                    localStorage.setItem('tc_hacienda', JSON.stringify(hd));
+                    alert("Membrete oficial actualizado en todo el sistema.");
+                });
+            };
+            
+            if(f.files && f.files[0]) {
+                const r = new FileReader();
+                r.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width, h = img.height;
+                        const maxW = 200, maxH = 200;
+                        if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } 
+                        else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } }
+                        canvas.width = w; canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        p(canvas.toDataURL('image/png'));
+                    };
+                    img.src = e.target.result;
+                };
+                r.readAsDataURL(f.files[0]);
+            } else {
+                const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {};
+                p(hd.logo || "");
+            }
+        }
+
+        // Función inyectada desde Android Studio para recibir el tag NFC nativo
+        function recibirTagNFC(tagHex) {
+            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+            document.getElementById('buscador-caravana').value = tagHex;
+            buscarCaravanaBtn();
+        }
+    </script>
+</body>
+</html>
