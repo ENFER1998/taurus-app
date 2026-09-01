@@ -304,7 +304,7 @@
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">🔌 Lector Inalámbrico</div>
                     <p style="font-size: 13px; color: var(--muted); margin-bottom: 15px;">Vincula un Lector de Caravana Bluetooth para cargar los tags automáticamente.</p>
-                    <button class="btn-guardar" style="background: #0284c7; margin-top: 0;" onclick="conectarHardwareBLE()">Vincular Lector</button>
+                    <button class="btn-guardar" style="background: #0284c7; margin-top: 0;" onclick="window.AndroidTaurus.conectarBLE()">Vincular Lector</button>
                 </div>
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">📡 Estado del Sistema</div>
@@ -385,7 +385,7 @@
             });
         }
 
-        // LECTOR NFC PARA CARAVANAS
+        // LECTOR NFC PARA CARAVANAS (Web / Fallback)
         async function leerNFC() {
             if ('NDEFReader' in window) {
                 try {
@@ -1129,6 +1129,13 @@
                 const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {};
                 p(hd.logo || "");
             }
+        }
+
+        // Función inyectada desde Android Studio para recibir el tag NFC nativo
+        function recibirTagNFC(tagHex) {
+            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+            document.getElementById('buscador-caravana').value = tagHex;
+            buscarCaravanaBtn();
         }
     </script>
 </body>
