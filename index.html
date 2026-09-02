@@ -208,7 +208,7 @@
                 <div class="buscador-contenedor">
                     <input type="text" id="buscador-caravana" class="buscador-input" placeholder="Nº Caravana">
                     <button class="buscador-btn" onclick="buscarCaravanaBtn()">Buscar</button>
-                    <!-- BOTÓN NFC AÑADIDO AQUÍ -->
+                    <!-- BOTÓN NFC -->
                     <button class="buscador-btn" style="background: #8b5cf6;" onclick="leerNFC()">📲 NFC</button>
                 </div>
                 <div id="ficha-animal" class="tarjeta oculto">
@@ -304,8 +304,8 @@
                 </div>
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">🔌 Lector Inalámbrico</div>
-                    <p style="font-size: 13px; color: var(--muted); margin-bottom: 15px;">Vincula un Lector de Caravana Bluetooth para cargar los tags automáticamente.</p>
-                    <button class="btn-guardar" style="background: #0284c7; margin-top: 0;" onclick="if(window.AndroidTaurus){window.AndroidTaurus.conectarBLE();}else{conectarHardwareBLE();}">Vincular Lector</button>
+                    <p style="font-size: 13px; color: var(--muted); margin-bottom: 15px;">Vincula un Bastón Bluetooth o Balanza ESP32 automáticamente.</p>
+                    <button class="btn-guardar" style="background: #0284c7; margin-top: 0;" onclick="if(window.AndroidTaurus){window.AndroidTaurus.conectarBLE();}else{conectarHardwareBLE();}">Vincular Hardware</button>
                 </div>
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">📡 Estado del Sistema</div>
@@ -353,7 +353,6 @@
     </div>
 
     <!-- MODALES -->
-    <!-- MODAL DE VINCULACIÓN RFID NATIVO (NO BLOQUEABLE) -->
     <div id="modal-vinculacion" class="modal">
         <div class="modal-body">
             <span class="cerrar" onclick="cerrarModal('modal-vinculacion')">&times;</span>
@@ -389,7 +388,8 @@
         let rolUsuario = "";
         let rpPrint = "";
         let dispositivoBLE = null;
-        let tagHuerfano = ""; // Variable para guardar temporalmente el chip sin asignar
+        let bleCharacteristic = null; // <-- PARCHE GLOBAL ANDROID RAM
+        let tagHuerfano = ""; 
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -399,12 +399,14 @@
             });
         }
 
+        // ==========================================
+        // MOTOR NFC NATIVO (INTACTO)
+        // ==========================================
         async function leerNFC() {
             if ('NDEFReader' in window) {
                 try {
                     const ndef = new NDEFReader();
                     await ndef.scan();
-                    // Alert no funcionará en webview, por eso esta función es de respaldo para Chrome
                     alert("✅ Lector NFC Activo. Acerca el celular a la caravana RFID/NFC...");
                     
                     ndef.onreading = event => {
@@ -601,24 +603,40 @@
             }
         }
 
+        // ==========================================
+        // CONEXIÓN BLUETOOTH (NUEVA VARIABLE GLOBAL)
+        // ==========================================
         async function conectarHardwareBLE() {
             const btn = document.querySelector('.btn-guardar');
             try {
                 btn.innerText = "Buscando Lector...";
                 dispositivoBLE = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
-                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb'] 
+                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb', '6e400001-b5a3-f393-e0a9-e50e24dcca9e'] 
                 });
                 
                 const server = await dispositivoBLE.gatt.connect();
-                const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
-                const characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
                 
-                characteristic.startNotifications();
-                characteristic.addEventListener('characteristicvaluechanged', (e) => {
-                    let valor = new TextDecoder().decode(e.target.value);
-                    procesarTramaBLE(valor);
-                });
+                let service;
+                try {
+                    service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+                    bleCharacteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+                } catch(e) {
+                    try {
+                        service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+                        bleCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
+                    } catch(err) {
+                        console.log("No es un dispositivo serial genérico.");
+                    }
+                }
+
+                if (bleCharacteristic) {
+                    await bleCharacteristic.startNotifications();
+                    bleCharacteristic.addEventListener('characteristicvaluechanged', (event) => {
+                        let valor = new TextDecoder().decode(event.target.value);
+                        procesarTramaBLE(valor);
+                    });
+                }
                 
                 btn.innerText = "📡 Lector Conectado";
                 btn.style.background = "var(--exito)";
@@ -629,26 +647,45 @@
         }
 
         // ==========================================
-        // MOTOR DE VINCULACIÓN INTELIGENTE (SIN POPUPS NATIVOS)
+        // MOTOR DE RUTEO INTELIGENTE (FILTRO BASTÓN VS BALANZA)
         // ==========================================
+        let bufferBLE = "";
+        let timeoutBLE;
         function procesarTramaBLE(trama) {
-            const matchTag = trama.match(/TAG:([^|]+)/);
-            if(matchTag) {
-                recibirTagNFC(matchTag[1].trim()); 
-            }
+            bufferBLE += trama;
+            clearTimeout(timeoutBLE);
+            
+            timeoutBLE = setTimeout(() => {
+                let dataLimpia = bufferBLE.replace(/[^a-zA-Z0-9.-]/g, '');
+                dataLimpia = dataLimpia.replace('TAG', ''); // Filtro extra de seguridad
+                
+                if(!dataLimpia) return;
+                
+                if (dataLimpia.includes('.')) {
+                    // Si tiene punto, es el peso de la balanza
+                    if (!document.getElementById('vista-manga').classList.contains('oculto') && caravanaActiva) {
+                        abrirModal('modal-peso');
+                        document.getElementById('i-peso-val').value = dataLimpia;
+                    } else {
+                        alert("⚖️ Balanza: Se recibió el peso " + dataLimpia + " Kg. Abre la Ficha de un animal primero para guardarlo.");
+                    }
+                } else {
+                    // No tiene punto, es un chip
+                    recibirTagNFC(dataLimpia); 
+                }
+                bufferBLE = "";
+            }, 300);
         }
 
         function recibirTagNFC(tagHex) {
-            // Buscar si este chip interno ya está anclado a un RP
-            const vinculacion = baseDeDatosCache.find(d => d.accion === 'Vinculacion_RFID' && d.valor === tagHex);
+            // === PARCHE STRING GOOGLE SHEETS ===
+            const vinculacion = baseDeDatosCache.find(d => d.accion === 'Vinculacion_RFID' && String(d.valor).trim() === String(tagHex).trim());
             
             if (vinculacion && vinculacion.caravana) {
-                // El animal existe, abrimos la ficha usando su caravana visual
                 cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
                 document.getElementById('buscador-caravana').value = vinculacion.caravana;
                 buscarCaravanaBtn();
             } else {
-                // Es un chip nuevo, abrimos el modal HTML para preguntar qué número de caravana es
                 tagHuerfano = tagHex;
                 document.getElementById('input-rp-vinculacion').value = '';
                 abrirModal('modal-vinculacion');
@@ -658,7 +695,6 @@
         function guardarVinculacionNFC() {
             const rpFinal = document.getElementById('input-rp-vinculacion').value.trim();
             if(!rpFinal) {
-                // Indicador visual de error sin usar "alert"
                 const input = document.getElementById('input-rp-vinculacion');
                 input.style.borderColor = "var(--peligro)";
                 setTimeout(() => input.style.borderColor = "var(--borde)", 2000);
@@ -667,15 +703,12 @@
             
             caravanaActiva = rpFinal;
             
-            // Guardamos el "anclaje" permanentemente
             ejecutarAccion('Vinculacion_RFID', tagHuerfano, 'Chip vinculado a ' + rpFinal, event.target, 'modal-vinculacion');
             
-            // Abrir la ficha del animal
             cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
             document.getElementById('buscador-caravana').value = rpFinal;
             buscarCaravanaBtn();
             
-            // Si el animal es totalmente nuevo, le abrimos la ventana para cargar la raza y categoría
             const datosActivos = obtenerRegistrosActivos();
             const historial = datosActivos.filter(d => String(d.caravana) === String(rpFinal));
             if(historial.length <= 1) { 
@@ -881,7 +914,13 @@
         function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
         
         function buscarCaravanaBtn() {
-            const input = document.getElementById('buscador-caravana').value.trim(); if(!input) return; caravanaActiva = input; document.getElementById('ficha-animal').classList.remove('oculto'); document.getElementById('val-caravana').innerText = input;
+            let input = document.getElementById('buscador-caravana').value.trim(); if(!input) return; 
+            
+            // === PARCHE STRING GOOGLE SHEETS ===
+            const vinculacion = baseDeDatosCache.find(d => d.accion === 'Vinculacion_RFID' && String(d.valor).trim() === String(input).trim());
+            if(vinculacion) input = vinculacion.caravana;
+
+            caravanaActiva = input; document.getElementById('ficha-animal').classList.remove('oculto'); document.getElementById('val-caravana').innerText = input;
             const datosActivos = obtenerRegistrosActivos();
             const regs = datosActivos.filter(d => String(d.caravana) === String(input)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
             
