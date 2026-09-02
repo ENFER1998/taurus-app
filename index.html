@@ -617,6 +617,10 @@ async function conectarHardwareBLE() {
                 
                 const server = await dispositivoBLE.gatt.connect();
                 
+                // === PARCHE CRÍTICO PARA ANDROID ===
+                // Le damos a Android medio segundo para que respire y estabilice el Bluetooth
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
                 let service;
                 try {
                     service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
@@ -632,9 +636,14 @@ async function conectarHardwareBLE() {
 
                 if (bleCharacteristic) {
                     await bleCharacteristic.startNotifications();
+                    
                     bleCharacteristic.addEventListener('characteristicvaluechanged', (event) => {
                         let valor = new TextDecoder().decode(event.target.value).trim();
-                        // ¡AQUÍ ESTABA MI ERROR! Ahora sí envía la lectura a la función correcta del celular
+                        
+                        // === ALERTA CHISMOSA DE PRUEBA ===
+                        // Si el celular escucha, esto saltará obligatoriamente en tu pantalla
+                        alert("📲 ANDROID ESCUCHÓ: " + valor);
+                        
                         if(valor) procesarTramaBLE(valor); 
                     });
                 }
@@ -643,6 +652,7 @@ async function conectarHardwareBLE() {
                 btn.style.background = "var(--exito)";
             } catch (e) {
                 console.error("Error BLE:", e);
+                alert("Error de conexión: " + e.message);
                 btn.innerText = "Vincular Lector";
             }
         }
