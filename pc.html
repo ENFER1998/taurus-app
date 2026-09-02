@@ -487,7 +487,7 @@
 
         let bufferBT = "";
         let timeoutBT;
-        function procesarLecturaBluetooth(texto) {
+       function procesarLecturaBluetooth(texto) {
             bufferBT += texto;
             clearTimeout(timeoutBT);
             
@@ -495,9 +495,7 @@
                 let dataLimpia = bufferBT.replace(/[^a-zA-Z0-9.-]/g, '');
                 if(!dataLimpia) return;
                 
-                // === ENRUTADOR INTELIGENTE (FILTRO BASTÓN VS BALANZA) ===
                 if (dataLimpia.includes('.')) {
-                    // Si tiene un punto decimal, ES UN PESO (Ej: 395.4)
                     if (!document.getElementById('v-ficha').classList.contains('oculto') && rpActivo) {
                         abrirModal('m-peso');
                         document.getElementById('i-peso-val').value = dataLimpia;
@@ -505,16 +503,15 @@
                         alert("Balanza: Se recibió un peso de " + dataLimpia + " Kg. Abre la Ficha Clínica de un animal para guardarlo.");
                     }
                 } else {
-                    // Si NO tiene punto, ES UN CHIP RFID (Bastón)
-                    let esRFIDRegistrado = dbCache.find(d => d.accion === 'Vinculación RFID' && d.valor === dataLimpia);
+                    // === PARCHE APLICADO AQUÍ ===
+                    // Convertimos ambos datos a String y quitamos espacios para evitar conflictos con Google Sheets
+                    let esRFIDRegistrado = dbCache.find(d => d.accion === 'Vinculación RFID' && String(d.valor).trim() === String(dataLimpia).trim());
                     
                     if(esRFIDRegistrado) {
-                        // El chip ya existe: Buscamos automáticamente la caravana visual vinculada
                         document.getElementById('buscador-caravana').value = esRFIDRegistrado.caravana;
-                        document.querySelectorAll('.sidebar-nav li')[1].click(); // Simula clic en "Ficha Clínica"
+                        document.querySelectorAll('.sidebar-nav li')[1].click(); 
                         buscarCaravanaBtn();
                     } else {
-                        // Chip Nuevo: Solicitar emparejamiento visual
                         rfidPendiente = dataLimpia;
                         document.getElementById('lbl-rfid-scaneado').innerText = dataLimpia;
                         document.getElementById('f-rfid-caravana').value = "";
@@ -728,13 +725,13 @@
             return hist.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
         }
 
-        function buscarCaravanaBtn(rpForzado = null) {
+function buscarCaravanaBtn(rpForzado = null) {
             try {
                 let rp = rpForzado ? rpForzado : document.getElementById('buscador-caravana').value.trim(); 
                 if(!rp) return; 
                 
-                // Si el usuario por error escanea o tipea el chip RFID directamente en el buscador, lo traducimos
-                let esRFIDRegistrado = dbCache.find(d => d.accion === 'Vinculación RFID' && d.valor === rp);
+                // === PARCHE APLICADO AQUÍ TAMBIÉN ===
+                let esRFIDRegistrado = dbCache.find(d => d.accion === 'Vinculación RFID' && String(d.valor).trim() === String(rp).trim());
                 if(esRFIDRegistrado) rp = esRFIDRegistrado.caravana;
 
                 rpActivo = rp; document.getElementById('ficha-animal').classList.remove('oculto'); 
