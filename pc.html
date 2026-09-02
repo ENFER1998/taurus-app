@@ -492,13 +492,20 @@
             clearTimeout(timeoutBT);
             
             timeoutBT = setTimeout(() => {
-                let dataLimpia = bufferBT.replace(/[^a-zA-Z0-9.-]/g, ''); 
+                let dataLimpia = bufferBT.replace(/[^a-zA-Z0-9.-]/g, '');
+                if(!dataLimpia) return;
                 
-                if (document.getElementById('m-peso').style.display === 'flex') {
-                    document.getElementById('i-peso-val').value = dataLimpia;
-                } 
-                else {
-                    // LÓGICA DE BASTÓN RFID INTELIGENTE
+                // === ENRUTADOR INTELIGENTE (FILTRO BASTÓN VS BALANZA) ===
+                if (dataLimpia.includes('.')) {
+                    // Si tiene un punto decimal, ES UN PESO (Ej: 395.4)
+                    if (!document.getElementById('v-ficha').classList.contains('oculto') && rpActivo) {
+                        abrirModal('m-peso');
+                        document.getElementById('i-peso-val').value = dataLimpia;
+                    } else {
+                        alert("Balanza: Se recibió un peso de " + dataLimpia + " Kg. Abre la Ficha Clínica de un animal para guardarlo.");
+                    }
+                } else {
+                    // Si NO tiene punto, ES UN CHIP RFID (Bastón)
                     let esRFIDRegistrado = dbCache.find(d => d.accion === 'Vinculación RFID' && d.valor === dataLimpia);
                     
                     if(esRFIDRegistrado) {
@@ -515,7 +522,7 @@
                     }
                 }
                 bufferBT = "";
-            }, 300); // 300ms es el tiempo de gracia para unir los trozos de texto que envía el BT
+            }, 300);
         }
         
         function guardarVinculacionRFID() {
@@ -525,6 +532,10 @@
             // Creamos y guardamos el registro de vinculación
             const obj = { fecha: new Date().toISOString(), accion: 'Vinculación RFID', caravana: car, valor: rfidPendiente, detalles: `Vinculado por Bastón BT | Op: ${usActivo}`, maestro: maestroId };
             dbCache.unshift(obj);
+            
+            // ---> INYECCIÓN FORZADA EN MEMORIA LOCAL <---
+            lsSet('tc_db', dbCache); 
+            
             cerrarModal('m-rfid');
             
             // Enviar a la nube / offline
@@ -786,7 +797,12 @@
         // ==========================================
         function ejecutarAccion(tipo, val, det, modalId) {
             const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: rpActivo, valor: val, detalles: det + ` | Op: ${usActivo}`, maestro: maestroId };
-            dbCache.unshift(obj); buscarCaravanaBtn(rpActivo); procesarDatosDashboard(); 
+            dbCache.unshift(obj);
+            
+            // ---> INYECCIÓN FORZADA EN MEMORIA LOCAL <---
+            lsSet('tc_db', dbCache); 
+            
+            buscarCaravanaBtn(rpActivo); procesarDatosDashboard(); 
             if(modalId) cerrarModal(modalId);
             if(navigator.onLine) {
                 const fd = new URLSearchParams(); for(let k in obj) fd.append(k, obj[k]); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { sincronizarFondo(false); });
