@@ -171,8 +171,9 @@
                 <img src="gemini-svg.ico" alt="Logo Taurus">
             </div>
             <div class="titulo-login">Taurus Control</div>
-            <input type="text" id="usuario" class="form-control-login" placeholder="Usuario" autocomplete="off">
-            <input type="password" id="password" class="form-control-login" placeholder="Contraseña">
+            <!-- Etiquetas autocomplete añadidas para Biometría Web nativa -->
+            <input type="text" id="usuario" class="form-control-login" placeholder="Usuario" autocomplete="username">
+            <input type="password" id="password" class="form-control-login" placeholder="Contraseña" autocomplete="current-password">
             <div id="error-login" class="error-msj">Datos incorrectos</div>
             <button id="btn-ingreso" class="btn-ingresar" onclick="procesarIngreso()">Iniciar Sesión</button>
             <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">Taurus Control - Versión Mobile<br><strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">Desarrollado por Fernando Rodriguez &copy; 2026</strong></div>
@@ -395,6 +396,26 @@
         let bleCharacteristic = null;
         let tagHuerfano = ""; 
 
+        // === PUERTA DE ENTRADA PARA BIOMETRÍA DE ANDROID STUDIO ===
+        window.loginBiometricoExitoso = function() {
+            const credStr = localStorage.getItem('taurus_cred');
+            if(credStr) {
+                const cred = JSON.parse(credStr);
+                document.getElementById('usuario').value = cred.usu;
+                document.getElementById('password').value = cred.pass;
+                procesarIngreso();
+            } else {
+                alert("Por favor, inicia sesión con tu contraseña por primera vez para activar la huella.");
+            }
+        };
+
+        // === PUERTA DE ENTRADA PARA BLUETOOTH DESDE ANDROID STUDIO ===
+        window.recibirDatoDesdeAndroid = function(valorBLE) {
+            if(valorBLE) {
+                procesarTramaBLE(valorBLE);
+            }
+        };
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').then(reg => {
@@ -404,7 +425,7 @@
         }
 
         // ==========================================
-        // MOTOR NFC NATIVO
+        // MOTOR NFC NATIVO WEB
         // ==========================================
         async function leerNFC() {
             if ('NDEFReader' in window) {
@@ -608,7 +629,7 @@
         }
 
         // ==========================================
-        // CONEXIÓN BLUETOOTH ESTABILIZADA
+        // CONEXIÓN BLUETOOTH ESTABILIZADA WEB
         // ==========================================
         async function conectarHardwareBLE() {
             const btn = document.querySelector('.btn-guardar');
