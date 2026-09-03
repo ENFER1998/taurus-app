@@ -387,8 +387,12 @@
         let propMaestro = "";
         let rolUsuario = "";
         let rpPrint = "";
+        
+        // === GLOBALES BLINDADAS PARA ANDROID ===
         let dispositivoBLE = null;
-        let bleCharacteristic = null; // <-- PARCHE GLOBAL ANDROID RAM
+        let bleServer = null;
+        let bleService = null;
+        let bleCharacteristic = null;
         let tagHuerfano = ""; 
 
         if ('serviceWorker' in navigator) {
@@ -400,7 +404,7 @@
         }
 
         // ==========================================
-        // MOTOR NFC NATIVO (INTACTO)
+        // MOTOR NFC NATIVO
         // ==========================================
         async function leerNFC() {
             if ('NDEFReader' in window) {
@@ -604,9 +608,9 @@
         }
 
         // ==========================================
-        // CONEXIÓN BLUETOOTH (NUEVA VARIABLE GLOBAL)
+        // CONEXIÓN BLUETOOTH ESTABILIZADA
         // ==========================================
-async function conectarHardwareBLE() {
+        async function conectarHardwareBLE() {
             const btn = document.querySelector('.btn-guardar');
             try {
                 btn.innerText = "Buscando Lector...";
@@ -615,50 +619,42 @@ async function conectarHardwareBLE() {
                     optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb', '6e400001-b5a3-f393-e0a9-e50e24dcca9e'] 
                 });
                 
-                const server = await dispositivoBLE.gatt.connect();
+                dispositivoBLE.addEventListener('gattserverdisconnected', () => {
+                    btn.innerText = "Vincular Lector";
+                    btn.style.background = "#0284c7";
+                    alert("⚠️ Lector desconectado");
+                });
+
+                bleServer = await dispositivoBLE.gatt.connect();
+                await new Promise(r => setTimeout(r, 600)); 
                 
-                // === PARCHE CRÍTICO PARA ANDROID ===
-                // Le damos a Android medio segundo para que respire y estabilice el Bluetooth
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                let service;
                 try {
-                    service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
-                    bleCharacteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+                    bleService = await bleServer.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+                    bleCharacteristic = await bleService.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
                 } catch(e) {
-                    try {
-                        service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
-                        bleCharacteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
-                    } catch(err) {
-                        console.log("No es un dispositivo serial genérico.");
-                    }
+                    bleService = await bleServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+                    bleCharacteristic = await bleService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
                 }
 
-                if (bleCharacteristic) {
-                    await bleCharacteristic.startNotifications();
-                    
-                    bleCharacteristic.addEventListener('characteristicvaluechanged', (event) => {
-                        let valor = new TextDecoder().decode(event.target.value).trim();
-                        
-                        // === ALERTA CHISMOSA DE PRUEBA ===
-                        // Si el celular escucha, esto saltará obligatoriamente en tu pantalla
-                        alert("📲 ANDROID ESCUCHÓ: " + valor);
-                        
-                        if(valor) procesarTramaBLE(valor); 
-                    });
-                }
+                await bleCharacteristic.startNotifications();
+                
+                bleCharacteristic.addEventListener('characteristicvaluechanged', (event) => {
+                    let valor = new TextDecoder().decode(event.target.value).trim();
+                    if(valor) procesarTramaBLE(valor);
+                });
                 
                 btn.innerText = "📡 Lector Conectado";
                 btn.style.background = "var(--exito)";
+                alert("✅ Lector BLE conectado y escuchando.");
             } catch (e) {
                 console.error("Error BLE:", e);
-                alert("Error de conexión: " + e.message);
                 btn.innerText = "Vincular Lector";
+                btn.style.background = "#0284c7";
             }
         }
 
         // ==========================================
-        // MOTOR DE RUTEO INTELIGENTE (FILTRO BASTÓN VS BALANZA)
+        // MOTOR DE RUTEO INTELIGENTE
         // ==========================================
         let bufferBLE = "";
         let timeoutBLE;
@@ -668,12 +664,11 @@ async function conectarHardwareBLE() {
             
             timeoutBLE = setTimeout(() => {
                 let dataLimpia = bufferBLE.replace(/[^a-zA-Z0-9.-]/g, '');
-                dataLimpia = dataLimpia.replace('TAG', ''); // Filtro extra de seguridad
+                dataLimpia = dataLimpia.replace('TAG', ''); 
                 
                 if(!dataLimpia) return;
                 
                 if (dataLimpia.includes('.')) {
-                    // Si tiene punto, es el peso de la balanza
                     if (!document.getElementById('vista-manga').classList.contains('oculto') && caravanaActiva) {
                         abrirModal('modal-peso');
                         document.getElementById('i-peso-val').value = dataLimpia;
@@ -681,7 +676,6 @@ async function conectarHardwareBLE() {
                         alert("⚖️ Balanza: Se recibió el peso " + dataLimpia + " Kg. Abre la Ficha de un animal primero para guardarlo.");
                     }
                 } else {
-                    // No tiene punto, es un chip
                     recibirTagNFC(dataLimpia); 
                 }
                 bufferBLE = "";
@@ -689,8 +683,10 @@ async function conectarHardwareBLE() {
         }
 
         function recibirTagNFC(tagHex) {
-            // === PARCHE STRING GOOGLE SHEETS ===
-const vinculacion = baseDeDatosCache.find(d => d.accion === 'Vinculación RFID' && String(d.valor).trim() === String(tagHex).trim());
+            const vinculacion = baseDeDatosCache.find(d => 
+                (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && 
+                String(d.valor).trim() === String(tagHex).trim()
+            );
             
             if (vinculacion && vinculacion.caravana) {
                 cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
@@ -711,10 +707,9 @@ const vinculacion = baseDeDatosCache.find(d => d.accion === 'Vinculación RFID' 
                 setTimeout(() => input.style.borderColor = "var(--borde)", 2000);
                 return; 
             }
-            
             caravanaActiva = rpFinal;
             
-            ejecutarAccion('Vinculacion_RFID', tagHuerfano, 'Chip vinculado a ' + rpFinal, event.target, 'modal-vinculacion');
+            ejecutarAccion('Vinculacion_RFID', tagHuerfano, 'Chip vinculado a ' + rpFinal, null, 'modal-vinculacion');
             
             cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
             document.getElementById('buscador-caravana').value = rpFinal;
@@ -722,9 +717,7 @@ const vinculacion = baseDeDatosCache.find(d => d.accion === 'Vinculación RFID' 
             
             const datosActivos = obtenerRegistrosActivos();
             const historial = datosActivos.filter(d => String(d.caravana) === String(rpFinal));
-            if(historial.length <= 1) { 
-                setTimeout(() => abrirModal('modal-perfil'), 600);
-            }
+            if(historial.length <= 1) setTimeout(() => abrirModal('modal-perfil'), 600);
         }
         // ==========================================
 
@@ -927,8 +920,10 @@ const vinculacion = baseDeDatosCache.find(d => d.accion === 'Vinculación RFID' 
         function buscarCaravanaBtn() {
             let input = document.getElementById('buscador-caravana').value.trim(); if(!input) return; 
             
-            // === PARCHE STRING GOOGLE SHEETS ===
-            const vinculacion = baseDeDatosCache.find(d => d.accion === 'Vinculacion_RFID' && String(d.valor).trim() === String(input).trim());
+            const vinculacion = baseDeDatosCache.find(d => 
+                (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && 
+                String(d.valor).trim() === String(input).trim()
+            );
             if(vinculacion) input = vinculacion.caravana;
 
             caravanaActiva = input; document.getElementById('ficha-animal').classList.remove('oculto'); document.getElementById('val-caravana').innerText = input;
@@ -945,7 +940,7 @@ const vinculacion = baseDeDatosCache.find(d => d.accion === 'Vinculación RFID' 
                 const uNut = regs.find(d => d.accion === 'Nutrición'); if(uNut) nutricion = uNut.valor + " | " + uNut.detalles;
                 const uSan = regs.find(d => d.accion === 'Sanidad'); if(uSan) sanidad = uSan.valor + " | " + uSan.detalles;
                 
-                const ultimaReal = regs.find(d => d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master' && d.accion !== 'Comentario' && d.accion !== 'Vinculacion_RFID');
+                const ultimaReal = regs.find(d => d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master' && d.accion !== 'Comentario' && d.accion !== 'Vinculacion_RFID' && d.accion !== 'Vinculación RFID');
                 if(ultimaReal) { document.getElementById('panel-ultima-nota').classList.remove('oculto'); document.getElementById('nota-accion-titulo').innerText = `${new Date(ultimaReal.fecha).toLocaleDateString()} - ${ultimaReal.accion} (${ultimaReal.valor})`; document.getElementById('nota-accion-texto').innerText = ultimaReal.detalles.split('|')[0]; }
             }
             document.getElementById('val-categoria').innerText = cat; document.getElementById('val-raza').innerText = raza; document.getElementById('val-peso').innerText = peso; document.getElementById('val-dx').innerText = dx; document.getElementById('val-lote').innerText = lote; document.getElementById('val-carimbo').innerText = carimbo; document.getElementById('val-edad').innerText = edad; document.getElementById('val-genealogia').innerText = padre + " / " + madre; document.getElementById('val-comentario').innerText = comentario;
@@ -960,7 +955,7 @@ const vinculacion = baseDeDatosCache.find(d => d.accion === 'Vinculación RFID' 
             const datosActivos = obtenerRegistrosActivos();
             const d = datosActivos.filter(f => String(f.caravana) === String(caravanaActiva)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
             let h = "<ul style='list-style:none; padding:0; margin:0;'>"; 
-            d.forEach(r => { if(r.accion !== 'Vinculacion_RFID') h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px;"><span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span><br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span></li>`; }); 
+            d.forEach(r => { if(r.accion !== 'Vinculacion_RFID' && r.accion !== 'Vinculación RFID') h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px;"><span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span><br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span></li>`; }); 
             document.getElementById('contenido-historial').innerHTML = h + "</ul>"; 
         }
 
@@ -984,7 +979,7 @@ const vinculacion = baseDeDatosCache.find(d => d.accion === 'Vinculación RFID' 
             if(fRp !== "") {
                 rpPrint = fRp; document.querySelector('.btn-descargar').innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`;
                 document.getElementById('tabla-masiva').classList.add('oculto'); document.getElementById('tabla-individual').classList.remove('oculto');
-                const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === fRp && d.accion !== 'Vinculacion_RFID').sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+                const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === fRp && d.accion !== 'Vinculacion_RFID' && d.accion !== 'Vinculación RFID').sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
                 let hInd = ""; regs.forEach(r => { hInd+=`<tr><td style="color:#000; border-color:#cbd5e1;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1;"><strong>${r.accion}</strong></td><td style="color:#000; border-color:#cbd5e1;">${r.valor}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;">${r.detalles}</td></tr>`; });
                 tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.length; document.getElementById('inf-prenadas').innerText = "-";
             } else {
@@ -1018,7 +1013,7 @@ const vinculacion = baseDeDatosCache.find(d => d.accion === 'Vinculación RFID' 
             
             if(rpPrint !== "") {
                 const datosActivos = obtenerRegistrosActivos();
-                const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === String(rpPrint).toLowerCase() && d.accion !== 'Vinculacion_RFID').sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
+                const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === String(rpPrint).toLowerCase() && d.accion !== 'Vinculacion_RFID' && d.accion !== 'Vinculación RFID').sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
                 if(regs.length===0){ btn.innerHTML = `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}`; return;}
                 
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
