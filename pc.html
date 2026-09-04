@@ -3,760 +3,806 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taurus Control PC - Ganadero Pro</title>
+    <title>Taurus Control - Creado por Fernando Rodriguez</title>
     
-    <meta name="theme-color" content="#0f172a">
-    <link rel="icon" href="gemini-svg.ico">
-
+    <!-- MOTOR DE DESCARGA PDF DIRECTA -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
-        :root { --primario: #0f172a; --secundario: #3b82f6; --exito: #10b981; --alerta: #f59e0b; --peligro: #ef4444; --borde: #334155; --texto: #f8fafc; --muted: #94a3b8; }
-        body.tema-claro { --primario: #f8fafc; --borde: #cbd5e1; --texto: #0f172a; --muted: #64748b; background: #f1f5f9; color: var(--texto); }
-        body.tema-claro .login-contenedor, body.tema-claro .sidebar, body.tema-claro .header-pc, body.tema-claro .tarjeta, body.tema-claro .kpi-caja, body.tema-claro .dato-min, body.tema-claro .btn-accion, body.tema-claro .filtro-sel, body.tema-claro .modal-body, body.tema-claro .form-control { background: #ffffff; border-color: var(--borde); color: var(--texto); }
-        body.tema-claro .form-control-login, body.tema-claro .buscador-input { background: #f8fafc; border-color: var(--borde); color: var(--texto); }
-        body.tema-claro .btn-mini, body.tema-claro .tab-btn { background: #f1f5f9; color: var(--texto); border-color: var(--borde); }
-        body.tema-claro .kpi-label, body.tema-claro .nav-item { color: var(--muted); }
-        body.tema-claro .nav-item.activo { background: #e2e8f0; color: var(--secundario); border-left-color: var(--secundario); }
-        body.tema-claro .nav-item:hover { background: #f1f5f9; color: var(--texto); }
-        body.tema-claro .encabezado-impresion, body.tema-claro .check-opcion { background: #ffffff; border-color: var(--borde); color: var(--texto); }
-        
-        body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; color: var(--texto); background: #1e293b; display: flex; min-height: 100vh; transition: 0.3s; }
+        /* ================= DISEÑO INDUSTRIAL ================= */
+        :root { 
+            --bg-base: #0f172a; --bg-panel: #1e293b; --bg-card: #334155; 
+            --border: #475569; --primary: #2563eb; --primary-hover: #1d4ed8; 
+            --success: #059669; --warning: #d97706; --danger: #dc2626; 
+            --text-main: #f8fafc; --text-muted: #94a3b8; 
+        }
+
+        /* ================= MODO CLARO ================= */
+        body.tema-claro {
+            --bg-base: #f1f5f9;
+            --bg-panel: #ffffff;
+            --bg-card: #f8fafc;
+            --border: #cbd5e1;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: var(--bg-base); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; font-size: 14px; transition: background 0.3s, color 0.3s; }
         .oculto { display: none !important; }
-        
+
+        /* SCROLLBARS */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-base); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
         /* LOGIN */
-        #pantalla-login { display: flex; align-items: center; justify-content: center; height: 100vh; width: 100%; flex-direction: column; background: var(--primario); position: fixed; z-index: 2000; top:0; left:0;}
-        .login-contenedor { background: #1e293b; border-radius: 16px; padding: 50px 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 400px; text-align: center; border: 1px solid var(--borde); transition: 0.3s;}
-        .logo-icono img { width: 100px; height: 100px; margin-bottom: 15px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); object-fit: contain; }
-        .titulo-login { font-size: 28px; font-weight: 900; margin-bottom: 30px; color: var(--texto); }
-        .form-control-login { width: 100%; padding: 15px; border: 1px solid var(--borde); border-radius: 8px; box-sizing: border-box; font-size: 16px; margin-bottom: 15px; text-align: center; background: #0f172a; color: var(--texto); transition: 0.3s;}
-        .btn-ingresar { width: 100%; background: var(--secundario); color: white; border: none; padding: 15px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s;}
-        .btn-ingresar:hover { opacity: 0.9; }
-        
-        /* SIDEBAR PC */
-        .sidebar { width: 260px; height: 100vh; background: #0f172a; border-right: 1px solid var(--borde); display: flex; flex-direction: column; position: fixed; left: 0; top: 0; z-index: 100; transition: 0.3s;}
-        .sidebar-logo { padding: 30px 20px; text-align: center; border-bottom: 1px solid var(--borde); margin-bottom: 20px;}
-        .sidebar-logo img { width: 70px; height: 70px; border-radius: 15px; object-fit: contain;}
-        .sidebar-logo h2 { margin: 15px 0 0 0; font-size: 20px; color: var(--texto); }
-        .nav-item { padding: 18px 25px; display: flex; align-items: center; gap: 15px; color: var(--muted); cursor: pointer; font-size: 15px; font-weight: bold; border-left: 4px solid transparent; transition: 0.3s;}
-        .nav-item.activo { background: #1e293b; color: var(--secundario); border-left-color: var(--secundario); }
-        .nav-item:hover { background: rgba(59, 130, 246, 0.1); color: var(--texto); }
-        .nav-icon { font-size: 22px; }
+        #pantalla-login { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-base); display: flex; align-items: center; justify-content: center; z-index: 999; }
+        .login-box { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 6px; padding: 40px; width: 380px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .login-box img { width: 90px; margin-bottom: 15px; }
+        .login-box h1 { margin: 0 0 5px 0; font-size: 26px; font-weight: 900; letter-spacing: 1px; color: var(--text-main);}
+        .form-control { width: 100%; padding: 10px 12px; margin-bottom: 15px; background: var(--bg-base); border: 1px solid var(--border); color: var(--text-main); border-radius: 4px; font-size: 14px; outline: none; transition: border 0.2s;}
+        .form-control:focus { border-color: var(--primary); }
+        .btn-primary { width: 100%; padding: 10px 15px; background: var(--primary); color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase;}
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
+        .error-msg { color: var(--danger); font-size: 13px; margin-bottom: 15px; font-weight: bold; display: none; }
 
-        /* MAIN CONTENT */
-        #pantalla-app { display: flex; width: 100%; }
-        .main-wrapper { margin-left: 260px; width: calc(100% - 260px); padding: 30px; box-sizing: border-box; max-width: 1400px; margin-right: auto; }
-        
-        .header-pc { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 20px 30px; border-radius: 12px; border: 1px solid var(--borde); margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: 0.3s;}
-        .user-info { display: flex; align-items: center; gap: 15px; font-weight: bold; font-size: 16px;}
-        .badge-estado { font-size: 13px; background: var(--exito); padding: 8px 15px; border-radius: 20px; font-weight: bold; color: white;}
-        .badge-estado.offline { background: var(--alerta); color: white; }
+        /* SIDEBAR */
+        #sidebar { width: 240px; background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border); background: var(--bg-card);}
+        .sidebar-header img { width: 35px; }
+        .sidebar-header h2 { font-size: 17px; margin: 0; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;}
+        .sidebar-nav { list-style: none; padding: 0; margin: 15px 0; flex: 1; }
+        .sidebar-nav li { padding: 12px 20px; cursor: pointer; font-weight: 600; color: var(--text-muted); transition: 0.2s; font-size: 13px; border-left: 3px solid transparent; display: flex; align-items: center; gap: 10px;}
+        .sidebar-nav li:hover { background: var(--bg-card); color: var(--text-main); }
+        .sidebar-nav li.activo { background: rgba(37, 99, 235, 0.1); color: var(--primary); border-left-color: var(--primary); }
+        .sidebar-footer { padding: 15px; font-size: 11px; color: var(--text-muted); text-align: center; border-top: 1px solid var(--border); background: var(--bg-card); }
+        .sidebar-footer strong { color: var(--text-main); display: block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase;}
 
-        .tarjeta { background: #0f172a; border-radius: 12px; padding: 30px; margin-bottom: 30px; border: 1px solid var(--borde); box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.3s;}
-        .tarjeta-titulo { font-size: 20px; font-weight: bold; margin: 0 0 20px 0; border-bottom: 1px solid var(--borde); padding-bottom: 15px; color: var(--texto); }
-        
-        .grid-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .kpi-caja { background: #1e293b; padding: 25px; border-radius: 12px; text-align: center; border: 1px solid var(--borde); transition: 0.3s;}
-        .kpi-valor { font-size: 36px; font-weight: 900; color: var(--secundario); margin: 10px 0; }
-        .kpi-label { font-size: 13px; color: var(--muted); text-transform: uppercase; font-weight: bold;}
-        
-        /* BUSCADORES Y BOTONES */
-        .buscador-contenedor { display: flex; gap: 15px; margin-bottom: 30px; align-items: stretch;}
-        .buscador-input { flex: 1; padding: 15px 20px; border: 2px solid var(--borde); border-radius: 8px; font-size: 18px; font-weight: bold; background: #0f172a; color: var(--texto); transition: 0.3s;}
-        .buscador-btn { background: var(--secundario); color: white; border: none; padding: 0 30px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s;}
-        .buscador-btn:hover { opacity: 0.9; }
+        /* ÁREA PRINCIPAL */
+        #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-base); overflow: hidden; }
+        .topbar { background: var(--bg-panel); border-bottom: 1px solid var(--border); padding: 10px 25px; display: flex; justify-content: space-between; align-items: center; }
+        .topbar-title { font-size: 13px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;}
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s;}
+        .btn-outline:hover { background: var(--bg-card); color: var(--primary); }
+        .badge { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid; text-transform: uppercase; }
+        .badge.online { background: rgba(5, 150, 105, 0.1); color: var(--success); border-color: var(--success); }
+        .badge.offline { background: rgba(220, 38, 38, 0.1); color: var(--danger); border-color: var(--danger); }
 
-        .perfil-cabecera { text-align: center; margin-bottom: 30px;}
-        .perfil-id { font-size: 50px; font-weight: 900; letter-spacing: 2px; color: var(--texto);}
-        .botones-perfil { display: flex; gap: 15px; justify-content: center; margin-bottom: 30px;}
-        .btn-mini { background: #1e293b; border: 1px solid var(--borde); padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: bold; color: var(--texto); cursor: pointer; transition: 0.3s;}
-        .btn-mini:hover { background: var(--borde); }
+        .vista { flex: 1; overflow-y: auto; padding: 25px; }
+        .titulo-seccion { font-size: 20px; margin: 0 0 20px 0; border-bottom: 1px solid var(--border); padding-bottom: 8px; font-weight: 800; color: var(--text-main);}
         
-        .grid-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
-        .dato-min { background: #1e293b; padding: 15px; border-radius: 8px; border: 1px solid var(--borde); transition: 0.3s;}
-        .dato-min span { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: bold; margin-bottom: 6px;}
-        .dato-min strong { font-size: 16px; word-wrap: break-word; color: var(--texto);}
+        .tarjeta { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 6px; padding: 20px; margin-bottom: 20px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;}
+        .grid-acciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 
-        .grid-acciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-top:30px;}
-        .btn-accion { background: #1e293b; border: 1px solid var(--borde); padding: 20px 15px; border-radius: 12px; font-weight: bold; color: var(--texto); display: flex; flex-direction: column; align-items: center; gap: 12px; cursor: pointer; font-size: 15px; transition: 0.3s;}
-        .btn-accion:hover { border-color: var(--secundario); transform: translateY(-3px);}
-        .btn-accion span { font-size: 32px; }
+        .kpi-box { background: var(--bg-card); padding: 15px; border-radius: 4px; border-left: 4px solid var(--primary); }
+        .kpi-box span { display: block; font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; }
+        .kpi-box strong { display: block; font-size: 28px; margin-top: 5px; color: var(--text-main); }
 
-        /* TABLAS E INFORMES */
-        .tabla-responsive { width: 100%; overflow-x: auto; border-radius: 8px;}
-        .tabla-informe { width: 100%; border-collapse: collapse; font-size: 14px; background: white; color: black; min-width: 800px;}
-        .tabla-informe th { background: #e2e8f0; padding: 12px; text-align: left; border: 1px solid #cbd5e1; color: black;}
-        .tabla-informe td { padding: 12px; border: 1px solid #cbd5e1; color: black;}
+        /* ALERTAS */
+        .contenedor-scroll-alertas { max-height: 180px; overflow-y: auto; padding-right: 10px; }
+        .alerta-item { display: flex; align-items: center; gap: 10px; background: rgba(245,158,11,0.1); padding: 12px; border-radius: 6px; border-left: 4px solid var(--warning); margin-bottom: 10px; font-size: 13px; cursor: pointer; border: 1px solid rgba(245,158,11,0.3); transition: 0.2s;}
+        .alerta-item:hover { background: rgba(245,158,11,0.2); }
+        .alerta-item.peligro { background: rgba(239,68,68,0.1); border-left-color: var(--danger); border-color: rgba(239,68,68,0.3);}
+        .alerta-item.peligro:hover { background: rgba(239,68,68,0.2); }
 
-        .filtros-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 25px;}
-        .filtro-sel { background: #1e293b; color: var(--texto); border: 1px solid var(--borde); padding: 15px; border-radius: 8px; font-size: 15px; transition: 0.3s; font-family: inherit;}
-        
+        /* TABLAS */
+        .search-bar { display: flex; gap: 10px; margin-bottom: 15px; }
+        table.tabla-datos { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+        table.tabla-datos th { background: var(--bg-card); padding: 10px 15px; color: var(--text-muted); text-transform: uppercase; font-size: 11px; font-weight: bold; border-bottom: 2px solid var(--bg-base); white-space: nowrap;}
+        table.tabla-datos td { padding: 10px 15px; border-bottom: 1px solid var(--border); }
+        table.tabla-datos tr:hover td { background: var(--bg-card); cursor: pointer;}
+
+        /* FICHA INDIVIDUAL */
+        .rp-header { font-size: 28px; font-weight: 900; margin: 0 0 20px 0; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 15px;}
+        .dato-box { background: var(--bg-base); padding: 12px; border: 1px solid var(--border); border-radius: 4px; }
+        .dato-box span { display: block; font-size: 10px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; margin-bottom: 4px; }
+        .dato-box strong { display: block; font-size: 14px; color: var(--text-main); }
+        .muro-notas { background: var(--bg-base); border: 1px solid var(--border); border-radius: 4px; padding: 15px; height: 260px; overflow-y: auto; }
+        .nota-item { border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 8px; }
+        .nota-item .f { font-size: 11px; color: var(--primary); font-weight: bold; display: block; margin-bottom: 2px;}
+        .nota-item .t { font-size: 13px; color: var(--text-main); line-height: 1.4; }
+
+        /* GRÁFICOS */
+        .torta-container { position: relative; width: 120px; height: 120px; margin: 0 auto 15px auto; }
+        .torta { width: 100%; height: 100%; border-radius: 50%; background: var(--border); transition: background 1s ease-in-out;}
+        .torta-centro { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 75px; height: 75px; background: var(--bg-panel); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 20px; color: var(--text-main);}
+        .leyenda-torta { font-size: 12px; line-height: 1.8; color: var(--text-muted); text-align: center;}
+        .punto { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px;}
+        .barra-cat { margin-bottom: 12px;}
+        .barra-head { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; margin-bottom: 4px; color: var(--text-main); text-transform: uppercase;}
+        .barra-bg { width: 100%; background: var(--border); height: 6px; border-radius: 3px; overflow: hidden;}
+        .barra-fill { height: 100%; border-radius: 3px; width: 0%; transition: width 1s ease;}
+
+        /* MODALES */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); z-index: 2000; align-items: center; justify-content: center;}
+        .modal-body { background: var(--bg-panel); width: 450px; border-radius: 6px; padding: 25px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5);}
+        .modal-body h3 { margin: 0 0 20px 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; font-size: 16px; text-transform: uppercase; color: var(--text-main);}
+        .btn-cerrar { float: right; cursor: pointer; color: var(--text-muted); font-size: 20px; font-weight: bold;}
+        .btn-cerrar:hover { color: var(--text-main); }
+        .btn-guardar { width: 100%; background: var(--success); color: white; padding: 10px; border-radius: 4px; border: none; font-weight: bold; margin-top: 10px; font-size: 14px; cursor: pointer; text-transform: uppercase; transition: 0.2s;}
+        .btn-guardar:hover { background: #047857; }
+
+        .filtros-grid { display: flex; gap: 10px; margin-bottom: 20px;}
+        .filtro-sel { flex:1; background: var(--bg-base); color: var(--text-main); border: 1px solid var(--border); padding: 10px; border-radius: 4px; font-size: 13px; outline: none;}
+
+        /* PESTAÑAS Y ETIQUETAS DE REPORTE GANADERO PRO */
         .tabs-filtro { display: flex; gap: 10px; padding-bottom: 10px; margin-bottom: 15px; flex-wrap: wrap;}
-        .tab-btn { background: #1e293b; border: 1px solid var(--borde); color: var(--muted); padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .tab-btn:hover { background: var(--borde); }
-        .tab-btn.activa { background: var(--secundario); color: white; border-color: var(--secundario); }
+        .tab-btn { background: var(--bg-panel); border: 1px solid var(--border); color: var(--text-muted); padding: 8px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .tab-btn:hover { background: var(--bg-card); color: var(--text-main); }
+        .tab-btn.activa { background: var(--primary); color: white; border-color: var(--primary); }
 
-        .badge-acc { padding: 5px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; display: inline-block; }
-        .b-sanidad { background-color: var(--peligro); } .b-peso { background-color: var(--secundario); } .b-dx { background-color: var(--exito); } .b-nut { background-color: var(--alerta); color: black !important;} .b-ins { background-color: #9333ea; } .b-gral { background-color: #64748b; }
-
-        .btn-descargar { width: 100%; background: var(--exito); color: white; border: none; padding: 18px; border-radius: 8px; font-weight: bold; font-size: 18px; margin-bottom: 30px; cursor: pointer; transition: 0.3s;}
-        .btn-descargar:hover { background: #059669; }
-
-        /* MODALES PC */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 2000; align-items: center; justify-content: center;}
-        .modal-body { background: #0f172a; width: 90%; max-width: 600px; border-radius: 20px; padding: 40px; box-sizing: border-box; max-height: 90vh; overflow-y: auto; border: 1px solid var(--borde); transition: 0.3s;}
-        .modal-body h3 { border-bottom: 1px solid var(--borde); padding-bottom: 15px; margin-top:0; font-size: 24px; color: var(--texto);}
-        .form-grupo { margin-bottom: 20px; text-align: left; }
-        .form-grupo label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 10px; color: var(--muted);}
-        .form-control { width: 100%; padding: 15px; border: 1px solid var(--borde); border-radius: 8px; box-sizing: border-box; font-size: 16px; background: #1e293b; color: var(--texto); transition: 0.3s;}
-        .form-control.textarea { resize: vertical; min-height: 100px; }
-        .btn-guardar { width: 100%; background: var(--secundario); color: white; padding: 18px; border-radius: 8px; border: none; font-weight: bold; margin-top: 15px; font-size: 16px; cursor: pointer;}
-        .cerrar { float: right; font-size: 35px; cursor: pointer; color: var(--muted); line-height: 1;}
-        .cerrar:hover { color: var(--peligro); }
-
-        /* ENCABEZADO IMPRESIÓN */
-        .encabezado-impresion { display: flex; align-items: center; gap: 30px; margin-bottom: 30px; padding: 25px; background: #1e293b; border-radius: 12px; border: 1px dashed var(--borde); }
-        .logo-upload { width: 100px; height: 100px; background: #0f172a; border: 1px solid var(--borde); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; text-align: center; flex-shrink: 0;}
-        .input-estancia { flex: 1; background: transparent; border: none; border-bottom: 2px solid var(--borde); color: var(--texto); font-size: 32px; font-weight: 900; outline: none; padding: 10px 5px; font-family: inherit;}
-        
-        .lista-animales { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;}
-        .lista-animales li { background: #1e293b; padding: 20px; border: 1px solid var(--borde); border-radius: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.3s;}
-        .lista-animales li:hover { border-color: var(--secundario); transform: translateY(-2px);}
+        .badge-acc { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; display: inline-block; }
+        .b-sanidad { background-color: var(--danger); }
+        .b-peso { background-color: var(--primary); }
+        .b-dx { background-color: var(--success); }
+        .b-nut { background-color: var(--warning); color: #000 !important;}
+        .b-ins { background-color: #9333ea; }
+        .b-gral { background-color: var(--text-muted); }
     </style>
 </head>
 <body>
 
-    <!-- LOGIN -->
+    <!-- PANTALLA LOGIN -->
     <div id="pantalla-login">
-        <div class="login-contenedor">
-            <div class="logo-icono"><img src="gemini-svg.ico" alt="Logo"></div>
-            <div class="titulo-login">Taurus Control PC</div>
-            <input type="text" id="usuario" class="form-control-login" placeholder="Usuario" autocomplete="username">
-            <input type="password" id="password" class="form-control-login" placeholder="Contraseña" autocomplete="current-password">
-            <div id="error-login" class="error-msj">Datos incorrectos</div>
-            <button id="btn-ingreso" class="btn-ingresar" onclick="procesarIngreso()">Iniciar Sesión</button>
-            <div style="margin-top:25px; font-size:13px; color:var(--muted);">Módulo Web Escritorio<br><strong>Fernando Rodriguez &copy; 2026</strong></div>
-        </div>
-    </div>
-
-    <!-- APP PRINCIPAL -->
-    <div id="pantalla-app" class="oculto">
-        
-        <!-- SIDEBAR -->
-        <div class="sidebar">
-            <div class="sidebar-logo">
-                <img src="gemini-svg.ico" alt="Taurus">
-                <h2>Taurus Control</h2>
-            </div>
-            <div class="nav-item activo" onclick="cambiarVista('vista-dashboard', this)"><span class="nav-icon">📊</span> Panel Central</div>
-            <div class="nav-item" onclick="cambiarVista('vista-manga', this)"><span class="nav-icon">🐄</span> Ficha Clínica</div>
-            <div class="nav-item" onclick="cambiarVista('vista-registro', this); cargarListaRegistro();"><span class="nav-icon">📋</span> Buscar / Base</div>
-            <div class="nav-item" onclick="cambiarVista('vista-informe', this); cambiarModoReporte();"><span class="nav-icon">📄</span> Reportes HD</div>
-            <div class="nav-item" onclick="cambiarVista('vista-config', this)"><span class="nav-icon">⚙️</span> Configuración</div>
-        </div>
-
-        <!-- CONTENIDO PRINCIPAL -->
-        <div class="main-wrapper">
+        <div class="login-box">
+            <img src="gemini-svg.ico" alt="Logo Taurus">
+            <h1 style="margin-bottom: 25px;">Taurus Control</h1>
             
-            <!-- CABECERA PC -->
-            <div class="header-pc">
-                <div class="user-info">
-                    <span style="font-size: 24px;">👋</span>
-                    <div><div style="color:var(--muted); font-size:12px;">Usuario Activo</div><div id="lbl-header-user">Cargando...</div></div>
-                </div>
-                <div id="estado-red" class="badge-estado">🟢 Conectado a la Nube</div>
+            <input type="text" id="usuario" class="form-control" placeholder="Usuario" autocomplete="off">
+            <input type="password" id="password" class="form-control" placeholder="Contraseña">
+            <div id="error-login" class="error-msg"></div>
+            <button id="btn-ingreso" class="btn-primary" onclick="procesarIngreso()">Ingresar al Sistema</button>
+            
+            <div style="margin-top: 25px; line-height: 1.6;">
+                <span style="color: var(--text-muted); font-size: 13px;">Taurus Control - SaaS Edition</span><br>
+                <strong style="color: var(--text-main); font-size: 14px;">Creado por Fernando Rodriguez &copy; 2026</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- BARRA LATERAL -->
+    <div id="sidebar" class="oculto">
+        <div class="sidebar-header">
+            <img src="gemini-svg.ico" alt="Logo">
+            <h2>Taurus</h2>
+        </div>
+        <ul class="sidebar-nav">
+            <li class="activo" onclick="cambiarVista('v-dash', this)">📊 Panel de Control</li>
+            <li onclick="cambiarVista('v-ficha', this)">🐄 Ficha Clínica</li>
+            <li onclick="cambiarVista('v-base', this); cargarListaRegistro();">📋 Base de Datos</li>
+            <li onclick="cambiarVista('v-reporte', this); cambiarModoReporte();">📄 Reportes PDF</li>
+            <li onclick="cambiarVista('v-config', this)">⚙️ Configuración</li>
+            <!-- BOTÓN DE CERRAR SESIÓN -->
+            <li onclick="cerrarSesion()" style="color: var(--danger); margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;">🚪 Cerrar Sesión</li>
+        </ul>
+        <div class="sidebar-footer">
+            <strong id="lbl-sidebar-user">USUARIO</strong>
+            Taurus Control © 2026<br>Desarrollado por Fernando R.
+        </div>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div id="main-content" class="oculto">
+        <div class="topbar">
+            <div class="topbar-title">Terminal Corporativa de Trazabilidad</div>
+            <div class="topbar-right" style="display:flex; gap:15px; align-items:center;">
+                <button id="btn-bluetooth" class="btn-outline" style="border-color:var(--primary); color:var(--primary);" onclick="conectarBluetooth()">🔗 Bluetooth</button>
+                <button class="btn-outline" onclick="sincronizarFondo(true)">Actualizar Servidor</button>
+                <div id="estado-red" class="badge online">🟢 Conectado</div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div id="v-dash" class="vista">
+            <h2 class="titulo-seccion">Panel de Control General</h2>
+            <div class="grid-2" style="margin-bottom: 20px;">
+                <div class="kpi-box" style="border-color: var(--primary);"><span>Inventario General Activo</span><strong id="dash-cabezas">0</strong></div>
+                <div class="kpi-box" style="border-color: var(--success);"><span>Registros Históricos Procesados</span><strong id="dash-acciones">0</strong></div>
+            </div>
+            
+            <div class="tarjeta" id="contenedor-alertas" style="display:none; border-color:var(--warning);">
+                <h3 style="margin-top:0; font-size:14px; color:var(--warning); text-transform:uppercase;">⚠️ Alertas Clínicas Relevantes</h3>
+                <div class="contenedor-scroll-alertas" id="lista-alertas"></div>
             </div>
 
-            <!-- DASHBOARD -->
-            <div id="vista-dashboard">
-                <div class="grid-kpis">
-                    <div class="kpi-caja" onclick="cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2])" style="cursor:pointer;"><div class="kpi-valor" id="dash-cabezas">0</div><div class="kpi-label">Cabezas Únicas</div></div>
-                    <div class="kpi-caja"><div class="kpi-valor" id="dash-acciones">0</div><div class="kpi-label">Registros Totales</div></div>
-                </div>
-                <div class="tarjeta" id="contenedor-alertas" style="display:none;"><div class="tarjeta-titulo" style="color:var(--alerta);">⚠️ Alertas Activas</div><div id="lista-alertas" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:10px;"></div></div>
-                <div id="contenedor-graficos-dinamicos" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px;"></div>
+            <div class="tarjeta">
+                <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; color:var(--text-muted);">Métricas Dinámicas</h3>
+                <div id="contenedor-graficos" class="grid-2"></div>
             </div>
+        </div>
 
-            <!-- FICHA / MANGA -->
-            <div id="vista-manga" class="oculto">
-                <div class="buscador-contenedor">
-                    <input type="text" id="buscador-caravana" class="buscador-input" placeholder="Ingrese Nº Caravana o RP y presione Enter..." type="number" onkeypress="if(event.key==='Enter') buscarCaravanaBtn()">
-                    <button class="buscador-btn" onclick="buscarCaravanaBtn()">Buscar Animal</button>
-                </div>
-                <div id="ficha-animal" class="tarjeta oculto">
-                    <div class="perfil-cabecera"><div class="perfil-id" id="val-caravana">---</div></div>
-                    <div class="botones-perfil">
-                        <button class="btn-mini" onclick="abrirModal('modal-perfil')">✏️ Editar Datos Base</button>
-                        <button class="btn-mini" onclick="abrirModal('modal-clasificacion')">🏷️ Cambiar Lote / Categoría</button>
-                    </div>
-                    
-                    <div style="display:flex; gap:20px; margin-bottom:20px;">
-                        <div class="panel-comentario" style="flex:1; margin:0;"><div style="flex:1;"><span style="font-size:12px; font-weight:bold; color:var(--secundario); display:block;">NOTAS GENERALES</span><span id="val-comentario" style="font-size:15px; font-style:italic; display:block; margin-top:5px;">Sin comentarios.</span></div><button class="btn-mini" style="background:var(--secundario); color:white; border:none;" onclick="abrirModal('modal-comentario')">Editar Nota</button></div>
-                        <div id="panel-ultima-nota" class="panel-notas oculto" style="flex:1; margin:0;"><div style="font-weight:bold;font-size:12px;margin-bottom:5px; color:var(--alerta);">Última Acción Registrada</div><div id="nota-accion-titulo" style="font-size:16px;font-weight:bold;">---</div><div id="nota-accion-texto" style="font-size:14px; margin-top:5px;">---</div></div>
-                    </div>
-                    
-                    <div class="grid-datos">
-                        <div class="dato-min"><span>Lote / Grupo</span><strong id="val-lote">-</strong></div>
-                        <div class="dato-min"><span>Categoría</span><strong id="val-categoria">-</strong></div>
-                        <div class="dato-min"><span>Carimbo</span><strong id="val-carimbo">-</strong></div>
-                        <div class="dato-min"><span>Dx Tacto</span><strong id="val-dx" style="color:var(--success);">-</strong></div>
-                        <div class="dato-min"><span>Peso Actual</span><strong id="val-peso">-</strong></div>
-                        <div class="dato-min" style="border-left: 3px solid #be185d;"><span>Últ. Inseminación</span><strong id="val-inseminacion">-</strong></div>
-                        <div class="dato-min" style="border-left: 3px solid #c2410c;"><span>Última Sanidad</span><strong id="val-sanidad">-</strong></div>
-                        <div class="dato-min" style="border-left: 3px solid var(--secundario);"><span>Régimen Nutricional</span><strong id="val-nutricion">-</strong></div>
-                        <div class="dato-min"><span>Raza</span><strong id="val-raza">-</strong></div>
-                        <div class="dato-min"><span>Edad</span><strong id="val-edad">-</strong></div>
-                        <div class="dato-min"><span>Padre/Madre</span><strong id="val-genealogia">-</strong></div>
-                    </div>
-                    
-                    <div class="grid-acciones">
-                        <button class="btn-accion" onclick="abrirModal('modal-sanidad')"><span style="color:var(--peligro);">💉</span> Registrar Sanidad</button>
-                        <button class="btn-accion" onclick="abrirModal('modal-peso')"><span style="color:var(--secundario);">⚖️</span> Registrar Pesaje</button>
-                        <button class="btn-accion" onclick="abrirModal('modal-diagnostico')"><span style="color:var(--exito);">🩺</span> Tacto / Dx</button>
-                        <button class="btn-accion" onclick="abrirModal('modal-inseminacion')"><span style="color:#9333ea;">🧬</span> Inseminación</button>
-                        <button class="btn-accion" onclick="abrirModal('modal-nut')"><span style="color:var(--alerta);">🌾</span> Nutrición</button>
-                        <button class="btn-accion" onclick="verHistorial()"><span>📋</span> Ver Historial Completo</button>
-                    </div>
-                </div>
+        <!-- FICHA CLÍNICA -->
+        <div id="v-ficha" class="vista oculto">
+            <h2 class="titulo-seccion">Expediente Clínico Individual</h2>
+            <div class="search-bar">
+                <input type="text" id="buscador-caravana" class="form-control" style="margin:0; flex:1;" placeholder="Ingrese el Nº de RP a buscar..." autocomplete="off">
+                <button class="btn-primary" style="width:150px; margin:0;" onclick="buscarCaravanaBtn()">Buscar RP</button>
             </div>
-
-            <!-- LISTA BUSCAR -->
-            <div id="vista-registro" class="oculto">
-                <div class="tarjeta">
-                    <div class="tarjeta-titulo">📋 Base de Datos Activa</div>
-                    <div class="buscador-contenedor"><input type="text" id="buscador-lista" class="buscador-input" placeholder="Buscar por RP, Categoría o Lote..." onkeyup="filtrarLista(this.value)"></div>
-                    <ul class="lista-animales" id="ul-registro"></ul>
-                </div>
-            </div>
-
-            <!-- INFORMES GANADERO PRO (Optimizados PC) -->
-            <div id="vista-informe" class="oculto">
-                <div class="tarjeta">
-                    <button class="btn-descargar no-print" onclick="ejecutarDescargaPDF()">🖨️ Descargar Informe PDF de Alta Resolución</button>
-
-                    <div class="encabezado-impresion">
-                        <div class="logo-upload no-print-border" onclick="document.getElementById('input-logo').click()">
-                            <img id="img-logo" src="" alt="Logo" style="display:none; max-width:100%; max-height:100%; object-fit:contain;">
-                            <span id="texto-subir-logo">📷 Subir Logo HD</span>
-                        </div>
-                        <input type="file" id="input-logo" accept="image/*" style="display:none" onchange="cargarLogo(event)">
-                        
-                        <div style="flex:1; display:flex; flex-direction:column; gap:10px;">
-                            <input type="text" id="nombre-estancia" class="input-estancia" placeholder="Escriba el Nombre de la Estancia">
-                            <button class="btn-mini no-print" style="width:250px; background:var(--secundario); color:white; border:none;" onclick="guardarDisenoInforme()">☁️ Guardar Membrete</button>
+            
+            <div id="ficha-animal" class="oculto">
+                <div class="tarjeta" style="margin-bottom: 0;">
+                    <div class="rp-header">
+                        <span>RP: <span id="val-caravana" style="color:var(--primary);">---</span></span>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn-outline" onclick="abrirModal('m-perfil')">Editar Genética</button>
+                            <button class="btn-outline" onclick="abrirModal('m-clasi')">Cambiar Lote</button>
+                            <button class="btn-outline" style="border-color:var(--warning); color:var(--warning);" onclick="abrirModal('m-renombrar')">Renombrar RP</button>
                         </div>
                     </div>
-                    
-                    <div style="background: #1e293b; padding:20px; border-radius:12px; margin-bottom:20px; border:1px solid var(--borde);" class="no-print">
-                        <select class="filtro-sel" id="f-inf-modo" onchange="cambiarModoReporte()" style="width:100%; border-color: var(--secundario); font-weight: bold; font-size: 18px; margin-bottom:20px; background-color: var(--secundario); color: white;">
-                            <option value="eventos">📋 MODO: TRATAMIENTOS Y TRABAJOS CLÍNICOS</option>
-                            <option value="inventario">📊 MODO: INVENTARIO GENERAL (Estado Actual)</option>
-                        </select>
 
-                        <!-- MODO 1: EVENTOS -->
-                        <div id="filtros-eventos" style="display: flex; flex-direction: column; gap: 15px;">
-                            <div>
-                                <label style="font-size:14px; color:var(--texto); font-weight:bold; margin-bottom:8px; display:block;">Filtrar por Tipo de Trabajo:</label>
-                                <div class="tabs-filtro" id="tabs-acciones">
-                                    <button class="tab-btn activa" onclick="setFiltroAccion('ALL', this)">Ver Todos</button>
-                                    <button class="tab-btn" onclick="setFiltroAccion('Sanidad', this)">💉 Sanidad</button>
-                                    <button class="tab-btn" onclick="setFiltroAccion('Peso', this)">⚖️ Pesos</button>
-                                    <button class="tab-btn" onclick="setFiltroAccion('Diagnóstico', this)">🩺 Tactos</button>
-                                    <button class="tab-btn" onclick="setFiltroAccion('Inseminación', this)">🧬 Reproducción</button>
-                                    <button class="tab-btn" onclick="setFiltroAccion('Nutrición', this)">🌾 Nutrición</button>
-                                </div>
-                                <input type="hidden" id="f-inf-accion-oculto" value="ALL">
-                            </div>
-
-                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-                                <div>
-                                    <label style="font-size:14px; color:var(--texto); font-weight:bold; margin-bottom:8px; display:block;">Período de Tiempo:</label>
-                                    <select class="filtro-sel" id="f-inf-rango-fecha" onchange="manejarRangoFechas()" style="width:100%;">
-                                        <option value="30">Últimos 30 Días (Mes)</option>
-                                        <option value="hoy">Trabajos de Hoy</option>
-                                        <option value="7">Últimos 7 Días (Semana)</option>
-                                        <option value="todo">Ver Todo el Historial Histórico</option>
-                                        <option value="custom">📅 Elegir Rango Manual...</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style="font-size:14px; color:var(--texto); font-weight:bold; margin-bottom:8px; display:block;">Búsqueda por Palabra:</label>
-                                    <input type="text" id="f-inf-keyword" class="filtro-sel" placeholder="🔍 Buscar fármaco (Ej: Aftosa, Ivermectina)" style="width:100%; box-sizing:border-box;" onkeyup="actualizarInformeAvanzado()">
-                                </div>
-                            </div>
-
-                            <div id="caja-fechas-custom" style="display: none; gap: 20px; padding: 15px; background: rgba(59, 130, 246, 0.1); border-radius: 8px;">
-                                <div style="flex:1;"><label style="font-size:13px; font-weight:bold; display:block; margin-bottom:5px;">Desde:</label><input type="date" id="f-inf-desde" class="filtro-sel" style="width:100%;" onchange="actualizarInformeAvanzado()"></div>
-                                <div style="flex:1;"><label style="font-size:13px; font-weight:bold; display:block; margin-bottom:5px;">Hasta:</label><input type="date" id="f-inf-hasta" class="filtro-sel" style="width:100%;" onchange="actualizarInformeAvanzado()"></div>
-                            </div>
-                        </div>
-
-                        <!-- MODO 2: INVENTARIO -->
-                        <div id="filtros-inventario" class="oculto" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 15px;">
-                            <div><label style="font-size:14px; font-weight:bold; display:block; margin-bottom:5px;">Lote:</label><select class="filtro-sel" id="f-inf-lote" onchange="actualizarInformeAvanzado()" style="width:100%;"><option value="ALL">Todos los Lotes</option><option value="Hacienda General">Hacienda General</option><option value="Lecheras">Lecheras</option><option value="Preñadas">Preñadas</option><option value="Inseminadas">Inseminadas</option></select></div>
-                            <div><label style="font-size:14px; font-weight:bold; display:block; margin-bottom:5px;">Categoría:</label><select class="filtro-sel" id="f-inf-cat" onchange="actualizarInformeAvanzado()" style="width:100%;"><option value="ALL">Todas las Categorías</option><option value="V:">Vacas / Vaquillas (V)</option><option value="VV:">Vacas Viejas (VV)</option><option value="T">Terneros/as (TH/TM)</option><option value="D">Desmamantes (DH/DM)</option><option value="Toros">Toros</option></select></div>
-                            <div><label style="font-size:14px; font-weight:bold; display:block; margin-bottom:5px;">Preñez:</label><select class="filtro-sel" id="f-inf-dx" onchange="actualizarInformeAvanzado()" style="width:100%;"><option value="ALL">Cualquier Estado</option><option value="Preñada">Solo Preñadas</option><option value="Vacía">Solo Vacías</option></select></div>
-                        </div>
-
-                        <hr style="border-color: var(--borde); width: 100%; margin: 20px 0;">
-                        <!-- BUSCADOR INDIVIDUAL -->
+                    <div class="grid-2">
                         <div>
-                            <label style="font-size:14px; color:var(--exito); font-weight:bold; margin-bottom:8px; display:block;">Dossier Clínico Individual:</label>
-                            <input type="number" id="f-inf-rp" class="filtro-sel" style="border-color:var(--exito); width:100%; box-sizing:border-box;" placeholder="🔍 Escriba un Nº de Caravana (RP) para generar su historia médica completa..." onkeyup="actualizarInformeAvanzado()">
+                            <div class="grid-3">
+                                <div class="dato-box"><span>Raza</span><strong id="val-raza">-</strong></div>
+                                <div class="dato-box"><span>Edad</span><strong id="val-edad">-</strong></div>
+                                <div class="dato-box"><span>Padre/Madre</span><strong id="val-genealogia">-</strong></div>
+                                
+                                <div class="dato-box"><span>Lote / Grupo</span><strong id="val-lote">-</strong></div>
+                                <div class="dato-box"><span>Categoría</span><strong id="val-categoria">-</strong></div>
+                                <div class="dato-box"><span>Carimbo</span><strong id="val-carimbo">-</strong></div>
+                                
+                                <div class="dato-box"><span>Dx Tacto</span><strong id="val-dx" style="color:var(--success);">-</strong></div>
+                                <div class="dato-box"><span>Peso Actual</span><strong id="val-peso">-</strong></div>
+                                <div class="dato-box" style="border-color:#be185d;"><span>Últ. Inseminación</span><strong id="val-inseminacion">-</strong></div>
+                                
+                                <div class="dato-box" style="grid-column: 1 / 3; border-color:var(--primary);"><span>Régimen Nutricional Actual</span><strong id="val-nutricion">-</strong></div>
+                                <div class="dato-box" style="border-color:#c2410c;"><span>Última Sanidad</span><strong id="val-sanidad">-</strong></div>
+                            </div>
+                            
+                            <div class="muro-notas" style="margin-top:15px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:8px;">
+                                    <strong style="font-size:11px; color:var(--text-muted);">HISTORIAL DE OBSERVACIONES</strong>
+                                    <button class="btn-outline" style="padding: 2px 8px; font-size:10px;" onclick="abrirModal('m-nota')">+ Añadir</button>
+                                </div>
+                                <div id="val-notas"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div style="background:var(--bg-base); padding:15px; border:1px solid var(--border); border-radius:4px; height:100%;">
+                                <h4 style="margin-top:0; font-size:12px; color:var(--text-muted); text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">Registrar Suceso Clínico</h4>
+                                <div class="grid-acciones">
+                                    <button class="btn-outline" style="background:var(--bg-panel);" onclick="abrirModal('m-dx')">🩺 Tacto / Dx</button>
+                                    <button class="btn-outline" style="background:var(--bg-panel);" onclick="abrirModal('m-peso')">⚖️ Pesaje</button>
+                                    <button class="btn-outline" style="background:var(--bg-panel);" onclick="abrirModal('m-sani')">💉 Sanidad</button>
+                                    <button class="btn-outline" style="background:var(--bg-panel);" onclick="abrirModal('m-ins')">🧬 Inseminación</button>
+                                    <button class="btn-outline" style="background:var(--bg-panel);" onclick="abrirModal('m-nut')">🌾 Nutrición</button>
+                                    <button class="btn-outline" style="border-color:var(--danger); color:var(--danger);" onclick="borrarCaravana()">🗑️ Resetear/Borrar</button>
+                                </div>
+                                <button class="btn-primary" style="margin-top: 15px; background: var(--bg-card); border: 1px solid var(--border); color:var(--text-main);" onclick="verTrazabilidad()">📋 Ver Trazabilidad en Pantalla</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BASE DE DATOS -->
+        <div id="v-base" class="vista oculto">
+            <h2 class="titulo-seccion">Inventario General Activo</h2>
+            <div class="search-bar">
+                <input type="text" id="buscador-lista" class="form-control" style="margin:0;" placeholder="Buscar en inventario (Ej: caravana, lote, vacía)..." onkeyup="filtrarLista(this.value)">
+            </div>
+            <div class="tarjeta" style="padding:0; overflow-y:auto; max-height: 60vh;">
+                <table class="tabla-datos">
+                    <thead><tr><th>Caravana</th><th>Categoría</th><th>Ubicación</th><th>Diagnóstico</th><th>Acción</th></tr></thead>
+                    <tbody id="tb-registro"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- REPORTES PDF GANADERO PRO (INTEGRADO A LA UI PC) -->
+        <div id="v-reporte" class="vista oculto">
+            <h2 class="titulo-seccion">Centro de Reportes y Documentos PDF HD</h2>
+            
+            <div class="tarjeta">
+                
+                <!-- SELECTOR MAESTRO DE MODOS -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                    <select class="form-control" id="f-inf-modo" onchange="cambiarModoReporte()" style="width:400px; font-weight: bold; font-size: 15px; background-color: var(--bg-card); border-color: var(--primary);">
+                        <option value="eventos">📋 MODO: HISTORIAL DE TRABAJOS CLÍNICOS</option>
+                        <option value="inventario">📊 MODO: INVENTARIO GENERAL (Estado Actual)</option>
+                    </select>
+                    <button id="btn-print-magico" class="btn-primary" style="width:auto; padding:12px 25px; font-size:14px;" onclick="ejecutarDescargaPDF()">🖨️ Descargar Informe PDF HD</button>
+                </div>
+
+                <!-- MODO 1: EVENTOS / TRABAJOS -->
+                <div id="filtros-eventos" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; background: var(--bg-base); padding: 20px; border: 1px solid var(--border); border-radius: 6px;">
+                    <div>
+                        <label style="font-size:11px; color:var(--text-muted); font-weight:bold; margin-bottom:8px; display:block;">FILTRAR POR TIPO DE TRABAJO:</label>
+                        <div class="tabs-filtro" id="tabs-acciones">
+                            <button class="tab-btn activa" onclick="setFiltroAccion('ALL', this)">Ver Todos</button>
+                            <button class="tab-btn" onclick="setFiltroAccion('Sanidad', this)">💉 Sanidad</button>
+                            <button class="tab-btn" onclick="setFiltroAccion('Peso', this)">⚖️ Pesos</button>
+                            <button class="tab-btn" onclick="setFiltroAccion('Diagnóstico', this)">🩺 Tactos</button>
+                            <button class="tab-btn" onclick="setFiltroAccion('Inseminación', this)">🧬 Reproducción</button>
+                            <button class="tab-btn" onclick="setFiltroAccion('Nutrición', this)">🌾 Nutrición</button>
+                        </div>
+                        <input type="hidden" id="f-inf-accion-oculto" value="ALL">
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                        <div>
+                            <label style="font-size:11px; color:var(--text-muted); font-weight:bold; margin-bottom:8px; display:block;">PERÍODO DE TIEMPO:</label>
+                            <select class="form-control" id="f-inf-rango-fecha" onchange="manejarRangoFechas()" style="width:100%;">
+                                <option value="30">Últimos 30 Días (Mes)</option>
+                                <option value="hoy">Trabajos de Hoy</option>
+                                <option value="7">Últimos 7 Días (Semana)</option>
+                                <option value="todo">Ver Todo el Historial Histórico</option>
+                                <option value="custom">📅 Elegir Rango Manual...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:11px; color:var(--text-muted); font-weight:bold; margin-bottom:8px; display:block;">BÚSQUEDA POR PALABRA:</label>
+                            <input type="text" id="f-inf-keyword" class="form-control" placeholder="🔍 Buscar fármaco (Ej: Aftosa, Ivermectina)" onkeyup="actualizarInformeAvanzado()">
                         </div>
                     </div>
 
-                    <div class="grid-kpis" style="grid-template-columns: 1fr 1fr;">
-                        <div class="kpi-caja" style="background:var(--fondo-cuerpo); border-color:var(--borde);"><div class="kpi-valor" id="inf-total" style="color:var(--texto);">0</div><div class="kpi-label" id="lbl-total">Trabajos Listados</div></div>
-                        <div class="kpi-caja" style="background:var(--fondo-cuerpo); border-color:var(--borde);"><div class="kpi-valor" id="inf-prenadas" style="color:var(--exito);">-</div><div class="kpi-label" id="lbl-prenadas">-</div></div>
+                    <!-- Fechas Manuales -->
+                    <div id="caja-fechas-custom" style="display: none; gap: 20px; padding: 15px; background: var(--bg-card); border-radius: 4px; margin-top: 5px;">
+                        <div style="flex:1;"><label style="font-size:11px; font-weight:bold; display:block; margin-bottom:5px; color:var(--text-muted);">DESDE FECHA:</label><input type="date" id="f-inf-desde" class="form-control" onchange="actualizarInformeAvanzado()"></div>
+                        <div style="flex:1;"><label style="font-size:11px; font-weight:bold; display:block; margin-bottom:5px; color:var(--text-muted);">HASTA FECHA:</label><input type="date" id="f-inf-hasta" class="form-control" onchange="actualizarInformeAvanzado()"></div>
+                    </div>
+                </div>
+
+                <!-- MODO 2: INVENTARIO -->
+                <div id="filtros-inventario" class="oculto" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; background: var(--bg-base); padding: 20px; border: 1px solid var(--border); border-radius: 6px;">
+                    <div><label style="font-size:11px; font-weight:bold; display:block; margin-bottom:5px; color:var(--text-muted);">LOTE / POTRERO:</label><select class="form-control" id="f-inf-lote" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Lotes</option><option value="Hacienda General">Hacienda General</option><option value="Lecheras">Lecheras</option><option value="Preñadas">Preñadas</option><option value="Inseminadas">Inseminadas</option></select></div>
+                    <div><label style="font-size:11px; font-weight:bold; display:block; margin-bottom:5px; color:var(--text-muted);">CATEGORÍA:</label><select class="form-control" id="f-inf-cat" onchange="actualizarInformeAvanzado()"><option value="ALL">Todas las Categorías</option><option value="V:">Vacas / Vaquillas (V)</option><option value="VV:">Vacas Viejas (VV)</option><option value="T">Terneros/as (TH/TM)</option><option value="D">Desmamantes (DH/DM)</option><option value="Toros">Toros</option></select></div>
+                    <div><label style="font-size:11px; font-weight:bold; display:block; margin-bottom:5px; color:var(--text-muted);">ESTADO REPRODUCTIVO:</label><select class="form-control" id="f-inf-dx" onchange="actualizarInformeAvanzado()"><option value="ALL">Cualquier Estado</option><option value="Preñada">Solo Preñadas</option><option value="Vacía">Solo Vacías</option></select></div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="font-size:11px; color:var(--primary); font-weight:bold; margin-bottom:8px; display:block;">🔍 DOSSIER CLÍNICO INDIVIDUAL (ANULA OTROS FILTROS):</label>
+                    <input type="text" id="f-inf-rp" class="form-control" style="border: 2px solid var(--primary);" placeholder="Escriba un Nº de Caravana (RP) para generar su historia médica completa..." onkeyup="actualizarInformeAvanzado()">
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin:15px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:15px 0;">
+                    <div style="display:flex; gap:30px;">
+                        <div><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;" id="lbl-total">TRABAJOS LISTADOS</span><strong style="font-size:22px;" id="inf-total">0</strong></div>
+                        <div><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;" id="lbl-prenadas">PREÑADAS CONFIRMADAS</span><strong style="font-size:22px; color:var(--success);" id="inf-prenadas">-</strong></div>
+                    </div>
+                </div>
+                
+                <div style="overflow-y:auto; max-height: 50vh;">
+                    <table class="tabla-datos" id="tabla-eventos">
+                        <thead><tr><th>Fecha</th><th>Caravana (RP)</th><th>Trabajo Realizado</th><th>Detalles Extras</th></tr></thead>
+                        <tbody id="tb-informe-eventos"></tbody>
+                    </table>
+                    <table class="tabla-datos oculto" id="tabla-masiva">
+                        <thead><tr><th>Caravana</th><th>Categoría y Lote</th><th>Últ. Peso</th><th>Diagnóstico</th></tr></thead>
+                        <tbody id="tb-informe-masivo"></tbody>
+                    </table>
+                    <table class="tabla-datos oculto" id="tabla-individual">
+                        <thead><tr><th>Fecha</th><th>Trabajo Realizado</th><th>Detalles Extras</th></tr></thead>
+                        <tbody id="tb-informe-individual"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONFIGURACIÓN -->
+        <div id="v-config" class="vista oculto">
+            <h2 class="titulo-seccion">Administración del Software</h2>
+            <div class="grid-2">
+                <div>
+                    <div class="tarjeta">
+                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px; color:var(--text-main);">🎨 Apariencia PC</h3>
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <span style="font-weight: bold; color: var(--text-main);">Modo Claro / Oscuro</span>
+                            <button class="btn-outline" onclick="toggleTema()">Alternar Tema</button>
+                        </div>
                     </div>
                     
-                    <div class="tabla-responsive">
-                        <table class="tabla-informe" id="tabla-eventos"><thead><tr><th>Fecha</th><th>RP</th><th>Trabajo Realizado</th><th>Detalles Extras</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
-                        <table class="tabla-informe oculto" id="tabla-masiva"><thead><tr><th>RP</th><th>Categoría / Lote</th><th>Últ. Peso</th><th>Dx Actual</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
-                        <table class="tabla-informe oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Trabajo Realizado</th><th>Detalles Extras</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
+                    <div class="tarjeta">
+                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">🖨️ Membrete para Documentos PDF</h3>
+                        <div class="form-grupo"><label>Nombre de la Empresa / Hacienda</label><input type="text" id="cfg-nom" class="form-control" placeholder="Taurus Control"></div>
+                        <div class="form-grupo"><label>Logo Oficial HD (PNG/JPG)</label><input type="file" id="cfg-logo" class="form-control" style="padding:6px;" accept="image/*"></div>
+                        <button class="btn-primary" onclick="guardarDisenoServidor()">Guardar Diseño de Impresión</button>
+                    </div>
+
+                    <div class="tarjeta" id="panel-crear-peones">
+                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">👷 Control de Operadores</h3>
+                        <div class="form-grupo"><label>Usuario del Operador</label><input type="text" id="op-usu" class="form-control"></div>
+                        <div class="form-grupo"><label>Contraseña de Acceso</label><input type="password" id="op-pass" class="form-control"></div>
+                        <button class="btn-primary" onclick="crearOperador()">Registrar Operador en Nube</button>
                     </div>
                 </div>
-            </div>
 
-            <!-- AJUSTES -->
-            <div id="vista-config" class="oculto">
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap:30px;">
+                <div>
                     <div class="tarjeta">
-                        <div class="tarjeta-titulo">🎨 Apariencia PC</div>
-                        <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <span style="font-weight: bold; color: var(--texto);">Modo Claro / Oscuro</span>
-                            <button class="btn-mini" onclick="toggleTema()">Alternar Tema</button>
+                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">📊 Analíticas en Dashboard (Máx 3)</h3>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="1" onchange="verificarLimiteGraficos(this)"> 1. Tasa de Preñez Dinámica</label>
+                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="2" onchange="verificarLimiteGraficos(this)"> 2. Composición de Hacienda</label>
+                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="3" onchange="verificarLimiteGraficos(this)"> 3. Distribución por Lotes</label>
+                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="4" onchange="verificarLimiteGraficos(this)"> 4. Condición Corporal General</label>
+                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="5" onchange="verificarLimiteGraficos(this)"> 5. Causas de Vientre Vacío</label>
+                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="6" onchange="verificarLimiteGraficos(this)"> 6. Ratios de Sanidad Global</label>
+                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="7" onchange="verificarLimiteGraficos(this)"> 7. Preñez Eficaz por Lote</label>
+                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="8" onchange="verificarLimiteGraficos(this)"> 8. Eficacia por Toro</label>
+                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="9" onchange="verificarLimiteGraficos(this)"> 9. Promedios</label>
+                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="10" onchange="verificarLimiteGraficos(this)"> 10. Volumen</label>
                         </div>
                     </div>
+                    
                     <div class="tarjeta">
-                        <div class="tarjeta-titulo">🔌 Conexión Bluetooth Web</div>
-                        <p style="font-size: 14px; color: var(--muted); margin-bottom: 15px;">Conecta una Balanza ESP32 o Bastón directo al navegador de tu computadora.</p>
-                        <button class="btn-guardar" style="background: #0284c7; margin-top: 0;" onclick="conectarHardwareBLE()">Vincular Hardware BLE</button>
-                    </div>
-                    <div class="tarjeta">
-                        <div class="tarjeta-titulo">📡 Estado del Sistema</div>
-                        <div class="form-grupo"><label>Pendientes de envío a la Nube:</label><input type="text" id="lbl-pendientes" class="form-control" readonly style="font-weight:bold; color:var(--alerta);" value="0 registros pendientes"></div>
-                        <button class="btn-guardar" onclick="sincronizarPendientesManual()">Forzar Sincronización Manual</button>
-                    </div>
-                    <div class="tarjeta">
-                        <div class="tarjeta-titulo">👤 Mi Perfil</div>
-                        <div class="form-grupo"><label>Sesión iniciada como:</label><input type="text" id="usuario-activo-lbl" class="form-control" readonly style="font-weight:bold; color:var(--exito);"></div>
-                        <div class="form-grupo" style="margin-top: 15px;"><label>Cambiar mi Contraseña</label><input type="password" id="nueva-clave" class="form-control" placeholder="Escribe tu nueva clave"></div>
-                        <button class="btn-guardar" onclick="cambiarMiContrasena()">Actualizar Contraseña</button>
-                    </div>
-                    <div class="tarjeta" id="panel-crear-peones" style="grid-column: 1/-1;">
-                        <div class="tarjeta-titulo">👷 Control de Operadores</div>
-                        <p style="font-size: 14px; color: var(--muted); margin-bottom:15px;">Crea cuentas secundarias para el personal. Sus registros impactarán en tu base de datos central.</p>
-                        <div style="display:flex; gap:20px; align-items:flex-end;">
-                            <div class="form-grupo" style="flex:1; margin:0;"><label>Usuario Nuevo</label><input type="text" id="peon-usu" class="form-control" placeholder="Ej: juan_peon"></div>
-                            <div class="form-grupo" style="flex:1; margin:0;"><label>Contraseña</label><input type="password" id="peon-pass" class="form-control" placeholder="Clave de acceso"></div>
-                            <button class="btn-guardar" style="background:#10b981; width:200px; margin:0;" onclick="crearPeon()">Crear Operador</button>
-                        </div>
-                    </div>
-                    <div class="tarjeta" style="grid-column: 1/-1;">
-                        <div class="tarjeta-titulo">📊 Seleccionar Gráficos Visibles (Máx 3)</div>
-                        <div id="contenedor-checkbox-graficos" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:10px;">
-                            <label class="check-opcion"><input type="checkbox" class="chk-graf" value="1" onchange="verificarLimiteGraficos(this)"> 1. Tasa de Preñez</label>
-                            <label class="check-opcion"><input type="checkbox" class="chk-graf" value="2" onchange="verificarLimiteGraficos(this)"> 2. Composición del Hato</label>
-                            <label class="check-opcion"><input type="checkbox" class="chk-graf" value="3" onchange="verificarLimiteGraficos(this)"> 3. Lotes / Potreros</label>
-                            <label class="check-opcion"><input type="checkbox" class="chk-graf" value="4" onchange="verificarLimiteGraficos(this)"> 4. Condición Corporal</label>
-                            <label class="check-opcion"><input type="checkbox" class="chk-graf" value="5" onchange="verificarLimiteGraficos(this)"> 5. Causas Vacías</label>
-                            <label class="check-opcion"><input type="checkbox" class="chk-graf" value="6" onchange="verificarLimiteGraficos(this)"> 6. Cobertura Sanitaria</label>
-                            <label class="check-opcion"><input type="checkbox" class="chk-graf" value="7" onchange="verificarLimiteGraficos(this)"> 7. Preñez por Lote</label>
-                            <label class="check-opcion"><input type="checkbox" class="chk-graf" value="8" onchange="verificarLimiteGraficos(this)"> 8. Eficacia por Toro</label>
-                            <label class="check-opcion"><input type="checkbox" class="chk-graf" value="9" onchange="verificarLimiteGraficos(this)"> 9. Promedio de Pesos</label>
-                            <label class="check-opcion"><input type="checkbox" class="chk-graf" value="10" onchange="verificarLimiteGraficos(this)"> 10. Volumen de Trabajos</label>
-                        </div>
+                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">🔐 Cambiar mi Contraseña</h3>
+                        <div class="form-grupo"><label>Nueva Clave (Mínimo 4 caracteres)</label><input type="password" id="nueva-clave" class="form-control"></div>
+                        <button class="btn-primary" style="background:var(--success);" onclick="cambiarMiContrasena()">Actualizar Contraseña</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODALES GANADERO PRO (Diseño Escritorio) -->
-    <div id="modal-vinculacion" class="modal">
+    <!-- MODALES DE CARGA DE DATOS (GANADERO PRO) -->
+    <div id="m-renombrar" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-renombrar')">&times;</span><h3>Modificar Número RP</h3><p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">El historial clínico se enlazará al nuevo número.</p><div class="form-grupo"><label>Nuevo Número RP</label><input type="text" class="form-control" id="f-nueva-caravana" autocomplete="off"></div><button class="btn-guardar" onclick="guardarCambioCaravana()">Confirmar Cambio</button></div></div>
+    <div id="m-nota" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-nota')">&times;</span><h3>Anotación Libre</h3><div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt" placeholder="Describa la observación general..."></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-nota', 'Comentario')">Guardar en Historial</button></div></div>
+    
+    <div id="m-rfid" class="modal">
         <div class="modal-body">
-            <span class="cerrar" onclick="cerrarModal('modal-vinculacion')">&times;</span>
-            <h3>📡 Vincular Nuevo Chip RFID</h3>
-            <p style="font-size: 15px; color: var(--muted); margin-bottom: 20px;">Se leyó un código hexadecimal interno. Escriba el número de Caravana (RP) visible del animal para enlazarlo.</p>
-            <div class="form-grupo"><input type="number" class="form-control" id="input-rp-vinculacion" placeholder="Ej: 1540" style="text-align: center; font-size: 28px; font-weight: bold; padding:20px;"></div>
-            <button class="btn-guardar" onclick="guardarVinculacionNFC()" style="font-size:18px;">Vincular Chip y Abrir Ficha</button>
+            <span class="btn-cerrar" onclick="cerrarModal('m-rfid')">&times;</span>
+            <h3>Vincular Bastón RFID</h3>
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px; line-height: 1.5;">
+                El chip leído (<strong id="lbl-rfid-scaneado" style="color:var(--primary);"></strong>) no está asignado a ningún animal. Ingrese el número visual de la caravana (RP) para vincularlo.
+            </p>
+            <div class="form-grupo">
+                <label>Caravana Visual (RP)</label>
+                <input type="text" class="form-control" id="f-rfid-caravana" autocomplete="off" placeholder="Ej: 1234">
+            </div>
+            <button class="btn-guardar" onclick="guardarVinculacionRFID()">Vincular y Abrir Ficha</button>
+        </div>
+    </div>
+    
+    <div id="m-perfil" class="modal">
+        <div class="modal-body">
+            <span class="btn-cerrar" onclick="cerrarModal('m-perfil')">&times;</span>
+            <h3>Datos Base del Animal</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div class="form-grupo"><label>Raza Principal</label><input type="text" class="form-control" id="f-raza"></div>
+                <div class="form-grupo"><label>Edad Aproximada</label><input type="text" class="form-control" id="f-edad"></div>
+                <div class="form-grupo"><label>Código de Padre</label><input type="text" class="form-control" id="f-padre"></div>
+                <div class="form-grupo"><label>Código de Madre</label><input type="text" class="form-control" id="f-madre"></div>
+            </div>
+            <button class="btn-guardar" onclick="guardarPerfilCompleto()">Actualizar Perfil</button>
         </div>
     </div>
 
-    <div id="modal-comentario" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-comentario')">&times;</span><h3>Anotación General</h3><div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-comentario', 'Comentario')">Guardar Nota</button></div></div>
-    
-    <div id="modal-perfil" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-perfil')">&times;</span><h3>Editar Perfil Base</h3><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"><div class="form-grupo"><label>Raza</label><input type="text" class="form-control" id="f-raza"></div><div class="form-grupo"><label>Edad</label><input type="text" class="form-control" id="f-edad"></div><div class="form-grupo"><label>Padre</label><input type="text" class="form-control" id="f-padre"></div><div class="form-grupo"><label>Madre</label><input type="text" class="form-control" id="f-madre"></div></div><button class="btn-guardar" onclick="guardarPerfilCompleto()">Guardar Perfil</button></div></div>
-    
-    <div id="modal-clasificacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-clasificacion')">&times;</span><h3>Clasificación y Lote</h3>
-        <div class="form-grupo"><label>Categoría</label>
-            <select class="form-control" id="input-cat-rapida">
-                <option value="TH: Ternera Hembra">TH: Ternera Hembra</option><option value="TM: Ternero Macho">TM: Ternero Macho</option><option value="DH: Desmamante Hembra">DH: Desmamante Hembra</option><option value="DM: Desmamante Macho">DM: Desmamante Macho</option><option value="V: Vaca/Vaquilla">V: Vaca/Vaquilla</option><option value="VV: Vaca Vieja">VV: Vaca Vieja</option><option value="Toros">Toros</option><option value="Novillos">Novillos</option><option value="Bueyes y Señuelos">Bueyes</option>
-            </select>
-        </div>
+    <!-- M-CLASI: AHORA LOTE ES UN SELECT -->
+    <div id="m-clasi" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-clasi')">&times;</span><h3>Clasificación y Ubicación</h3>
+        <div class="form-grupo"><label>Categoría Oficial</label><select class="form-control" id="input-cat-rapida"><option value="TH: Ternera Hembra">TH: Ternera Hembra</option><option value="TM: Ternero Macho">TM: Ternero Macho</option><option value="DH: Desmamante Hembra">DH: Desmamante Hembra</option><option value="DM: Desmamante Macho">DM: Desmamante Macho</option><option value="V: Vaca/Vaquilla">V: Vaca/Vaquilla</option><option value="VV: Vaca Vieja">VV: Vaca Vieja</option><option value="Toros">Toros</option><option value="Novillos">Novillos</option><option value="Bueyes y Señuelos">Bueyes</option></select></div>
         <div class="form-grupo"><label>Lote / Potrero Actual</label>
             <select class="form-control" id="input-lote-rapido">
-                <option value="Hacienda General">Hacienda General</option><option value="Lecheras">Lecheras</option><option value="Preñadas">Preñadas</option><option value="Inseminadas">Inseminadas</option><option value="Destete">Destete</option><option value="Enfermería">Enfermería</option>
+                <option value="Hacienda General">Hacienda General</option>
+                <option value="Lecheras">Lecheras</option>
+                <option value="Preñadas">Preñadas</option>
+                <option value="Inseminadas">Inseminadas</option>
+                <option value="Destete">Destete</option>
+                <option value="Enfermería">Enfermería</option>
             </select>
         </div>
-        <div class="form-grupo"><label>Carimbo</label><input type="number" class="form-control" id="input-carimbo-rapido"></div>
-        <button class="btn-guardar" onclick="guardarClasificacion()">Guardar Cambios</button>
+        <div class="form-grupo"><label>Carimbo (Año)</label><input type="number" class="form-control" id="input-carimbo-rapido"></div>
+        <button class="btn-guardar" onclick="guardarClasificacion()">Actualizar Ubicación</button>
     </div></div>
     
-    <div id="modal-diagnostico" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-diagnostico')">&times;</span><h3>Tacto / Diagnóstico (Dx)</h3>
-        <div class="form-grupo">
-            <select class="form-control" id="i-dx-sel" style="font-weight:bold; font-size:20px; padding:15px;">
-                <option value="Preñada">✅ Preñada</option>
-                <option value="Vacía">❌ Vacía</option>
-                <option value="Vacía (Sangre)">🩸 Vacía (Anormal/Problema)</option>
-            </select>
-        </div>
-        <div class="form-grupo"><label>Observaciones Clínicas (Opcional)</label><textarea class="form-control textarea" id="i-dx-txt" placeholder="Días de gestación, problemas en ovario..."></textarea></div>
-        <button class="btn-guardar" onclick="prepararGuardado('modal-diagnostico', 'Diagnóstico')">Registrar Tacto</button>
-    </div></div>
+    <div id="m-dx" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-dx')">&times;</span><h3>Resultado de Tacto</h3><div class="form-grupo"><select class="form-control" id="i-dx-sel" style="font-weight:bold;"><option value="Preñada">✅ Preñada</option><option value="Vacía">❌ Vacía</option><option value="Vacía (Sangre)">🩸 Vacía (Anormal/Problema)</option></select></div><div class="form-grupo"><label>Observación del Veterinario (Opcional)</label><textarea class="form-control textarea" id="i-dx-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-dx', 'Diagnóstico')">Registrar Tacto</button></div></div>
+    <div id="m-peso" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-peso')">&times;</span><h3>Registro de Peso</h3><div class="form-grupo"><input type="number" step="0.5" class="form-control" id="i-peso-val" placeholder="Kg (Ej: 350.5)"></div><div class="form-grupo"><label>Condición Corporal</label><select class="form-control" id="i-peso-cond"><option>Óptima (Normal)</option><option>Bajo Peso (Flaca)</option><option>Sobrepeso (Gorda)</option></select></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-peso-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-peso', 'Peso')">Registrar Peso</button></div></div>
     
-    <div id="modal-peso" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-peso')">&times;</span><h3>Control de Peso</h3>
-        <div class="form-grupo"><input type="number" step="0.5" class="form-control" id="i-peso-val" placeholder="Kg (Ej: 350.5)" style="font-size:32px; font-weight:bold; text-align:center; padding:20px;"></div>
-        <div class="form-grupo"><label>Condición Corporal Visual</label>
-            <select class="form-control" id="i-peso-cond">
-                <option>Óptima (Normal)</option><option>Bajo Peso (Flaca)</option><option>Sobrepeso (Gorda)</option>
-            </select>
-        </div>
-        <div class="form-grupo"><label>Notas (Opcional)</label><textarea class="form-control textarea" id="i-peso-txt"></textarea></div>
-        <button class="btn-guardar" onclick="prepararGuardado('modal-peso', 'Peso')">Registrar Peso</button>
-    </div></div>
-    
-    <div id="modal-sanidad" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-sanidad')">&times;</span><h3>💉 Tratamiento Sanitario</h3>
+    <!-- M-SANI: CON LISTA EXTENDIDA Y OPCIÓN OTRO -->
+    <div id="m-sani" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-sani')">&times;</span><h3>Control Sanitario</h3>
         <div class="form-grupo"><label>Fármaco / Producto Aplicado</label>
             <select class="form-control" id="i-sani-sel" onchange="verificarSaniOtro()">
-                <option value="Vacuna Aftosa">Vacuna Aftosa</option><option value="Vacuna Carbunclo">Vacuna Carbunclo</option><option value="Vacuna Brucelosis">Vacuna Brucelosis</option><option value="Vacuna Rabia">Vacuna Rabia</option><option value="Antiparasitario (Ivermectina)">Antiparasitario (Ivermectina)</option><option value="Antiparasitario (Ricobendazol)">Antiparasitario (Ricobendazol)</option><option value="Vitamina ADE">Vitamina ADE / Reconstituyente</option><option value="Cobre / Cuprhorme">Cobre / Cuprhorme</option><option value="Antibiótico">Antibiótico General</option><option value="Baño Garrapaticida">Baño Garrapaticida</option><option value="OTRO">✏️ Ingresar otro producto manualmente...</option>
+                <option value="Vacuna Aftosa">Vacuna Aftosa</option>
+                <option value="Vacuna Carbunclo">Vacuna Carbunclo</option>
+                <option value="Vacuna Brucelosis">Vacuna Brucelosis</option>
+                <option value="Vacuna Rabia">Vacuna Rabia</option>
+                <option value="Antiparasitario (Ivermectina)">Antiparasitario (Ivermectina)</option>
+                <option value="Antiparasitario (Ricobendazol)">Antiparasitario (Ricobendazol)</option>
+                <option value="Vitamina ADE">Vitamina ADE / Reconstituyente</option>
+                <option value="Cobre / Cuprhorme">Cobre / Cuprhorme</option>
+                <option value="Antibiótico">Antibiótico General</option>
+                <option value="Baño Garrapaticida">Baño Garrapaticida</option>
+                <option value="OTRO">✏️ Ingresar otro producto manualmente...</option>
             </select>
             <input type="text" class="form-control oculto" id="i-sani-sel-otro" placeholder="Escriba el producto" style="margin-top:10px;">
         </div>
-        <div class="form-grupo"><label>Dosis / Marca Comercial / Lote (Opcional)</label><input type="text" class="form-control" id="i-sani-lote" placeholder="Ej: 5ml - Marca X"></div>
-        <div class="form-grupo"><label>Observaciones o Síntomas</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div>
-        <button class="btn-guardar" onclick="prepararGuardado('modal-sanidad', 'Sanidad')">Registrar Sanidad</button>
+        <div class="form-grupo"><label>Dosis / Marca / Lote (Opcional)</label><input type="text" class="form-control" id="i-sani-lote" placeholder="Ej: 5ml - Marca X"></div>
+        <div class="form-grupo"><label>Observaciones (Enfermedad, etc)</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div>
+        <button class="btn-guardar" onclick="prepararGuardado('m-sani', 'Sanidad')">Registrar Sanidad</button>
     </div></div>
     
-    <div id="modal-inseminacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-inseminacion')">&times;</span><h3>🧬 Reproducción</h3>
-        <div class="form-grupo"><label>Método de Reproducción</label>
-            <select class="form-control" id="i-ins-quien">
-                <option value="IATF (Inseminación Artificial)">IATF (Inseminación Artificial)</option><option value="Monta Natural / Repaso">Monta Natural / Repaso</option><option value="Transferencia de Embrión">Transferencia de Embrión</option>
-            </select>
-        </div>
-        <div class="form-grupo"><label>Identidad del Toro / Pajuela</label><input type="text" class="form-control" id="i-ins-toro" placeholder="Ej: Brangus 450"></div>
-        <div class="form-grupo"><label>Observaciones del Celo</label><textarea class="form-control textarea" id="i-ins-txt" placeholder="Responsable, comportamiento, etc..."></textarea></div>
-        <button class="btn-guardar" onclick="prepararGuardado('modal-inseminacion', 'Inseminación')">Registrar Servicio</button>
-    </div></div>
+    <div id="m-ins" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-ins')">&times;</span><h3>Registro de Inseminación</h3><div class="form-grupo"><label>Método / Tipo</label><select class="form-control" id="i-ins-quien"><option value="IATF (Inseminación Artificial)">IATF (Inseminación Artificial)</option><option value="Monta Natural / Repaso">Monta Natural / Repaso</option><option value="Transferencia de Embrión">Transferencia de Embrión</option></select></div><div class="form-grupo"><label>Toro / Pajuela</label><input type="text" class="form-control" id="i-ins-toro" placeholder="Ej: Brangus 450"></div><div class="form-grupo"><label>Observaciones (Responsable, Celo)</label><textarea class="form-control textarea" id="i-ins-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-ins', 'Inseminación')">Registrar Servicio</button></div></div>
     
-    <div id="modal-nut" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-nut')">&times;</span><h3>🌾 Suplemento Nutricional</h3>
+    <!-- M-NUT: CON LISTA EXTENDIDA Y OPCIÓN OTRO -->
+    <div id="m-nut" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-nut')">&times;</span><h3>Suplemento Nutricional</h3>
         <div class="form-grupo"><label>Tipo de Alimento</label>
             <select class="form-control" id="i-nut-prod" onchange="verificarNutOtro()">
-                <option value="Sal Mineral">Sal Mineral Común</option><option value="Sal Proteica">Sal Proteica</option><option value="Balanceado / Engorde">Balanceado / Ración Engorde</option><option value="Fardo / Heno">Fardo / Heno</option><option value="OTRO">✏️ Ingresar otro alimento...</option>
+                <option value="Sal Mineral">Sal Mineral Común</option>
+                <option value="Sal Proteica">Sal Proteica</option>
+                <option value="Balanceado / Engorde">Balanceado / Ración Engorde</option>
+                <option value="Fardo / Heno">Fardo / Heno</option>
+                <option value="OTRO">✏️ Ingresar otro alimento...</option>
             </select>
             <input type="text" class="form-control oculto" id="i-nut-prod-otro" placeholder="Escriba el alimento" style="margin-top:10px;">
         </div>
-        <div class="form-grupo"><label>Ración / Dosificación (Opcional)</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 2 Kg/día..."></div>
-        <div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div>
-        <button class="btn-guardar" onclick="prepararGuardado('modal-nut', 'Nutrición')">Registrar Nutrición</button>
-    </div></div>
+        <div class="form-grupo"><label>Dosificación (Opcional)</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 2 Kg/día..."></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-nut', 'Nutrición')">Registrar Nutrición</button></div></div>
+    
+    <div id="m-traza" class="modal"><div class="modal-body" style="width:700px;"><span class="btn-cerrar" onclick="cerrarModal('m-traza')">&times;</span><h3>Trazabilidad Completa del RP</h3><div style="max-height:450px;overflow-y:auto; margin-top:15px;"><table class="tabla-datos"><thead><tr><th>Fecha</th><th>Acción</th><th>Valor Principal</th><th>Detalles Adicionales</th></tr></thead><tbody id="tb-traza"></tbody></table></div></div></div>
 
-    <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial Clínico Completo</h3><div id="contenido-historial"></div></div></div>
-
-    <!-- JAVASCRIPT (Lógica Universal Ganadero Pro) -->
+    <!-- CÓDIGO CORE BLINDADO CON ASYNC/AWAIT -->
     <script>
         const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzyWvEMlfCCQXGP0-ssUUQ2je4tsFPXd6Yu0C9WwsTa7sgqFkkz3jr0a8CXqrI9ydk/exec";
         
-        let baseDeDatosCache = []; let caravanaActiva = null; let usuarioActivo = ""; let propMaestro = ""; let rolUsuario = ""; let rpPrint = "";
-        let dispositivoBLE = null; let bleServer = null; let bleService = null; let bleCharacteristic = null; let tagHuerfano = ""; 
+        function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
+        function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 
+        let dbCache = []; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
+
+        // Manejadores OTRO
         function verificarSaniOtro() { const sel = document.getElementById('i-sani-sel'); const input = document.getElementById('i-sani-sel-otro'); if(sel.value === 'OTRO') { input.classList.remove('oculto'); input.focus(); } else { input.classList.add('oculto'); input.value = ''; } }
         function verificarNutOtro() { const sel = document.getElementById('i-nut-prod'); const input = document.getElementById('i-nut-prod-otro'); if(sel.value === 'OTRO') { input.classList.remove('oculto'); input.focus(); } else { input.classList.add('oculto'); input.value = ''; } }
 
-        window.loginBiometricoExitoso = function() { const credStr = localStorage.getItem('taurus_cred'); if(credStr) { const cred = JSON.parse(credStr); document.getElementById('usuario').value = cred.usu; document.getElementById('password').value = cred.pass; procesarIngreso(); } else { alert("Inicia sesión manualmente."); } };
-        window.recibirDatoDesdeAndroid = function(valorBLE) { if(valorBLE) { procesarTramaBLE(valorBLE); } };
+        // ==========================================
+        // MÓDULO BLUETOOTH BLINDADO
+        // ==========================================
+        let bleDevice = null; let bleServer = null; let rfidPendiente = "";
 
-        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); }); }
+        async function conectarBluetooth() {
+            const btn = document.getElementById('btn-bluetooth');
+            if (!navigator.bluetooth) { alert("Tu navegador no soporta Web Bluetooth. Usa Google Chrome o Edge."); return; }
+            if (window.location.protocol === 'file:') { alert("El Bluetooth en PC requiere abrir el sistema desde tu enlace web de GitHub por seguridad."); return; }
+            
+            try {
+                btn.innerText = "⏳ Buscando...";
+                bleDevice = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb', '6e400001-b5a3-f393-e0a9-e50e24dcca9e'] });
+                bleDevice.addEventListener('gattserverdisconnected', () => { btn.innerHTML = "🔗 Bluetooth"; btn.style.color = "var(--primary)"; alert("Dispositivo Bluetooth desconectado."); });
+                bleServer = await bleDevice.gatt.connect();
+                let service, characteristic;
+                try { service = await bleServer.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb'); characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb'); } 
+                catch(e) { try { service = await bleServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e'); characteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); } catch(err) { } }
+
+                if (characteristic) {
+                    await characteristic.startNotifications();
+                    characteristic.addEventListener('characteristicvaluechanged', (event) => { let value = new TextDecoder().decode(event.target.value).trim(); if(value) procesarLecturaBluetooth(value); });
+                }
+                btn.innerHTML = "🔵 BT Conectado"; btn.style.color = "var(--success)";
+            } catch (error) { btn.innerHTML = "🔗 Bluetooth"; alert("Conexión cancelada o fallida."); }
+        }
+
+        let bufferBT = ""; let timeoutBT;
+        function procesarLecturaBluetooth(texto) {
+            bufferBT += texto; clearTimeout(timeoutBT);
+            timeoutBT = setTimeout(() => {
+                let dataLimpia = bufferBT.replace(/[^a-zA-Z0-9.-]/g, ''); if(!dataLimpia) return;
+                
+                if (dataLimpia.includes('.')) {
+                    if (!document.getElementById('v-ficha').classList.contains('oculto') && rpActivo && rpActivo !== "---") { abrirModal('m-peso'); document.getElementById('i-peso-val').value = dataLimpia; } 
+                    else { alert("Balanza: Se recibió un peso de " + dataLimpia + " Kg. Abre la Ficha de un animal primero."); }
+                } else {
+                    let tagHex = String(dataLimpia).trim();
+                    // BUSCADOR CORREGIDO: Acepta ambos formatos y limpia espacios
+                    let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim() === tagHex);
+                    
+                    if(esRFIDRegistrado) { 
+                        document.getElementById('buscador-caravana').value = esRFIDRegistrado.caravana; 
+                        document.querySelectorAll('.sidebar-nav li')[1].click(); 
+                        buscarCaravanaBtn(); 
+                    } 
+                    else { 
+                        rfidPendiente = tagHex; 
+                        document.getElementById('lbl-rfid-scaneado').innerText = tagHex; 
+                        document.getElementById('f-rfid-caravana').value = ""; 
+                        abrirModal('m-rfid'); 
+                    }
+                }
+                bufferBT = "";
+            }, 300);
+        }
+        
+        function guardarVinculacionRFID() {
+            let car = document.getElementById('f-rfid-caravana').value.trim(); if(!car) { alert("Debe ingresar un número RP."); return; }
+            
+            // GUARDADO CORREGIDO: Guarda con el mismo formato que usa Android
+            const obj = { fecha: new Date().toISOString(), accion: 'Vinculacion_RFID', caravana: car, valor: rfidPendiente, detalles: `Vinculado por BT | Op: ${usActivo}`, maestro: maestroId };
+            dbCache.unshift(obj); lsSet('tc_db', dbCache); cerrarModal('m-rfid');
+            
+            if(navigator.onLine) { const fd = new URLSearchParams(); for(let k in obj) fd.append(k, obj[k]); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { sincronizarFondo(false); }); } 
+            else { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); }
+            
+            document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.sidebar-nav li')[1].click(); buscarCaravanaBtn(); procesarDatosDashboard();
+        }
 
         function obtenerRegistrosActivos() {
-            let validos = [];
-            const unicas = [...new Set(baseDeDatosCache.map(d => d.caravana).filter(c => c !== "---" && c !== null))];
+            let validos = []; const unicas = [...new Set(dbCache.map(d => d.caravana).filter(c => c !== "---" && c != null))];
             unicas.forEach(car => {
-                let regs = baseDeDatosCache.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(a.fecha) - new Date(b.fecha)); 
+                let regs = dbCache.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
                 let lastResetIdx = -1; for(let i=regs.length-1; i>=0; i--){ if(regs[i].accion === 'Borrar_Caravana') { lastResetIdx = i; break; } }
                 if(lastResetIdx !== -1) { regs = regs.slice(lastResetIdx + 1); } validos = validos.concat(regs);
             });
-            return validos.concat(baseDeDatosCache.filter(d => d.caravana === "---" || !d.caravana));
+            const globalEvents = dbCache.filter(d => d.caravana === "---" || !d.caravana);
+            return validos.concat(globalEvents).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
         }
 
         if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
         function toggleTema() { document.body.classList.toggle('tema-claro'); localStorage.setItem('tc_tema', document.body.classList.contains('tema-claro') ? 'claro' : 'oscuro'); }
 
-        window.addEventListener('online', actualizarEstadoRed); window.addEventListener('offline', actualizarEstadoRed);
-        function actualizarEstadoRed() {
-            const badge = document.getElementById('estado-red');
-            if(navigator.onLine) { badge.classList.remove('offline'); badge.innerHTML = '🟢 Conectado a la Nube'; sincronizarPendientesAuto(); } 
-            else { badge.classList.add('offline'); badge.innerHTML = '🟠 Uso Local (Offline)'; }
+        function setEstadoRed(online) {
+            const b = document.getElementById('estado-red'); if(!b) return;
+            if(online) { b.classList.replace('offline','online'); b.innerText = '🟢 Conectado a la Nube'; sincronizarPendientesAuto();} 
+            else { b.classList.replace('online','offline'); b.innerText = '🔴 Red Local (Offline)'; }
         }
+        window.addEventListener('online', () => setEstadoRed(true)); window.addEventListener('offline', () => setEstadoRed(false));
 
         async function procesarIngreso() {
-            const usu = document.getElementById('usuario').value.trim(); const pass = document.getElementById('password').value.trim();
+            const u = document.getElementById('usuario').value.trim(); const p = document.getElementById('password').value.trim();
             const btn = document.getElementById('btn-ingreso'); const err = document.getElementById('error-login');
-            if(!usu || !pass) return; btn.disabled = true; btn.innerText = "Verificando..."; err.style.display = 'none';
+            if(!u || !p) return; btn.disabled = true; btn.innerText = "Verificando..."; err.style.display = 'none';
 
             try {
                 if(!navigator.onLine) throw new Error("Offline");
-                const url = `${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(usu)}&password=${encodeURIComponent(pass)}&t=${Date.now()}`;
+                const url = `${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&t=${Date.now()}`;
                 const response = await fetch(url);
-                if (!response.ok) throw new Error("Error de red");
+                if (!response.ok) throw new Error("Error de conexión al servidor.");
                 const res = await response.json();
                 if(res.error) throw new Error(res.mensaje);
-                if(res.vencimiento && new Date() > new Date(res.vencimiento)) throw new Error("Licencia vencida.");
-
-                localStorage.setItem('tc_hacienda', JSON.stringify({ nombre: res.hacienda, logo: res.logo }));
-                localStorage.setItem('taurus_cred', JSON.stringify({usu: usu, pass: pass, maestro: res.maestro, rol: res.rol, vencimiento: res.vencimiento}));
-                let dataLimpia = Array.isArray(res.data) ? res.data : []; localStorage.setItem('taurus_db', JSON.stringify(dataLimpia));
-                iniciarSesionUI(dataLimpia, usu, res.maestro, res.rol);
-            } catch(e) {
-                const credStr = localStorage.getItem('taurus_cred');
-                if(credStr) {
-                    const cred = JSON.parse(credStr);
-                    if(cred.usu.toLowerCase() === usu.toLowerCase() && cred.pass === pass) {
-                        if(cred.vencimiento && new Date() > new Date(cred.vencimiento)) { err.innerText = "Licencia local vencida."; err.style.display = 'block'; } 
-                        else { iniciarSesionUI(JSON.parse(localStorage.getItem('taurus_db')) || [], cred.usu, cred.maestro, cred.rol); }
-                    } else { err.innerText = "Credenciales locales incorrectas."; err.style.display = 'block'; }
-                } else { err.innerText = e.message === "Offline" ? "Sin internet y sin sesión guardada." : e.message; err.style.display = 'block'; }
-            } finally { btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
+                if(res.vencimiento && new Date() > new Date(res.vencimiento)) throw new Error("Su licencia ha vencido.");
+                
+                let dataLimpia = Array.isArray(res.data) ? res.data : [];
+                lsSet('tc_cred', { u: u, p: p, m: res.maestro, r: res.rol, v: res.vencimiento }); lsSet('tc_db', dataLimpia); lsSet('tc_hacienda', { nombre: res.hacienda, logo: res.logo }); 
+                arrancarSistema(dataLimpia, u, res.maestro, res.rol);
+            } catch(error) {
+                const cred = lsGet('tc_cred', null);
+                if(cred && String(cred.u).toLowerCase() === u.toLowerCase() && cred.p === p) { 
+                    if(cred.v && new Date() > new Date(cred.v)) { err.innerText = "Licencia local vencida."; err.style.display = 'block'; } 
+                    else { arrancarSistema(lsGet('tc_db', []), cred.u, cred.m, cred.r); }
+                } else { err.innerText = error.message === "Offline" || error.message.includes("Unexpected token") ? "Sin Internet y no hay sesión guardada." : error.message; err.style.display = 'block'; }
+            } finally { btn.disabled = false; btn.innerText = "Ingresar al Sistema"; }
         }
 
-        function iniciarSesionUI(datos, usu, maestro, rol) {
-            let dbValida = Array.isArray(datos) ? datos.filter(d => d && d.fecha) : []; baseDeDatosCache = dbValida.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); 
-            usuarioActivo = usu; propMaestro = maestro; rolUsuario = rol; 
-            document.getElementById('usuario-activo-lbl').value = usuarioActivo.toUpperCase() + ` (${rolUsuario})`;
-            document.getElementById('lbl-header-user').innerText = usuarioActivo.toUpperCase();
-            if(rolUsuario !== 'Dueño') document.getElementById('panel-crear-peones').style.display = 'none';
-            const prefs = JSON.parse(localStorage.getItem('dash_graphs')) || ['1', '2', '3']; document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
-            cargarDisenoDesdeDB(); actualizarEstadoRed(); procesarDatosDashboard(); actualizarContadorPendientes();
-            document.getElementById('f-inf-rango-fecha').value = "30"; manejarRangoFechas();
-            document.getElementById('pantalla-login').classList.add('oculto'); document.getElementById('pantalla-app').classList.remove('oculto'); sincronizarPendientesAuto();
+        function arrancarSistema(datos, u, m, r) {
+            try {
+                let dbValida = Array.isArray(datos) ? datos.filter(d => d && d.fecha) : []; dbCache = dbValida.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); 
+                usActivo = u; maestroId = m; usRol = r; 
+                document.getElementById('lbl-sidebar-user').innerText = `${u.toUpperCase()} (${r === 'Dueño' ? 'Propietario' : 'Operador'})`;
+                document.getElementById('lbl-header-user').innerText = u.toUpperCase();
+                if(r !== 'Dueño') document.getElementById('panel-crear-peones').style.display = 'none'; 
+                const prefs = lsGet('tc_prefs', ['1', '2', '3']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
+                const dGuardado = lsGet('tc_hacienda', {}); aplicarDisenoEnPantalla(dGuardado.nombre, dGuardado.logo);
+                setEstadoRed(navigator.onLine); procesarDatosDashboard(); 
+                
+                // Config inicial PDF
+                document.getElementById('f-inf-rango-fecha').value = "30"; manejarRangoFechas();
+
+                document.getElementById('pantalla-login').classList.add('oculto'); document.getElementById('sidebar').classList.remove('oculto'); document.getElementById('main-content').classList.remove('oculto');
+                sincronizarPendientesAuto();
+            } catch(e) { }
         }
 
         function fusionarDatos(nuevos) {
             let mapa = new Map();
-            if(Array.isArray(baseDeDatosCache)) baseDeDatosCache.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
+            if(Array.isArray(dbCache)) dbCache.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
             if(Array.isArray(nuevos)) nuevos.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
-            baseDeDatosCache = Array.from(mapa.values()).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); localStorage.setItem('taurus_db', JSON.stringify(baseDeDatosCache));
+            dbCache = Array.from(mapa.values()).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); lsSet('tc_db', dbCache);
         }
 
         function sincronizarFondo(esManual = false) {
-            if(!usuarioActivo || !navigator.onLine) return; const credStr = localStorage.getItem('taurus_cred'); if(!credStr) return; const cred = JSON.parse(credStr);
-            if(esManual) document.getElementById('estado-red').innerText = '🔄 Sincronizando...';
-            fetch(`${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(cred.usu)}&password=${encodeURIComponent(cred.pass)}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' })
+            if(!usActivo || !navigator.onLine) { if(esManual) alert("Revise su conexión a Internet."); return; }
+            const cred = lsGet('tc_cred', null); if(!cred) return;
+            if(esManual) document.getElementById('estado-red').innerText = '🔄 Actualizando...';
+            fetch(`${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(cred.u)}&password=${encodeURIComponent(cred.p)}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' })
             .then(r => r.json()).then(res => {
                 if(!res.error) {
-                    fusionarDatos(Array.isArray(res.data) ? res.data : []); localStorage.setItem('tc_hacienda', JSON.stringify({ nombre: res.hacienda, logo: res.logo })); cargarDisenoDesdeDB();
-                    if(caravanaActiva && !document.getElementById('vista-manga').classList.contains('oculto')) { buscarCaravanaBtn(); }
-                    procesarDatosDashboard(); if(!document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); if(!document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
-                    setEstadoRed(true);
+                    fusionarDatos(Array.isArray(res.data) ? res.data : []);
+                    if(rpActivo && !document.getElementById('v-ficha').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
+                    procesarDatosDashboard(); if(!document.getElementById('v-base').classList.contains('oculto')) cargarListaRegistro(); if(!document.getElementById('v-reporte').classList.contains('oculto')) actualizarInformeAvanzado();
+                    setEstadoRed(true); if(esManual) alert("Sincronización completa con el servidor.");
                 }
-            }).catch(e => { console.warn("Error sync de fondo"); });
+            }).catch(e => { if(esManual) { setEstadoRed(false); alert("Google Sheets tardó en responder. Sigue trabajando, se sincronizará de fondo."); } });
         }
         setInterval(() => sincronizarFondo(false), 30000);
 
-        async function conectarHardwareBLE() {
-            try {
-                dispositivoBLE = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb', '6e400001-b5a3-f393-e0a9-e50e24dcca9e'] });
-                dispositivoBLE.addEventListener('gattserverdisconnected', () => { alert("⚠️ Hardware Desconectado."); });
-                bleServer = await dispositivoBLE.gatt.connect(); await new Promise(r => setTimeout(r, 600)); 
-                try { bleService = await bleServer.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb'); bleCharacteristic = await bleService.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb'); } 
-                catch(e) { bleService = await bleServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e'); bleCharacteristic = await bleService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); }
-                await bleCharacteristic.startNotifications(); bleCharacteristic.addEventListener('characteristicvaluechanged', (event) => { let valor = new TextDecoder().decode(event.target.value).trim(); if(valor) procesarTramaBLE(valor); });
-                alert("✅ Hardware BLE conectado exitosamente.");
-            } catch (e) { alert("Conexión BLE cancelada o no soportada."); }
-        }
-
-        let bufferBLE = ""; let timeoutBLE;
-        function procesarTramaBLE(trama) {
-            bufferBLE += trama; clearTimeout(timeoutBLE);
-            timeoutBLE = setTimeout(() => {
-                let dataLimpia = bufferBLE.replace(/[^a-zA-Z0-9.-]/g, '').replace('TAG', ''); if(!dataLimpia) return;
-                if (dataLimpia.includes('.')) { if (!document.getElementById('vista-manga').classList.contains('oculto') && caravanaActiva) { abrirModal('modal-peso'); document.getElementById('i-peso-val').value = dataLimpia; } else { alert("⚖️ Balanza: Peso " + dataLimpia + " Kg. Abre la Ficha de un animal."); } } 
-                else { recibirTagNFC(dataLimpia); }
-                bufferBLE = "";
-            }, 300);
-        }
-
-        function recibirTagNFC(tagHex) {
-            const vinculacion = baseDeDatosCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim() === String(tagHex).trim());
-            if (vinculacion && vinculacion.caravana) { cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]); document.getElementById('buscador-caravana').value = vinculacion.caravana; buscarCaravanaBtn(); } 
-            else { tagHuerfano = tagHex; document.getElementById('input-rp-vinculacion').value = ''; abrirModal('modal-vinculacion'); }
-        }
-
-        function guardarVinculacionNFC() {
-            const rpFinal = document.getElementById('input-rp-vinculacion').value.trim();
-            if(!rpFinal) { const input = document.getElementById('input-rp-vinculacion'); input.style.borderColor = "var(--peligro)"; setTimeout(() => input.style.borderColor = "var(--borde)", 2000); return; }
-            caravanaActiva = rpFinal; ejecutarAccion('Vinculacion_RFID', tagHuerfano, 'Chip vinculado a ' + rpFinal, null, 'modal-vinculacion');
-            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]); document.getElementById('buscador-caravana').value = rpFinal; buscarCaravanaBtn();
-            const datosActivos = obtenerRegistrosActivos(); if(datosActivos.filter(d => String(d.caravana) === String(rpFinal)).length <= 1) setTimeout(() => abrirModal('modal-perfil'), 600);
-        }
-
-        function ejecutarAccion(tipoAccion, valor, detalles, btnActivo, modalId) {
-            const accionObj = { fecha: new Date().toISOString(), accion: tipoAccion, caravana: caravanaActiva, valor: valor, detalles: detalles + ` | Resp: ${usuarioActivo}`, maestro: propMaestro };
-            baseDeDatosCache.unshift(accionObj); localStorage.setItem('taurus_db', JSON.stringify(baseDeDatosCache));
-
-            if(navigator.onLine) {
-                if(btnActivo) btnActivo.innerText = "Procesando..."; const fd = new URLSearchParams(); for(let key in accionObj) fd.append(key, accionObj[key]); fd.append('usuario', usuarioActivo); 
-                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => {
-                    if(modalId) cerrarModal(modalId); if(btnActivo) btnActivo.innerText = "Guardar"; if(caravanaActiva !== "---") buscarCaravanaBtn(); procesarDatosDashboard();
-                }).catch(e => { encolarOffline(accionObj); if(modalId) cerrarModal(modalId); if(btnActivo) btnActivo.innerText = "Guardar"; if(caravanaActiva !== "---") buscarCaravanaBtn(); procesarDatosDashboard(); });
-            } else { encolarOffline(accionObj); if(modalId) cerrarModal(modalId); if(btnActivo) btnActivo.innerText = "Guardar"; if(caravanaActiva !== "---") buscarCaravanaBtn(); procesarDatosDashboard(); }
-        }
-
-        function encolarOffline(obj) { let pendientes = JSON.parse(localStorage.getItem('taurus_pendientes')) || []; pendientes.push(obj); localStorage.setItem('taurus_pendientes', JSON.stringify(pendientes)); actualizarContadorPendientes(); }
-        function actualizarContadorPendientes() { let p = JSON.parse(localStorage.getItem('taurus_pendientes')) || []; document.getElementById('lbl-pendientes').value = `${p.length} registros pendientes`; }
         function sincronizarPendientesAuto() {
-            let p = JSON.parse(localStorage.getItem('taurus_pendientes')) || []; if(p.length === 0) return;
-            const fd = new URLSearchParams(); fd.append('accion', 'sync_offline'); fd.append('maestro', propMaestro); fd.append('usuario', usuarioActivo); fd.append('datos', JSON.stringify(p));
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { localStorage.setItem('taurus_pendientes', '[]'); actualizarContadorPendientes(); sincronizarFondo(false); });
-        }
-        function sincronizarPendientesManual() { if(navigator.onLine && (JSON.parse(localStorage.getItem('taurus_pendientes')) || []).length > 0) sincronizarPendientesAuto(); }
-
-        function prepararGuardado(modalId, tipoAccion) {
-            if(!caravanaActiva) return; let v = "-", d = ""; const inputs = document.getElementById(modalId).querySelectorAll('.form-control, .textarea');
-            if(tipoAccion === 'Comentario') { d = inputs[0].value; }
-            else if(tipoAccion === 'Peso') { v = inputs[0].value + " Kg"; d = `Cond: ${inputs[1].value}. Notas: ${inputs[2].value}`; } 
-            else if(tipoAccion === 'Sanidad') { let prod = inputs[0].value; if(prod === 'OTRO') prod = inputs[1].value || 'Tratamiento S/N'; v = prod; d = `Lote/Marca: ${inputs[2].value}. Notas: ${inputs[3].value}`; } 
-            else if(tipoAccion === 'Diagnóstico') { v = "Dx: " + inputs[0].value; d = inputs[1].value || "-"; }
-            else if(tipoAccion === 'Inseminación') { v = "Ins: " + inputs[0].value; d = `Toro/Paj: ${inputs[1].value}. Notas: ${inputs[2].value}`; } 
-            else if(tipoAccion === 'Nutrición') { let prod = inputs[0].value; if(prod === 'OTRO') prod = inputs[1].value || 'Suplemento S/N'; v = prod; d = `Ración: ${inputs[2].value}. Notas: ${inputs[3].value}`; }
-            ejecutarAccion(tipoAccion, v, d, event.target, modalId); inputs.forEach(i => i.value = '');
+            let p = lsGet('tc_pendientes', []); if(p.length === 0) return;
+            const fd = new URLSearchParams(); fd.append('accion', 'sync_offline'); fd.append('maestro', maestroId); fd.append('datos', JSON.stringify(p));
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_pendientes', []); sincronizarFondo(false); });
         }
 
-        function guardarPerfilCompleto() {
-            if(!caravanaActiva) return; const r = document.getElementById('f-raza').value || "-"; const e = document.getElementById('f-edad').value || "-"; const p = document.getElementById('f-padre').value || "-"; const m = document.getElementById('f-madre').value || "-";
-            ejecutarAccion('Perfil Master', `${r}|${e}|${p}|${m}`, document.getElementById('val-categoria').innerText, event.target, 'modal-perfil');
-        }
-
-        function guardarClasificacion() {
-            if(!caravanaActiva) return; const cat = document.getElementById('input-cat-rapida').value; const car = document.getElementById('input-carimbo-rapido').value || "-"; const lot = document.getElementById('input-lote-rapido').value || "-";
-            ejecutarAccion('Actualización de Datos', `Cat: ${cat} | Carimbo: ${car}`, `Lote: ${lot}`, event.target, 'modal-clasificacion');
-        }
-
-        function borrarCaravana() { if(!caravanaActiva) return; if(confirm(`¿ELIMINAR la caravana ${caravanaActiva}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null, null); cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); } }
-        function cambiarMiContrasena() { if(!navigator.onLine) return; const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) return; const btn = event.target; btn.innerText = "Cambiando..."; const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usuarioActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { document.getElementById('nueva-clave').value = ''; btn.innerText = "Actualizar Contraseña"; let cred = JSON.parse(localStorage.getItem('taurus_cred')); cred.pass = nueva; localStorage.setItem('taurus_cred', JSON.stringify(cred)); }); }
-        function crearPeon() { if(!navigator.onLine) return; const pUsu = document.getElementById('peon-usu').value.trim(); const pPass = document.getElementById('peon-pass').value.trim(); if(!pUsu || !pPass) return; const btn = event.target; btn.innerText = "Creando..."; const fd = new URLSearchParams(); fd.append('accion', 'crear_peon'); fd.append('usuario', usuarioActivo); fd.append('peon_usu', pUsu); fd.append('peon_pass', pPass); fd.append('vencimiento', 'Heredado'); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { document.getElementById('peon-usu').value = ''; document.getElementById('peon-pass').value = ''; btn.innerText = "Crear Operador"; }); }
-
-        function procesarDatosDashboard() {
-            const datosActivos = obtenerRegistrosActivos(); const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))];
-            document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
-            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos-dinamicos').innerHTML = "<p style='text-align:center;color:gray;padding:20px;'>Aún no hay datos registrados.</p>"; return; }
-
-            let g1={p:0,v:0}, g2={v:0,t:0,o:0}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0}; let alertasHTML = "";
-            datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; });
-
-            unicas.forEach(car => {
-                const regs = datosActivos.filter(d => d.caravana === car).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
-                let cat = "", lote = "General"; const uP = regs.find(d => d.accion === 'Perfil Master'); const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                if(uC) { cat = uC.valor.split('|')[0].replace('Cat:','').trim(); lote = uC.detalles.split('|')[0].replace('Lote:','').trim(); } else if(uP) { cat = uP.detalles.split('|')[0].trim(); }
-                cat = cat.toLowerCase(); const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
-
-                if(uDx) {
-                    if(uDx.valor.includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = uIns.valor.replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } }
-                    if(uDx.valor.includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong>${car}</strong> Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(uDx.valor.includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = uIns.valor.replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } }
-                }
-                if(cat.includes('vaca') || cat.includes('vaquilla')) g2.v++; else if(cat.includes('terne') || cat.includes('desmamante')) g2.t++; else g2.o++;
-                g3[lote] = (g3[lote] || 0) + 1;
-                if(uPeso) {
-                    if(uPeso.detalles.includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong>${car}</strong> Bajo Peso.</div></div>`; } else if(uPeso.detalles.includes('Sobre')) g4.sp++; else g4.opt++;
-                    let pVal = parseFloat(uPeso.valor); if(!isNaN(pVal)) { if(cat.includes('vaca') || cat.includes('vaquilla')) { g9.vw += pVal; g9.vc++; } if(cat.includes('terne') || cat.includes('desmamante')) { g9.tw += pVal; g9.tc++; } }
-                }
-                if(uSan) g6.con++; else g6.sin++;
-            });
-
-            const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
-
-            const prefs = JSON.parse(localStorage.getItem('dash_graphs')) || ['1', '2', '3']; let htmlGraficos = "";
-            const makeBar = (lbl, val, total, col) => { let p = total>0 ? Math.round((val/total)*100) : 0; return `<div class="barra-categoria"><div class="barra-header"><span>${lbl} (${val})</span> <span>${p}%</span></div><div class="barra-fondo"><div class="barra-relleno" style="background:${col}; width:${p}%;"></div></div></div>`; };
-
-            prefs.forEach(g => {
-                let html = `<div class="tarjeta">`;
-                if(g === '1') { let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; html += `<div class="tarjeta-titulo">📊 Tasa de Preñez</div><div class="grafico-flex"><div class="torta-container"><div class="torta" style="background: conic-gradient(var(--exito) 0% ${pp}%, var(--peligro) ${pp}% 100%);"></div><div class="torta-centro">${pp}%</div></div><div class="leyenda-torta"><div><span class="punto" style="background: var(--exito);"></span> Preñadas (${g1.p})</div><div><span class="punto" style="background: var(--peligro);"></span> Vacías (${g1.v})</div></div></div>`; }
-                else if(g === '2') { let t = g2.v + g2.t + g2.o || 1; html += `<div class="tarjeta-titulo">📈 Composición</div>${makeBar('Vacas/Vaquillas', g2.v, t, 'var(--secundario)')}${makeBar('Terneros/as', g2.t, t, '#f59e0b')}${makeBar('Toros/Otros', g2.o, t, '#8b5cf6')}`; }
-                else if(g === '3') { html += `<div class="tarjeta-titulo">📍 Distribución de Lotes</div>`; let lKeys = Object.keys(g3).sort((a,b)=>g3[b]-g3[a]).slice(0,4); lKeys.forEach((k, i) => { let col = i===0?'var(--secundario)':i===1?'#f59e0b':i===2?'#10b981':'#9333ea'; html += makeBar(k, g3[k], unicas.length, col); }); }
-                else if(g === '4') { let t = g4.opt + g4.bp + g4.sp || 1; html += `<div class="tarjeta-titulo">⚖️ C. Corporal</div>${makeBar('Óptima', g4.opt, t, '#10b981')}${makeBar('Bajo Peso', g4.bp, t, '#ef4444')}${makeBar('Sobrepeso', g4.sp, t, '#f59e0b')}`; }
-                else if(g === '5') { let t = g5.norm + g5.san || 1; html += `<div class="tarjeta-titulo">🩸 Causas Vacías</div>${makeBar('Normal', g5.norm, t, '#f59e0b')}${makeBar('Sangre/Problema', g5.san, t, '#ef4444')}`; }
-                else if(g === '6') { let t = unicas.length; html += `<div class="tarjeta-titulo">💉 Sanidad Base</div>${makeBar('Con Registro', g6.con, t, '#10b981')}${makeBar('Sin Registros', g6.sin, t, '#64748b')}`; }
-                else if(g === '7') { html += `<div class="tarjeta-titulo">🏆 Preñez x Lote</div>`; let lKeys = Object.keys(g7).sort((a,b)=>g7[b].p-g7[a].p).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'#10b981':i===1?'var(--secundario)':'#f59e0b'; html += makeBar(k, g7[k].p, g7[k].t, col); }); }
-                else if(g === '8') { html += `<div class="tarjeta-titulo">🧬 Eficacia de Toro</div>`; let lKeys = Object.keys(g8).sort((a,b)=>g8[b].p-g8[a].p).slice(0,3); if(lKeys.length===0) html += `<p style="color:var(--muted); font-size:14px;">No hay cruces.</p>`; lKeys.forEach((k, i) => { html += makeBar(k, g8[k].p, g8[k].t, '#be185d'); }); }
-                else if(g === '9') { let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; html += `<div class="tarjeta-titulo">⚖️ Promedio Peso General</div><div class="grid-kpis" style="margin-bottom:0; grid-template-columns:1fr 1fr;"><div class="kpi-caja" style="padding:15px;"><div class="kpi-valor" style="font-size:24px;">${pv} Kg</div><div class="kpi-label" style="color:var(--texto);">Vacas</div></div><div class="kpi-caja" style="padding:15px;"><div class="kpi-valor" style="font-size:24px;">${pt} Kg</div><div class="kpi-label" style="color:var(--texto);">Terneros</div></div></div>`; }
-                else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins || 1; html += `<div class="tarjeta-titulo">⚡ Volumen de Trabajos</div>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Sanidad', g10.san, t, '#c2410c')}`; }
-                html += `</div>`; htmlGraficos += html;
-            }); document.getElementById('contenedor-graficos-dinamicos').innerHTML = htmlGraficos;
-        }
-
-        function verificarLimiteGraficos(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); localStorage.setItem('dash_graphs', JSON.stringify(prefs)); if(baseDeDatosCache.length > 0) procesarDatosDashboard(); } }
-        
-        function cambiarVista(idVista, tabElemento) { 
-            ['vista-dashboard', 'vista-manga', 'vista-registro', 'vista-informe', 'vista-config'].forEach(id => document.getElementById(id).classList.add('oculto')); 
-            document.getElementById(idVista).classList.remove('oculto'); 
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('activo')); 
-            tabElemento.classList.add('activo'); 
-        }
-        
-        function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
-        
-        function buscarCaravanaBtn() {
-            let input = document.getElementById('buscador-caravana').value.trim(); if(!input) return; 
-            const vinculacion = baseDeDatosCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim() === String(input).trim());
-            if(vinculacion) input = vinculacion.caravana;
-
-            caravanaActiva = input; document.getElementById('ficha-animal').classList.remove('oculto'); document.getElementById('val-caravana').innerText = input;
+        function obtenerHistorial(caravana) {
             const datosActivos = obtenerRegistrosActivos();
-            const regs = datosActivos.filter(d => String(d.caravana) === String(input)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
-            
-            let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", comentario="Sin comentarios.", inseminacion="-", nutricion="-", sanidad="-";
-            document.getElementById('panel-ultima-nota').classList.add('oculto');
-            if(regs.length > 0) {
-                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { const p = uP.valor.split('|'); raza = p[0]||"-"; edad = p[1]||"-"; padre = p[2]||"-"; madre = p[3]||"-"; cat = uP.detalles.split('|')[0].trim(); }
-                const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { cat = uC.valor.split('|')[0].replace('Cat:','').trim(); carimbo = uC.valor.split('|')[1].replace('Carimbo:','').trim(); lote = uC.detalles.split('|')[0].replace('Lote:','').trim(); }
-                const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor; const uCom = regs.find(d => d.accion === 'Comentario'); if(uCom) comentario = uCom.detalles.split('|')[0].trim();
-                const uIns = regs.find(d => d.accion === 'Inseminación'); if(uIns) inseminacion = uIns.valor + " | " + uIns.detalles;
-                const uNut = regs.find(d => d.accion === 'Nutrición'); if(uNut) nutricion = uNut.valor + " | " + uNut.detalles;
-                const uSan = regs.find(d => d.accion === 'Sanidad'); if(uSan) sanidad = uSan.valor + " | " + uSan.detalles;
-                
-                const ultimaReal = regs.find(d => d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master' && d.accion !== 'Comentario' && !d.accion.includes('Vinculacion'));
-                if(ultimaReal) { document.getElementById('panel-ultima-nota').classList.remove('oculto'); document.getElementById('nota-accion-titulo').innerText = `${new Date(ultimaReal.fecha).toLocaleDateString()} - ${ultimaReal.accion} (${ultimaReal.valor})`; document.getElementById('nota-accion-texto').innerText = ultimaReal.detalles.split('|')[0]; }
+            let hist = []; let buscadas = [String(caravana)]; let i = 0;
+            while(i < buscadas.length) {
+                let c = buscadas[i]; hist.push(...datosActivos.filter(d => String(d.caravana) === c && !d.accion.includes('Vinculacion')));
+                datosActivos.filter(d => d.accion === 'Cambio de Caravana' && String(d.valor) === c).forEach(o => { if(!buscadas.includes(String(o.caravana))) buscadas.push(String(o.caravana)); }); i++;
             }
-            document.getElementById('val-categoria').innerText = cat; document.getElementById('val-raza').innerText = raza; document.getElementById('val-peso').innerText = peso; document.getElementById('val-dx').innerText = dx; document.getElementById('val-lote').innerText = lote; document.getElementById('val-carimbo').innerText = carimbo; document.getElementById('val-edad').innerText = edad; document.getElementById('val-genealogia').innerText = padre + " / " + madre; document.getElementById('val-comentario').innerText = comentario; document.getElementById('val-inseminacion').innerText = inseminacion; document.getElementById('val-nutricion').innerText = nutricion; document.getElementById('val-sanidad').innerText = sanidad;
-            document.getElementById('f-raza').value = raza !== "-" ? raza : ""; document.getElementById('f-edad').value = edad !== "-" ? edad : ""; document.getElementById('f-padre').value = padre !== "-" ? padre : ""; document.getElementById('f-madre').value = madre !== "-" ? madre : ""; document.getElementById('input-carimbo-rapido').value = carimbo !== "-" ? carimbo : ""; document.getElementById('input-lote-rapido').value = lote !== "-" ? lote : ""; document.getElementById('f-comentario-txt').value = comentario !== "Sin comentarios." ? comentario : "";
-            let catSelect = document.getElementById('input-cat-rapida'); for(let i=0; i<catSelect.options.length; i++) { if(catSelect.options[i].value === cat) catSelect.selectedIndex = i; }
+            return hist.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
         }
 
-        function verHistorial() { 
-            if(!caravanaActiva) return; abrirModal('modal-historial'); const datosActivos = obtenerRegistrosActivos();
-            const d = datosActivos.filter(f => String(f.caravana) === String(caravanaActiva) && !f.accion.includes('Vinculacion')).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
-            let h = "<ul style='list-style:none; padding:0; margin:0;'>"; 
-            d.forEach(r => { h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px;"><span style="font-size:13px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span><br><strong style="color:var(--texto); font-size:16px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold; font-size:15px;">${r.valor}</span><br><span style="color: var(--muted); font-size:14px;">${r.detalles}</span></li>`; }); 
-            document.getElementById('contenido-historial').innerHTML = h + "</ul>"; 
+        function buscarCaravanaBtn(rpForzado = null) {
+            try {
+                let rp = rpForzado ? rpForzado : document.getElementById('buscador-caravana').value.trim(); if(!rp) return; 
+                
+                // BUSCADOR CORREGIDO: Acepta RFID si se teclea manual
+                let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim() === String(rp).trim());
+                if(esRFIDRegistrado) rp = esRFIDRegistrado.caravana;
+
+                rpActivo = rp; document.getElementById('ficha-animal').classList.remove('oculto'); 
+                const elCaravanaTop = document.getElementById('val-caravana'); if(elCaravanaTop) elCaravanaTop.innerText = rp;
+                
+                const regs = obtenerHistorial(rp); 
+                let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", nutricion="-", sanidad="-", inseminacion="-", htmlNotas=""; 
+                
+                if(regs.length > 0) {
+                    const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor || "").split('|'); raza = p[0]||"-"; edad = p[1]||"-"; padre = p[2]||"-"; madre = p[3]||"-"; cat = String(uP.detalles || "").split('|')[0].trim(); }
+                    const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor || "").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-"; }
+                    const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
+                    const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
+                    const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nutricion = (uNut.valor || "-") + " | " + (uNut.detalles || "");
+                    const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) sanidad = (uSan.valor || "-") + " | " + (uSan.detalles || "");
+                    const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) inseminacion = (uIns.valor || "-") + " | " + (uIns.detalles || "");
+                    
+                    regs.forEach(r => {
+                        try {
+                            let acc = String(r.accion).trim(); let det = String(r.detalles || ""); let notaTexto = "";
+                            if (acc === 'Comentario') { notaTexto = det.split('|')[0] || ""; } 
+                            else if (det.includes('Notas:')) { let parts = det.split('Notas:'); if (parts.length > 1) { let n = parts[1].split('|')[0].trim(); if(n && n !== "-" && n !== "") notaTexto = `[${acc}] ${n}`; } }
+                            if (notaTexto && notaTexto !== "-" && notaTexto.toLowerCase() !== "sin comentarios.") { htmlNotas += `<div class="nota-item"><span class="f">${new Date(r.fecha).toLocaleDateString()}</span><span class="t">${notaTexto}</span></div>`; }
+                        } catch(e) {}
+                    });
+                }
+                
+                if(htmlNotas === "") htmlNotas = "<span style='font-size:13px; color:var(--text-muted); font-style:italic;'>Sin anotaciones extra.</span>";
+                
+                document.getElementById('val-categoria').innerText = cat; document.getElementById('val-peso').innerText = peso; document.getElementById('val-dx').innerText = dx;
+                document.getElementById('val-lote').innerText = lote; document.getElementById('val-carimbo').innerText = carimbo; document.getElementById('val-genealogia').innerText = padre + " / " + madre;
+                document.getElementById('val-nutricion').innerText = nutricion; document.getElementById('val-sanidad').innerText = sanidad; document.getElementById('val-inseminacion').innerText = inseminacion;
+                document.getElementById('val-notas').innerHTML = htmlNotas; document.getElementById('val-raza').innerText = raza; document.getElementById('val-edad').innerText = edad;
+                
+                document.getElementById('f-raza').value = raza !== "-" ? raza : ""; document.getElementById('f-edad').value = edad !== "-" ? edad : ""; 
+                document.getElementById('f-padre').value = padre !== "-" ? padre : ""; document.getElementById('f-madre').value = madre !== "-" ? madre : ""; 
+                document.getElementById('input-carimbo-rapido').value = carimbo !== "-" ? carimbo : ""; document.getElementById('input-lote-rapido').value = lote !== "-" ? lote : ""; document.getElementById('f-comentario-txt').value = ""; 
+                
+                const catSelect = document.getElementById('input-cat-rapida'); 
+                if(catSelect) { for(let i=0; i<catSelect.options.length; i++) { if(catSelect.options[i].value === cat) catSelect.selectedIndex = i; } }
+            } catch(e) { }
         }
 
-        function cargarListaRegistro() {
-            const datosActivos = obtenerRegistrosActivos(); const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))]; 
-            const ul = document.getElementById('ul-registro'); ul.innerHTML = "";
-            unicas.forEach(car => { const regs = datosActivos.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); let info = "Sin datos", dxText = "", loteText = ""; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { info = c.valor.split('|')[0].replace('Cat:','').trim(); loteText = " | " + c.detalles.split('|')[0].replace('Lote:','').trim(); } else if(p) { info = p.detalles.split('|')[0].trim(); } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = ` - ${d.valor}`; ul.innerHTML += `<li onclick="navegarDesdeLista('${car}')"><div style="display:flex; flex-direction:column; gap:6px;"><span style="font-size:22px; font-weight:900; color:var(--texto);">${car}</span><span style="color:var(--muted); font-size:14px;">${info}${loteText}${dxText}</span></div><span style="color:var(--secundario); font-size:24px; font-weight:bold;">›</span></li>`; });
+        function ejecutarAccion(tipo, val, det, modalId) {
+            const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: rpActivo, valor: val, detalles: det + ` | Op: ${usActivo}`, maestro: maestroId };
+            dbCache.unshift(obj); lsSet('tc_db', dbCache); buscarCaravanaBtn(rpActivo); procesarDatosDashboard(); if(modalId) cerrarModal(modalId);
+            if(navigator.onLine) { const fd = new URLSearchParams(); for(let k in obj) fd.append(k, obj[k]); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { sincronizarFondo(false); });
+            } else { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); }
         }
+        function prepararGuardado(mId, t) { 
+            if(!rpActivo) return; let v = "-", d = ""; const i = document.getElementById(mId).querySelectorAll('.form-control, .textarea'); 
+            if(t === 'Comentario') { d = i[0].value; } 
+            else if(t === 'Peso') { v = i[0].value + " Kg"; d = `Cond: ${i[1].value}. Notas: ${i[2].value}`; } 
+            else if(t === 'Sanidad') { let prod = i[0].value; if(prod === 'OTRO') prod = i[1].value || 'Tratamiento S/N'; v = prod; d = `Lote: ${i[2].value}. Notas: ${i[3].value}`; } 
+            else if(t === 'Diagnóstico') { v = "Dx: " + i[0].value; d = i[1].value || "-"; } 
+            else if(t === 'Inseminación') { v = "Ins: " + i[0].value; d = `Toro/Paj: ${i[1].value}. Notas: ${i[2].value}`; } 
+            else if(t === 'Nutrición') { let prod = i[0].value; if(prod === 'OTRO') prod = i[1].value || 'Suplemento S/N'; v = prod; d = `Ración: ${i[2].value}. Notas: ${i[3].value}`; } 
+            ejecutarAccion(t, v, d, mId); i.forEach(el => el.value = ''); 
+        }
+        function guardarPerfilCompleto() { if(!rpActivo) return; ejecutarAccion('Perfil Master', `${document.getElementById('f-raza').value||"-"}|${document.getElementById('f-edad').value||"-"}|${document.getElementById('f-padre').value||"-"}|${document.getElementById('f-madre').value||"-"}`, document.getElementById('val-categoria').innerText, 'm-perfil'); }
+        function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'm-clasi'); }
+        function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'm-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
+        function borrarCaravana() { if(!rpActivo) return; if(confirm(`¿ELIMINAR la caravana ${rpActivo}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Borrado', null); alert("Historial eliminado."); cambiarVista('v-dash', document.querySelectorAll('.sidebar-nav li')[0]); } }
+        function verTrazabilidad() { abrirModal('m-traza'); let h = ""; obtenerHistorial(rpActivo).forEach(r => { h += `<tr><td style="white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${r.accion}</strong></td><td>${r.valor}</td><td style="font-size:12px;">${r.detalles}</td></tr>`; }); document.getElementById('tb-traza').innerHTML = h; }
 
-        function filtrarLista(t) { const lis = document.getElementById('ul-registro').getElementsByTagName('li'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "" : "none"; }
-        function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); buscarCaravanaBtn(); }
-        
+        // ==========================================
+        // MOTOR DE REPORTES GANADERO PRO (PC)
+        // ==========================================
         function cambiarModoReporte() {
             const modo = document.getElementById('f-inf-modo').value;
             if(modo === 'inventario') {
-                document.getElementById('filtros-inventario').style.display = 'grid'; document.getElementById('filtros-eventos').style.display = 'none'; document.getElementById('lbl-prenadas').innerText = "Preñadas (Filtro)"; document.getElementById('lbl-total').innerText = "Total Cabezas";
+                document.getElementById('filtros-inventario').style.display = 'grid'; document.getElementById('filtros-eventos').style.display = 'none'; document.getElementById('lbl-prenadas').innerText = "PREÑADAS CONFIRMADAS"; document.getElementById('lbl-total').innerText = "TOTAL CABEZAS (FILTRO)";
             } else {
-                document.getElementById('filtros-inventario').style.display = 'none'; document.getElementById('filtros-eventos').style.display = 'flex'; document.getElementById('lbl-prenadas').innerText = "-"; document.getElementById('lbl-total').innerText = "Trabajos Listados";
+                document.getElementById('filtros-inventario').style.display = 'none'; document.getElementById('filtros-eventos').style.display = 'flex'; document.getElementById('lbl-prenadas').innerText = "-"; document.getElementById('lbl-total').innerText = "TRABAJOS LISTADOS";
             }
             actualizarInformeAvanzado();
         }
@@ -787,57 +833,67 @@
 
         function actualizarInformeAvanzado() {
             const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
-            const datosActivos = obtenerRegistrosActivos(); const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))]; 
+            const datosActivos = obtenerRegistrosActivos(); 
+            let aliasMap = {}; datosActivos.forEach(d => { if(d.accion === 'Cambio de Caravana') aliasMap[String(d.caravana)] = String(d.valor); });
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && !aliasMap[c]))]; 
+            
             const tbodyMasivo = document.getElementById('tb-informe-masivo'); const tbodyEventos = document.getElementById('tb-informe-eventos'); const tbodyIndiv = document.getElementById('tb-informe-individual');
             document.getElementById('tabla-masiva').classList.add('oculto'); document.getElementById('tabla-eventos').classList.add('oculto'); document.getElementById('tabla-individual').classList.add('oculto');
             
             if(fRp !== "") {
-                rpPrint = fRp; document.querySelector('.btn-descargar').innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
-                const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === fRp && !d.accion.includes('Vinculacion') && d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master').sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-                let hInd = ""; regs.forEach(r => { hInd+=`<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:15px;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:14px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
+                rpPrint = fRp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`;
+                document.getElementById('tabla-individual').classList.remove('oculto');
+                const regs = obtenerHistorial(fRp);
+                let hInd = ""; regs.forEach(r => { hInd+=`<tr><td style="white-space:nowrap; font-weight:bold;">${new Date(r.fecha).toLocaleDateString()}</td><td>${obtenerBadgeAccion(r.accion)}</td><td style="font-size:14px;"><strong>${r.valor}</strong><br><span style="color:var(--text-muted);">${r.detalles}</span></td></tr>`; });
                 tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.length; document.getElementById('inf-prenadas').innerText = "-"; return;
             }
 
-            rpPrint = ""; document.querySelector('.btn-descargar').innerHTML = `🖨️ Descargar Informe PDF de Alta Resolución`;
+            rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar Informe PDF HD`;
 
             if(modo === 'inventario') {
                 document.getElementById('tabla-masiva').classList.remove('oculto');
                 const fLote = document.getElementById('f-inf-lote').value; const fCat = document.getElementById('f-inf-cat').value; const fDx = document.getElementById('f-inf-dx').value; 
-                tbodyMasivo.innerHTML = ""; let countTotal = 0, countPrenadas = 0;
+                tbodyMasivo.innerHTML = ""; let countTotal = 0, countPrenadas = 0; let hMas = "";
                 unicas.forEach(car => {
-                    const regs = datosActivos.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); let cat = "-", peso = "-", dx = "-", lote = "-";
-                    const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = uP.detalles.split('|')[0].trim();
-                    const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { cat = uC.valor.split('|')[0].replace('Cat:','').trim(); lote = uC.detalles.split('|')[0].replace('Lote:','').trim(); }
+                    const regs = obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-";
+                    const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0].trim();
+                    const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0]?v[0].replace('Cat:','').trim():cat; lote = String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; }
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor;
                     let pasaFiltro = true; if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; if(fCat !== "ALL" && !cat.includes(fCat)) pasaFiltro = false; if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false;
-                    if(pasaFiltro) { countTotal++; if(dx.includes('Preñada')) countPrenadas++; tbodyMasivo.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:18px;">${car}</td><td style="color:#000; border-color:#cbd5e1; font-size:15px;">${cat}<br><span style="font-size:12px; color:gray;">${lote}</span></td><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:15px;">${peso}</td><td style="color:#000; border-color:#cbd5e1; font-size:15px;">${dx}</td></tr>`; }
+                    if(pasaFiltro) { countTotal++; if(String(dx||"").includes('Preñada')) countPrenadas++; hMas += `<tr><td><strong style="font-size:16px;">${car}</strong></td><td>${cat}<br><span style="font-size:11px; color:var(--text-muted);">${lote}</span></td><td><strong style="font-size:14px;">${peso}</strong></td><td>${dx}</td></tr>`; }
                 });
-                document.getElementById('inf-total').innerText = countTotal; document.getElementById('inf-prenadas').innerText = countPrenadas;
+                document.getElementById('inf-total').innerText = countTotal; document.getElementById('inf-prenadas').innerText = countPrenadas; tbodyMasivo.innerHTML = hMas;
             } else {
                 document.getElementById('tabla-eventos').classList.remove('oculto');
                 const fAcc = document.getElementById('f-inf-accion-oculto').value; const fDesde = document.getElementById('f-inf-desde').value; const fHasta = document.getElementById('f-inf-hasta').value; const fKey = document.getElementById('f-inf-keyword').value.trim().toLowerCase();
-                let eventos = datosActivos.filter(d => !d.accion.includes('Vinculacion') && d.accion !== 'Perfil Master' && d.accion !== 'Actualización de Datos' && d.caravana !== "---");
+                let eventos = datosActivos.filter(d => !d.accion.includes('Vinculacion') && d.accion !== 'Perfil Master' && d.accion !== 'Actualización de Datos' && d.accion !== 'Borrar_Caravana' && d.caravana !== "---");
                 if(fAcc !== "ALL") eventos = eventos.filter(d => d.accion === fAcc); if(fDesde) eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00'));
-                if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); if(fKey) eventos = eventos.filter(d => (d.valor + d.detalles).toLowerCase().includes(fKey));
-                tbodyEventos.innerHTML = "";
-                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { tbodyEventos.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; white-space:nowrap; font-size:14px;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:18px;">${r.caravana}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:14px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
-                document.getElementById('inf-total').innerText = eventos.length; document.getElementById('inf-prenadas').innerText = "-";
+                if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); if(fKey) eventos = eventos.filter(d => (String(d.valor||"") + String(d.detalles||"")).toLowerCase().includes(fKey));
+                let hEve = "";
+                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { hEve += `<tr><td style="white-space:nowrap; font-size:13px;">${new Date(r.fecha).toLocaleDateString()}</td><td><strong style="font-size:16px;">${r.caravana}</strong></td><td>${obtenerBadgeAccion(r.accion)}</td><td style="font-size:14px;"><strong>${r.valor}</strong><br><span style="color:var(--text-muted);">${r.detalles}</span></td></tr>`; });
+                tbodyEventos.innerHTML = hEve; document.getElementById('inf-total').innerText = eventos.length; document.getElementById('inf-prenadas').innerText = "-";
             }
         }
 
+        // ==========================================
+        // MOTOR PDF COMPLETAMENTE AUTÓNOMO (HD)
+        // ==========================================
         function ejecutarDescargaPDF() {
-            const btn = document.querySelector('.btn-descargar'); btn.innerText = "⏳ Generando PDF de Alta Resolución...";
-            const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; const h_nom = hd.nombre || 'TAURUS CONTROL'; const h_log = hd.logo || "";
+            const btn = document.getElementById('btn-print-magico');
+            btn.innerText = "⏳ Generando PDF HD...";
+            
+            const h_nom = document.getElementById('cfg-nom').value || 'TAURUS CONTROL';
+            const h_log = lsGet('tc_hacienda', {}).logo || "";
             
             let htmlContent = `<div style="background-color: #ffffff; padding: 20px; width: 850px; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000000; padding-bottom: 15px; margin-bottom: 20px;"><div><h2 style="margin:0 0 10px 0; font-size:26px; text-transform:uppercase;">${h_nom}</h2>`;
             
             if(rpPrint !== "") {
-                const datosActivos = obtenerRegistrosActivos(); const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === String(rpPrint).toLowerCase() && !d.accion.includes('Vinculacion')).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
-                if(regs.length===0){ btn.innerHTML = `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}`; return;}
+                const regs = obtenerHistorial(rpPrint); if(regs.length===0){alert("Sin registros."); btn.innerHTML = `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}`; return;}
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
-                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = uP.valor.split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=uP.detalles.split('|')[0]||"-"; } 
-                const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { cat=uC.valor.split('|')[0].replace('Cat:','').trim(); carimbo=uC.valor.split('|')[1].replace('Carimbo:','').trim(); lote=uC.detalles.split('|')[0].replace('Lote:','').trim(); } 
-                const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
+                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor||"").split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=String(uP.detalles||"").split('|')[0]||"-"; } 
+                const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; lote=String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; } 
+                const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
+                const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
                 const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nut = (uNut.valor || "") + " | " + (uNut.detalles || "");
                 const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "") + " | " + (uSan.detalles || "");
                 const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) ins = (uIns.valor || "") + " | " + (uIns.detalles || "");
@@ -845,7 +901,8 @@
                 htmlContent += `<p style="margin:0; font-size:14px;">Dossier Clínico Histórico - RP: <strong>${rpPrint.toUpperCase()}</strong></p><p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${h_log ? `<div style="text-align: right;"><img src="${h_log}" style="max-height:100px; max-width: 250px; object-fit: contain;"></div>` : ''}</div>
                     <h3 style="font-size:18px; margin: 0 0 10px 0;">Resumen del Perfil</h3><table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 13px; table-layout: fixed; word-wrap: break-word;"><tr><td style="border: 1px solid #000000; padding: 10px;"><strong>Categoría:</strong> ${cat}</td><td style="border: 1px solid #000000; padding: 10px;"><strong>Lote:</strong> ${lote}</td><td style="border: 1px solid #000000; padding: 10px;"><strong>Carimbo:</strong> ${carimbo}</td></tr><tr><td style="border: 1px solid #000000; padding: 10px;"><strong>Raza:</strong> ${raza}</td><td style="border: 1px solid #000000; padding: 10px;"><strong>Edad:</strong> ${edad}</td><td style="border: 1px solid #000000; padding: 10px;"><strong>Último Peso:</strong> ${peso}</td></tr><tr><td style="border: 1px solid #000000; padding: 10px;"><strong>Dx Actual:</strong> ${dx}</td><td style="border: 1px solid #000000; padding: 10px;"><strong>Genealogía:</strong> ${pa} / ${ma}</td><td style="border: 1px solid #000000; padding: 10px;"><strong>Régimen:</strong> ${nut}</td></tr><tr><td style="border: 1px solid #000000; padding: 10px;"><strong>Últ. Sanidad:</strong> ${san}</td><td style="border: 1px solid #000000; padding: 10px;" colspan="2"><strong>Últ. Inseminación:</strong> ${ins}</td></tr></table>
                     <h3 style="font-size:18px; margin: 0 0 10px 0;">Historial Clínico y Procedimientos</h3><table style="width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; word-wrap: break-word;"><thead><tr><th style="border: 1px solid #000000; padding: 10px; background-color: #f1f5f9; width: 15%;">Fecha</th><th style="border: 1px solid #000000; padding: 10px; background-color: #f1f5f9; width: 85%;">Procedimiento / Notas Completas</th></tr></thead><tbody>`;
-                let rows = document.getElementById('tb-informe-individual').querySelectorAll('tr'); 
+                
+                let rows = document.getElementById('tb-informe-individual').querySelectorAll('tr');
                 rows.forEach(tr => { let tds = tr.querySelectorAll('td'); if(tds.length >= 3) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 10px; overflow: hidden;">${tds[0].innerHTML}</td><td style="border: 1px solid #000000; padding: 10px; overflow: hidden;">${tds[1].innerHTML} - ${tds[2].innerHTML}</td></tr>`; });
                 htmlContent += `</tbody></table></div>`;
             } else {
@@ -858,43 +915,52 @@
                         
                 if(modo === 'inventario') {
                     htmlContent += `<tr><th style="border: 1px solid #000000; padding: 10px; background-color: #f1f5f9; width: 15%;">Caravana</th><th style="border: 1px solid #000000; padding: 10px; background-color: #f1f5f9; width: 40%;">Categoría y Lote</th><th style="border: 1px solid #000000; padding: 10px; background-color: #f1f5f9; width: 15%;">Último Peso</th><th style="border: 1px solid #000000; padding: 10px; background-color: #f1f5f9; width: 30%;">Dx Actual</th></tr></thead><tbody>`;
-                    let rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr'); 
+                    let rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr');
                     rows.forEach(tr => { let tds = tr.querySelectorAll('td'); if(tds.length >= 4) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 10px;">${tds[0].innerText}</td><td style="border: 1px solid #000000; padding: 10px;">${tds[1].innerHTML}</td><td style="border: 1px solid #000000; padding: 10px;">${tds[2].innerText}</td><td style="border: 1px solid #000000; padding: 10px;">${tds[3].innerText}</td></tr>`; });
                 } else {
                     htmlContent += `<tr><th style="border: 1px solid #000000; padding: 10px; background-color: #f1f5f9; width: 15%;">Fecha</th><th style="border: 1px solid #000000; padding: 10px; background-color: #f1f5f9; width: 15%;">Caravana</th><th style="border: 1px solid #000000; padding: 10px; background-color: #f1f5f9; width: 70%;">Trabajo Realizado y Detalles</th></tr></thead><tbody>`;
-                    let rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr'); 
+                    let rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr');
                     rows.forEach(tr => { let tds = tr.querySelectorAll('td'); if(tds.length >= 4) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 10px;">${tds[0].innerText}</td><td style="border: 1px solid #000000; padding: 10px; text-align:center;"><strong>${tds[1].innerText}</strong></td><td style="border: 1px solid #000000; padding: 10px;"><strong>${tds[2].innerText}</strong> - ${tds[3].innerText}</td></tr>`; });
                 }
-                
                 htmlContent += `</tbody></table></div>`;
             }
             
-            const opt = { margin: 10, filename: rpPrint !== "" ? `Dossier_${rpPrint.toUpperCase()}.pdf` : 'Reporte_Taurus.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' } };
-            html2pdf().set(opt).from(htmlContent).toPdf().get('pdf').then(function(pdf) { pdf.save(opt.filename); btn.innerHTML = rpPrint !== "" ? `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}` : "🖨️ Descargar Informe PDF de Alta Resolución"; }).catch(e => { btn.innerHTML = "🖨️ Reintentar Descarga"; });
+            const opt = { 
+                margin: 10, 
+                filename: rpPrint !== "" ? `Dossier_RP_${rpPrint.toUpperCase()}.pdf` : 'Reporte_Inventario.pdf',
+                image: { type: 'jpeg', quality: 0.98 }, 
+                html2canvas: { scale: 2, useCORS: true }, 
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' }
+            };
+            
+            html2pdf().set(opt).from(htmlContent).save().then(()=>{ 
+                btn.innerHTML = rpPrint !== "" ? `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}` : "🖨️ Descargar Informe PDF HD"; 
+            }).catch(e => {
+                alert("Hubo un error generando el PDF.");
+                btn.innerHTML = "🖨️ Reintentar Descarga";
+            });
         }
 
-        function cargarDisenoDesdeDB() { const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; document.getElementById('nombre-estancia').value = hd.nombre || ''; if (hd.logo && hd.logo !== "sin-logo") { mostrarLogo(hd.logo); } }
+        function cargarDisenoDesdeDB() { const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; document.getElementById('cfg-nom').value = hd.nombre || ''; if (hd.logo && hd.logo !== "sin-logo") { document.getElementById('cfg-logo').dataset.b64 = hd.logo; } }
         
-        function cargarLogo(event) { 
-            const file = event.target.files[0]; if(!file) return; const reader = new FileReader(); 
-            reader.onload = function(e) { 
-                const img = new Image(); 
-                img.onload = function() { 
-                    const canvas = document.createElement('canvas'); let w = img.width, h = img.height; 
-                    const maxW = 500, maxH = 500; 
-                    if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } 
-                    canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); 
-                    const base64 = canvas.toDataURL('image/png'); mostrarLogo(base64); 
-                }; img.src = e.target.result; 
-            }; reader.readAsDataURL(file); 
+        function guardarDisenoServidor() {
+            const n = document.getElementById('cfg-nom').value.trim() || "Sin Nombre"; const f = document.getElementById('cfg-logo');
+            let p = (b64) => { const fd = new URLSearchParams(); fd.append('accion', 'guardar_diseno'); fd.append('maestro', maestroId); fd.append('nombre_hacienda', n); fd.append('logo_hacienda', b64); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_hacienda', {nombre: n, logo: b64}); alert("Membrete oficial actualizado en la Nube."); }); };
+            if(f.files && f.files[0]) { const r = new FileReader(); r.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const maxW = 500, maxH = 500; if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); p(canvas.toDataURL('image/png')); }; img.src = e.target.result; }; r.readAsDataURL(f.files[0]); } else { const hd = lsGet('tc_hacienda', {}); p(hd.logo || ""); }
         }
-        
-        function mostrarLogo(base64) { document.getElementById('img-logo').src = base64; document.getElementById('img-logo').style.display = 'block'; document.getElementById('texto-subir-logo').style.display = 'none'; }
-        function guardarDisenoInforme() {
-            const n = document.getElementById('nombre-estancia').value.trim() || "Sin Nombre"; const f = document.getElementById('input-logo');
-            let p = (b64) => { const fd = new URLSearchParams(); fd.append('accion', 'guardar_diseno'); fd.append('maestro', propMaestro); fd.append('nombre_hacienda', n); fd.append('logo_hacienda', b64); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { let hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; hd.nombre = n; hd.logo = b64; localStorage.setItem('tc_hacienda', JSON.stringify(hd)); }); };
-            if(f.files && f.files[0]) { const r = new FileReader(); r.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const maxW = 500, maxH = 500; if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); p(canvas.toDataURL('image/png')); }; img.src = e.target.result; }; r.readAsDataURL(f.files[0]); } else { const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; p(hd.logo || ""); }
+
+        function crearOperador() { 
+            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
+            const u = document.getElementById('op-usu').value.trim(); const p = document.getElementById('op-pass').value.trim(); 
+            if(!u || !p) { alert("Completar todos los datos."); return; } 
+            const fd = new URLSearchParams(); fd.append('accion', 'crear_peon'); fd.append('maestro', maestroId); fd.append('peon_usu', u); fd.append('peon_pass', p); 
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { alert("Operador Registrado en el servidor."); document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; }); 
         }
+
+        function cambiarMiContrasena() { if(!navigator.onLine) { alert("Necesitas conexión."); return; } const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) { alert("Mínimo 4 caracteres."); return; } const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { alert("Contraseña actualizada con éxito."); document.getElementById('nueva-clave').value = ''; let cred = lsGet('tc_cred', {}); cred.p = nueva; lsSet('tc_cred', cred); }); }
+
+        function cerrarSesion() { localStorage.clear(); window.location.reload(); }
     </script>
 </body>
 </html>
