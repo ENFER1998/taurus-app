@@ -10,6 +10,7 @@
     <link rel="icon" href="gemini-svg.ico">
     <link rel="apple-touch-icon" href="gemini-svg.ico">
 
+    <!-- MOTOR DE DESCARGA PDF DIRECTA -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
@@ -475,7 +476,7 @@
 
     <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial de este Animal</h3><div id="contenido-historial"></div></div></div>
 
-    <!-- JAVASCRIPT -->
+    <!-- JAVASCRIPT BLINDADO (MOBILE) -->
     <script>
         const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzyWvEMlfCCQXGP0-ssUUQ2je4tsFPXd6Yu0C9WwsTa7sgqFkkz3jr0a8CXqrI9ydk/exec";
         
@@ -494,11 +495,11 @@
 
         function verificarSaniOtro() { 
             const sel = document.getElementById('i-sani-sel'); const input = document.getElementById('i-sani-sel-otro');
-            if(sel.value === 'OTRO') { input.classList.remove('oculto'); input.focus(); } else { input.classList.add('oculto'); input.value = ''; }
+            if(sel && input) { if(sel.value === 'OTRO') { input.classList.remove('oculto'); input.focus(); } else { input.classList.add('oculto'); input.value = ''; } }
         }
         function verificarNutOtro() { 
             const sel = document.getElementById('i-nut-prod'); const input = document.getElementById('i-nut-prod-otro');
-            if(sel.value === 'OTRO') { input.classList.remove('oculto'); input.focus(); } else { input.classList.add('oculto'); input.value = ''; }
+            if(sel && input) { if(sel.value === 'OTRO') { input.classList.remove('oculto'); input.focus(); } else { input.classList.add('oculto'); input.value = ''; } }
         }
 
         window.loginBiometricoExitoso = function() {
@@ -542,14 +543,16 @@
         window.addEventListener('online', actualizarEstadoRed); window.addEventListener('offline', actualizarEstadoRed);
         function actualizarEstadoRed() {
             const badge = document.getElementById('estado-red'); const banner = document.getElementById('banner-offline');
-            if(navigator.onLine) { badge.classList.remove('offline'); badge.innerHTML = '🟢 Conectado'; banner.style.display = 'none'; sincronizarPendientesAuto(); } 
-            else { badge.classList.add('offline'); badge.innerHTML = '🟠 Sin Internet'; banner.style.display = 'block'; }
+            if(badge && banner) {
+                if(navigator.onLine) { badge.classList.remove('offline'); badge.innerHTML = '🟢 Conectado'; banner.style.display = 'none'; sincronizarPendientesAuto(); } 
+                else { badge.classList.add('offline'); badge.innerHTML = '🟠 Sin Internet'; banner.style.display = 'block'; }
+            }
         }
 
         async function procesarIngreso() {
             const usu = document.getElementById('usuario').value.trim(); const pass = document.getElementById('password').value.trim();
             const btn = document.getElementById('btn-ingreso'); const err = document.getElementById('error-login');
-            if(!usu || !pass) return; btn.disabled = true; btn.innerText = "Verificando..."; err.style.display = 'none';
+            if(!usu || !pass) return; btn.disabled = true; btn.innerText = "Verificando..."; if(err) err.style.display = 'none';
 
             try {
                 if(!navigator.onLine) throw new Error("Offline");
@@ -569,22 +572,38 @@
                 if(credStr) {
                     const cred = JSON.parse(credStr);
                     if(cred.usu.toLowerCase() === usu.toLowerCase() && cred.pass === pass) {
-                        if(cred.vencimiento && new Date() > new Date(cred.vencimiento)) { err.innerText = "Licencia local vencida."; err.style.display = 'block'; } 
+                        if(cred.vencimiento && new Date() > new Date(cred.vencimiento)) { if(err){ err.innerText = "Licencia local vencida."; err.style.display = 'block'; } } 
                         else { const dbLocal = JSON.parse(localStorage.getItem('taurus_db')) || []; iniciarSesionUI(dbLocal, cred.usu, cred.maestro, cred.rol); }
-                    } else { err.innerText = "Credenciales locales incorrectas."; err.style.display = 'block'; }
-                } else { err.innerText = e.message === "Offline" || e.message.includes("token") ? "Sin internet y sin sesión guardada." : e.message; err.style.display = 'block'; }
+                    } else { if(err){ err.innerText = "Credenciales locales incorrectas."; err.style.display = 'block'; } }
+                } else { if(err){ err.innerText = e.message === "Offline" || e.message.includes("token") ? "Sin internet y sin sesión guardada." : e.message; err.style.display = 'block'; } }
             } finally { btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
         }
 
+        // FUNCIÓN BLINDADA CONTRA ERRORES DE PANTALLA
         function iniciarSesionUI(datos, usu, maestro, rol) {
-            let dbValida = Array.isArray(datos) ? datos.filter(d => d && d.fecha) : []; baseDeDatosCache = dbValida.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); 
-            usuarioActivo = usu; propMaestro = maestro; rolUsuario = rol; document.getElementById('usuario-activo-lbl').value = usuarioActivo.toUpperCase() + ` (${rolUsuario})`;
-            if(rolUsuario !== 'Dueño') document.getElementById('panel-crear-peones').style.display = 'none';
-            const prefs = JSON.parse(localStorage.getItem('dash_graphs')) || ['1', '2']; document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
-            cargarDisenoDesdeDB(); actualizarEstadoRed(); procesarDatosDashboard(); actualizarContadorPendientes();
-            
-            document.getElementById('f-inf-rango-fecha').value = "30"; manejarRangoFechas();
-            document.getElementById('pantalla-login').classList.add('oculto'); document.getElementById('pantalla-app').classList.remove('oculto'); sincronizarPendientesAuto();
+            try {
+                let dbValida = Array.isArray(datos) ? datos.filter(d => d && d.fecha) : []; baseDeDatosCache = dbValida.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); 
+                usuarioActivo = usu; propMaestro = maestro; rolUsuario = rol; 
+                
+                try { let lblUser = document.getElementById('usuario-activo-lbl'); if(lblUser) lblUser.value = usuarioActivo.toUpperCase() + ` (${rolUsuario})`; } catch(e){}
+                try { let panelPeon = document.getElementById('panel-crear-peones'); if(panelPeon && rolUsuario !== 'Dueño') panelPeon.style.display = 'none'; } catch(e){}
+                try { const prefs = JSON.parse(localStorage.getItem('dash_graphs')) || ['1', '2']; document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); }); } catch(e){}
+                
+                try { cargarDisenoDesdeDB(); } catch(e){}
+                try { actualizarEstadoRed(); } catch(e){}
+                try { procesarDatosDashboard(); } catch(e){}
+                try { actualizarContadorPendientes(); } catch(e){}
+                
+                try { let rFec = document.getElementById('f-inf-rango-fecha'); if(rFec){ rFec.value = "30"; manejarRangoFechas(); } } catch(e){}
+                
+                try { let pLog = document.getElementById('pantalla-login'); if(pLog) pLog.classList.add('oculto'); } catch(e){}
+                try { let pApp = document.getElementById('pantalla-app'); if(pApp) pApp.classList.remove('oculto'); } catch(e){}
+                
+                sincronizarPendientesAuto();
+            } catch(e) {
+                console.warn("Fallo visual en Mobile", e);
+                let pLog = document.getElementById('pantalla-login'); if(pLog) pLog.style.display = 'none';
+            }
         }
 
         function fusionarDatos(nuevos) {
@@ -596,13 +615,16 @@
 
         function sincronizarFondo(esManual = false) {
             if(!usuarioActivo || !navigator.onLine) return; const credStr = localStorage.getItem('taurus_cred'); if(!credStr) return; const cred = JSON.parse(credStr);
-            if(esManual) document.getElementById('estado-red').innerText = '🔄 Actualizando...';
+            if(esManual) { let eR = document.getElementById('estado-red'); if(eR) eR.innerText = '🔄 Actualizando...'; }
             fetch(`${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(cred.usu)}&password=${encodeURIComponent(cred.pass)}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' })
             .then(r => r.json()).then(res => {
                 if(!res.error) {
                     fusionarDatos(Array.isArray(res.data) ? res.data : []); localStorage.setItem('tc_hacienda', JSON.stringify({ nombre: res.hacienda, logo: res.logo })); cargarDisenoDesdeDB();
-                    if(caravanaActiva && !document.getElementById('vista-manga').classList.contains('oculto')) { buscarCaravanaBtn(); }
-                    procesarDatosDashboard(); if(!document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); if(!document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
+                    let vManga = document.getElementById('vista-manga');
+                    if(caravanaActiva && vManga && !vManga.classList.contains('oculto')) { buscarCaravanaBtn(); }
+                    procesarDatosDashboard(); 
+                    let vReg = document.getElementById('vista-registro'); if(vReg && !vReg.classList.contains('oculto')) cargarListaRegistro(); 
+                    let vInf = document.getElementById('vista-informe'); if(vInf && !vInf.classList.contains('oculto')) actualizarInformeAvanzado();
                     setEstadoRed(true);
                 }
             }).catch(e => { console.warn("Error sync de fondo"); });
@@ -612,14 +634,15 @@
         async function conectarHardwareBLE() {
             const btn = document.querySelector('.btn-guardar');
             try {
-                btn.innerText = "Buscando Lector..."; dispositivoBLE = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb', '6e400001-b5a3-f393-e0a9-e50e24dcca9e'] });
-                dispositivoBLE.addEventListener('gattserverdisconnected', () => { btn.innerText = "Vincular Lector"; btn.style.background = "#0284c7"; alert("⚠️ Lector desconectado"); });
+                if(btn) btn.innerText = "Buscando Lector..."; 
+                dispositivoBLE = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb', '6e400001-b5a3-f393-e0a9-e50e24dcca9e'] });
+                dispositivoBLE.addEventListener('gattserverdisconnected', () => { if(btn){ btn.innerText = "Vincular Lector"; btn.style.background = "#0284c7"; } alert("⚠️ Lector desconectado"); });
                 bleServer = await dispositivoBLE.gatt.connect(); await new Promise(r => setTimeout(r, 600)); 
                 try { bleService = await bleServer.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb'); bleCharacteristic = await bleService.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb'); } 
                 catch(e) { bleService = await bleServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e'); bleCharacteristic = await bleService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); }
                 await bleCharacteristic.startNotifications(); bleCharacteristic.addEventListener('characteristicvaluechanged', (event) => { let valor = new TextDecoder().decode(event.target.value).trim(); if(valor) procesarTramaBLE(valor); });
-                btn.innerText = "📡 Lector Conectado"; btn.style.background = "var(--exito)"; alert("✅ Lector BLE conectado.");
-            } catch (e) { btn.innerText = "Vincular Lector"; btn.style.background = "#0284c7"; }
+                if(btn) { btn.innerText = "📡 Lector Conectado"; btn.style.background = "var(--exito)"; } alert("✅ Lector BLE conectado.");
+            } catch (e) { if(btn) { btn.innerText = "Vincular Lector"; btn.style.background = "#0284c7"; } }
         }
 
         let bufferBLE = ""; let timeoutBLE;
@@ -627,23 +650,30 @@
             bufferBLE += trama; clearTimeout(timeoutBLE);
             timeoutBLE = setTimeout(() => {
                 let dataLimpia = bufferBLE.replace(/[^a-zA-Z0-9.-]/g, '').replace('TAG', ''); if(!dataLimpia) return;
-                if (dataLimpia.includes('.')) { if (!document.getElementById('vista-manga').classList.contains('oculto') && caravanaActiva) { abrirModal('modal-peso'); document.getElementById('i-peso-val').value = dataLimpia; } else { alert("⚖️ Balanza: Peso " + dataLimpia + " Kg. Abre la Ficha de un animal primero."); } } 
+                
+                if (dataLimpia.includes('.')) { 
+                    let vManga = document.getElementById('vista-manga');
+                    if (vManga && !vManga.classList.contains('oculto') && caravanaActiva) { abrirModal('modal-peso'); let iP = document.getElementById('i-peso-val'); if(iP) iP.value = dataLimpia; } 
+                    else { alert("⚖️ Balanza: Peso " + dataLimpia + " Kg. Abre la Ficha de un animal primero."); } 
+                } 
                 else { recibirTagNFC(dataLimpia); }
                 bufferBLE = "";
             }, 300);
         }
 
         function recibirTagNFC(tagHex) {
-            const vinculacion = baseDeDatosCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim() === String(tagHex).trim());
-            if (vinculacion && vinculacion.caravana) { cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]); document.getElementById('buscador-caravana').value = vinculacion.caravana; buscarCaravanaBtn(); } 
-            else { tagHuerfano = tagHex; document.getElementById('input-rp-vinculacion').value = ''; abrirModal('modal-vinculacion'); }
+            let tagLimpio = String(tagHex).trim();
+            const vinculacion = baseDeDatosCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim() === tagLimpio);
+            if (vinculacion && vinculacion.caravana) { cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]); let bCar = document.getElementById('buscador-caravana'); if(bCar) bCar.value = vinculacion.caravana; buscarCaravanaBtn(); } 
+            else { tagHuerfano = tagLimpio; let iRp = document.getElementById('input-rp-vinculacion'); if(iRp) iRp.value = ''; abrirModal('modal-vinculacion'); }
         }
 
         function guardarVinculacionNFC() {
-            const rpFinal = document.getElementById('input-rp-vinculacion').value.trim();
-            if(!rpFinal) { const input = document.getElementById('input-rp-vinculacion'); input.style.borderColor = "var(--peligro)"; setTimeout(() => input.style.borderColor = "var(--borde)", 2000); return; }
+            let iRp = document.getElementById('input-rp-vinculacion');
+            const rpFinal = iRp ? iRp.value.trim() : "";
+            if(!rpFinal) { if(iRp){ iRp.style.borderColor = "var(--peligro)"; setTimeout(() => iRp.style.borderColor = "var(--borde)", 2000); } return; }
             caravanaActiva = rpFinal; ejecutarAccion('Vinculacion_RFID', tagHuerfano, 'Chip vinculado a ' + rpFinal, null, 'modal-vinculacion');
-            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]); document.getElementById('buscador-caravana').value = rpFinal; buscarCaravanaBtn();
+            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]); let bCar = document.getElementById('buscador-caravana'); if(bCar) bCar.value = rpFinal; buscarCaravanaBtn();
             const datosActivos = obtenerRegistrosActivos(); if(datosActivos.filter(d => String(d.caravana) === String(rpFinal)).length <= 1) setTimeout(() => abrirModal('modal-perfil'), 600);
         }
 
@@ -661,7 +691,7 @@
         }
 
         function encolarOffline(obj) { let pendientes = JSON.parse(localStorage.getItem('taurus_pendientes')) || []; pendientes.push(obj); localStorage.setItem('taurus_pendientes', JSON.stringify(pendientes)); actualizarContadorPendientes(); }
-        function actualizarContadorPendientes() { let p = JSON.parse(localStorage.getItem('taurus_pendientes')) || []; document.getElementById('lbl-pendientes').value = `${p.length} registros pendientes`; }
+        function actualizarContadorPendientes() { let p = JSON.parse(localStorage.getItem('taurus_pendientes')) || []; let lPen = document.getElementById('lbl-pendientes'); if(lPen) lPen.value = `${p.length} registros pendientes`; }
         function sincronizarPendientesAuto() {
             let p = JSON.parse(localStorage.getItem('taurus_pendientes')) || []; if(p.length === 0) return;
             const fd = new URLSearchParams(); fd.append('accion', 'sync_offline'); fd.append('maestro', propMaestro); fd.append('usuario', usuarioActivo); fd.append('datos', JSON.stringify(p));
@@ -673,37 +703,42 @@
             if(!caravanaActiva) return; let v = "-", d = ""; const inputs = document.getElementById(modalId).querySelectorAll('.form-control, .textarea');
             if(tipoAccion === 'Comentario') { d = inputs[0].value; }
             else if(tipoAccion === 'Peso') { v = inputs[0].value + " Kg"; d = `Cond: ${inputs[1].value}. Notas: ${inputs[2].value}`; } 
-            else if(tipoAccion === 'Sanidad') { 
-                let prod = inputs[0].value; if(prod === 'OTRO') prod = inputs[1].value || 'Tratamiento S/N';
-                v = prod; d = `Lote/Marca: ${inputs[2].value}. Notas: ${inputs[3].value}`; 
-            } 
+            else if(tipoAccion === 'Sanidad') { let prod = inputs[0].value; if(prod === 'OTRO') prod = inputs[1].value || 'Tratamiento S/N'; v = prod; d = `Lote/Marca: ${inputs[2].value}. Notas: ${inputs[3].value}`; } 
             else if(tipoAccion === 'Diagnóstico') { v = "Dx: " + inputs[0].value; d = inputs[1].value || "-"; }
             else if(tipoAccion === 'Inseminación') { v = "Ins: " + inputs[0].value; d = `Toro/Paj: ${inputs[1].value}. Notas: ${inputs[2].value}`; } 
-            else if(tipoAccion === 'Nutrición') { 
-                let prod = inputs[0].value; if(prod === 'OTRO') prod = inputs[1].value || 'Suplemento S/N';
-                v = prod; d = `Ración: ${inputs[2].value}. Notas: ${inputs[3].value}`; 
-            }
+            else if(tipoAccion === 'Nutrición') { let prod = inputs[0].value; if(prod === 'OTRO') prod = inputs[1].value || 'Suplemento S/N'; v = prod; d = `Ración: ${inputs[2].value}. Notas: ${inputs[3].value}`; }
             ejecutarAccion(tipoAccion, v, d, event.target, modalId); inputs.forEach(i => i.value = '');
         }
 
         function guardarPerfilCompleto() {
-            if(!caravanaActiva) return; const r = document.getElementById('f-raza').value || "-"; const e = document.getElementById('f-edad').value || "-"; const p = document.getElementById('f-padre').value || "-"; const m = document.getElementById('f-madre').value || "-";
-            ejecutarAccion('Perfil Master', `${r}|${e}|${p}|${m}`, document.getElementById('val-categoria').innerText, event.target, 'modal-perfil');
+            if(!caravanaActiva) return; 
+            let fR = document.getElementById('f-raza'); const r = fR ? fR.value : "-"; 
+            let fE = document.getElementById('f-edad'); const e = fE ? fE.value : "-"; 
+            let fP = document.getElementById('f-padre'); const p = fP ? fP.value : "-"; 
+            let fM = document.getElementById('f-madre'); const m = fM ? fM.value : "-";
+            let vC = document.getElementById('val-categoria'); const cat = vC ? vC.innerText : "-";
+            ejecutarAccion('Perfil Master', `${r}|${e}|${p}|${m}`, cat, event.target, 'modal-perfil');
         }
 
         function guardarClasificacion() {
-            if(!caravanaActiva) return; const cat = document.getElementById('input-cat-rapida').value; const car = document.getElementById('input-carimbo-rapido').value || "-"; const lot = document.getElementById('input-lote-rapido').value || "-";
+            if(!caravanaActiva) return; 
+            let iC = document.getElementById('input-cat-rapida'); const cat = iC ? iC.value : "-"; 
+            let iCa = document.getElementById('input-carimbo-rapido'); const car = iCa ? iCa.value : "-"; 
+            let iL = document.getElementById('input-lote-rapido'); const lot = iL ? iL.value : "-";
             ejecutarAccion('Actualización de Datos', `Cat: ${cat} | Carimbo: ${car}`, `Lote: ${lot}`, event.target, 'modal-clasificacion');
         }
 
         function borrarCaravana() { if(!caravanaActiva) return; if(confirm(`¿ELIMINAR el historial de la caravana ${caravanaActiva}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null, null); cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); } }
-        function cambiarMiContrasena() { if(!navigator.onLine) return; const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) return; const btn = event.target; btn.innerText = "Cambiando..."; const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usuarioActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { document.getElementById('nueva-clave').value = ''; btn.innerText = "Actualizar mi Contraseña"; let cred = JSON.parse(localStorage.getItem('taurus_cred')); cred.pass = nueva; localStorage.setItem('taurus_cred', JSON.stringify(cred)); }); }
-        function crearPeon() { if(!navigator.onLine) return; const pUsu = document.getElementById('peon-usu').value.trim(); const pPass = document.getElementById('peon-pass').value.trim(); if(!pUsu || !pPass) return; const btn = event.target; btn.innerText = "Creando..."; const fd = new URLSearchParams(); fd.append('accion', 'crear_peon'); fd.append('usuario', usuarioActivo); fd.append('peon_usu', pUsu); fd.append('peon_pass', pPass); fd.append('vencimiento', 'Heredado'); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { document.getElementById('peon-usu').value = ''; document.getElementById('peon-pass').value = ''; btn.innerText = "Crear Operador"; }); }
+        function cambiarMiContrasena() { if(!navigator.onLine) return; let elNc = document.getElementById('nueva-clave'); if(!elNc) return; const nueva = elNc.value.trim(); if(!nueva || nueva.length < 4) return; const btn = event.target; btn.innerText = "Cambiando..."; const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usuarioActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { elNc.value = ''; btn.innerText = "Actualizar mi Contraseña"; let cred = JSON.parse(localStorage.getItem('taurus_cred')); cred.pass = nueva; localStorage.setItem('taurus_cred', JSON.stringify(cred)); }); }
+        function crearPeon() { if(!navigator.onLine) return; let eU = document.getElementById('peon-usu'); let eP = document.getElementById('peon-pass'); if(!eU || !eP) return; const pUsu = eU.value.trim(); const pPass = eP.value.trim(); if(!pUsu || !pPass) return; const btn = event.target; btn.innerText = "Creando..."; const fd = new URLSearchParams(); fd.append('accion', 'crear_peon'); fd.append('usuario', usuarioActivo); fd.append('peon_usu', pUsu); fd.append('peon_pass', pPass); fd.append('vencimiento', 'Heredado'); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { eU.value = ''; eP.value = ''; btn.innerText = "Crear Operador"; }); }
 
         function procesarDatosDashboard() {
             const datosActivos = obtenerRegistrosActivos(); const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))];
-            document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
-            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos-dinamicos').innerHTML = "<p style='text-align:center;color:gray;padding:20px;'>Aún no hay datos registrados.</p>"; return; }
+            let dC = document.getElementById('dash-cabezas'); if(dC) dC.innerText = unicas.length; 
+            let dA = document.getElementById('dash-acciones'); if(dA) dA.innerText = datosActivos.length;
+            
+            let cG = document.getElementById('contenedor-graficos-dinamicos');
+            if(datosActivos.length === 0) { if(cG) cG.innerHTML = "<p style='text-align:center;color:gray;padding:20px;'>Aún no hay datos registrados.</p>"; return; }
 
             let g1={p:0,v:0}, g2={v:0,t:0,o:0}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0}; let alertasHTML = "";
             datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; });
@@ -711,23 +746,24 @@
             unicas.forEach(car => {
                 const regs = datosActivos.filter(d => d.caravana === car).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
                 let cat = "", lote = "General"; const uP = regs.find(d => d.accion === 'Perfil Master'); const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                if(uC) { cat = uC.valor.split('|')[0].replace('Cat:','').trim(); lote = uC.detalles.split('|')[0].replace('Lote:','').trim(); } else if(uP) { cat = uP.detalles.split('|')[0].trim(); }
+                if(uC) { cat = String(uC.valor||"").split('|')[0].replace('Cat:','').trim(); lote = String(uC.detalles||"").split('|')[0].replace('Lote:','').trim(); } else if(uP) { cat = String(uP.detalles||"").split('|')[0].trim(); }
                 cat = cat.toLowerCase(); const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
 
                 if(uDx) {
-                    if(uDx.valor.includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = uIns.valor.replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } }
-                    if(uDx.valor.includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong>${car}</strong> Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(uDx.valor.includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = uIns.valor.replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } }
+                    if(String(uDx.valor||"").includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } }
+                    if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong>${car}</strong> Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } }
                 }
                 if(cat.includes('vaca') || cat.includes('vaquilla')) g2.v++; else if(cat.includes('terne') || cat.includes('desmamante')) g2.t++; else g2.o++;
                 g3[lote] = (g3[lote] || 0) + 1;
                 if(uPeso) {
-                    if(uPeso.detalles.includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong>${car}</strong> Bajo Peso.</div></div>`; } else if(uPeso.detalles.includes('Sobre')) g4.sp++; else g4.opt++;
+                    if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong>${car}</strong> Bajo Peso.</div></div>`; } else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; else g4.opt++;
                     let pVal = parseFloat(uPeso.valor); if(!isNaN(pVal)) { if(cat.includes('vaca') || cat.includes('vaquilla')) { g9.vw += pVal; g9.vc++; } if(cat.includes('terne') || cat.includes('desmamante')) { g9.tw += pVal; g9.tc++; } }
                 }
                 if(uSan) g6.con++; else g6.sin++;
             });
 
-            const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
+            const contAlertas = document.getElementById('contenedor-alertas'); let cL = document.getElementById('lista-alertas');
+            if(alertasHTML !== "") { if(cL) cL.innerHTML = alertasHTML; if(contAlertas) contAlertas.style.display = 'block'; } else { if(contAlertas) contAlertas.style.display = 'none'; }
 
             const prefs = JSON.parse(localStorage.getItem('dash_graphs')) || ['1', '2']; let htmlGraficos = "";
             const makeBar = (lbl, val, total, col) => { let p = total>0 ? Math.round((val/total)*100) : 0; return `<div class="barra-categoria"><div class="barra-header"><span>${lbl} (${val})</span> <span>${p}%</span></div><div class="barra-fondo"><div class="barra-relleno" style="background:${col}; width:${p}%;"></div></div></div>`; };
@@ -745,39 +781,48 @@
                 else if(g === '9') { let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; html += `<div class="tarjeta-titulo">⚖️ Promedio Peso</div><div class="grid-kpis" style="margin-bottom:0;"><div class="kpi-caja"><div class="kpi-valor">${pv} Kg</div><div class="kpi-label" style="color:var(--texto);">Vacas</div></div><div class="kpi-caja"><div class="kpi-valor">${pt} Kg</div><div class="kpi-label" style="color:var(--texto);">Terneros</div></div></div>`; }
                 else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins || 1; html += `<div class="tarjeta-titulo">⚡ Volumen Trabajos</div>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Sanidad', g10.san, t, '#c2410c')}`; }
                 html += `</div>`; htmlGraficos += html;
-            }); document.getElementById('contenedor-graficos-dinamicos').innerHTML = htmlGraficos;
+            }); 
+            if(cG) cG.innerHTML = htmlGraficos;
         }
 
         function verificarLimiteGraficos(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); localStorage.setItem('dash_graphs', JSON.stringify(prefs)); if(baseDeDatosCache.length > 0) procesarDatosDashboard(); } }
-        function cambiarVista(idVista, tabElemento) { ['vista-dashboard', 'vista-manga', 'vista-registro', 'vista-informe', 'vista-config'].forEach(id => document.getElementById(id).classList.add('oculto')); document.getElementById(idVista).classList.remove('oculto'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('activo')); tabElemento.classList.add('activo'); }
-        function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
+        function cambiarVista(idVista, tabElemento) { ['vista-dashboard', 'vista-manga', 'vista-registro', 'vista-informe', 'vista-config'].forEach(id => {let e=document.getElementById(id); if(e)e.classList.add('oculto');}); let t=document.getElementById(idVista); if(t)t.classList.remove('oculto'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('activo')); if(tabElemento) tabElemento.classList.add('activo'); }
+        function abrirModal(id) { let m=document.getElementById(id); if(m)m.style.display = 'flex'; }
+        function cerrarModal(id) { let m=document.getElementById(id); if(m)m.style.display = 'none'; }
         
         function buscarCaravanaBtn() {
-            let input = document.getElementById('buscador-caravana').value.trim(); if(!input) return; 
+            let iB = document.getElementById('buscador-caravana'); let input = iB ? iB.value.trim() : ""; if(!input) return; 
             const vinculacion = baseDeDatosCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim() === String(input).trim());
             if(vinculacion) input = vinculacion.caravana;
 
-            caravanaActiva = input; document.getElementById('ficha-animal').classList.remove('oculto'); document.getElementById('val-caravana').innerText = input;
+            caravanaActiva = input; let fA = document.getElementById('ficha-animal'); if(fA) fA.classList.remove('oculto'); 
+            let vC = document.getElementById('val-caravana'); if(vC) vC.innerText = input;
             const datosActivos = obtenerRegistrosActivos();
             const regs = datosActivos.filter(d => String(d.caravana) === String(input)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
             
             let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", comentario="Sin comentarios.", inseminacion="-", nutricion="-", sanidad="-";
-            document.getElementById('panel-ultima-nota').classList.add('oculto');
+            let pUn = document.getElementById('panel-ultima-nota'); if(pUn) pUn.classList.add('oculto');
             if(regs.length > 0) {
-                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { const p = uP.valor.split('|'); raza = p[0]||"-"; edad = p[1]||"-"; padre = p[2]||"-"; madre = p[3]||"-"; cat = uP.detalles.split('|')[0].trim(); }
-                const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { cat = uC.valor.split('|')[0].replace('Cat:','').trim(); carimbo = uC.valor.split('|')[1].replace('Carimbo:','').trim(); lote = uC.detalles.split('|')[0].replace('Lote:','').trim(); }
-                const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor; const uCom = regs.find(d => d.accion === 'Comentario'); if(uCom) comentario = uCom.detalles.split('|')[0].trim();
-                const uIns = regs.find(d => d.accion === 'Inseminación'); if(uIns) inseminacion = uIns.valor + " | " + uIns.detalles;
-                const uNut = regs.find(d => d.accion === 'Nutrición'); if(uNut) nutricion = uNut.valor + " | " + uNut.detalles;
-                const uSan = regs.find(d => d.accion === 'Sanidad'); if(uSan) sanidad = uSan.valor + " | " + uSan.detalles;
+                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { const p = String(uP.valor||"").split('|'); raza = p[0]||"-"; edad = p[1]||"-"; padre = p[2]||"-"; madre = p[3]||"-"; cat = String(uP.detalles||"").split('|')[0].trim(); }
+                const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; }
+                const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
+                const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
+                const uCom = regs.find(d => d.accion === 'Comentario'); if(uCom) comentario = String(uCom.detalles||"").split('|')[0].trim();
+                const uIns = regs.find(d => d.accion === 'Inseminación'); if(uIns) inseminacion = (uIns.valor||"-") + " | " + (uIns.detalles||"");
+                const uNut = regs.find(d => d.accion === 'Nutrición'); if(uNut) nutricion = (uNut.valor||"-") + " | " + (uNut.detalles||"");
+                const uSan = regs.find(d => d.accion === 'Sanidad'); if(uSan) sanidad = (uSan.valor||"-") + " | " + (uSan.detalles||"");
                 
                 const ultimaReal = regs.find(d => d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master' && d.accion !== 'Comentario' && !d.accion.includes('Vinculacion'));
-                if(ultimaReal) { document.getElementById('panel-ultima-nota').classList.remove('oculto'); document.getElementById('nota-accion-titulo').innerText = `${new Date(ultimaReal.fecha).toLocaleDateString()} - ${ultimaReal.accion} (${ultimaReal.valor})`; document.getElementById('nota-accion-texto').innerText = ultimaReal.detalles.split('|')[0]; }
+                if(ultimaReal && pUn) { pUn.classList.remove('oculto'); let nTit = document.getElementById('nota-accion-titulo'); if(nTit) nTit.innerText = `${new Date(ultimaReal.fecha).toLocaleDateString()} - ${ultimaReal.accion} (${ultimaReal.valor})`; let nTex = document.getElementById('nota-accion-texto'); if(nTex) nTex.innerText = String(ultimaReal.detalles||"").split('|')[0]; }
             }
-            document.getElementById('val-categoria').innerText = cat; document.getElementById('val-raza').innerText = raza; document.getElementById('val-peso').innerText = peso; document.getElementById('val-dx').innerText = dx; document.getElementById('val-lote').innerText = lote; document.getElementById('val-carimbo').innerText = carimbo; document.getElementById('val-edad').innerText = edad; document.getElementById('val-genealogia').innerText = padre + " / " + madre; document.getElementById('val-comentario').innerText = comentario; document.getElementById('val-inseminacion').innerText = inseminacion; document.getElementById('val-nutricion').innerText = nutricion; document.getElementById('val-sanidad').innerText = sanidad;
-            document.getElementById('f-raza').value = raza !== "-" ? raza : ""; document.getElementById('f-edad').value = edad !== "-" ? edad : ""; document.getElementById('f-padre').value = padre !== "-" ? padre : ""; document.getElementById('f-madre').value = madre !== "-" ? madre : ""; document.getElementById('input-carimbo-rapido').value = carimbo !== "-" ? carimbo : ""; document.getElementById('input-lote-rapido').value = lote !== "-" ? lote : ""; document.getElementById('f-comentario-txt').value = comentario !== "Sin comentarios." ? comentario : "";
-            let catSelect = document.getElementById('input-cat-rapida'); for(let i=0; i<catSelect.options.length; i++) { if(catSelect.options[i].value === cat) catSelect.selectedIndex = i; }
+            
+            let map = {'val-categoria':cat, 'val-raza':raza, 'val-peso':peso, 'val-dx':dx, 'val-lote':lote, 'val-carimbo':carimbo, 'val-edad':edad, 'val-genealogia':padre + " / " + madre, 'val-comentario':comentario, 'val-inseminacion':inseminacion, 'val-nutricion':nutricion, 'val-sanidad':sanidad};
+            for(let k in map) { let el = document.getElementById(k); if(el) el.innerText = map[k]; }
+            
+            let mapV = {'f-raza':raza!=="-"?raza:"", 'f-edad':edad!=="-"?edad:"", 'f-padre':padre!=="-"?padre:"", 'f-madre':madre!=="-"?madre:"", 'input-carimbo-rapido':carimbo!=="-"?carimbo:"", 'input-lote-rapido':lote!=="-"?lote:"", 'f-comentario-txt':comentario!=="Sin comentarios."?comentario:""};
+            for(let k in mapV) { let el = document.getElementById(k); if(el) el.value = mapV[k]; }
+            
+            let catSelect = document.getElementById('input-cat-rapida'); if(catSelect){ for(let i=0; i<catSelect.options.length; i++) { if(catSelect.options[i].value === cat) catSelect.selectedIndex = i; } }
         }
 
         function verHistorial() { 
@@ -785,42 +830,52 @@
             const d = datosActivos.filter(f => String(f.caravana) === String(caravanaActiva) && !f.accion.includes('Vinculacion')).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
             let h = "<ul style='list-style:none; padding:0; margin:0;'>"; 
             d.forEach(r => { h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px;"><span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span><br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span></li>`; }); 
-            document.getElementById('contenido-historial').innerHTML = h + "</ul>"; 
+            let cHis = document.getElementById('contenido-historial'); if(cHis) cHis.innerHTML = h + "</ul>"; 
         }
 
         function cargarListaRegistro() {
             const datosActivos = obtenerRegistrosActivos(); const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))]; 
-            const ul = document.getElementById('ul-registro'); ul.innerHTML = "";
-            unicas.forEach(car => { const regs = datosActivos.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); let info = "Sin datos", dxText = "", loteText = ""; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { info = c.valor.split('|')[0].replace('Cat:','').trim(); loteText = " | " + c.detalles.split('|')[0].replace('Lote:','').trim(); } else if(p) { info = p.detalles.split('|')[0].trim(); } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = ` - ${d.valor}`; ul.innerHTML += `<li onclick="navegarDesdeLista('${car}')"><div style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:18px; font-weight:bold; color:var(--texto);">${car}</span><span style="color:var(--muted); font-size:12px;">${info}${loteText}${dxText}</span></div><span style="color:var(--texto); font-size:20px;">›</span></li>`; });
+            const ul = document.getElementById('ul-registro'); if(!ul) return; ul.innerHTML = "";
+            unicas.forEach(car => { 
+                const regs = datosActivos.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); let info = "Sin datos", dxText = "", loteText = ""; 
+                const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); 
+                if(c) { let v = String(c.valor||"").split('|'); info = v[0] ? v[0].replace('Cat:','').trim() : info; loteText = " | " + (String(c.detalles||"").split('|')[0] ? String(c.detalles||"").split('|')[0].replace('Lote:','').trim() : ""); } 
+                else if(p) { info = String(p.detalles||"").split('|')[0] || "-"; } 
+                const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = ` - ${d.valor}`; 
+                ul.innerHTML += `<li onclick="navegarDesdeLista('${car}')"><div style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:18px; font-weight:bold; color:var(--texto);">${car}</span><span style="color:var(--muted); font-size:12px;">${info}${loteText}${dxText}</span></div><span style="color:var(--texto); font-size:20px;">›</span></li>`; 
+            });
         }
 
-        function filtrarLista(t) { const lis = document.getElementById('ul-registro').getElementsByTagName('li'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "" : "none"; }
-        function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); buscarCaravanaBtn(); }
+        function filtrarLista(t) { const uL = document.getElementById('ul-registro'); if(!uL) return; const lis = uL.getElementsByTagName('li'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "" : "none"; }
+        function navegarDesdeLista(car) { let bC = document.getElementById('buscador-caravana'); if(bC) bC.value = car; document.querySelectorAll('.nav-item')[1].click(); buscarCaravanaBtn(); }
         
         function cambiarModoReporte() {
-            const modo = document.getElementById('f-inf-modo').value;
+            let elM = document.getElementById('f-inf-modo'); if(!elM) return; const modo = elM.value;
+            let fI = document.getElementById('filtros-inventario'); let fE = document.getElementById('filtros-eventos');
+            let lP = document.getElementById('lbl-prenadas'); let lT = document.getElementById('lbl-total');
             if(modo === 'inventario') {
-                document.getElementById('filtros-inventario').style.display = 'flex'; document.getElementById('filtros-eventos').style.display = 'none'; document.getElementById('lbl-prenadas').innerText = "Preñadas (Filtro)"; document.getElementById('lbl-total').innerText = "Total Cabezas";
+                if(fI) fI.style.display = 'flex'; if(fE) fE.style.display = 'none'; if(lP) lP.innerText = "Preñadas (Filtro)"; if(lT) lT.innerText = "Total Cabezas";
             } else {
-                document.getElementById('filtros-inventario').style.display = 'none'; document.getElementById('filtros-eventos').style.display = 'flex'; document.getElementById('lbl-prenadas').innerText = "-"; document.getElementById('lbl-total').innerText = "Trabajos Listados";
+                if(fI) fI.style.display = 'none'; if(fE) fE.style.display = 'flex'; if(lP) lP.innerText = "-"; if(lT) lT.innerText = "Trabajos Listados";
             }
             actualizarInformeAvanzado();
         }
 
         function manejarRangoFechas() {
-            const rango = document.getElementById('f-inf-rango-fecha').value; const cajaManual = document.getElementById('caja-fechas-custom');
+            let fR = document.getElementById('f-inf-rango-fecha'); if(!fR) return; const rango = fR.value; 
+            const cajaManual = document.getElementById('caja-fechas-custom');
             const dDesde = document.getElementById('f-inf-desde'); const dHasta = document.getElementById('f-inf-hasta');
             let hoy = new Date(); let desde = new Date();
-            if (rango === 'custom') { cajaManual.style.display = 'flex'; } 
+            if (rango === 'custom') { if(cajaManual) cajaManual.style.display = 'flex'; } 
             else {
-                cajaManual.style.display = 'none';
+                if(cajaManual) cajaManual.style.display = 'none';
                 if(rango === 'hoy') { } else if (rango === '7') { desde.setDate(hoy.getDate() - 7); } else if (rango === '30') { desde.setDate(hoy.getDate() - 30); } else if (rango === 'todo') { desde = new Date('2000-01-01'); }
-                dDesde.value = desde.toISOString().split('T')[0]; dHasta.value = hoy.toISOString().split('T')[0];
+                if(dDesde) dDesde.value = desde.toISOString().split('T')[0]; if(dHasta) dHasta.value = hoy.toISOString().split('T')[0];
             }
             actualizarInformeAvanzado();
         }
 
-        function setFiltroAccion(accion, btnObj) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activa')); btnObj.classList.add('activa'); document.getElementById('f-inf-accion-oculto').value = accion; actualizarInformeAvanzado(); }
+        function setFiltroAccion(accion, btnObj) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activa')); btnObj.classList.add('activa'); let ao=document.getElementById('f-inf-accion-oculto'); if(ao) ao.value = accion; actualizarInformeAvanzado(); }
 
         function obtenerBadgeAccion(accion) {
             if(accion === 'Sanidad') return `💉 Sanidad`;
@@ -832,57 +887,75 @@
         }
 
         function actualizarInformeAvanzado() {
-            const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
+            let eM = document.getElementById('f-inf-modo'); if(!eM) return; const modo = eM.value; 
+            let fRpE = document.getElementById('f-inf-rp'); const fRp = fRpE ? fRpE.value.trim().toLowerCase() : "";
             const datosActivos = obtenerRegistrosActivos(); const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))]; 
             const tbodyMasivo = document.getElementById('tb-informe-masivo'); const tbodyEventos = document.getElementById('tb-informe-eventos'); const tbodyIndiv = document.getElementById('tb-informe-individual');
-            document.getElementById('tabla-masiva').classList.add('oculto'); document.getElementById('tabla-eventos').classList.add('oculto'); document.getElementById('tabla-individual').classList.add('oculto');
+            let tm = document.getElementById('tabla-masiva'); if(tm) tm.classList.add('oculto'); 
+            let te = document.getElementById('tabla-eventos'); if(te) te.classList.add('oculto'); 
+            let ti = document.getElementById('tabla-individual'); if(ti) ti.classList.add('oculto');
             
             if(fRp !== "") {
-                rpPrint = fRp; document.querySelector('.btn-descargar').innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
+                rpPrint = fRp; let bD = document.querySelector('.btn-descargar'); if(bD) bD.innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`; 
+                if(ti) ti.classList.remove('oculto');
                 const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === fRp && !d.accion.includes('Vinculacion') && d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master').sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
                 let hInd = ""; regs.forEach(r => { hInd+=`<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
-                tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.length; document.getElementById('inf-prenadas').innerText = "-"; return;
+                if(tbodyIndiv) tbodyIndiv.innerHTML = hInd; 
+                let iT = document.getElementById('inf-total'); if(iT) iT.innerText = regs.length; 
+                let iP = document.getElementById('inf-prenadas'); if(iP) iP.innerText = "-"; return;
             }
 
-            rpPrint = ""; document.querySelector('.btn-descargar').innerHTML = `🖨️ Descargar Informe PDF`;
+            rpPrint = ""; let bD = document.querySelector('.btn-descargar'); if(bD) bD.innerHTML = `🖨️ Descargar Informe PDF`;
 
             if(modo === 'inventario') {
-                document.getElementById('tabla-masiva').classList.remove('oculto');
-                const fLote = document.getElementById('f-inf-lote').value; const fCat = document.getElementById('f-inf-cat').value; const fDx = document.getElementById('f-inf-dx').value; 
-                tbodyMasivo.innerHTML = ""; let countTotal = 0, countPrenadas = 0;
+                if(tm) tm.classList.remove('oculto');
+                let elL = document.getElementById('f-inf-lote'); const fLote = elL ? elL.value : "ALL"; 
+                let elC = document.getElementById('f-inf-cat'); const fCat = elC ? elC.value : "ALL"; 
+                let elDx = document.getElementById('f-inf-dx'); const fDx = elDx ? elDx.value : "ALL"; 
+                if(tbodyMasivo) tbodyMasivo.innerHTML = ""; let countTotal = 0, countPrenadas = 0; let hMas = "";
                 unicas.forEach(car => {
                     const regs = datosActivos.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); let cat = "-", peso = "-", dx = "-", lote = "-";
-                    const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = uP.detalles.split('|')[0].trim();
-                    const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { cat = uC.valor.split('|')[0].replace('Cat:','').trim(); lote = uC.detalles.split('|')[0].replace('Lote:','').trim(); }
-                    const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor;
-                    let pasaFiltro = true; if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; if(fCat !== "ALL" && !cat.includes(fCat)) pasaFiltro = false; if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false;
-                    if(pasaFiltro) { countTotal++; if(dx.includes('Preñada')) countPrenadas++; tbodyMasivo.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:16px;">${car}</td><td style="color:#000; border-color:#cbd5e1;">${cat}<br><span style="font-size:11px; color:gray;">${lote}</span></td><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${peso}</td><td style="color:#000; border-color:#cbd5e1;">${dx}</td></tr>`; }
+                    const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0].trim();
+                    const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0]?v[0].replace('Cat:','').trim():cat; lote = String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; }
+                    const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
+                    const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-";
+                    let pasaFiltro = true; if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; if(fCat !== "ALL" && !cat.includes(fCat)) pasaFiltro = false; if(fDx !== "ALL" && !String(dx||"").includes(fDx)) pasaFiltro = false;
+                    if(pasaFiltro) { countTotal++; if(String(dx||"").includes('Preñada')) countPrenadas++; hMas += `<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:16px;">${car}</td><td style="color:#000; border-color:#cbd5e1;">${cat}<br><span style="font-size:11px; color:gray;">${lote}</span></td><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${peso}</td><td style="color:#000; border-color:#cbd5e1;">${dx}</td></tr>`; }
                 });
-                document.getElementById('inf-total').innerText = countTotal; document.getElementById('inf-prenadas').innerText = countPrenadas;
+                let iT = document.getElementById('inf-total'); if(iT) iT.innerText = countTotal; 
+                let iP = document.getElementById('inf-prenadas'); if(iP) iP.innerText = countPrenadas; 
+                if(tbodyMasivo) tbodyMasivo.innerHTML = hMas;
             } else {
-                document.getElementById('tabla-eventos').classList.remove('oculto');
-                const fAcc = document.getElementById('f-inf-accion-oculto').value; const fDesde = document.getElementById('f-inf-desde').value; const fHasta = document.getElementById('f-inf-hasta').value; const fKey = document.getElementById('f-inf-keyword').value.trim().toLowerCase();
+                if(te) te.classList.remove('oculto');
+                let ao = document.getElementById('f-inf-accion-oculto'); const fAcc = ao ? ao.value : "ALL"; 
+                let fD = document.getElementById('f-inf-desde'); const fDesde = fD ? fD.value : ""; 
+                let fH = document.getElementById('f-inf-hasta'); const fHasta = fH ? fH.value : ""; 
+                let fK = document.getElementById('f-inf-keyword'); const fKey = fK ? fK.value.trim().toLowerCase() : "";
                 let eventos = datosActivos.filter(d => !d.accion.includes('Vinculacion') && d.accion !== 'Perfil Master' && d.accion !== 'Actualización de Datos' && d.caravana !== "---");
                 if(fAcc !== "ALL") eventos = eventos.filter(d => d.accion === fAcc); if(fDesde) eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00'));
-                if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); if(fKey) eventos = eventos.filter(d => (d.valor + d.detalles).toLowerCase().includes(fKey));
-                tbodyEventos.innerHTML = "";
-                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { tbodyEventos.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:16px;">${r.caravana}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
-                document.getElementById('inf-total').innerText = eventos.length; document.getElementById('inf-prenadas').innerText = "-";
+                if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); if(fKey) eventos = eventos.filter(d => (String(d.valor||"") + String(d.detalles||"")).toLowerCase().includes(fKey));
+                let hEve = "";
+                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { hEve += `<tr><td style="color:#000; border-color:#cbd5e1; white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:16px;">${r.caravana}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
+                if(tbodyEventos) tbodyEventos.innerHTML = hEve; 
+                let iT = document.getElementById('inf-total'); if(iT) iT.innerText = eventos.length; 
+                let iP = document.getElementById('inf-prenadas'); if(iP) iP.innerText = "-";
             }
         }
 
         function ejecutarDescargaPDF() {
-            const btn = document.querySelector('.btn-descargar'); btn.innerText = "⏳ Generando PDF...";
-            const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; const h_nom = hd.nombre || 'TAURUS CONTROL'; const h_log = hd.logo || "";
+            const btn = document.querySelector('.btn-descargar'); if(btn) btn.innerText = "⏳ Generando PDF HD...";
+            const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; 
+            let eN = document.getElementById('nombre-estancia'); const h_nom = eN ? eN.value || 'TAURUS CONTROL' : 'TAURUS CONTROL'; 
+            const h_log = hd.logo || "";
             
             let htmlContent = `<div style="background-color: #ffffff; padding: 20px; width: 750px; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000000; padding-bottom: 15px; margin-bottom: 20px;"><div><h2 style="margin:0 0 10px 0; font-size:26px; text-transform:uppercase;">${h_nom}</h2>`;
             
             if(rpPrint !== "") {
                 const datosActivos = obtenerRegistrosActivos(); const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === String(rpPrint).toLowerCase() && !d.accion.includes('Vinculacion')).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
-                if(regs.length===0){ btn.innerHTML = `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}`; return;}
+                if(regs.length===0){ if(btn) btn.innerHTML = `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}`; return;}
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
-                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = uP.valor.split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=uP.detalles.split('|')[0]||"-"; } 
-                const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { cat=uC.valor.split('|')[0].replace('Cat:','').trim(); carimbo=uC.valor.split('|')[1].replace('Carimbo:','').trim(); lote=uC.detalles.split('|')[0].replace('Lote:','').trim(); } 
+                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor||"").split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=String(uP.detalles||"").split('|')[0]||"-"; } 
+                const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; lote=String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; } 
                 const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
                 const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nut = (uNut.valor || "") + " | " + (uNut.detalles || "");
                 const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "") + " | " + (uSan.detalles || "");
@@ -891,39 +964,48 @@
                 htmlContent += `<p style="margin:0; font-size:14px;">Dossier Clínico Histórico - RP: <strong>${rpPrint.toUpperCase()}</strong></p><p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${h_log ? `<div style="text-align: right;"><img src="${h_log}" style="max-height:100px; max-width: 250px; object-fit: contain;"></div>` : ''}</div>
                     <h3 style="font-size:16px; margin: 0 0 10px 0;">Resumen del Perfil</h3><table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 12px; table-layout: fixed; word-wrap: break-word;"><tr><td style="border: 1px solid #000000; padding: 8px;"><strong>Categoría:</strong> ${cat}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Lote:</strong> ${lote}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Carimbo:</strong> ${carimbo}</td></tr><tr><td style="border: 1px solid #000000; padding: 8px;"><strong>Raza:</strong> ${raza}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Edad:</strong> ${edad}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Último Peso:</strong> ${peso}</td></tr><tr><td style="border: 1px solid #000000; padding: 8px;"><strong>Dx Actual:</strong> ${dx}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Genealogía:</strong> ${pa} / ${ma}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Régimen:</strong> ${nut}</td></tr><tr><td style="border: 1px solid #000000; padding: 8px;"><strong>Últ. Sanidad:</strong> ${san}</td><td style="border: 1px solid #000000; padding: 8px;" colspan="2"><strong>Últ. Inseminación:</strong> ${ins}</td></tr></table>
                     <h3 style="font-size:16px; margin: 0 0 10px 0;">Historial Clínico y Procedimientos</h3><table style="width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; word-wrap: break-word;"><thead><tr><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 15%;">Fecha</th><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 85%;">Procedimiento / Notas Completas</th></tr></thead><tbody>`;
-                let rows = document.getElementById('tb-informe-individual').querySelectorAll('tr'); 
-                rows.forEach(tr => { let tds = tr.querySelectorAll('td'); if(tds.length >= 3) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 8px; overflow: hidden;">${tds[0].innerHTML}</td><td style="border: 1px solid #000000; padding: 8px; overflow: hidden;">${tds[1].innerHTML} - ${tds[2].innerHTML}</td></tr>`; });
+                
+                let tbInd = document.getElementById('tb-informe-individual');
+                if(tbInd) {
+                    let rows = tbInd.querySelectorAll('tr'); 
+                    rows.forEach(tr => { let tds = tr.querySelectorAll('td'); if(tds.length >= 3) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 8px; overflow: hidden;">${tds[0].innerHTML}</td><td style="border: 1px solid #000000; padding: 8px; overflow: hidden;">${tds[1].innerHTML} - ${tds[2].innerHTML}</td></tr>`; });
+                }
                 htmlContent += `</tbody></table></div>`;
             } else {
-                const modo = document.getElementById('f-inf-modo').value;
+                let eM = document.getElementById('f-inf-modo'); const modo = eM ? eM.value : 'inventario';
                 const titulo = modo === 'inventario' ? "Reporte Analítico de Inventario" : "Reporte Analítico de Trabajos y Procedimientos";
+                let iT = document.getElementById('inf-total'); let iP = document.getElementById('inf-prenadas');
                 
                 htmlContent += `<p style="margin:0; font-size:14px;">${titulo}</p><p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${h_log ? `<div style="text-align: right;"><img src="${h_log}" style="max-height:100px; max-width: 250px; object-fit: contain;"></div>` : ''}</div>
-                    <table style="width: 50%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;"><tr><td style="border: 1px solid #000000; padding: 8px;"><strong>Resultados Filtrados:</strong> ${document.getElementById('inf-total').innerText}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Preñadas (Filtro):</strong> ${document.getElementById('inf-prenadas').innerText}</td></tr></table>
+                    <table style="width: 50%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;"><tr><td style="border: 1px solid #000000; padding: 8px;"><strong>Resultados Filtrados:</strong> ${iT?iT.innerText:'0'}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Preñadas (Filtro):</strong> ${iP?iP.innerText:'-'}</td></tr></table>
                     <table style="width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; word-wrap: break-word;"><thead>`;
                         
                 if(modo === 'inventario') {
                     htmlContent += `<tr><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 15%;">Caravana</th><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 40%;">Categoría y Lote</th><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 15%;">Último Peso</th><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 30%;">Dx Actual</th></tr></thead><tbody>`;
-                    let rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr'); 
-                    rows.forEach(tr => { let tds = tr.querySelectorAll('td'); if(tds.length >= 4) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 8px;">${tds[0].innerText}</td><td style="border: 1px solid #000000; padding: 8px;">${tds[1].innerHTML}</td><td style="border: 1px solid #000000; padding: 8px;">${tds[2].innerText}</td><td style="border: 1px solid #000000; padding: 8px;">${tds[3].innerText}</td></tr>`; });
+                    let tbMas = document.getElementById('tb-informe-masivo');
+                    if(tbMas) {
+                        let rows = tbMas.querySelectorAll('tr'); 
+                        rows.forEach(tr => { let tds = tr.querySelectorAll('td'); if(tds.length >= 4) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 8px;">${tds[0].innerText}</td><td style="border: 1px solid #000000; padding: 8px;">${tds[1].innerHTML}</td><td style="border: 1px solid #000000; padding: 8px;">${tds[2].innerText}</td><td style="border: 1px solid #000000; padding: 8px;">${tds[3].innerText}</td></tr>`; });
+                    }
                 } else {
                     htmlContent += `<tr><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 15%;">Fecha</th><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 15%;">Caravana</th><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 70%;">Trabajo Realizado y Detalles</th></tr></thead><tbody>`;
-                    let rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr'); 
-                    rows.forEach(tr => { let tds = tr.querySelectorAll('td'); if(tds.length >= 4) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 8px;">${tds[0].innerText}</td><td style="border: 1px solid #000000; padding: 8px; text-align:center;"><strong>${tds[1].innerText}</strong></td><td style="border: 1px solid #000000; padding: 8px;"><strong>${tds[2].innerText}</strong> - ${tds[3].innerText}</td></tr>`; });
+                    let tbEve = document.getElementById('tb-informe-eventos');
+                    if(tbEve) {
+                        let rows = tbEve.querySelectorAll('tr'); 
+                        rows.forEach(tr => { let tds = tr.querySelectorAll('td'); if(tds.length >= 4) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 8px;">${tds[0].innerText}</td><td style="border: 1px solid #000000; padding: 8px; text-align:center;"><strong>${tds[1].innerText}</strong></td><td style="border: 1px solid #000000; padding: 8px;"><strong>${tds[2].innerText}</strong> - ${tds[3].innerText}</td></tr>`; });
+                    }
                 }
-                
                 htmlContent += `</tbody></table></div>`;
             }
             
-            // FIX: "mode: ['css', 'legacy']" soluciona el salto de página en blanco gigante
-            const opt = { margin: 10, filename: rpPrint !== "" ? `Dossier_${rpPrint.toUpperCase()}.pdf` : 'Reporte_Taurus.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' } };
+            const opt = { margin: 10, filename: rpPrint !== "" ? `Dossier_${rpPrint.toUpperCase()}.pdf` : 'Reporte_Inventario.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' } };
             html2pdf().set(opt).from(htmlContent).toPdf().get('pdf').then(function(pdf) {
                 if (window.AndroidTaurus) { const base64 = pdf.output('datauristring'); window.AndroidTaurus.guardarPDF(base64, opt.filename); } else { pdf.save(opt.filename); }
-                btn.innerHTML = rpPrint !== "" ? `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}` : "🖨️ Descargar Informe PDF"; 
-            }).catch(e => { btn.innerHTML = "🖨️ Reintentar Descarga"; });
+                if(btn) btn.innerHTML = rpPrint !== "" ? `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}` : "🖨️ Descargar Informe PDF"; 
+            }).catch(e => { if(btn) btn.innerHTML = "🖨️ Reintentar Descarga"; });
         }
 
-        function cargarDisenoDesdeDB() { const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; document.getElementById('nombre-estancia').value = hd.nombre || ''; if (hd.logo && hd.logo !== "sin-logo") { mostrarLogo(hd.logo); } }
+        function cargarDisenoDesdeDB() { const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; let eNom = document.getElementById('nombre-estancia'); if(eNom) eNom.value = hd.nombre || ''; if (hd.logo && hd.logo !== "sin-logo") { mostrarLogo(hd.logo); } }
         
         function cargarLogo(event) { 
             const file = event.target.files[0]; if(!file) return; const reader = new FileReader(); 
@@ -931,7 +1013,7 @@
                 const img = new Image(); 
                 img.onload = function() { 
                     const canvas = document.createElement('canvas'); let w = img.width, h = img.height; 
-                    const maxW = 500, maxH = 500; // FIX: Resolución HD 500x500
+                    const maxW = 500, maxH = 500;
                     if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } 
                     canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); 
                     const base64 = canvas.toDataURL('image/png'); mostrarLogo(base64); 
@@ -939,11 +1021,12 @@
             }; reader.readAsDataURL(file); 
         }
         
-        function mostrarLogo(base64) { document.getElementById('img-logo').src = base64; document.getElementById('img-logo').style.display = 'block'; document.getElementById('texto-subir-logo').style.display = 'none'; }
+        function mostrarLogo(base64) { let iL = document.getElementById('img-logo'); if(iL) { iL.src = base64; iL.style.display = 'block'; } let tS = document.getElementById('texto-subir-logo'); if(tS) tS.style.display = 'none'; }
         function guardarDisenoInforme() {
-            const n = document.getElementById('nombre-estancia').value.trim() || "Sin Nombre"; const f = document.getElementById('input-logo');
+            let eN = document.getElementById('nombre-estancia'); const n = eN ? eN.value.trim() : "Sin Nombre"; 
+            const f = document.getElementById('input-logo');
             let p = (b64) => { const fd = new URLSearchParams(); fd.append('accion', 'guardar_diseno'); fd.append('maestro', propMaestro); fd.append('nombre_hacienda', n); fd.append('logo_hacienda', b64); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { let hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; hd.nombre = n; hd.logo = b64; localStorage.setItem('tc_hacienda', JSON.stringify(hd)); }); };
-            if(f.files && f.files[0]) { const r = new FileReader(); r.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const maxW = 500, maxH = 500; if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); p(canvas.toDataURL('image/png')); }; img.src = e.target.result; }; r.readAsDataURL(f.files[0]); } else { const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; p(hd.logo || ""); }
+            if(f && f.files && f.files[0]) { const r = new FileReader(); r.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const maxW = 500, maxH = 500; if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); p(canvas.toDataURL('image/png')); }; img.src = e.target.result; }; r.readAsDataURL(f.files[0]); } else { const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; p(hd.logo || ""); }
         }
     </script>
 </body>
