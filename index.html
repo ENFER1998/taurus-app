@@ -101,6 +101,20 @@
         .tabla-informe { width: 100%; border-collapse: collapse; font-size: 13px; background: white; color: black; min-width: 400px;}
         .tabla-informe th { background: #e2e8f0; padding: 10px; text-align: left; border: 1px solid #cbd5e1; color: black;}
         .tabla-informe td { padding: 10px; border: 1px solid #cbd5e1; color: black;}
+        
+        /* BOTONES DE FILTRO RAPIDO (Pestañas en Reportes) */
+        .tabs-filtro { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 10px; }
+        .tab-btn { background: #1e293b; border: 1px solid var(--borde); color: var(--muted); padding: 8px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; cursor: pointer; white-space: nowrap; transition: 0.3s; }
+        .tab-btn.activa { background: var(--secundario); color: white; border-color: var(--secundario); }
+
+        /* ETIQUETAS DE ACCIÓN EN TABLAS */
+        .badge-acc { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; display: inline-block; }
+        .b-sanidad { background-color: var(--peligro); }
+        .b-peso { background-color: var(--secundario); }
+        .b-dx { background-color: var(--exito); }
+        .b-nut { background-color: var(--alerta); color: black !important;}
+        .b-ins { background-color: #9333ea; }
+        .b-gral { background-color: #64748b; }
 
         .check-opcion { display: flex; align-items: center; gap: 10px; color: var(--texto); margin-bottom: 15px; font-size: 14px; cursor: pointer; padding: 10px; border: 1px solid var(--borde); border-radius: 8px; background: #1e293b; transition: 0.3s;}
         
@@ -170,42 +184,40 @@
             <!-- FICHA / MANGA -->
             <div id="vista-manga" class="oculto">
                 <div class="buscador-contenedor">
-                    <input type="text" id="buscador-caravana" class="buscador-input" placeholder="Nº Caravana">
+                    <input type="text" id="buscador-caravana" class="buscador-input" placeholder="Nº Caravana / RP" type="number">
                     <button class="buscador-btn" onclick="buscarCaravanaBtn()">Buscar</button>
-                    <!-- BOTÓN NFC -->
                     <button class="buscador-btn" style="background: #8b5cf6;" onclick="leerNFC()">📲 NFC</button>
                 </div>
                 <div id="ficha-animal" class="tarjeta oculto">
                     <div class="perfil-cabecera"><div class="perfil-id" id="val-caravana">---</div></div>
                     <div class="botones-perfil">
                         <button class="btn-mini" onclick="abrirModal('modal-perfil')">✏️ Datos Base</button>
-                        <button class="btn-mini" onclick="abrirModal('modal-clasificacion')">🏷️ Cambiar Cat/Lote</button>
+                        <button class="btn-mini" onclick="abrirModal('modal-clasificacion')">🏷️ Cambiar Lote/Cat</button>
                     </div>
-                    <div class="panel-comentario"><div style="flex:1;"><span style="font-size:12px; font-weight:bold; color:var(--secundario); display:block;">NOTAS</span><span id="val-comentario" style="font-size:14px; font-style:italic; display:block; margin-top:3px;">Sin comentarios.</span></div><button class="btn-mini" style="background:var(--secundario); color:white; border:none;" onclick="abrirModal('modal-comentario')">Editar</button></div>
-                    <div id="panel-ultima-nota" class="panel-notas oculto"><div style="font-weight:bold;font-size:12px;margin-bottom:5px;">Último Registro Médico/General</div><div id="nota-accion-titulo" style="font-size:14px;font-weight:bold;">---</div><div id="nota-accion-texto" style="font-size:13px;">---</div></div>
+                    <div class="panel-comentario"><div style="flex:1;"><span style="font-size:12px; font-weight:bold; color:var(--secundario); display:block;">NOTAS GENERALES</span><span id="val-comentario" style="font-size:14px; font-style:italic; display:block; margin-top:3px;">Sin comentarios.</span></div><button class="btn-mini" style="background:var(--secundario); color:white; border:none;" onclick="abrirModal('modal-comentario')">Editar</button></div>
+                    <div id="panel-ultima-nota" class="panel-notas oculto"><div style="font-weight:bold;font-size:12px;margin-bottom:5px;">Última Acción Registrada</div><div id="nota-accion-titulo" style="font-size:14px;font-weight:bold;">---</div><div id="nota-accion-texto" style="font-size:13px;">---</div></div>
                     
                     <div class="grid-datos">
-                        <div class="dato-min"><span>Raza</span><strong id="val-raza">-</strong></div>
-                        <div class="dato-min"><span>Edad</span><strong id="val-edad">-</strong></div>
-                        <div class="dato-min"><span>Padre/Madre</span><strong id="val-genealogia">-</strong></div>
                         <div class="dato-min"><span>Lote / Grupo</span><strong id="val-lote">-</strong></div>
                         <div class="dato-min"><span>Categoría</span><strong id="val-categoria">-</strong></div>
                         <div class="dato-min"><span>Carimbo</span><strong id="val-carimbo">-</strong></div>
                         <div class="dato-min"><span>Dx Tacto</span><strong id="val-dx" style="color:var(--success);">-</strong></div>
                         <div class="dato-min"><span>Peso Actual</span><strong id="val-peso">-</strong></div>
                         <div class="dato-min" style="border-left: 3px solid #be185d;"><span>Últ. Inseminación</span><strong id="val-inseminacion">-</strong></div>
-                        <div class="dato-min" style="border-left: 3px solid var(--secundario);"><span>Régimen Nutricional</span><strong id="val-nutricion">-</strong></div>
                         <div class="dato-min" style="border-left: 3px solid #c2410c;"><span>Última Sanidad</span><strong id="val-sanidad">-</strong></div>
+                        <div class="dato-min" style="border-left: 3px solid var(--secundario);"><span>Régimen Nutricional</span><strong id="val-nutricion">-</strong></div>
+                        <div class="dato-min"><span>Raza</span><strong id="val-raza">-</strong></div>
+                        <div class="dato-min"><span>Edad</span><strong id="val-edad">-</strong></div>
+                        <div class="dato-min"><span>Padre/Madre</span><strong id="val-genealogia">-</strong></div>
                     </div>
                     
                     <div class="grid-acciones">
-                        <button class="btn-accion" onclick="abrirModal('modal-diagnostico')"><span>🩺</span> Diagnóstico</button>
-                        <button class="btn-accion" onclick="abrirModal('modal-peso')"><span>⚖️</span> Pesaje</button>
-                        <button class="btn-accion" onclick="abrirModal('modal-sanidad')"><span>💉</span> Sanidad</button>
-                        <button class="btn-accion" onclick="abrirModal('modal-inseminacion')"><span>🧬</span> Inseminar</button>
-                        <button class="btn-accion" onclick="abrirModal('modal-nut')"><span>🌾</span> Nutrición</button>
-                        <button class="btn-accion" style="color: var(--peligro); border-color: var(--peligro);" onclick="borrarCaravana()"><span>🗑️</span> Resetear/Borrar</button>
-                        <button class="btn-accion" onclick="verHistorial()" style="grid-column: 1/-1; background:var(--secundario); color:white; border-color:var(--secundario);"><span>📋</span> Ver Historial</button>
+                        <button class="btn-accion" onclick="abrirModal('modal-sanidad')"><span style="color:var(--peligro);">💉</span> Sanidad</button>
+                        <button class="btn-accion" onclick="abrirModal('modal-peso')"><span style="color:var(--secundario);">⚖️</span> Pesaje</button>
+                        <button class="btn-accion" onclick="abrirModal('modal-diagnostico')"><span style="color:var(--exito);">🩺</span> Tacto / Dx</button>
+                        <button class="btn-accion" onclick="abrirModal('modal-inseminacion')"><span style="color:#9333ea;">🧬</span> Inseminar</button>
+                        <button class="btn-accion" onclick="abrirModal('modal-nut')"><span style="color:var(--alerta);">🌾</span> Nutrición</button>
+                        <button class="btn-accion" onclick="verHistorial()"><span>📋</span> Historial</button>
                     </div>
                 </div>
             </div>
@@ -213,8 +225,8 @@
             <!-- LISTA BUSCAR -->
             <div id="vista-registro" class="oculto">
                 <div class="tarjeta">
-                    <div class="tarjeta-titulo">📋 Base de Datos</div>
-                    <div class="buscador-contenedor"><input type="text" id="buscador-lista" class="buscador-input" placeholder="Filtrar..." onkeyup="filtrarLista(this.value)"></div>
+                    <div class="tarjeta-titulo">📋 Base de Datos Activa</div>
+                    <div class="buscador-contenedor"><input type="text" id="buscador-lista" class="buscador-input" placeholder="Buscar por RP, Categoría o Lote..." onkeyup="filtrarLista(this.value)"></div>
                     <ul class="lista-animales" id="ul-registro"></ul>
                 </div>
             </div>
@@ -233,59 +245,76 @@
                         
                         <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:8px;">
                             <input type="text" id="nombre-estancia" class="input-estancia" placeholder="Nombre de la Estancia" style="width: 100%; box-sizing: border-box;">
-                            <button class="btn-mini no-print" style="width:100%; background:var(--secundario); color:white; border:none; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" onclick="guardarDisenoInforme()">☁️ Guardar diseño para todos</button>
+                            <button class="btn-mini no-print" style="width:100%; background:var(--secundario); color:white; border:none;" onclick="guardarDisenoInforme()">☁️ Guardar Membrete</button>
                         </div>
                     </div>
-
-                    <div class="tarjeta-titulo no-print">📄 Reportes Analíticos</div>
                     
                     <div class="filtros-grid no-print">
                         <!-- SELECTOR MAESTRO DE TIPO DE INFORME -->
-                        <select class="filtro-sel" id="f-inf-modo" onchange="cambiarModoReporte()" style="border-color: var(--secundario); font-weight: bold;">
-                            <option value="inventario">📊 Inventario Actual (Estados/Lotes)</option>
-                            <option value="eventos">💉 Historial de Tratamientos / Acciones</option>
+                        <select class="filtro-sel" id="f-inf-modo" onchange="cambiarModoReporte()" style="border-color: var(--secundario); font-weight: bold; font-size: 16px; background-color: var(--secundario); color: white;">
+                            <option value="eventos">📋 TRATAMIENTOS Y TRABAJOS (Historial)</option>
+                            <option value="inventario">📊 INVENTARIO GENERAL (Estado Actual)</option>
                         </select>
 
-                        <!-- FILTROS MODO INVENTARIO -->
-                        <div id="filtros-inventario" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- MODO 1: EVENTOS / TRATAMIENTOS -->
+                        <div id="filtros-eventos" style="display: flex; flex-direction: column; gap: 10px;">
+                            
+                            <!-- Botones rápidos de Tipo de Trabajo -->
+                            <label style="font-size:12px; color:var(--muted); font-weight:bold; margin-bottom:-5px;">Tipo de Trabajo a Buscar:</label>
+                            <div class="tabs-filtro" id="tabs-acciones">
+                                <button class="tab-btn activa" onclick="setFiltroAccion('ALL', this)">Todos</button>
+                                <button class="tab-btn" onclick="setFiltroAccion('Sanidad', this)">💉 Sanidad</button>
+                                <button class="tab-btn" onclick="setFiltroAccion('Peso', this)">⚖️ Pesos</button>
+                                <button class="tab-btn" onclick="setFiltroAccion('Diagnóstico', this)">🩺 Tactos</button>
+                                <button class="tab-btn" onclick="setFiltroAccion('Inseminación', this)">🧬 Reproducción</button>
+                                <button class="tab-btn" onclick="setFiltroAccion('Nutrición', this)">🌾 Nutrición</button>
+                            </div>
+                            <input type="hidden" id="f-inf-accion-oculto" value="ALL">
+
+                            <!-- Selector Rápido de Fechas -->
+                            <label style="font-size:12px; color:var(--muted); font-weight:bold; margin-bottom:-5px; margin-top:5px;">Período de Tiempo:</label>
+                            <select class="filtro-sel" id="f-inf-rango-fecha" onchange="manejarRangoFechas()">
+                                <option value="30">Últimos 30 Días (Mes)</option>
+                                <option value="hoy">Trabajos de Hoy</option>
+                                <option value="7">Últimos 7 Días (Semana)</option>
+                                <option value="todo">Ver Todo el Historial</option>
+                                <option value="custom">📅 Elegir Rango Manual...</option>
+                            </select>
+
+                            <!-- Fechas Manuales (Se ocultan/muestran automático) -->
+                            <div id="caja-fechas-custom" style="display: none; gap: 10px; padding: 10px; background: rgba(59, 130, 246, 0.1); border-radius: 8px;">
+                                <div style="flex:1;"><label style="font-size:11px; color:var(--texto); display:block; margin-bottom:3px;">Desde:</label><input type="date" id="f-inf-desde" class="filtro-sel" style="width:100%; box-sizing:border-box;" onchange="actualizarInformeAvanzado()"></div>
+                                <div style="flex:1;"><label style="font-size:11px; color:var(--texto); display:block; margin-bottom:3px;">Hasta:</label><input type="date" id="f-inf-hasta" class="filtro-sel" style="width:100%; box-sizing:border-box;" onchange="actualizarInformeAvanzado()"></div>
+                            </div>
+
+                            <input type="text" id="f-inf-keyword" class="filtro-sel" placeholder="🔍 Buscar producto (Ej: Aftosa, Ivermectina)" onkeyup="actualizarInformeAvanzado()">
+                        </div>
+
+                        <!-- MODO 2: INVENTARIO (Oculto por defecto) -->
+                        <div id="filtros-inventario" class="oculto" style="display: none; flex-direction: column; gap: 10px;">
                             <select class="filtro-sel" id="f-inf-lote" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Lotes</option><option value="Hacienda General">Hacienda General</option><option value="Lecheras">Lecheras</option><option value="Preñadas">Preñadas</option><option value="Inseminadas">Inseminadas</option></select>
                             <select class="filtro-sel" id="f-inf-cat" onchange="actualizarInformeAvanzado()"><option value="ALL">Todas las Categorías</option><option value="V:">Vacas / Vaquillas (V)</option><option value="VV:">Vacas Viejas (VV)</option><option value="T">Terneros/as (TH/TM)</option><option value="D">Desmamantes (DH/DM)</option><option value="Toros">Toros</option></select>
-                            <select class="filtro-sel" id="f-inf-dx" onchange="actualizarInformeAvanzado()"><option value="ALL">Cualquier Estado</option><option value="Preñada">Solo Preñadas</option><option value="Vacía">Solo Vacías</option></select>
+                            <select class="filtro-sel" id="f-inf-dx" onchange="actualizarInformeAvanzado()"><option value="ALL">Cualquier Estado de Preñez</option><option value="Preñada">Solo Preñadas</option><option value="Vacía">Solo Vacías</option></select>
                         </div>
 
-                        <!-- FILTROS MODO EVENTOS / TRATAMIENTOS (OCULTO POR DEFECTO) -->
-                        <div id="filtros-eventos" class="oculto" style="display: none; flex-direction: column; gap: 10px;">
-                            <select class="filtro-sel" id="f-inf-accion" onchange="actualizarInformeAvanzado()">
-                                <option value="ALL">Todas las Acciones Clínicas</option>
-                                <option value="Sanidad">💉 Sanidad (Vacunas, Tratamientos, etc)</option>
-                                <option value="Nutrición">🌾 Régimen Nutricional</option>
-                                <option value="Inseminación">🧬 Inseminación</option>
-                                <option value="Diagnóstico">🩺 Diagnósticos (Tactos)</option>
-                                <option value="Peso">⚖️ Registro de Pesos</option>
-                            </select>
-                            <div style="display: flex; gap: 10px;">
-                                <div style="flex:1;"><label style="font-size:11px; color:var(--muted); display:block; margin-bottom:3px;">Desde fecha:</label><input type="date" id="f-inf-desde" class="filtro-sel" style="width:100%; box-sizing:border-box;" onchange="actualizarInformeAvanzado()"></div>
-                                <div style="flex:1;"><label style="font-size:11px; color:var(--muted); display:block; margin-bottom:3px;">Hasta fecha:</label><input type="date" id="f-inf-hasta" class="filtro-sel" style="width:100%; box-sizing:border-box;" onchange="actualizarInformeAvanzado()"></div>
-                            </div>
-                            <input type="text" id="f-inf-keyword" class="filtro-sel" placeholder="🔍 Filtrar por nombre de fármaco o palabra (Ej: Aftosa)" onkeyup="actualizarInformeAvanzado()">
-                        </div>
-
-                        <!-- FILTRO UNIVERSAL INDIVIDUAL -->
-                        <input type="text" id="f-inf-rp" class="filtro-sel" style="border-color:var(--exito);" placeholder="🔍 Ingrese Nº RP para Dossier Individual..." onkeyup="actualizarInformeAvanzado()">
+                        <hr style="border-color: var(--borde); width: 100%; margin: 5px 0;">
+                        <!-- BUSCADOR INDIVIDUAL -->
+                        <input type="number" id="f-inf-rp" class="filtro-sel" style="border-color:var(--exito);" placeholder="🔍 Buscar UN solo RP (Dossier Clínico Individual)" onkeyup="actualizarInformeAvanzado()">
                     </div>
 
+                    <!-- CAJAS TOTALES -->
                     <div class="grid-kpis">
-                        <div class="kpi-caja" style="background:var(--fondo-cuerpo); border-color:var(--borde);"><div class="kpi-valor" id="inf-total" style="color:var(--texto);">0</div><div class="kpi-label">Resultados</div></div>
-                        <div class="kpi-caja" style="background:var(--fondo-cuerpo); border-color:var(--borde);"><div class="kpi-valor" id="inf-prenadas" style="color:var(--exito);">0</div><div class="kpi-label" id="lbl-prenadas">Preñadas (Inventario)</div></div>
+                        <div class="kpi-caja" style="background:var(--fondo-cuerpo); border-color:var(--borde);"><div class="kpi-valor" id="inf-total" style="color:var(--texto);">0</div><div class="kpi-label" id="lbl-total">Trabajos Listados</div></div>
+                        <div class="kpi-caja" style="background:var(--fondo-cuerpo); border-color:var(--borde);"><div class="kpi-valor" id="inf-prenadas" style="color:var(--exito);">-</div><div class="kpi-label" id="lbl-prenadas">-</div></div>
                     </div>
                     
                     <div class="tabla-responsive">
-                        <!-- 1. TABLA INVENTARIO (Masiva por Estado Actual) -->
-                        <table class="tabla-informe" id="tabla-masiva"><thead><tr><th>RP</th><th>Categoría</th><th>Lote</th><th>Últ. Peso</th><th>Dx Actual</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
-                        <!-- 2. TABLA EVENTOS (Masiva por Tratamientos/Fechas) -->
-                        <table class="tabla-informe oculto" id="tabla-eventos"><thead><tr><th>Fecha</th><th>RP</th><th>Procedimiento</th><th>Valor Principal</th><th>Observaciones Adicionales</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
-                        <!-- 3. TABLA INDIVIDUAL (Dossier Único Animal) -->
-                        <table class="tabla-informe oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Procedimiento</th><th>Valor Principal</th><th>Observaciones Adicionales</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
+                        <!-- TABLA EVENTOS (Masiva por Tratamientos/Fechas) -->
+                        <table class="tabla-informe" id="tabla-eventos"><thead><tr><th>Fecha</th><th>RP</th><th>Trabajo Realizado</th><th>Detalles Extras</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
+                        <!-- TABLA INVENTARIO (Masiva por Estado Actual) -->
+                        <table class="tabla-informe oculto" id="tabla-masiva"><thead><tr><th>RP</th><th>Categoría / Lote</th><th>Últ. Peso</th><th>Dx Actual</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
+                        <!-- TABLA INDIVIDUAL (Dossier Único Animal) -->
+                        <table class="tabla-informe oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Trabajo Realizado</th><th>Detalles Extras</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
                     </div>
                 </div>
             </div>
@@ -322,21 +351,6 @@
                     <div class="form-grupo"><label>Contraseña</label><input type="password" id="peon-pass" class="form-control" placeholder="Clave"></div>
                     <button class="btn-guardar" style="background:#10b981;" onclick="crearPeon()">Crear Operador</button>
                 </div>
-                <div class="tarjeta">
-                    <div class="tarjeta-titulo">📊 Gráficos (Máx 3)</div>
-                    <div id="contenedor-checkbox-graficos">
-                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="1" onchange="verificarLimiteGraficos(this)"> 1. Tasa de Preñez</label>
-                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="2" onchange="verificarLimiteGraficos(this)"> 2. Composición</label>
-                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="3" onchange="verificarLimiteGraficos(this)"> 3. Lotes</label>
-                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="4" onchange="verificarLimiteGraficos(this)"> 4. Condición Corporal</label>
-                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="5" onchange="verificarLimiteGraficos(this)"> 5. Causas Vacías</label>
-                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="6" onchange="verificarLimiteGraficos(this)"> 6. Cobertura Sanitaria</label>
-                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="7" onchange="verificarLimiteGraficos(this)"> 7. Preñez por Lote</label>
-                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="8" onchange="verificarLimiteGraficos(this)"> 8. Eficacia por Toro</label>
-                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="9" onchange="verificarLimiteGraficos(this)"> 9. Promedios</label>
-                        <label class="check-opcion"><input type="checkbox" class="chk-graf" value="10" onchange="verificarLimiteGraficos(this)"> 10. Volumen</label>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -349,38 +363,127 @@
         </nav>
     </div>
 
-    <!-- MODALES -->
+    <!-- MODALES GANADEROS (Optimizados para toques rápidos) -->
+    
     <div id="modal-vinculacion" class="modal">
         <div class="modal-body">
             <span class="cerrar" onclick="cerrarModal('modal-vinculacion')">&times;</span>
             <h3>📡 Nuevo Chip Detectado</h3>
-            <p style="font-size: 14px; color: var(--muted); margin-bottom: 15px;">Este código interno no está registrado en el sistema. Ingrese el número de Caravana (RP) visible para vincularlo definitivamente.</p>
-            <div class="form-grupo">
-                <input type="text" class="form-control" id="input-rp-vinculacion" placeholder="Ej: 1540" style="text-align: center; font-size: 24px; font-weight: bold;">
-            </div>
+            <p style="font-size: 14px; color: var(--muted); margin-bottom: 15px;">Ingrese el número de Caravana (RP) visible para vincularlo a este chip.</p>
+            <div class="form-grupo"><input type="number" class="form-control" id="input-rp-vinculacion" placeholder="Ej: 1540" style="text-align: center; font-size: 24px; font-weight: bold;"></div>
             <button class="btn-guardar" onclick="guardarVinculacionNFC()">Vincular y Abrir Ficha</button>
         </div>
     </div>
 
     <div id="modal-comentario" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-comentario')">&times;</span><h3>Anotación General</h3><div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-comentario', 'Comentario')">Guardar Nota</button></div></div>
-    <div id="modal-perfil" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-perfil')">&times;</span><h3>Editar Perfil Base</h3><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"><div class="form-grupo"><label>Raza</label><input type="text" class="form-control" id="f-raza"></div><div class="form-grupo"><label>Edad</label><input type="text" class="form-control" id="f-edad"></div><div class="form-grupo"><label>Padre</label><input type="text" class="form-control" id="f-padre"></div><div class="form-grupo"><label>Madre</label><input type="text" class="form-control" id="f-madre"></div></div><button class="btn-guardar" onclick="guardarPerfilCompleto()">Guardar</button></div></div>
-    <div id="modal-clasificacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-clasificacion')">&times;</span><h3>Clasificación</h3><div class="form-grupo"><label>Categoría</label><select class="form-control" id="input-cat-rapida"><option value="TH: Ternera Hembra">TH: Ternera Hembra</option><option value="TM: Ternero Macho">TM: Ternero Macho</option><option value="DH: Desmamante Hembra">DH: Desmamante Hembra</option><option value="DM: Desmamante Macho">DM: Desmamante Macho</option><option value="V: Vaca/Vaquilla">V: Vaca/Vaquilla</option><option value="VV: Vaca Vieja">VV: Vaca Vieja</option><option value="Toros">Toros</option><option value="Novillos">Novillos</option><option value="Bueyes y Señuelos">Bueyes y Señuelos</option></select></div><div class="form-grupo"><label>Lote / Grupo</label>
-        <!-- ¡CORRECCIÓN: AHORA ES UN SELECT REAL Y NO ABRE EL TECLADO! -->
-        <select class="form-control" id="input-lote-rapido">
-            <option value="Hacienda General">Hacienda General</option>
-            <option value="Lecheras">Lecheras</option>
-            <option value="Preñadas">Preñadas</option>
-            <option value="Inseminadas">Inseminadas</option>
-        </select>
-    </div><div class="form-grupo"><label>Carimbo</label><input type="text" class="form-control" id="input-carimbo-rapido"></div><button class="btn-guardar" onclick="guardarClasificacion()">Guardar</button></div></div>
-    <div id="modal-diagnostico" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-diagnostico')">&times;</span><h3>Diagnóstico (Dx)</h3><div class="form-grupo"><select class="form-control" id="i-dx-sel"><option>Preñada</option><option>Vacía</option><option>Vacía (Sangre)</option></select></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-dx-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-diagnostico', 'Diagnóstico')">Guardar</button></div></div>
-    <div id="modal-peso" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-peso')">&times;</span><h3>Pesaje</h3><div class="form-grupo"><input type="number" class="form-control" id="i-peso-val" placeholder="Peso Kg"></div><div class="form-grupo"><select class="form-control" id="i-peso-cond"><option>Óptima</option><option>Bajo Peso</option><option>Sobrepeso</option></select></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-peso-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-peso', 'Peso')">Guardar</button></div></div>
-    <div id="modal-sanidad" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-sanidad')">&times;</span><h3>Sanidad</h3><div class="form-grupo"><select class="form-control" id="i-sani-sel"><option>Antiparasitario</option><option>Vacuna Aftosa</option><option>Tratamiento</option></select></div><div class="form-grupo"><input type="text" class="form-control" id="i-sani-lote" placeholder="Marca/Lote"></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-sanidad', 'Sanidad')">Guardar</button></div></div>
-    <div id="modal-inseminacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-inseminacion')">&times;</span><h3>Inseminación</h3><div class="form-grupo"><input type="text" class="form-control" id="i-ins-quien" placeholder="Inseminador"></div><div class="form-grupo"><input type="text" class="form-control" id="i-ins-toro" placeholder="Toro/Pajuela"></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-ins-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-inseminacion', 'Inseminación')">Guardar</button></div></div>
     
-    <div id="modal-nut" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-nut')">&times;</span><h3>Suplemento Nutricional</h3><div class="form-grupo"><label>Alimento Suministrado</label><input type="text" class="form-control" id="i-nut-prod" list="lista-alimentos"><datalist id="lista-alimentos"><option value="FOSFO Plus! 90f (Sal Mineral)"></option><option value="FOSFO Plus! Proteica Ternero"></option><option value="Forraje / Pastura"></option></datalist></div><div class="form-grupo"><label>Dosificación</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 0.50gr/kg/día..."></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-nut', 'Nutrición')">Guardar</button></div></div>
+    <div id="modal-perfil" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-perfil')">&times;</span><h3>Editar Perfil Base</h3><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"><div class="form-grupo"><label>Raza</label><input type="text" class="form-control" id="f-raza"></div><div class="form-grupo"><label>Edad</label><input type="text" class="form-control" id="f-edad"></div><div class="form-grupo"><label>Padre</label><input type="text" class="form-control" id="f-padre"></div><div class="form-grupo"><label>Madre</label><input type="text" class="form-control" id="f-madre"></div></div><button class="btn-guardar" onclick="guardarPerfilCompleto()">Guardar</button></div></div>
+    
+    <div id="modal-clasificacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-clasificacion')">&times;</span><h3>Clasificación</h3>
+        <div class="form-grupo"><label>Categoría</label>
+            <select class="form-control" id="input-cat-rapida">
+                <option value="TH: Ternera Hembra">TH: Ternera Hembra</option>
+                <option value="TM: Ternero Macho">TM: Ternero Macho</option>
+                <option value="DH: Desmamante Hembra">DH: Desmamante Hembra</option>
+                <option value="DM: Desmamante Macho">DM: Desmamante Macho</option>
+                <option value="V: Vaca/Vaquilla">V: Vaca/Vaquilla</option>
+                <option value="VV: Vaca Vieja">VV: Vaca Vieja</option>
+                <option value="Toros">Toros</option>
+                <option value="Novillos">Novillos</option>
+                <option value="Bueyes y Señuelos">Bueyes</option>
+            </select>
+        </div>
+        <div class="form-grupo"><label>Lote / Grupo de Pastoreo</label>
+            <select class="form-control" id="input-lote-rapido">
+                <option value="Hacienda General">Hacienda General</option>
+                <option value="Lecheras">Lecheras</option>
+                <option value="Preñadas">Preñadas</option>
+                <option value="Inseminadas">Inseminadas</option>
+                <option value="Destete">Destete</option>
+                <option value="Enfermería">Enfermería</option>
+            </select>
+        </div>
+        <div class="form-grupo"><label>Carimbo</label><input type="number" class="form-control" id="input-carimbo-rapido"></div>
+        <button class="btn-guardar" onclick="guardarClasificacion()">Guardar Cambios</button>
+    </div></div>
+    
+    <div id="modal-diagnostico" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-diagnostico')">&times;</span><h3>Tacto / Diagnóstico (Dx)</h3>
+        <div class="form-grupo">
+            <select class="form-control" id="i-dx-sel" style="font-weight:bold; font-size:18px;">
+                <option value="Preñada">✅ Preñada</option>
+                <option value="Vacía">❌ Vacía</option>
+                <option value="Vacía (Sangre)">🩸 Vacía (Anormal/Sangre)</option>
+            </select>
+        </div>
+        <div class="form-grupo"><label>Observaciones (Opcional)</label><textarea class="form-control textarea" id="i-dx-txt" placeholder="Días de gestación, problemas..."></textarea></div>
+        <button class="btn-guardar" onclick="prepararGuardado('modal-diagnostico', 'Diagnóstico')">Registrar Tacto</button>
+    </div></div>
+    
+    <div id="modal-peso" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-peso')">&times;</span><h3>Pesaje</h3>
+        <div class="form-grupo"><input type="number" step="0.5" class="form-control" id="i-peso-val" placeholder="Kg (Ej: 350.5)" style="font-size:24px; font-weight:bold; text-align:center;"></div>
+        <div class="form-grupo"><label>Condición Corporal Visusal</label>
+            <select class="form-control" id="i-peso-cond">
+                <option>Óptima (Normal)</option>
+                <option>Bajo Peso (Flaca)</option>
+                <option>Sobrepeso (Gorda)</option>
+            </select>
+        </div>
+        <div class="form-grupo"><label>Notas (Opcional)</label><textarea class="form-control textarea" id="i-peso-txt"></textarea></div>
+        <button class="btn-guardar" onclick="prepararGuardado('modal-peso', 'Peso')">Registrar Peso</button>
+    </div></div>
+    
+    <div id="modal-sanidad" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-sanidad')">&times;</span><h3>💉 Tratamiento / Sanidad</h3>
+        <div class="form-grupo"><label>Producto Aplicado</label>
+            <select class="form-control" id="i-sani-sel" onchange="verificarSaniOtro()">
+                <option value="Vacuna Aftosa">Vacuna Aftosa</option>
+                <option value="Vacuna Carbunclo">Vacuna Carbunclo</option>
+                <option value="Vacuna Brucelosis">Vacuna Brucelosis</option>
+                <option value="Vacuna Rabia">Vacuna Rabia</option>
+                <option value="Antiparasitario (Ivermectina)">Antiparasitario (Ivermectina)</option>
+                <option value="Antiparasitario (Ricobendazol)">Antiparasitario (Ricobendazol)</option>
+                <option value="Vitamina ADE">Vitamina ADE / Reconstituyente</option>
+                <option value="Cobre / Cuprhorme">Cobre / Cuprhorme</option>
+                <option value="Antibiótico">Antibiótico General</option>
+                <option value="Baño Garrapaticida">Baño Garrapaticida</option>
+                <option value="OTRO">✏️ Escribir otro...</option>
+            </select>
+            <input type="text" class="form-control oculto" id="i-sani-sel-otro" placeholder="Escriba el producto" style="margin-top:10px;">
+        </div>
+        <div class="form-grupo"><label>Dosis / Marca / Lote (Opcional)</label><input type="text" class="form-control" id="i-sani-lote" placeholder="Ej: 5ml - Marca X"></div>
+        <div class="form-grupo"><label>Observaciones (Enfermedad, etc)</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div>
+        <button class="btn-guardar" onclick="prepararGuardado('modal-sanidad', 'Sanidad')">Registrar Sanidad</button>
+    </div></div>
+    
+    <div id="modal-inseminacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-inseminacion')">&times;</span><h3>🧬 Reproducción</h3>
+        <div class="form-grupo"><label>Método / Tipo</label>
+            <select class="form-control" id="i-ins-quien">
+                <option value="IATF (Inseminación Artificial)">IATF (Inseminación Artificial)</option>
+                <option value="Monta Natural / Repaso">Monta Natural / Repaso</option>
+                <option value="Transferencia de Embrión">Transferencia de Embrión</option>
+            </select>
+        </div>
+        <div class="form-grupo"><label>Toro / Pajuela (Identificación)</label><input type="text" class="form-control" id="i-ins-toro" placeholder="Ej: Brangus 450"></div>
+        <div class="form-grupo"><label>Observaciones</label><textarea class="form-control textarea" id="i-ins-txt" placeholder="Responsable, celo, etc..."></textarea></div>
+        <button class="btn-guardar" onclick="prepararGuardado('modal-inseminacion', 'Inseminación')">Registrar</button>
+    </div></div>
+    
+    <div id="modal-nut" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-nut')">&times;</span><h3>🌾 Suplemento / Nutrición</h3>
+        <div class="form-grupo"><label>Alimento o Suplemento Suministrado</label>
+            <select class="form-control" id="i-nut-prod" onchange="verificarNutOtro()">
+                <option value="Sal Mineral">Sal Mineral Común</option>
+                <option value="Sal Proteica">Sal Proteica</option>
+                <option value="Balanceado / Engorde">Balanceado / Ración Engorde</option>
+                <option value="Fardo / Heno">Fardo / Heno</option>
+                <option value="OTRO">✏️ Escribir otro...</option>
+            </select>
+            <input type="text" class="form-control oculto" id="i-nut-prod-otro" placeholder="Escriba el alimento" style="margin-top:10px;">
+        </div>
+        <div class="form-grupo"><label>Dosificación (Opcional)</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 2 Kg/día..."></div>
+        <div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div>
+        <button class="btn-guardar" onclick="prepararGuardado('modal-nut', 'Nutrición')">Registrar Nutrición</button>
+    </div></div>
 
-    <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial</h3><div id="contenido-historial"></div></div></div>
+    <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial de este Animal</h3><div id="contenido-historial"></div></div></div>
 
     <!-- JAVASCRIPT -->
     <script>
@@ -399,45 +502,40 @@
         let bleCharacteristic = null;
         let tagHuerfano = ""; 
 
+        // Manejadores de selects "Otros"
+        function verificarSaniOtro() { 
+            const sel = document.getElementById('i-sani-sel'); const input = document.getElementById('i-sani-sel-otro');
+            if(sel.value === 'OTRO') { input.classList.remove('oculto'); input.focus(); } else { input.classList.add('oculto'); input.value = ''; }
+        }
+        function verificarNutOtro() { 
+            const sel = document.getElementById('i-nut-prod'); const input = document.getElementById('i-nut-prod-otro');
+            if(sel.value === 'OTRO') { input.classList.remove('oculto'); input.focus(); } else { input.classList.add('oculto'); input.value = ''; }
+        }
+
         window.loginBiometricoExitoso = function() {
             const credStr = localStorage.getItem('taurus_cred');
-            if(credStr) {
-                const cred = JSON.parse(credStr);
-                document.getElementById('usuario').value = cred.usu;
-                document.getElementById('password').value = cred.pass;
-                procesarIngreso();
-            } else {
-                alert("Por favor, inicia sesión con tu contraseña por primera vez para activar la huella.");
-            }
+            if(credStr) { const cred = JSON.parse(credStr); document.getElementById('usuario').value = cred.usu; document.getElementById('password').value = cred.pass; procesarIngreso(); } 
+            else { alert("Inicia sesión manualmente por primera vez."); }
         };
 
-        window.recibirDatoDesdeAndroid = function(valorBLE) {
-            if(valorBLE) { procesarTramaBLE(valorBLE); }
-        };
+        window.recibirDatoDesdeAndroid = function(valorBLE) { if(valorBLE) { procesarTramaBLE(valorBLE); } };
 
         if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); }); }
 
         async function leerNFC() {
             if ('NDEFReader' in window) {
                 try {
-                    const ndef = new NDEFReader();
-                    await ndef.scan();
+                    const ndef = new NDEFReader(); await ndef.scan();
                     alert("✅ Lector NFC Activo. Acerca el celular a la caravana RFID/NFC...");
-                    ndef.onreading = event => {
-                        const decoder = new TextDecoder();
-                        for (const record of event.message.records) {
-                            try { const rp = decoder.decode(record.data).trim(); if(rp) recibirTagNFC(rp); } catch(e) {}
-                        }
-                    };
+                    ndef.onreading = event => { const decoder = new TextDecoder(); for (const record of event.message.records) { try { const rp = decoder.decode(record.data).trim(); if(rp) recibirTagNFC(rp); } catch(e) {} } };
                     ndef.onreadingerror = () => { alert("⚠️ Error de lectura NFC."); };
-                } catch (error) { alert("❌ Error al iniciar el lector NFC."); }
+                } catch (error) { alert("❌ Error al iniciar lector NFC."); }
             } else { alert("Tu navegador no soporta lectura NFC directa."); }
         }
 
         function obtenerRegistrosActivos() {
             let validos = [];
             const unicas = [...new Set(baseDeDatosCache.map(d => d.caravana).filter(c => c !== "---" && c !== null))];
-            
             unicas.forEach(car => {
                 let regs = baseDeDatosCache.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(a.fecha) - new Date(b.fecha)); 
                 let lastResetIdx = -1;
@@ -450,52 +548,32 @@
         }
 
         if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
-        function toggleTema() {
-            document.body.classList.toggle('tema-claro');
-            localStorage.setItem('tc_tema', document.body.classList.contains('tema-claro') ? 'claro' : 'oscuro');
-        }
+        function toggleTema() { document.body.classList.toggle('tema-claro'); localStorage.setItem('tc_tema', document.body.classList.contains('tema-claro') ? 'claro' : 'oscuro'); }
 
-        window.addEventListener('online', actualizarEstadoRed);
-        window.addEventListener('offline', actualizarEstadoRed);
-
+        window.addEventListener('online', actualizarEstadoRed); window.addEventListener('offline', actualizarEstadoRed);
         function actualizarEstadoRed() {
-            const badge = document.getElementById('estado-red');
-            const banner = document.getElementById('banner-offline');
-            if(navigator.onLine) {
-                badge.classList.remove('offline'); badge.innerHTML = '🟢 Conectado'; banner.style.display = 'none';
-                sincronizarPendientesAuto();
-            } else {
-                badge.classList.add('offline'); badge.innerHTML = '🟠 Sin Internet'; banner.style.display = 'block';
-            }
+            const badge = document.getElementById('estado-red'); const banner = document.getElementById('banner-offline');
+            if(navigator.onLine) { badge.classList.remove('offline'); badge.innerHTML = '🟢 Conectado'; banner.style.display = 'none'; sincronizarPendientesAuto(); } 
+            else { badge.classList.add('offline'); badge.innerHTML = '🟠 Sin Internet'; banner.style.display = 'block'; }
         }
 
         async function procesarIngreso() {
-            const usu = document.getElementById('usuario').value.trim();
-            const pass = document.getElementById('password').value.trim();
-            const btn = document.getElementById('btn-ingreso');
-            const err = document.getElementById('error-login');
-            
-            if(!usu || !pass) return;
-
-            btn.disabled = true; btn.innerText = "Verificando..."; err.style.display = 'none';
+            const usu = document.getElementById('usuario').value.trim(); const pass = document.getElementById('password').value.trim();
+            const btn = document.getElementById('btn-ingreso'); const err = document.getElementById('error-login');
+            if(!usu || !pass) return; btn.disabled = true; btn.innerText = "Verificando..."; err.style.display = 'none';
 
             try {
                 if(!navigator.onLine) throw new Error("Offline");
-                
                 const url = `${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(usu)}&password=${encodeURIComponent(pass)}&t=${Date.now()}`;
                 const response = await fetch(url);
                 if (!response.ok) throw new Error("Error de conexión");
-                
                 const res = await response.json();
                 if(res.error) throw new Error(res.mensaje);
                 if(res.vencimiento && new Date() > new Date(res.vencimiento)) throw new Error("Su licencia ha vencido.");
 
                 localStorage.setItem('tc_hacienda', JSON.stringify({ nombre: res.hacienda, logo: res.logo }));
                 localStorage.setItem('taurus_cred', JSON.stringify({usu: usu, pass: pass, maestro: res.maestro, rol: res.rol, vencimiento: res.vencimiento}));
-                
-                let dataLimpia = Array.isArray(res.data) ? res.data : [];
-                localStorage.setItem('taurus_db', JSON.stringify(dataLimpia));
-                
+                let dataLimpia = Array.isArray(res.data) ? res.data : []; localStorage.setItem('taurus_db', JSON.stringify(dataLimpia));
                 iniciarSesionUI(dataLimpia, usu, res.maestro, res.rol);
             } catch(e) {
                 const credStr = localStorage.getItem('taurus_cred');
@@ -510,77 +588,49 @@
         }
 
         function iniciarSesionUI(datos, usu, maestro, rol) {
-            let dbValida = Array.isArray(datos) ? datos.filter(d => d && d.fecha) : [];
-            baseDeDatosCache = dbValida.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); 
-            
-            usuarioActivo = usu; propMaestro = maestro; rolUsuario = rol;
-            document.getElementById('usuario-activo-lbl').value = usuarioActivo.toUpperCase() + ` (${rolUsuario})`;
+            let dbValida = Array.isArray(datos) ? datos.filter(d => d && d.fecha) : []; baseDeDatosCache = dbValida.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); 
+            usuarioActivo = usu; propMaestro = maestro; rolUsuario = rol; document.getElementById('usuario-activo-lbl').value = usuarioActivo.toUpperCase() + ` (${rolUsuario})`;
             if(rolUsuario !== 'Dueño') document.getElementById('panel-crear-peones').style.display = 'none';
-            
-            const prefs = JSON.parse(localStorage.getItem('dash_graphs')) || ['1', '2'];
-            document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
-            
+            const prefs = JSON.parse(localStorage.getItem('dash_graphs')) || ['1', '2']; document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
             cargarDisenoDesdeDB(); actualizarEstadoRed(); procesarDatosDashboard(); actualizarContadorPendientes();
             
-            document.getElementById('pantalla-login').classList.add('oculto');
-            document.getElementById('pantalla-app').classList.remove('oculto');
-            sincronizarPendientesAuto();
+            // Iniciar Informes con 30 dias por defecto
+            document.getElementById('f-inf-rango-fecha').value = "30"; manejarRangoFechas();
+
+            document.getElementById('pantalla-login').classList.add('oculto'); document.getElementById('pantalla-app').classList.remove('oculto'); sincronizarPendientesAuto();
         }
 
         function fusionarDatos(nuevos) {
             let mapa = new Map();
             if(Array.isArray(baseDeDatosCache)) baseDeDatosCache.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
             if(Array.isArray(nuevos)) nuevos.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
-            baseDeDatosCache = Array.from(mapa.values()).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-            localStorage.setItem('taurus_db', JSON.stringify(baseDeDatosCache));
+            baseDeDatosCache = Array.from(mapa.values()).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); localStorage.setItem('taurus_db', JSON.stringify(baseDeDatosCache));
         }
 
         function sincronizarFondo(esManual = false) {
-            if(!usuarioActivo || !navigator.onLine) return;
-            const credStr = localStorage.getItem('taurus_cred');
-            if(!credStr) return; const cred = JSON.parse(credStr);
+            if(!usuarioActivo || !navigator.onLine) return; const credStr = localStorage.getItem('taurus_cred'); if(!credStr) return; const cred = JSON.parse(credStr);
             if(esManual) document.getElementById('estado-red').innerText = '🔄 Actualizando...';
-
             fetch(`${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(cred.usu)}&password=${encodeURIComponent(cred.pass)}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' })
             .then(r => r.json()).then(res => {
                 if(!res.error) {
-                    fusionarDatos(Array.isArray(res.data) ? res.data : []);
-                    localStorage.setItem('tc_hacienda', JSON.stringify({ nombre: res.hacienda, logo: res.logo }));
-                    cargarDisenoDesdeDB();
+                    fusionarDatos(Array.isArray(res.data) ? res.data : []); localStorage.setItem('tc_hacienda', JSON.stringify({ nombre: res.hacienda, logo: res.logo })); cargarDisenoDesdeDB();
                     if(caravanaActiva && !document.getElementById('vista-manga').classList.contains('oculto')) { buscarCaravanaBtn(); }
-                    procesarDatosDashboard(); 
-                    if(!document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); 
-                    if(!document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
+                    procesarDatosDashboard(); if(!document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); if(!document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
                     setEstadoRed(true);
                 }
             }).catch(e => { console.warn("Error sync de fondo"); });
         }
         setInterval(() => sincronizarFondo(false), 30000);
 
-        function setEstadoRed(online) {
-            const badge = document.getElementById('estado-red'); const banner = document.getElementById('banner-offline');
-            if(online) { badge.classList.remove('offline'); badge.innerHTML = '🟢 Conectado'; banner.style.display = 'none'; } 
-            else { badge.classList.add('offline'); badge.innerHTML = '🟠 Sin Internet'; banner.style.display = 'block'; }
-        }
-
         async function conectarHardwareBLE() {
             const btn = document.querySelector('.btn-guardar');
             try {
-                btn.innerText = "Buscando Lector...";
-                dispositivoBLE = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb', '6e400001-b5a3-f393-e0a9-e50e24dcca9e'] });
+                btn.innerText = "Buscando Lector..."; dispositivoBLE = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb', '6e400001-b5a3-f393-e0a9-e50e24dcca9e'] });
                 dispositivoBLE.addEventListener('gattserverdisconnected', () => { btn.innerText = "Vincular Lector"; btn.style.background = "#0284c7"; alert("⚠️ Lector desconectado"); });
-
                 bleServer = await dispositivoBLE.gatt.connect(); await new Promise(r => setTimeout(r, 600)); 
-                try {
-                    bleService = await bleServer.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
-                    bleCharacteristic = await bleService.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
-                } catch(e) {
-                    bleService = await bleServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
-                    bleCharacteristic = await bleService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
-                }
-
-                await bleCharacteristic.startNotifications();
-                bleCharacteristic.addEventListener('characteristicvaluechanged', (event) => { let valor = new TextDecoder().decode(event.target.value).trim(); if(valor) procesarTramaBLE(valor); });
+                try { bleService = await bleServer.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb'); bleCharacteristic = await bleService.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb'); } 
+                catch(e) { bleService = await bleServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e'); bleCharacteristic = await bleService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); }
+                await bleCharacteristic.startNotifications(); bleCharacteristic.addEventListener('characteristicvaluechanged', (event) => { let valor = new TextDecoder().decode(event.target.value).trim(); if(valor) procesarTramaBLE(valor); });
                 btn.innerText = "📡 Lector Conectado"; btn.style.background = "var(--exito)"; alert("✅ Lector BLE conectado.");
             } catch (e) { btn.innerText = "Vincular Lector"; btn.style.background = "#0284c7"; }
         }
@@ -589,12 +639,9 @@
         function procesarTramaBLE(trama) {
             bufferBLE += trama; clearTimeout(timeoutBLE);
             timeoutBLE = setTimeout(() => {
-                let dataLimpia = bufferBLE.replace(/[^a-zA-Z0-9.-]/g, '').replace('TAG', ''); 
-                if(!dataLimpia) return;
-                if (dataLimpia.includes('.')) {
-                    if (!document.getElementById('vista-manga').classList.contains('oculto') && caravanaActiva) { abrirModal('modal-peso'); document.getElementById('i-peso-val').value = dataLimpia; } 
-                    else { alert("⚖️ Balanza: Peso " + dataLimpia + " Kg. Abre la Ficha de un animal primero."); }
-                } else { recibirTagNFC(dataLimpia); }
+                let dataLimpia = bufferBLE.replace(/[^a-zA-Z0-9.-]/g, '').replace('TAG', ''); if(!dataLimpia) return;
+                if (dataLimpia.includes('.')) { if (!document.getElementById('vista-manga').classList.contains('oculto') && caravanaActiva) { abrirModal('modal-peso'); document.getElementById('i-peso-val').value = dataLimpia; } else { alert("⚖️ Balanza: Peso " + dataLimpia + " Kg. Abre la Ficha de un animal primero."); } } 
+                else { recibirTagNFC(dataLimpia); }
                 bufferBLE = "";
             }, 300);
         }
@@ -608,11 +655,9 @@
         function guardarVinculacionNFC() {
             const rpFinal = document.getElementById('input-rp-vinculacion').value.trim();
             if(!rpFinal) { const input = document.getElementById('input-rp-vinculacion'); input.style.borderColor = "var(--peligro)"; setTimeout(() => input.style.borderColor = "var(--borde)", 2000); return; }
-            caravanaActiva = rpFinal;
-            ejecutarAccion('Vinculacion_RFID', tagHuerfano, 'Chip vinculado a ' + rpFinal, null, 'modal-vinculacion');
+            caravanaActiva = rpFinal; ejecutarAccion('Vinculacion_RFID', tagHuerfano, 'Chip vinculado a ' + rpFinal, null, 'modal-vinculacion');
             cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]); document.getElementById('buscador-caravana').value = rpFinal; buscarCaravanaBtn();
-            const datosActivos = obtenerRegistrosActivos();
-            if(datosActivos.filter(d => String(d.caravana) === String(rpFinal)).length <= 1) setTimeout(() => abrirModal('modal-perfil'), 600);
+            const datosActivos = obtenerRegistrosActivos(); if(datosActivos.filter(d => String(d.caravana) === String(rpFinal)).length <= 1) setTimeout(() => abrirModal('modal-perfil'), 600);
         }
 
         function ejecutarAccion(tipoAccion, valor, detalles, btnActivo, modalId) {
@@ -620,46 +665,42 @@
             baseDeDatosCache.unshift(accionObj); localStorage.setItem('taurus_db', JSON.stringify(baseDeDatosCache));
 
             if(navigator.onLine) {
-                if(btnActivo) btnActivo.innerText = "Subiendo...";
-                const fd = new URLSearchParams(); for(let key in accionObj) fd.append(key, accionObj[key]); fd.append('usuario', usuarioActivo); 
+                if(btnActivo) btnActivo.innerText = "Subiendo..."; const fd = new URLSearchParams(); for(let key in accionObj) fd.append(key, accionObj[key]); fd.append('usuario', usuarioActivo); 
                 fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => {
                     if(modalId) cerrarModal(modalId); if(btnActivo) btnActivo.innerText = "Guardar";
                     if(caravanaActiva !== "---") buscarCaravanaBtn(); procesarDatosDashboard();
-                }).catch(e => {
-                    encolarOffline(accionObj); if(modalId) cerrarModal(modalId); if(btnActivo) btnActivo.innerText = "Guardar";
-                    if(caravanaActiva !== "---") buscarCaravanaBtn(); procesarDatosDashboard();
-                });
-            } else {
-                encolarOffline(accionObj); if(modalId) cerrarModal(modalId); if(btnActivo) btnActivo.innerText = "Guardar";
-                if(caravanaActiva !== "---") buscarCaravanaBtn(); procesarDatosDashboard();
-            }
+                }).catch(e => { encolarOffline(accionObj); if(modalId) cerrarModal(modalId); if(btnActivo) btnActivo.innerText = "Guardar"; if(caravanaActiva !== "---") buscarCaravanaBtn(); procesarDatosDashboard(); });
+            } else { encolarOffline(accionObj); if(modalId) cerrarModal(modalId); if(btnActivo) btnActivo.innerText = "Guardar"; if(caravanaActiva !== "---") buscarCaravanaBtn(); procesarDatosDashboard(); }
         }
 
         function encolarOffline(obj) { let pendientes = JSON.parse(localStorage.getItem('taurus_pendientes')) || []; pendientes.push(obj); localStorage.setItem('taurus_pendientes', JSON.stringify(pendientes)); actualizarContadorPendientes(); }
         function actualizarContadorPendientes() { let p = JSON.parse(localStorage.getItem('taurus_pendientes')) || []; document.getElementById('lbl-pendientes').value = `${p.length} registros pendientes`; }
-
         function sincronizarPendientesAuto() {
             let p = JSON.parse(localStorage.getItem('taurus_pendientes')) || []; if(p.length === 0) return;
             const fd = new URLSearchParams(); fd.append('accion', 'sync_offline'); fd.append('maestro', propMaestro); fd.append('usuario', usuarioActivo); fd.append('datos', JSON.stringify(p));
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { localStorage.setItem('taurus_pendientes', '[]'); actualizarContadorPendientes(); sincronizarFondo(false); });
         }
-
         function sincronizarPendientesManual() { if(navigator.onLine && (JSON.parse(localStorage.getItem('taurus_pendientes')) || []).length > 0) sincronizarPendientesAuto(); }
 
         function prepararGuardado(modalId, tipoAccion) {
             if(!caravanaActiva) return; let v = "-", d = ""; const inputs = document.getElementById(modalId).querySelectorAll('.form-control, .textarea');
             if(tipoAccion === 'Comentario') { d = inputs[0].value; }
             else if(tipoAccion === 'Peso') { v = inputs[0].value + " Kg"; d = `Cond: ${inputs[1].value}. Notas: ${inputs[2].value}`; } 
-            else if(tipoAccion === 'Sanidad') { v = inputs[0].value; d = `Lote: ${inputs[1].value}. Notas: ${inputs[2].value}`; } 
+            else if(tipoAccion === 'Sanidad') { 
+                let prod = inputs[0].value; if(prod === 'OTRO') prod = inputs[1].value || 'Tratamiento S/N';
+                v = prod; d = `Lote/Marca: ${inputs[2].value}. Notas: ${inputs[3].value}`; 
+            } 
             else if(tipoAccion === 'Diagnóstico') { v = "Dx: " + inputs[0].value; d = inputs[1].value || "-"; }
-            else if(tipoAccion === 'Inseminación') { v = "Toro: " + inputs[1].value; d = `Ins: ${inputs[0].value}. Notas: ${inputs[2].value}`; } 
-            else if(tipoAccion === 'Nutrición') { v = inputs[0].value; d = `Ración: ${inputs[1].value}. Notas: ${inputs[2].value}`; }
+            else if(tipoAccion === 'Inseminación') { v = "Ins: " + inputs[0].value; d = `Toro/Paj: ${inputs[1].value}. Notas: ${inputs[2].value}`; } 
+            else if(tipoAccion === 'Nutrición') { 
+                let prod = inputs[0].value; if(prod === 'OTRO') prod = inputs[1].value || 'Suplemento S/N';
+                v = prod; d = `Ración: ${inputs[2].value}. Notas: ${inputs[3].value}`; 
+            }
             ejecutarAccion(tipoAccion, v, d, event.target, modalId); inputs.forEach(i => i.value = '');
         }
 
         function guardarPerfilCompleto() {
-            if(!caravanaActiva) return; const r = document.getElementById('f-raza').value || "-"; const e = document.getElementById('f-edad').value || "-";
-            const p = document.getElementById('f-padre').value || "-"; const m = document.getElementById('f-madre').value || "-";
+            if(!caravanaActiva) return; const r = document.getElementById('f-raza').value || "-"; const e = document.getElementById('f-edad').value || "-"; const p = document.getElementById('f-padre').value || "-"; const m = document.getElementById('f-madre').value || "-";
             ejecutarAccion('Perfil Master', `${r}|${e}|${p}|${m}`, document.getElementById('val-categoria').innerText, event.target, 'modal-perfil');
         }
 
@@ -668,31 +709,12 @@
             ejecutarAccion('Actualización de Datos', `Cat: ${cat} | Carimbo: ${car}`, `Lote: ${lot}`, event.target, 'modal-clasificacion');
         }
 
-        function borrarCaravana() {
-            if(!caravanaActiva) return;
-            if(confirm(`¿ELIMINAR el historial de la caravana ${caravanaActiva}?`)) {
-                ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null, null); cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]);
-            }
-        }
-
-        function cambiarMiContrasena() {
-            if(!navigator.onLine) return; const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) return;
-            const btn = event.target; btn.innerText = "Cambiando..."; const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usuarioActivo); fd.append('nuevo_pass', nueva);
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => {
-                document.getElementById('nueva-clave').value = ''; btn.innerText = "Actualizar mi Contraseña";
-                let cred = JSON.parse(localStorage.getItem('taurus_cred')); cred.pass = nueva; localStorage.setItem('taurus_cred', JSON.stringify(cred));
-            });
-        }
-        
-        function crearPeon() {
-            if(!navigator.onLine) return; const pUsu = document.getElementById('peon-usu').value.trim(); const pPass = document.getElementById('peon-pass').value.trim(); if(!pUsu || !pPass) return;
-            const btn = event.target; btn.innerText = "Creando..."; const fd = new URLSearchParams(); fd.append('accion', 'crear_peon'); fd.append('usuario', usuarioActivo); fd.append('peon_usu', pUsu); fd.append('peon_pass', pPass); fd.append('vencimiento', 'Heredado'); 
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { document.getElementById('peon-usu').value = ''; document.getElementById('peon-pass').value = ''; btn.innerText = "Crear Operador"; });
-        }
+        function borrarCaravana() { if(!caravanaActiva) return; if(confirm(`¿ELIMINAR el historial de la caravana ${caravanaActiva}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null, null); cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); } }
+        function cambiarMiContrasena() { if(!navigator.onLine) return; const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) return; const btn = event.target; btn.innerText = "Cambiando..."; const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usuarioActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { document.getElementById('nueva-clave').value = ''; btn.innerText = "Actualizar mi Contraseña"; let cred = JSON.parse(localStorage.getItem('taurus_cred')); cred.pass = nueva; localStorage.setItem('taurus_cred', JSON.stringify(cred)); }); }
+        function crearPeon() { if(!navigator.onLine) return; const pUsu = document.getElementById('peon-usu').value.trim(); const pPass = document.getElementById('peon-pass').value.trim(); if(!pUsu || !pPass) return; const btn = event.target; btn.innerText = "Creando..."; const fd = new URLSearchParams(); fd.append('accion', 'crear_peon'); fd.append('usuario', usuarioActivo); fd.append('peon_usu', pUsu); fd.append('peon_pass', pPass); fd.append('vencimiento', 'Heredado'); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { document.getElementById('peon-usu').value = ''; document.getElementById('peon-pass').value = ''; btn.innerText = "Crear Operador"; }); }
 
         function procesarDatosDashboard() {
-            const datosActivos = obtenerRegistrosActivos();
-            const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))];
+            const datosActivos = obtenerRegistrosActivos(); const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))];
             document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
             if(datosActivos.length === 0) { document.getElementById('contenedor-graficos-dinamicos').innerHTML = "<p style='text-align:center;color:gray;padding:20px;'>Aún no hay datos registrados.</p>"; return; }
 
@@ -701,11 +723,9 @@
 
             unicas.forEach(car => {
                 const regs = datosActivos.filter(d => d.caravana === car).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
-                let cat = "", lote = "General";
-                const uP = regs.find(d => d.accion === 'Perfil Master'); const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                let cat = "", lote = "General"; const uP = regs.find(d => d.accion === 'Perfil Master'); const uC = regs.find(d => d.accion === 'Actualización de Datos');
                 if(uC) { cat = uC.valor.split('|')[0].replace('Cat:','').trim(); lote = uC.detalles.split('|')[0].replace('Lote:','').trim(); } else if(uP) { cat = uP.detalles.split('|')[0].trim(); }
-                cat = cat.toLowerCase();
-                const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
+                cat = cat.toLowerCase(); const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
 
                 if(uDx) {
                     if(uDx.valor.includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = uIns.valor.replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } }
@@ -720,8 +740,7 @@
                 if(uSan) g6.con++; else g6.sin++;
             });
 
-            const contAlertas = document.getElementById('contenedor-alertas');
-            if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
+            const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
 
             const prefs = JSON.parse(localStorage.getItem('dash_graphs')) || ['1', '2']; let htmlGraficos = "";
             const makeBar = (lbl, val, total, col) => { let p = total>0 ? Math.round((val/total)*100) : 0; return `<div class="barra-categoria"><div class="barra-header"><span>${lbl} (${val})</span> <span>${p}%</span></div><div class="barra-fondo"><div class="barra-relleno" style="background:${col}; width:${p}%;"></div></div></div>`; };
@@ -737,10 +756,9 @@
                 else if(g === '7') { html += `<div class="tarjeta-titulo">🏆 Preñez x Lote</div>`; let lKeys = Object.keys(g7).sort((a,b)=>g7[b].p-g7[a].p).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'#10b981':i===1?'var(--secundario)':'#f59e0b'; html += makeBar(k, g7[k].p, g7[k].t, col); }); }
                 else if(g === '8') { html += `<div class="tarjeta-titulo">🧬 Eficacia Toro</div>`; let lKeys = Object.keys(g8).sort((a,b)=>g8[b].p-g8[a].p).slice(0,3); if(lKeys.length===0) html += `<p style="color:var(--muted); font-size:14px;">No hay cruces.</p>`; lKeys.forEach((k, i) => { html += makeBar(k, g8[k].p, g8[k].t, '#be185d'); }); }
                 else if(g === '9') { let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; html += `<div class="tarjeta-titulo">⚖️ Promedio Peso</div><div class="grid-kpis" style="margin-bottom:0;"><div class="kpi-caja"><div class="kpi-valor">${pv} Kg</div><div class="kpi-label" style="color:var(--texto);">Vacas</div></div><div class="kpi-caja"><div class="kpi-valor">${pt} Kg</div><div class="kpi-label" style="color:var(--texto);">Terneros</div></div></div>`; }
-                else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins || 1; html += `<div class="tarjeta-titulo">⚡ Volumen</div>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Sanidad', g10.san, t, '#c2410c')}`; }
+                else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins || 1; html += `<div class="tarjeta-titulo">⚡ Volumen Trabajos</div>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Sanidad', g10.san, t, '#c2410c')}`; }
                 html += `</div>`; htmlGraficos += html;
-            });
-            document.getElementById('contenedor-graficos-dinamicos').innerHTML = htmlGraficos;
+            }); document.getElementById('contenedor-graficos-dinamicos').innerHTML = htmlGraficos;
         }
 
         function verificarLimiteGraficos(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); localStorage.setItem('dash_graphs', JSON.stringify(prefs)); if(baseDeDatosCache.length > 0) procesarDatosDashboard(); } }
@@ -767,7 +785,7 @@
                 const uNut = regs.find(d => d.accion === 'Nutrición'); if(uNut) nutricion = uNut.valor + " | " + uNut.detalles;
                 const uSan = regs.find(d => d.accion === 'Sanidad'); if(uSan) sanidad = uSan.valor + " | " + uSan.detalles;
                 
-                const ultimaReal = regs.find(d => d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master' && d.accion !== 'Comentario' && d.accion !== 'Vinculacion_RFID' && d.accion !== 'Vinculación RFID');
+                const ultimaReal = regs.find(d => d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master' && d.accion !== 'Comentario' && !d.accion.includes('Vinculacion'));
                 if(ultimaReal) { document.getElementById('panel-ultima-nota').classList.remove('oculto'); document.getElementById('nota-accion-titulo').innerText = `${new Date(ultimaReal.fecha).toLocaleDateString()} - ${ultimaReal.accion} (${ultimaReal.valor})`; document.getElementById('nota-accion-texto').innerText = ultimaReal.detalles.split('|')[0]; }
             }
             document.getElementById('val-categoria').innerText = cat; document.getElementById('val-raza').innerText = raza; document.getElementById('val-peso').innerText = peso; document.getElementById('val-dx').innerText = dx; document.getElementById('val-lote').innerText = lote; document.getElementById('val-carimbo').innerText = carimbo; document.getElementById('val-edad').innerText = edad; document.getElementById('val-genealogia').innerText = padre + " / " + madre; document.getElementById('val-comentario').innerText = comentario; document.getElementById('val-inseminacion').innerText = inseminacion; document.getElementById('val-nutricion').innerText = nutricion; document.getElementById('val-sanidad').innerText = sanidad;
@@ -777,9 +795,9 @@
 
         function verHistorial() { 
             if(!caravanaActiva) return; abrirModal('modal-historial'); const datosActivos = obtenerRegistrosActivos();
-            const d = datosActivos.filter(f => String(f.caravana) === String(caravanaActiva)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
+            const d = datosActivos.filter(f => String(f.caravana) === String(caravanaActiva) && !f.accion.includes('Vinculacion')).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
             let h = "<ul style='list-style:none; padding:0; margin:0;'>"; 
-            d.forEach(r => { if(r.accion !== 'Vinculacion_RFID' && r.accion !== 'Vinculación RFID') h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px;"><span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span><br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span></li>`; }); 
+            d.forEach(r => { h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px;"><span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span><br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span></li>`; }); 
             document.getElementById('contenido-historial').innerHTML = h + "</ul>"; 
         }
 
@@ -793,20 +811,67 @@
         function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); buscarCaravanaBtn(); }
         
         // =====================================
-        // MOTOR DE REPORTES SUPER COMPLETO
+        // MOTOR DE REPORTES GANADERO PRO
         // =====================================
         function cambiarModoReporte() {
             const modo = document.getElementById('f-inf-modo').value;
             if(modo === 'inventario') {
                 document.getElementById('filtros-inventario').style.display = 'flex';
                 document.getElementById('filtros-eventos').style.display = 'none';
-                document.getElementById('lbl-prenadas').innerText = "Preñadas (Inventario)";
+                document.getElementById('lbl-prenadas').innerText = "Preñadas (Filtro)";
+                document.getElementById('lbl-total').innerText = "Total Cabezas";
             } else {
                 document.getElementById('filtros-inventario').style.display = 'none';
                 document.getElementById('filtros-eventos').style.display = 'flex';
                 document.getElementById('lbl-prenadas').innerText = "-";
+                document.getElementById('lbl-total').innerText = "Trabajos Listados";
             }
             actualizarInformeAvanzado();
+        }
+
+        function manejarRangoFechas() {
+            const rango = document.getElementById('f-inf-rango-fecha').value;
+            const cajaManual = document.getElementById('caja-fechas-custom');
+            const dDesde = document.getElementById('f-inf-desde');
+            const dHasta = document.getElementById('f-inf-hasta');
+            
+            let hoy = new Date();
+            let desde = new Date();
+
+            if (rango === 'custom') {
+                cajaManual.style.display = 'flex';
+            } else {
+                cajaManual.style.display = 'none';
+                if(rango === 'hoy') {
+                    // Mismo dia
+                } else if (rango === '7') {
+                    desde.setDate(hoy.getDate() - 7);
+                } else if (rango === '30') {
+                    desde.setDate(hoy.getDate() - 30);
+                } else if (rango === 'todo') {
+                    desde = new Date('2000-01-01');
+                }
+                
+                dDesde.value = desde.toISOString().split('T')[0];
+                dHasta.value = hoy.toISOString().split('T')[0];
+            }
+            actualizarInformeAvanzado();
+        }
+
+        function setFiltroAccion(accion, btnObj) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activa'));
+            btnObj.classList.add('activa');
+            document.getElementById('f-inf-accion-oculto').value = accion;
+            actualizarInformeAvanzado();
+        }
+
+        function obtenerBadgeAccion(accion) {
+            if(accion === 'Sanidad') return `<span class="badge-acc b-sanidad">💉 Sanidad</span>`;
+            if(accion === 'Peso') return `<span class="badge-acc b-peso">⚖️ Peso</span>`;
+            if(accion === 'Diagnóstico') return `<span class="badge-acc b-dx">🩺 Tacto</span>`;
+            if(accion === 'Inseminación') return `<span class="badge-acc b-ins">🧬 Inseminación</span>`;
+            if(accion === 'Nutrición') return `<span class="badge-acc b-nut">🌾 Nutrición</span>`;
+            return `<span class="badge-acc b-gral">${accion}</span>`;
         }
 
         function actualizarInformeAvanzado() {
@@ -823,12 +888,12 @@
             document.getElementById('tabla-eventos').classList.add('oculto');
             document.getElementById('tabla-individual').classList.add('oculto');
             
-            // 1. REPORTE INDIVIDUAL (Dossier)
+            // 1. REPORTE INDIVIDUAL (Dossier Clínico por RP)
             if(fRp !== "") {
                 rpPrint = fRp; document.querySelector('.btn-descargar').innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`;
                 document.getElementById('tabla-individual').classList.remove('oculto');
-                const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === fRp && !d.accion.includes('Vinculacion')).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-                let hInd = ""; regs.forEach(r => { hInd+=`<tr><td style="color:#000; border-color:#cbd5e1;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1;"><strong>${r.accion}</strong></td><td style="color:#000; border-color:#cbd5e1;">${r.valor}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;">${r.detalles}</td></tr>`; });
+                const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === fRp && !d.accion.includes('Vinculacion') && d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master').sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+                let hInd = ""; regs.forEach(r => { hInd+=`<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
                 tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.length; document.getElementById('inf-prenadas').innerText = "-";
                 return;
             }
@@ -847,14 +912,14 @@
                     const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { cat = uC.valor.split('|')[0].replace('Cat:','').trim(); lote = uC.detalles.split('|')[0].replace('Lote:','').trim(); }
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor;
                     let pasaFiltro = true; if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; if(fCat !== "ALL" && !cat.includes(fCat)) pasaFiltro = false; if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false;
-                    if(pasaFiltro) { countTotal++; if(dx.includes('Preñada')) countPrenadas++; tbodyMasivo.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; word-wrap:break-word;"><strong>${car}</strong></td><td style="color:#000; border-color:#cbd5e1;">${cat}</td><td style="color:#000; border-color:#cbd5e1;">${lote}</td><td style="color:#000; border-color:#cbd5e1;">${peso}</td><td style="color:#000; border-color:#cbd5e1;">${dx}</td></tr>`; }
+                    if(pasaFiltro) { countTotal++; if(dx.includes('Preñada')) countPrenadas++; tbodyMasivo.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:16px;">${car}</td><td style="color:#000; border-color:#cbd5e1;">${cat}<br><span style="font-size:11px; color:gray;">${lote}</span></td><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${peso}</td><td style="color:#000; border-color:#cbd5e1;">${dx}</td></tr>`; }
                 });
                 document.getElementById('inf-total').innerText = countTotal; document.getElementById('inf-prenadas').innerText = countPrenadas;
             } 
-            // 3. REPORTE DE EVENTOS Y TRATAMIENTOS
+            // 3. REPORTE DE TRABAJOS (EVENTOS)
             else {
                 document.getElementById('tabla-eventos').classList.remove('oculto');
-                const fAcc = document.getElementById('f-inf-accion').value;
+                const fAcc = document.getElementById('f-inf-accion-oculto').value;
                 const fDesde = document.getElementById('f-inf-desde').value;
                 const fHasta = document.getElementById('f-inf-hasta').value;
                 const fKey = document.getElementById('f-inf-keyword').value.trim().toLowerCase();
@@ -868,7 +933,7 @@
 
                 tbodyEventos.innerHTML = "";
                 eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => {
-                    tbodyEventos.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1;"><strong>${r.caravana}</strong></td><td style="color:#000; border-color:#cbd5e1;">${r.accion}</td><td style="color:#000; border-color:#cbd5e1;">${r.valor}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;">${r.detalles}</td></tr>`;
+                    tbodyEventos.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:16px;">${r.caravana}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`;
                 });
                 
                 document.getElementById('inf-total').innerText = eventos.length; 
@@ -895,30 +960,41 @@
 
                 htmlContent += `<p style="margin:0; font-size:14px;">Dossier Clínico Histórico - RP: <strong>${rpPrint.toUpperCase()}</strong></p><p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${h_log ? `<img src="${h_log}" style="max-height:60px; max-width: 150px;">` : ''}</div>
                     <h3 style="font-size:16px; margin: 0 0 10px 0;">Resumen del Perfil</h3><table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 11px; table-layout: fixed; word-wrap: break-word;"><tr><td style="border: 1px solid #000000; padding: 6px;"><strong>Categoría:</strong> ${cat}</td><td style="border: 1px solid #000000; padding: 6px;"><strong>Lote:</strong> ${lote}</td><td style="border: 1px solid #000000; padding: 6px;"><strong>Carimbo:</strong> ${carimbo}</td></tr><tr><td style="border: 1px solid #000000; padding: 6px;"><strong>Raza:</strong> ${raza}</td><td style="border: 1px solid #000000; padding: 6px;"><strong>Edad:</strong> ${edad}</td><td style="border: 1px solid #000000; padding: 6px;"><strong>Último Peso:</strong> ${peso}</td></tr><tr><td style="border: 1px solid #000000; padding: 6px;"><strong>Dx Actual:</strong> ${dx}</td><td style="border: 1px solid #000000; padding: 6px;"><strong>Genealogía:</strong> ${pa} / ${ma}</td><td style="border: 1px solid #000000; padding: 6px;"><strong>Régimen:</strong> ${nut}</td></tr><tr><td style="border: 1px solid #000000; padding: 6px;"><strong>Últ. Sanidad:</strong> ${san}</td><td style="border: 1px solid #000000; padding: 6px;" colspan="2"><strong>Últ. Inseminación:</strong> ${ins}</td></tr></table>
-                    <h3 style="font-size:16px; margin: 0 0 10px 0;">Trazabilidad Histórica de Sucesos</h3><table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; word-wrap: break-word;"><thead><tr><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Fecha</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 20%;">Procedimiento</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 25%;">Valor Principal</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 40%;">Observaciones Adicionales</th></tr></thead><tbody>`;
-                let rows = document.getElementById('tb-informe-individual').querySelectorAll('tr'); rows.forEach(tr => { htmlContent += `<tr>`; tr.querySelectorAll('td').forEach(td => { htmlContent += `<td style="border: 1px solid #000000; padding: 6px; overflow: hidden;">${td.innerHTML}</td>`; }); htmlContent += `</tr>`; });
+                    <h3 style="font-size:16px; margin: 0 0 10px 0;">Historial Clínico y Procedimientos</h3><table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; word-wrap: break-word;"><thead><tr><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Fecha</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 85%;">Procedimiento / Notas Completas</th></tr></thead><tbody>`;
+                let rows = document.getElementById('tb-informe-individual').querySelectorAll('tr'); 
+                rows.forEach(tr => { 
+                    let tds = tr.querySelectorAll('td');
+                    if(tds.length >= 3) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 6px; overflow: hidden;">${tds[0].innerHTML}</td><td style="border: 1px solid #000000; padding: 6px; overflow: hidden;">${tds[1].innerHTML} - ${tds[2].innerHTML}</td></tr>`;
+                });
                 htmlContent += `</tbody></table></div>`;
             } else {
                 const modo = document.getElementById('f-inf-modo').value;
-                const titulo = modo === 'inventario' ? "Reporte Analítico de Inventario" : "Reporte Analítico de Tratamientos y Eventos";
+                const titulo = modo === 'inventario' ? "Reporte Analítico de Inventario" : "Reporte Analítico de Trabajos y Procedimientos";
                 
                 htmlContent += `<p style="margin:0; font-size:14px;">${titulo}</p><p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${h_log ? `<img src="${h_log}" style="max-height:60px; max-width: 150px;">` : ''}</div>
-                    <table style="width: 50%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;"><tr><td style="border: 1px solid #000000; padding: 6px;"><strong>Resultados Filtrados:</strong> ${document.getElementById('inf-total').innerText}</td><td style="border: 1px solid #000000; padding: 6px;"><strong>Preñadas (Inventario):</strong> ${document.getElementById('inf-prenadas').innerText}</td></tr></table>
+                    <table style="width: 50%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;"><tr><td style="border: 1px solid #000000; padding: 6px;"><strong>Resultados Filtrados:</strong> ${document.getElementById('inf-total').innerText}</td><td style="border: 1px solid #000000; padding: 6px;"><strong>Preñadas (Filtro):</strong> ${document.getElementById('inf-prenadas').innerText}</td></tr></table>
                     <table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; word-wrap: break-word;"><thead>`;
                         
                 if(modo === 'inventario') {
-                    htmlContent += `<tr><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Caravana</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 25%;">Categoría</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 25%;">Ubicación / Lote</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Último Peso</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 20%;">Dx Actual</th></tr></thead><tbody>`;
-                    let rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr'); rows.forEach(tr => { htmlContent += `<tr>`; tr.querySelectorAll('td').forEach(td => { htmlContent += `<td style="border: 1px solid #000000; padding: 6px; overflow: hidden;">${td.innerHTML}</td>`; }); htmlContent += `</tr>`; });
+                    htmlContent += `<tr><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Caravana</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 40%;">Categoría y Lote</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Último Peso</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 30%;">Dx Actual</th></tr></thead><tbody>`;
+                    let rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr'); 
+                    rows.forEach(tr => { 
+                        let tds = tr.querySelectorAll('td');
+                        if(tds.length >= 4) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 6px;">${tds[0].innerText}</td><td style="border: 1px solid #000000; padding: 6px;">${tds[1].innerHTML}</td><td style="border: 1px solid #000000; padding: 6px;">${tds[2].innerText}</td><td style="border: 1px solid #000000; padding: 6px;">${tds[3].innerText}</td></tr>`;
+                    });
                 } else {
-                    htmlContent += `<tr><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Fecha</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Caravana</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 20%;">Acción</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 25%;">Valor</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 25%;">Detalles</th></tr></thead><tbody>`;
-                    let rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr'); rows.forEach(tr => { htmlContent += `<tr>`; tr.querySelectorAll('td').forEach(td => { htmlContent += `<td style="border: 1px solid #000000; padding: 6px; overflow: hidden;">${td.innerHTML}</td>`; }); htmlContent += `</tr>`; });
+                    htmlContent += `<tr><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Fecha</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Caravana</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 70%;">Trabajo Realizado y Detalles</th></tr></thead><tbody>`;
+                    let rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr'); 
+                    rows.forEach(tr => { 
+                        let tds = tr.querySelectorAll('td');
+                        if(tds.length >= 4) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 6px;">${tds[0].innerText}</td><td style="border: 1px solid #000000; padding: 6px;">${tds[1].innerText}</td><td style="border: 1px solid #000000; padding: 6px;"><strong>${tds[2].innerText}</strong> - ${tds[3].innerText}</td></tr>`; 
+                    });
                 }
                 
                 htmlContent += `</tbody></table></div>`;
             }
             
             const opt = { margin: 10, filename: rpPrint !== "" ? `Dossier_${rpPrint.toUpperCase()}.pdf` : 'Reporte_Taurus.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: 'avoid-all', avoid: 'tr' } };
-            
             html2pdf().set(opt).from(htmlContent).toPdf().get('pdf').then(function(pdf) {
                 if (window.AndroidTaurus) { const base64 = pdf.output('datauristring'); window.AndroidTaurus.guardarPDF(base64, opt.filename); } else { pdf.save(opt.filename); }
                 btn.innerHTML = rpPrint !== "" ? `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}` : "🖨️ Descargar Informe PDF"; 
@@ -936,4 +1012,3 @@
     </script>
 </body>
 </html>
-
