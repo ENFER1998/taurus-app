@@ -366,6 +366,8 @@
             <button class="btn-guardar" onclick="guardarVinculacionNFC()">Vincular y Abrir Ficha</button>
         </div>
     </div>
+    
+    <div id="modal-renombrar" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-renombrar')">&times;</span><h3>Modificar Número RP</h3><div class="form-grupo"><label>Nuevo RP</label><input type="text" class="form-control" id="f-nueva-caravana"></div><button class="btn-guardar" onclick="guardarCambioCaravana()">Confirmar</button></div></div>
 
     <div id="modal-comentario" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-comentario')">&times;</span><h3>Anotación General</h3><div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-comentario', 'Comentario')">Guardar Nota</button></div></div>
     
@@ -476,7 +478,6 @@
     </div></div>
 
     <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial de este Animal</h3><div id="contenido-historial"></div></div></div>
-    <div id="modal-renombrar" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-renombrar')">&times;</span><h3>Modificar Número RP</h3><div class="form-grupo"><label>Nuevo RP</label><input type="text" class="form-control" id="f-nueva-caravana"></div><button class="btn-guardar" onclick="guardarCambioCaravana()">Confirmar</button></div></div>
 
     <!-- JAVASCRIPT -->
     <script>
@@ -506,7 +507,7 @@
 
         window.loginBiometricoExitoso = function() {
             const credStr = localStorage.getItem('tc_cred');
-            if(credStr) { const cred = JSON.parse(credStr); document.getElementById('usuario').value = cred.u; document.getElementById('password').value = cred.p; procesarIngreso(); } 
+            if(credStr) { const cred = JSON.parse(credStr); document.getElementById('usuario').value = cred.usu; document.getElementById('password').value = cred.pass; procesarIngreso(); } 
             else { alert("Inicia sesión manualmente por primera vez."); }
         };
 
@@ -539,16 +540,6 @@
             return validos.concat(globalEvents);
         }
 
-        function obtenerHistorial(caravana) {
-            const datosActivos = obtenerRegistrosActivos();
-            let hist = []; let buscadas = [String(caravana)]; let i = 0;
-            while(i < buscadas.length) {
-                let c = buscadas[i]; hist.push(...datosActivos.filter(d => String(d.caravana) === c));
-                datosActivos.filter(d => d.accion === 'Cambio de Caravana' && String(d.valor) === c).forEach(o => { if(!buscadas.includes(String(o.caravana))) buscadas.push(String(o.caravana)); }); i++;
-            }
-            return hist.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-        }
-
         if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
         function toggleTema() { document.body.classList.toggle('tema-claro'); localStorage.setItem('tc_tema', document.body.classList.contains('tema-claro') ? 'claro' : 'oscuro'); }
 
@@ -574,16 +565,16 @@
                 if(res.vencimiento && new Date() > new Date(res.vencimiento)) throw new Error("Su licencia ha vencido.");
 
                 localStorage.setItem('tc_hacienda', JSON.stringify({ nombre: res.hacienda, logo: res.logo }));
-                localStorage.setItem('tc_cred', JSON.stringify({u: usu, p: pass, m: res.maestro, r: res.rol, v: res.vencimiento}));
+                localStorage.setItem('tc_cred', JSON.stringify({usu: usu, pass: pass, maestro: res.maestro, rol: res.rol, vencimiento: res.vencimiento}));
                 let dataLimpia = Array.isArray(res.data) ? res.data : []; localStorage.setItem('tc_db', JSON.stringify(dataLimpia));
                 iniciarSesionUI(dataLimpia, usu, res.maestro, res.rol);
             } catch(e) {
                 const credStr = localStorage.getItem('tc_cred');
                 if(credStr) {
                     const cred = JSON.parse(credStr);
-                    if(cred.u.toLowerCase() === usu.toLowerCase() && cred.p === pass) {
-                        if(cred.v && new Date() > new Date(cred.v)) { err.innerText = "Licencia local vencida."; err.style.display = 'block'; } 
-                        else { const dbLocal = JSON.parse(localStorage.getItem('tc_db')) || []; iniciarSesionUI(dbLocal, cred.u, cred.m, cred.r); }
+                    if(cred.usu.toLowerCase() === usu.toLowerCase() && cred.pass === pass) {
+                        if(cred.vencimiento && new Date() > new Date(cred.vencimiento)) { err.innerText = "Licencia local vencida."; err.style.display = 'block'; } 
+                        else { const dbLocal = JSON.parse(localStorage.getItem('tc_db')) || []; iniciarSesionUI(dbLocal, cred.usu, cred.maestro, cred.rol); }
                     } else { err.innerText = "Credenciales locales incorrectas."; err.style.display = 'block'; }
                 } else { err.innerText = e.message === "Offline" || e.message.includes("token") ? "Sin internet y sin sesión guardada." : e.message; err.style.display = 'block'; }
             } finally { btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
@@ -610,7 +601,7 @@
         function sincronizarFondo(esManual = false) {
             if(!usuarioActivo || !navigator.onLine) return; const credStr = localStorage.getItem('tc_cred'); if(!credStr) return; const cred = JSON.parse(credStr);
             if(esManual) document.getElementById('estado-red').innerText = '🔄 Actualizando...';
-            fetch(`${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(cred.u)}&password=${encodeURIComponent(cred.p)}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' })
+            fetch(`${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(cred.usu)}&password=${encodeURIComponent(cred.pass)}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' })
             .then(r => r.json()).then(res => {
                 if(!res.error) {
                     fusionarDatos(Array.isArray(res.data) ? res.data : []); localStorage.setItem('tc_hacienda', JSON.stringify({ nombre: res.hacienda, logo: res.logo })); cargarDisenoDesdeDB();
@@ -708,7 +699,7 @@
             if(!caravanaActiva) return; const cat = document.getElementById('input-cat-rapida').value; const car = document.getElementById('input-carimbo-rapido').value || "-"; const lot = document.getElementById('input-lote-rapido').value || "-";
             ejecutarAccion('Actualización de Datos', `Cat: ${cat} | Carimbo: ${car}`, `Lote: ${lot}`, event.target, 'modal-clasificacion');
         }
-
+        
         function guardarCambioCaravana() {
             const n = document.getElementById('f-nueva-caravana').value.trim();
             if(!n || n === caravanaActiva) { alert("Número inválido."); return; }
@@ -718,14 +709,11 @@
         }
 
         function borrarCaravana() { if(!caravanaActiva) return; if(confirm(`¿ELIMINAR el historial de la caravana ${caravanaActiva}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null, null); cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); } }
-        function cambiarMiContrasena() { if(!navigator.onLine) return; const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) return; const btn = event.target; btn.innerText = "Cambiando..."; const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usuarioActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { document.getElementById('nueva-clave').value = ''; btn.innerText = "Actualizar mi Contraseña"; let cred = JSON.parse(localStorage.getItem('tc_cred')); cred.p = nueva; localStorage.setItem('tc_cred', JSON.stringify(cred)); }); }
+        function cambiarMiContrasena() { if(!navigator.onLine) return; const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) return; const btn = event.target; btn.innerText = "Cambiando..."; const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usuarioActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { document.getElementById('nueva-clave').value = ''; btn.innerText = "Actualizar mi Contraseña"; let cred = JSON.parse(localStorage.getItem('tc_cred')); cred.pass = nueva; localStorage.setItem('tc_cred', JSON.stringify(cred)); }); }
         function crearPeon() { if(!navigator.onLine) return; const pUsu = document.getElementById('peon-usu').value.trim(); const pPass = document.getElementById('peon-pass').value.trim(); if(!pUsu || !pPass) return; const btn = event.target; btn.innerText = "Creando..."; const fd = new URLSearchParams(); fd.append('accion', 'crear_peon'); fd.append('usuario', usuarioActivo); fd.append('peon_usu', pUsu); fd.append('peon_pass', pPass); fd.append('vencimiento', 'Heredado'); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { document.getElementById('peon-usu').value = ''; document.getElementById('peon-pass').value = ''; btn.innerText = "Crear Operador"; }); }
 
         function procesarDatosDashboard() {
-            const datosActivos = obtenerRegistrosActivos();
-            let aliasMap = {}; datosActivos.forEach(d => { if(d.accion === 'Cambio de Caravana') aliasMap[String(d.caravana)] = String(d.valor); });
-            const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---" && !aliasMap[c]))];
-            
+            const datosActivos = obtenerRegistrosActivos(); const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))];
             document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
             if(datosActivos.length === 0) { document.getElementById('contenedor-graficos-dinamicos').innerHTML = "<p style='text-align:center;color:gray;padding:20px;'>Aún no hay datos registrados.</p>"; return; }
 
@@ -733,19 +721,19 @@
             datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; });
 
             unicas.forEach(car => {
-                const regs = obtenerHistorial(car); 
+                const regs = datosActivos.filter(d => d.caravana === car).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
                 let cat = "", lote = "General"; const uP = regs.find(d => d.accion === 'Perfil Master'); const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                if(uC) { cat = String(uC.valor||"").split('|')[0].replace('Cat:','').trim(); lote = String(uC.detalles||"").split('|')[0].replace('Lote:','').trim(); } else if(uP) { cat = String(uP.detalles||"").split('|')[0].trim(); }
+                if(uC) { cat = uC.valor.split('|')[0].replace('Cat:','').trim(); lote = uC.detalles.split('|')[0].replace('Lote:','').trim(); } else if(uP) { cat = uP.detalles.split('|')[0].trim(); }
                 cat = cat.toLowerCase(); const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
 
                 if(uDx) {
-                    if(String(uDx.valor||"").includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } }
-                    if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong>${car}</strong> Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } }
+                    if(uDx.valor.includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = uIns.valor.replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } }
+                    if(uDx.valor.includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong>${car}</strong> Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(uDx.valor.includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = uIns.valor.replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } }
                 }
                 if(cat.includes('vaca') || cat.includes('vaquilla')) g2.v++; else if(cat.includes('terne') || cat.includes('desmamante')) g2.t++; else g2.o++;
                 g3[lote] = (g3[lote] || 0) + 1;
                 if(uPeso) {
-                    if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong>${car}</strong> Bajo Peso.</div></div>`; } else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; else g4.opt++;
+                    if(uPeso.detalles.includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong>${car}</strong> Bajo Peso.</div></div>`; } else if(uPeso.detalles.includes('Sobre')) g4.sp++; else g4.opt++;
                     let pVal = parseFloat(uPeso.valor); if(!isNaN(pVal)) { if(cat.includes('vaca') || cat.includes('vaquilla')) { g9.vw += pVal; g9.vc++; } if(cat.includes('terne') || cat.includes('desmamante')) { g9.tw += pVal; g9.tc++; } }
                 }
                 if(uSan) g6.con++; else g6.sin++;
@@ -783,21 +771,21 @@
             if(vinculacion) input = vinculacion.caravana;
 
             caravanaActiva = input; document.getElementById('ficha-animal').classList.remove('oculto'); document.getElementById('val-caravana').innerText = input;
-            
-            const regs = obtenerHistorial(input); 
+            const datosActivos = obtenerRegistrosActivos();
+            const regs = datosActivos.filter(d => String(d.caravana) === String(input)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
             
             let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", comentario="Sin comentarios.", inseminacion="-", nutricion="-", sanidad="-";
             document.getElementById('panel-ultima-nota').classList.add('oculto');
             if(regs.length > 0) {
-                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { const p = String(uP.valor||"").split('|'); raza = p[0]||"-"; edad = p[1]||"-"; padre = p[2]||"-"; madre = p[3]||"-"; cat = String(uP.detalles||"").split('|')[0].trim(); }
-                const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; }
-                const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; const uCom = regs.find(d => d.accion === 'Comentario'); if(uCom) comentario = String(uCom.detalles||"").split('|')[0].trim();
-                const uIns = regs.find(d => d.accion === 'Inseminación'); if(uIns) inseminacion = (uIns.valor||"-") + " | " + (uIns.detalles||"");
-                const uNut = regs.find(d => d.accion === 'Nutrición'); if(uNut) nutricion = (uNut.valor||"-") + " | " + (uNut.detalles||"");
-                const uSan = regs.find(d => d.accion === 'Sanidad'); if(uSan) sanidad = (uSan.valor||"-") + " | " + (uSan.detalles||"");
+                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { const p = uP.valor.split('|'); raza = p[0]||"-"; edad = p[1]||"-"; padre = p[2]||"-"; madre = p[3]||"-"; cat = uP.detalles.split('|')[0].trim(); }
+                const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { cat = uC.valor.split('|')[0].replace('Cat:','').trim(); carimbo = uC.valor.split('|')[1].replace('Carimbo:','').trim(); lote = uC.detalles.split('|')[0].replace('Lote:','').trim(); }
+                const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor; const uCom = regs.find(d => d.accion === 'Comentario'); if(uCom) comentario = uCom.detalles.split('|')[0].trim();
+                const uIns = regs.find(d => d.accion === 'Inseminación'); if(uIns) inseminacion = uIns.valor + " | " + uIns.detalles;
+                const uNut = regs.find(d => d.accion === 'Nutrición'); if(uNut) nutricion = uNut.valor + " | " + uNut.detalles;
+                const uSan = regs.find(d => d.accion === 'Sanidad'); if(uSan) sanidad = uSan.valor + " | " + uSan.detalles;
                 
                 const ultimaReal = regs.find(d => d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master' && d.accion !== 'Comentario' && !d.accion.includes('Vinculacion'));
-                if(ultimaReal) { document.getElementById('panel-ultima-nota').classList.remove('oculto'); document.getElementById('nota-accion-titulo').innerText = `${new Date(ultimaReal.fecha).toLocaleDateString()} - ${ultimaReal.accion} (${ultimaReal.valor})`; document.getElementById('nota-accion-texto').innerText = String(ultimaReal.detalles||"").split('|')[0]; }
+                if(ultimaReal) { document.getElementById('panel-ultima-nota').classList.remove('oculto'); document.getElementById('nota-accion-titulo').innerText = `${new Date(ultimaReal.fecha).toLocaleDateString()} - ${ultimaReal.accion} (${ultimaReal.valor})`; document.getElementById('nota-accion-texto').innerText = ultimaReal.detalles.split('|')[0]; }
             }
             document.getElementById('val-categoria').innerText = cat; document.getElementById('val-raza').innerText = raza; document.getElementById('val-peso').innerText = peso; document.getElementById('val-dx').innerText = dx; document.getElementById('val-lote').innerText = lote; document.getElementById('val-carimbo').innerText = carimbo; document.getElementById('val-edad').innerText = edad; document.getElementById('val-genealogia').innerText = padre + " / " + madre; document.getElementById('val-comentario').innerText = comentario; document.getElementById('val-inseminacion').innerText = inseminacion; document.getElementById('val-nutricion').innerText = nutricion; document.getElementById('val-sanidad').innerText = sanidad;
             document.getElementById('f-raza').value = raza !== "-" ? raza : ""; document.getElementById('f-edad').value = edad !== "-" ? edad : ""; document.getElementById('f-padre').value = padre !== "-" ? padre : ""; document.getElementById('f-madre').value = madre !== "-" ? madre : ""; document.getElementById('input-carimbo-rapido').value = carimbo !== "-" ? carimbo : ""; document.getElementById('input-lote-rapido').value = lote !== "-" ? lote : ""; document.getElementById('f-comentario-txt').value = comentario !== "Sin comentarios." ? comentario : "";
@@ -805,22 +793,17 @@
         }
 
         function verHistorial() { 
-            if(!caravanaActiva) return; abrirModal('modal-historial'); 
-            const d = obtenerHistorial(caravanaActiva).filter(f => !f.accion.includes('Vinculacion'));
+            if(!caravanaActiva) return; abrirModal('modal-historial'); const datosActivos = obtenerRegistrosActivos();
+            const d = datosActivos.filter(f => String(f.caravana) === String(caravanaActiva) && !f.accion.includes('Vinculacion')).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
             let h = "<ul style='list-style:none; padding:0; margin:0;'>"; 
             d.forEach(r => { h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px;"><span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span><br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span></li>`; }); 
             document.getElementById('contenido-historial').innerHTML = h + "</ul>"; 
         }
 
         function cargarListaRegistro() {
-            const datosActivos = obtenerRegistrosActivos(); 
-            let aliasMap = {}; datosActivos.forEach(d => { if(d.accion === 'Cambio de Caravana') aliasMap[String(d.caravana)] = String(d.valor); });
-            const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---" && !aliasMap[c]))]; 
+            const datosActivos = obtenerRegistrosActivos(); const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))]; 
             const ul = document.getElementById('ul-registro'); ul.innerHTML = "";
-            unicas.forEach(car => { 
-                const regs = obtenerHistorial(car); 
-                let info = "Sin datos", dxText = "", loteText = ""; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { info = String(c.valor||"").split('|')[0].replace('Cat:','').trim(); loteText = " | " + String(c.detalles||"").split('|')[0].replace('Lote:','').trim(); } else if(p) { info = String(p.detalles||"").split('|')[0].trim(); } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = ` - ${d.valor}`; ul.innerHTML += `<li onclick="navegarDesdeLista('${car}')"><div style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:18px; font-weight:bold; color:var(--texto);">${car}</span><span style="color:var(--muted); font-size:12px;">${info}${loteText}${dxText}</span></div><span style="color:var(--texto); font-size:20px;">›</span></li>`; 
-            });
+            unicas.forEach(car => { const regs = datosActivos.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); let info = "Sin datos", dxText = "", loteText = ""; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { info = c.valor.split('|')[0].replace('Cat:','').trim(); loteText = " | " + c.detalles.split('|')[0].replace('Lote:','').trim(); } else if(p) { info = p.detalles.split('|')[0].trim(); } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = ` - ${d.valor}`; ul.innerHTML += `<li onclick="navegarDesdeLista('${car}')"><div style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:18px; font-weight:bold; color:var(--texto);">${car}</span><span style="color:var(--muted); font-size:12px;">${info}${loteText}${dxText}</span></div><span style="color:var(--texto); font-size:20px;">›</span></li>`; });
         }
 
         function filtrarLista(t) { const lis = document.getElementById('ul-registro').getElementsByTagName('li'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "" : "none"; }
@@ -862,16 +845,13 @@
 
         function actualizarInformeAvanzado() {
             const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
-            const datosActivos = obtenerRegistrosActivos(); 
-            let aliasMap = {}; datosActivos.forEach(d => { if(d.accion === 'Cambio de Caravana') aliasMap[String(d.caravana)] = String(d.valor); });
-            const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---" && !aliasMap[c]))]; 
-            
+            const datosActivos = obtenerRegistrosActivos(); const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))]; 
             const tbodyMasivo = document.getElementById('tb-informe-masivo'); const tbodyEventos = document.getElementById('tb-informe-eventos'); const tbodyIndiv = document.getElementById('tb-informe-individual');
             document.getElementById('tabla-masiva').classList.add('oculto'); document.getElementById('tabla-eventos').classList.add('oculto'); document.getElementById('tabla-individual').classList.add('oculto');
             
             if(fRp !== "") {
                 rpPrint = fRp; document.querySelector('.btn-descargar').innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
-                const regs = obtenerHistorial(fRp).filter(d => !d.accion.includes('Vinculacion') && d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master');
+                const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === fRp && !d.accion.includes('Vinculacion') && d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master').sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
                 let hInd = ""; regs.forEach(r => { hInd+=`<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
                 tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.length; document.getElementById('inf-prenadas').innerText = "-"; return;
             }
@@ -883,10 +863,10 @@
                 const fLote = document.getElementById('f-inf-lote').value; const fCat = document.getElementById('f-inf-cat').value; const fDx = document.getElementById('f-inf-dx').value; 
                 tbodyMasivo.innerHTML = ""; let countTotal = 0, countPrenadas = 0;
                 unicas.forEach(car => {
-                    const regs = obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-";
-                    const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0].trim();
-                    const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; }
-                    const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-";
+                    const regs = datosActivos.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); let cat = "-", peso = "-", dx = "-", lote = "-";
+                    const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = uP.detalles.split('|')[0].trim();
+                    const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { cat = uC.valor.split('|')[0].replace('Cat:','').trim(); lote = uC.detalles.split('|')[0].replace('Lote:','').trim(); }
+                    const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor;
                     let pasaFiltro = true; if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; if(fCat !== "ALL" && !cat.includes(fCat)) pasaFiltro = false; if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false;
                     if(pasaFiltro) { countTotal++; if(dx.includes('Preñada')) countPrenadas++; tbodyMasivo.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:16px;">${car}</td><td style="color:#000; border-color:#cbd5e1;">${cat}<br><span style="font-size:11px; color:gray;">${lote}</span></td><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${peso}</td><td style="color:#000; border-color:#cbd5e1;">${dx}</td></tr>`; }
                 });
@@ -907,14 +887,14 @@
             const btn = document.querySelector('.btn-descargar'); btn.innerText = "⏳ Generando PDF...";
             const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; const h_nom = hd.nombre || 'TAURUS CONTROL'; const h_log = hd.logo || "";
             
-            let htmlContent = `<div style="background-color: #ffffff; padding: 20px; width: 750px; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000000; padding-bottom: 15px; margin-bottom: 20px;"><div><h2 style="margin:0 0 10px 0; font-size:26px; text-transform:uppercase;">${h_nom}</h2>`;
+            let htmlContent = `<div style="background-color: #ffffff; padding: 20px; width: 100%; max-width: 1000px; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000000; padding-bottom: 15px; margin-bottom: 20px;"><div><h2 style="margin:0 0 10px 0; font-size:26px; text-transform:uppercase;">${h_nom}</h2>`;
             
             if(rpPrint !== "") {
-                const regs = obtenerHistorial(rpPrint).filter(d => !d.accion.includes('Vinculacion')); 
+                const datosActivos = obtenerRegistrosActivos(); const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === String(rpPrint).toLowerCase() && !d.accion.includes('Vinculacion')).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
                 if(regs.length===0){ btn.innerHTML = `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}`; return;}
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
-                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor||"").split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=String(uP.detalles||"").split('|')[0]||"-"; } 
-                const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; lote=String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; } 
+                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = uP.valor.split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=uP.detalles.split('|')[0]||"-"; } 
+                const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { cat=uC.valor.split('|')[0].replace('Cat:','').trim(); carimbo=uC.valor.split('|')[1].replace('Carimbo:','').trim(); lote=uC.detalles.split('|')[0].replace('Lote:','').trim(); } 
                 const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
                 const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nut = (uNut.valor || "") + " | " + (uNut.detalles || "");
                 const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "") + " | " + (uSan.detalles || "");
@@ -947,7 +927,7 @@
                 htmlContent += `</tbody></table></div>`;
             }
             
-            const opt = { margin: 10, filename: rpPrint !== "" ? `Dossier_${rpPrint.toUpperCase()}.pdf` : 'Reporte_Taurus.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' } };
+            const opt = { margin: 10, filename: rpPrint !== "" ? `Dossier_${rpPrint.toUpperCase()}.pdf` : 'Reporte_Taurus.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, windowWidth: 800 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' } };
             html2pdf().set(opt).from(htmlContent).toPdf().get('pdf').then(function(pdf) {
                 if (window.AndroidTaurus) { const base64 = pdf.output('datauristring'); window.AndroidTaurus.guardarPDF(base64, opt.filename); } else { pdf.save(opt.filename); }
                 btn.innerHTML = rpPrint !== "" ? `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}` : "🖨️ Descargar Informe PDF"; 
@@ -962,7 +942,7 @@
                 const img = new Image(); 
                 img.onload = function() { 
                     const canvas = document.createElement('canvas'); let w = img.width, h = img.height; 
-                    const maxW = 500, maxH = 500; 
+                    const maxW = 500, maxH = 500;
                     if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } 
                     canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); 
                     const base64 = canvas.toDataURL('image/png'); mostrarLogo(base64); 
