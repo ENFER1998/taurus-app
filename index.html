@@ -306,7 +306,7 @@
                     <div class="form-grupo"><label>Sesión iniciada como:</label><input type="text" id="usuario-activo-lbl" class="form-control" readonly style="font-weight:bold; color:var(--exito);"></div>
                     <div class="form-grupo" id="panel-licencia" style="margin-top: 15px;"><label>Vencimiento de Licencia:</label><input type="text" id="lbl-licencia" class="form-control" readonly style="font-weight:bold;"></div>
                     <div class="form-grupo" style="margin-top: 15px;"><label>Cambiar mi Contraseña</label><input type="password" id="nueva-clave" class="form-control" placeholder="Escribe tu nueva clave"></div>
-                    <button class="btn-guardar" onclick="cambiarMiContrasena()">Actualizar mi Contraseña</button>
+                    <button class="btn-guardar" onclick="cambiarMiContrasena()">Actualizar Contraseña</button>
                 </div>
 
                 <div class="tarjeta" id="panel-crear-peones">
@@ -329,6 +329,7 @@
                         <select id="op-del-usu-sel" class="form-control">
                             <option value="">-- Seleccione un operador --</option>
                         </select>
+                        <span style="font-size:11px; color:var(--muted); display:block; margin-top:5px;">Se listan los usuarios registrados (solo se permite borrar Operadores).</span>
                     </div>
                     <button class="btn-guardar" style="background:var(--peligro);" onclick="eliminarOperador()">Eliminar Operador de la Nube</button>
                 </div>
@@ -353,7 +354,7 @@
                     <button class="btn-guardar" onclick="sincronizarPendientesManual()">Forzar Sincronización</button>
                 </div>
 
-                <a href="https://wa.me/595976139617" target="_blank" rel="noopener noreferrer" class="btn-guardar" style="display:block; text-align:center; background:#25D366; text-decoration:none; margin-top:20px; box-sizing:border-box;">💬 Soporte Técnico WhatsApp</a>
+                <button class="btn-guardar" style="background:#25D366; margin-top:20px; font-size:16px;" onclick="window.location.href='https://wa.me/595976139617'">💬 Soporte Técnico WhatsApp</button>
             </div>
         </div>
 
@@ -645,7 +646,7 @@
                         if(cred.v && new Date() > new Date(cred.v)) { err.innerText = "Licencia local vencida."; err.style.display = 'block'; } 
                         else { const dbLocal = JSON.parse(localStorage.getItem('tc_db')) || []; iniciarSesionUI(dbLocal, savedUser, cred.m || cred.maestro, cred.r || cred.rol); }
                     } else { err.innerText = "Credenciales locales incorrectas."; err.style.display = 'block'; }
-                } else { err.innerText = e.message === "Offline" || e.message.includes("token") ? "Sin internet y sin sesión guardada." : e.message; err.style.display = 'block'; }
+                } else { err.innerText = e.message === "Offline" ? "Sin internet y sin sesión guardada." : e.message; err.style.display = 'block'; }
             } finally { btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
         }
 
@@ -813,7 +814,7 @@
                 document.getElementById('peon-usu').value = ''; 
                 document.getElementById('peon-pass').value = ''; 
                 btn.innerText = "Registrar Usuario"; 
-                alert("Usuario Registrado.");
+                alert("Usuario Registrado. Espere unos segundos a que se procese en la nube.");
             }); 
         }
 
@@ -822,7 +823,7 @@
             const selectEl = document.getElementById('op-del-usu-sel');
             const u = selectEl.value.trim();
             if(!u) { alert("Seleccione un operador de la lista."); return; }
-            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso del usuario "${u}"?`)) {
+            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso del operador "${u}"?`)) {
                 const fd = new URLSearchParams(); 
                 fd.append('accion', 'eliminar_peon'); 
                 fd.append('maestro', propMaestro); 
@@ -921,7 +922,7 @@
         }
 
         function filtrarLista(t) { const lis = document.getElementById('ul-registro').getElementsByTagName('li'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "" : "none"; }
-        function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); buscarCaravanaBtn(car); }
+        function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); buscarCaravanaBtn(); }
         
         function cambiarModoReporte() {
             const modo = document.getElementById('f-inf-modo').value;
@@ -972,7 +973,7 @@
             if(fRp !== "") {
                 rpPrint = fRp; document.querySelector('.btn-descargar').innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
                 const regs = obtenerHistorial(fRp);
-                let hInd = ""; regs.forEach(r => { if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') hInd+=`<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
+                let hInd = ""; regs.forEach(r => { if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') hInd+=`<tr style="page-break-inside: avoid !important;"><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
                 tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.filter(r => !r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master').length; document.getElementById('inf-prenadas').innerText = "-"; return;
             }
 
@@ -988,7 +989,7 @@
                     const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v=String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; }
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-";
                     let pasaFiltro = true; if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; if(fCat !== "ALL" && !cat.includes(fCat)) pasaFiltro = false; if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false;
-                    if(pasaFiltro) { countTotal++; tbodyMasivo.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:16px;">${car}</td><td style="color:#000; border-color:#cbd5e1;">${cat}<br><span style="font-size:11px; color:gray;">${lote}</span></td><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${peso}</td><td style="color:#000; border-color:#cbd5e1;">${dx}</td></tr>`; }
+                    if(pasaFiltro) { countTotal++; tbodyMasivo.innerHTML += `<tr style="page-break-inside: avoid !important;"><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:16px;">${car}</td><td style="color:#000; border-color:#cbd5e1;">${cat}<br><span style="font-size:11px; color:gray;">${lote}</span></td><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${peso}</td><td style="color:#000; border-color:#cbd5e1;">${dx}</td></tr>`; }
                 });
                 document.getElementById('inf-total').innerText = countTotal; 
             } else {
@@ -998,7 +999,7 @@
                 if(fAcc !== "ALL") eventos = eventos.filter(d => d.accion === fAcc); if(fDesde) eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00'));
                 if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); if(fKey) eventos = eventos.filter(d => (String(d.valor) + String(d.detalles)).toLowerCase().includes(fKey));
                 tbodyEventos.innerHTML = "";
-                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { tbodyEventos.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:16px;">${r.caravana}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
+                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { tbodyEventos.innerHTML += `<tr style="page-break-inside: avoid !important;"><td style="color:#000; border-color:#cbd5e1; white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:16px;">${r.caravana}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
                 document.getElementById('inf-total').innerText = eventos.length; 
             }
         }
@@ -1016,7 +1017,7 @@
                 th { background-color: #f1f5f9; }
                 thead { display: table-header-group; }
             </style>
-            <div style="background-color: #ffffff; padding: 20px; width: 1000px; margin: 0 auto; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;">
+            <div style="background-color: #ffffff; padding: 20px; width: 750px; margin: 0 auto; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000000; padding-bottom: 15px; margin-bottom: 20px;">
                     <div><h2 style="margin:0 0 10px 0; font-size:26px; text-transform:uppercase;">${h_nom}</h2>`;
             
@@ -1031,26 +1032,26 @@
                 const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) ins = (uIns.valor || "") + " | " + (uIns.detalles || "");
 
                 htmlContent += `<p style="margin:0; font-size:14px;">Dossier Clínico Histórico - RP: <strong>${rpPrint.toUpperCase()}</strong></p><p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${(h_log && h_log.startsWith('data:image')) ? `<div style="text-align: right;"><img src="${h_log}" style="max-width:150px; max-height:80px; object-fit: contain;"></div>` : ''}</div>
-                    <h3 style="font-size:16px; margin: 0 0 10px 0;">Resumen del Perfil</h3><table style="width: 100%; font-size: 11px; table-layout: fixed;"><tr><td><strong>Categoría:</strong> ${cat}</td><td><strong>Lote:</strong> ${lote}</td><td><strong>Carimbo:</strong> ${carimbo}</td></tr><tr><td><strong>Raza:</strong> ${raza}</td><td><strong>Edad:</strong> ${edad}</td><td><strong>Último Peso:</strong> ${peso}</td></tr><tr><td><strong>Dx Actual:</strong> ${dx}</td><td><strong>Genealogía:</strong> ${pa} / ${ma}</td><td><strong>Régimen:</strong> ${nut}</td></tr><tr><td><strong>Últ. Sanidad:</strong> ${san}</td><td colspan="2"><strong>Últ. Inseminación:</strong> ${ins}</td></tr></table>
-                    <h3 style="font-size:16px; margin: 20px 0 10px 0;">Trazabilidad Histórica de Sucesos</h3><table style="width: 100%; font-size: 11px; table-layout: fixed;"><thead><tr><th style="width: 12%;">Fecha</th><th style="width: 25%;">Procedimiento</th><th style="width: 25%;">Valor Principal</th><th style="width: 38%;">Observaciones Adicionales</th></tr></thead><tbody>`;
+                    <h3 style="font-size:16px; margin: 0 0 10px 0;">Resumen del Perfil</h3><table style="width: 100%; font-size: 11px; table-layout: fixed;"><tr style="page-break-inside: avoid !important;"><td style="border: 1px solid #000; padding: 6px;"><strong>Categoría:</strong> ${cat}</td><td style="border: 1px solid #000; padding: 6px;"><strong>Lote:</strong> ${lote}</td><td style="border: 1px solid #000; padding: 6px;"><strong>Carimbo:</strong> ${carimbo}</td></tr><tr style="page-break-inside: avoid !important;"><td style="border: 1px solid #000; padding: 6px;"><strong>Raza:</strong> ${raza}</td><td style="border: 1px solid #000; padding: 6px;"><strong>Edad:</strong> ${edad}</td><td style="border: 1px solid #000; padding: 6px;"><strong>Último Peso:</strong> ${peso}</td></tr><tr style="page-break-inside: avoid !important;"><td style="border: 1px solid #000; padding: 6px;"><strong>Dx Actual:</strong> ${dx}</td><td style="border: 1px solid #000; padding: 6px;"><strong>Genealogía:</strong> ${pa} / ${ma}</td><td style="border: 1px solid #000; padding: 6px;"><strong>Régimen:</strong> ${nut}</td></tr><tr style="page-break-inside: avoid !important;"><td style="border: 1px solid #000; padding: 6px;"><strong>Últ. Sanidad:</strong> ${san}</td><td style="border: 1px solid #000; padding: 6px;" colspan="2"><strong>Últ. Inseminación:</strong> ${ins}</td></tr></table>
+                    <h3 style="font-size:16px; margin: 20px 0 10px 0;">Trazabilidad Histórica de Sucesos</h3><table style="width: 100%; font-size: 11px; table-layout: fixed;"><thead><tr><th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 12%;">Fecha</th><th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 25%;">Procedimiento</th><th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 25%;">Valor Principal</th><th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 38%;">Observaciones Adicionales</th></tr></thead><tbody>`;
                 let rows = document.getElementById('tb-informe-individual').querySelectorAll('tr'); 
-                rows.forEach(tr => { htmlContent += `<tr style="page-break-inside: avoid !important;">`; tr.querySelectorAll('td').forEach(td => { htmlContent += `<td>${td.innerHTML}</td>`; }); htmlContent += `</tr>`; });
+                rows.forEach(tr => { htmlContent += `<tr style="page-break-inside: avoid !important;">`; tr.querySelectorAll('td').forEach(td => { htmlContent += `<td style="border: 1px solid #000; padding: 6px;">${td.innerHTML}</td>`; }); htmlContent += `</tr>`; });
                 htmlContent += `</tbody></table></div>`;
             } else {
                 const titulo = modo === 'inventario' ? "Reporte Analítico de Inventario General" : "Reporte Analítico de Trabajos y Procedimientos";
                 
                 htmlContent += `<p style="margin:0; font-size:14px;">${titulo}</p><p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${(h_log && h_log.startsWith('data:image')) ? `<div style="text-align: right;"><img src="${h_log}" style="max-width:150px; max-height:80px; object-fit: contain;"></div>` : ''}</div>
-                    <table style="width: 50%; font-size: 11px;"><tr style="page-break-inside: avoid !important;"><td><strong>Total Registros Listados:</strong> ${document.getElementById('inf-total').innerText}</td><td><strong>Total Preñadas Global:</strong> ${document.getElementById('inf-prenadas').innerText}</td></tr></table>
+                    <table style="width: 50%; font-size: 11px;"><tr style="page-break-inside: avoid !important;"><td style="border: 1px solid #000; padding: 6px;"><strong>Total Registros Listados:</strong> ${document.getElementById('inf-total').innerText}</td><td style="border: 1px solid #000; padding: 6px;"><strong>Total Preñadas Global:</strong> ${document.getElementById('inf-prenadas').innerText}</td></tr></table>
                     <table style="width: 100%; font-size: 11px; table-layout: fixed;"><thead>`;
                         
                 if(modo === 'inventario') {
-                    htmlContent += `<tr><th style="width: 15%;">Caravana</th><th style="width: 45%;">Categoría y Ubicación</th><th style="width: 15%;">Último Peso</th><th style="width: 25%;">Diagnóstico Actual</th></tr></thead><tbody>`;
+                    htmlContent += `<tr><th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 15%;">Caravana</th><th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 45%;">Categoría y Ubicación</th><th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 15%;">Último Peso</th><th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 25%;">Diagnóstico Actual</th></tr></thead><tbody>`;
                     let rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr'); 
-                    rows.forEach(tr => { htmlContent += `<tr style="page-break-inside: avoid !important;">`; let tds = tr.querySelectorAll('td'); if (tds.length >= 4) { htmlContent += `<td style="text-align:center;"><b>${tds[0].innerHTML}</b></td><td>${tds[1].innerHTML}</td><td style="text-align:center;">${tds[2].innerHTML}</td><td style="text-align:center;">${tds[3].innerHTML}</td>`; } htmlContent += `</tr>`; });
+                    rows.forEach(tr => { htmlContent += `<tr style="page-break-inside: avoid !important;">`; let tds = tr.querySelectorAll('td'); if (tds.length >= 4) { htmlContent += `<td style="border: 1px solid #000; padding: 6px; text-align:center;"><b>${tds[0].innerHTML}</b></td><td style="border: 1px solid #000; padding: 6px;">${tds[1].innerHTML}</td><td style="border: 1px solid #000; padding: 6px; text-align:center;">${tds[2].innerHTML}</td><td style="border: 1px solid #000; padding: 6px; text-align:center;">${tds[3].innerHTML}</td>`; } htmlContent += `</tr>`; });
                 } else {
-                    htmlContent += `<tr><th style="width: 10%;">Fecha</th><th style="width: 12%;">Caravana</th><th style="width: 23%;">Trabajo Realizado</th><th style="width: 55%;">Detalles Extras</th></tr></thead><tbody>`;
+                    htmlContent += `<tr><th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 10%;">Fecha</th><th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 12%;">Caravana</th><th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 23%;">Trabajo Realizado</th><th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 55%;">Detalles Extras</th></tr></thead><tbody>`;
                     let rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr'); 
-                    rows.forEach(tr => { htmlContent += `<tr style="page-break-inside: avoid !important;">`; let tds = tr.querySelectorAll('td'); if(tds.length >= 4) { htmlContent += `<td style="text-align:center;">${tds[0].innerHTML}</td><td style="text-align:center;"><b>${tds[1].innerText}</b></td><td style="text-align:center;">${tds[2].innerText}</td><td>${tds[3].innerHTML}</td>`; } htmlContent += `</tr>`; });
+                    rows.forEach(tr => { htmlContent += `<tr style="page-break-inside: avoid !important;">`; let tds = tr.querySelectorAll('td'); if(tds.length >= 4) { htmlContent += `<td style="border: 1px solid #000; padding: 6px; text-align:center;">${tds[0].innerHTML}</td><td style="border: 1px solid #000; padding: 6px; text-align:center;"><b>${tds[1].innerText}</b></td><td style="border: 1px solid #000; padding: 6px; text-align:center;">${tds[2].innerText}</td><td style="border: 1px solid #000; padding: 6px;">${tds[3].innerHTML}</td>`; } htmlContent += `</tr>`; });
                 }
                 
                 htmlContent += `</tbody></table></div>`;
