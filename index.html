@@ -559,30 +559,45 @@
             }
         }
 
-        // ==========================================
-        // 3. TECLADO INVISIBLE (HID BLUETOOTH)
+       // ==========================================
+        // 3. TECLADO INVISIBLE (HID) 100% AUTOMÁTICO
         // ==========================================
         let bufferTeclado = "";
-        let timeoutTeclado;
+        let ultimoTiempoTecla = Date.now();
+
         document.addEventListener('keydown', function(event) {
-            // Si no estamos en un input manual y recibimos "Enter", enviamos el buffer
+            // Ignorar teclas de control del sistema
+            if(event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt') return;
+
+            // Calculamos qué tan rápido entró esta tecla respecto a la anterior
+            let tiempoActual = Date.now();
+            let tiempoEntreTeclas = tiempoActual - ultimoTiempoTecla;
+            ultimoTiempoTecla = tiempoActual;
+
+            // Un humano teclea lento (más de 60ms). Un ESP32 lo hace en 10ms.
+            // Si es lento, borramos la memoria oculta porque eres tú escribiendo normal.
+            if (tiempoEntreTeclas > 60) {
+                bufferTeclado = "";
+            }
+
+            // Si el ESP32 manda el "Enter" final de la lectura
             if (event.key === 'Enter') {
                 if (bufferTeclado.length > 2) {
-                    procesarTramaBLE(bufferTeclado);
+                    // Detenemos el Enter nativo para que no presione cosas por accidente
+                    event.preventDefault(); 
+                    
+                    // Mandamos el dato atrapado a la función de clasificación
+                    procesarTramaBLE(bufferTeclado); 
                 }
                 bufferTeclado = "";
                 return;
             }
 
+            // Si es una lectura a velocidad sobrehumana, la vamos guardando
             if (event.key.length === 1) {
                 bufferTeclado += event.key;
-                clearTimeout(timeoutTeclado);
-                timeoutTeclado = setTimeout(() => {
-                    bufferTeclado = "";
-                }, 150); 
             }
         });
-
         // NFC Vía Web (Solo si se usa en Google Chrome en vez de la App nativa)
         async function leerNFC() {
             if ('NDEFReader' in window) {
