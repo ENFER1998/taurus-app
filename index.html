@@ -102,12 +102,10 @@
         .tabla-informe th { background: #e2e8f0; padding: 10px; text-align: left; border: 1px solid #cbd5e1; color: black;}
         .tabla-informe td { padding: 10px; border: 1px solid #cbd5e1; color: black;}
         
-        /* BOTONES DE FILTRO RAPIDO (Pestañas en Reportes) */
         .tabs-filtro { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 10px; }
         .tab-btn { background: #1e293b; border: 1px solid var(--borde); color: var(--muted); padding: 8px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; cursor: pointer; white-space: nowrap; transition: 0.3s; }
         .tab-btn.activa { background: var(--secundario); color: white; border-color: var(--secundario); }
 
-        /* ETIQUETAS DE ACCIÓN EN TABLAS */
         .badge-acc { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; display: inline-block; }
         .b-sanidad { background-color: var(--peligro); }
         .b-peso { background-color: var(--secundario); }
@@ -479,7 +477,6 @@
 
     <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial de este Animal</h3><div id="contenido-historial"></div></div></div>
 
-    <!-- JAVASCRIPT -->
     <script>
         const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzyWvEMlfCCQXGP0-ssUUQ2je4tsFPXd6Yu0C9WwsTa7sgqFkkz3jr0a8CXqrI9ydk/exec";
         
@@ -710,7 +707,25 @@
 
         function borrarCaravana() { if(!caravanaActiva) return; if(confirm(`¿ELIMINAR el historial de la caravana ${caravanaActiva}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null, null); cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); } }
         function cambiarMiContrasena() { if(!navigator.onLine) return; const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) return; const btn = event.target; btn.innerText = "Cambiando..."; const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usuarioActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { document.getElementById('nueva-clave').value = ''; btn.innerText = "Actualizar mi Contraseña"; let cred = JSON.parse(localStorage.getItem('tc_cred')); cred.pass = nueva; localStorage.setItem('tc_cred', JSON.stringify(cred)); }); }
-        function crearPeon() { if(!navigator.onLine) return; const pUsu = document.getElementById('peon-usu').value.trim(); const pPass = document.getElementById('peon-pass').value.trim(); if(!pUsu || !pPass) return; const btn = event.target; btn.innerText = "Creando..."; const fd = new URLSearchParams(); fd.append('accion', 'crear_peon'); fd.append('usuario', usuarioActivo); fd.append('peon_usu', pUsu); fd.append('peon_pass', pPass); fd.append('vencimiento', 'Heredado'); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { document.getElementById('peon-usu').value = ''; document.getElementById('peon-pass').value = ''; btn.innerText = "Crear Operador"; }); }
+        
+        function crearPeon() { 
+            if(!navigator.onLine) return; 
+            const pUsu = document.getElementById('peon-usu').value.trim(); 
+            const pPass = document.getElementById('peon-pass').value.trim(); 
+            if(!pUsu || !pPass) return; 
+            const btn = event.target; btn.innerText = "Creando..."; 
+            const fd = new URLSearchParams(); 
+            fd.append('accion', 'crear_peon'); 
+            fd.append('usuario', usuarioActivo); 
+            fd.append('peon_usu', pUsu); 
+            fd.append('peon_pass', pPass); 
+            fd.append('vencimiento', 'Heredado'); 
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
+                document.getElementById('peon-usu').value = ''; 
+                document.getElementById('peon-pass').value = ''; 
+                btn.innerText = "Crear Operador"; 
+            }); 
+        }
 
         function procesarDatosDashboard() {
             const datosActivos = obtenerRegistrosActivos(); const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))];
@@ -927,7 +942,7 @@
                 htmlContent += `</tbody></table></div>`;
             }
             
-            const opt = { margin: 10, filename: rpPrint !== "" ? `Dossier_${rpPrint.toUpperCase()}.pdf` : 'Reporte_Taurus.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, windowWidth: 800 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' } };
+            const opt = { margin: 10, filename: rpPrint !== "" ? `Dossier_${rpPrint.toUpperCase()}.pdf` : 'Reporte_Taurus.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' } };
             html2pdf().set(opt).from(htmlContent).toPdf().get('pdf').then(function(pdf) {
                 if (window.AndroidTaurus) { const base64 = pdf.output('datauristring'); window.AndroidTaurus.guardarPDF(base64, opt.filename); } else { pdf.save(opt.filename); }
                 btn.innerHTML = rpPrint !== "" ? `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}` : "🖨️ Descargar Informe PDF"; 
