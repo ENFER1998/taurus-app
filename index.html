@@ -174,6 +174,7 @@
                 <div id="contenedor-graficos-dinamicos"></div>
             </div>
 
+            <!-- FICHA CLÍNICA -->
             <div id="vista-manga" class="oculto">
                 <div class="buscador-contenedor">
                     <input type="text" id="buscador-caravana" class="buscador-input" placeholder="Nº Caravana / RP" type="number">
@@ -344,8 +345,7 @@
                 
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">🔌 Lector Inalámbrico</div>
-                    <p style="font-size: 13px; color: var(--muted); margin-bottom: 15px;">Vincula un Bastón o Balanza Bluetooth automáticamente.</p>
-                    <button class="btn-guardar" style="background: #0284c7; margin-top: 0;" onclick="if(window.AndroidTaurus){window.AndroidTaurus.conectarBLE();}else{conectarHardwareBLE();}">Vincular Hardware</button>
+                    <p style="font-size: 13px; color: var(--muted); margin-bottom: 15px;">La aplicación ya está configurada para aceptar bastones y balanzas mediante teclado Bluetooth automáticamente (HID).</p>
                 </div>
                 
                 <div class="tarjeta">
@@ -426,7 +426,7 @@
     
     <div id="modal-peso" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-peso')">&times;</span><h3>Pesaje</h3>
         <div class="form-grupo"><input type="number" step="0.5" class="form-control" id="i-peso-val" placeholder="Kg (Ej: 350.5)" style="font-size:24px; font-weight:bold; text-align:center;"></div>
-        <div class="form-grupo"><label>Condición Corporal Visusal</label>
+        <div class="form-grupo"><label>Condición Corporal Visual</label>
             <select class="form-control" id="i-peso-cond">
                 <option>Óptima (Normal)</option>
                 <option>Bajo Peso (Flaca)</option>
@@ -499,11 +499,6 @@
         let propMaestro = "";
         let rolUsuario = "";
         let rpPrint = "";
-        
-        let dispositivoBLE = null;
-        let bleServer = null;
-        let bleService = null;
-        let bleCharacteristic = null;
         let tagHuerfano = ""; 
 
         function verificarSaniOtro() { const sel = document.getElementById('i-sani-sel'); const input = document.getElementById('i-sani-sel-otro'); if(sel.value === 'OTRO') { input.classList.remove('oculto'); input.focus(); } else { input.classList.add('oculto'); input.value = ''; } }
@@ -522,10 +517,11 @@
             else { alert("Inicia sesión manualmente por primera vez."); }
         };
 
-        window.recibirDatoDesdeAndroid = function(valorBLE) { if(valorBLE) { procesarTramaBLE(valorBLE); } };
-
         if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); }); }
 
+        // ==========================================
+        // 1. PUENTE NFC (Desde Android Studio a HTML)
+        // ==========================================
         window.recibirTagNFC = function(tagHex) {
             let dataMinuscula = String(tagHex).trim().toLowerCase();
             let esRFIDRegistrado = baseDeDatosCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === dataMinuscula);
@@ -542,46 +538,65 @@
             }
         };
 
-        let bufferBLE = ""; let timeoutBLE;
+        // ==========================================
+        // 2. PROCESADOR BLUETOOTH / LECTOR
+        // ==========================================
         function procesarTramaBLE(trama) {
-            bufferBLE += trama; clearTimeout(timeoutBLE);
-            timeoutBLE = setTimeout(() => {
-                let dataLimpia = bufferBLE.replace(/[^a-zA-Z0-9.-]/g, '').replace(/TAG/gi, '').trim(); 
-                if(!dataLimpia) return;
+            let dataLimpia = String(trama).replace(/[^a-zA-Z0-9.-]/g, '').replace(/TAG/gi, '').trim(); 
+            if(!dataLimpia) return;
 
-                let isWeight = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
+            let isWeight = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
 
-                if (isWeight) {
-                    if (!document.getElementById('vista-manga').classList.contains('oculto') && caravanaActiva) {
-                        abrirModal('modal-peso');
-                        document.getElementById('i-peso-val').value = dataLimpia;
-                    } else {
-                        alert("⚖️ Peso recibido: " + dataLimpia + " Kg. Abra la ficha de un animal antes de pesar.");
-                    }
+            if (isWeight) {
+                if (!document.getElementById('vista-manga').classList.contains('oculto') && caravanaActiva) {
+                    abrirModal('modal-peso');
+                    document.getElementById('i-peso-val').value = dataLimpia;
                 } else {
-                    window.recibirTagNFC(dataLimpia);
+                    alert("⚖️ Peso recibido: " + dataLimpia + " Kg. Abra la ficha de un animal antes de pesar.");
                 }
-                bufferBLE = "";
-            }, 300);
+            } else {
+                window.recibirTagNFC(dataLimpia);
+            }
         }
 
+        // ==========================================
+        // 3. TECLADO INVISIBLE (HID BLUETOOTH)
+        // ==========================================
+        let bufferTeclado = "";
+        let timeoutTeclado;
+        document.addEventListener('keydown', function(event) {
+            // Si no estamos en un input manual y recibimos "Enter", enviamos el buffer
+            if (event.key === 'Enter') {
+                if (bufferTeclado.length > 2) {
+                    procesarTramaBLE(bufferTeclado);
+                }
+                bufferTeclado = "";
+                return;
+            }
+
+            if (event.key.length === 1) {
+                bufferTeclado += event.key;
+                clearTimeout(timeoutTeclado);
+                timeoutTeclado = setTimeout(() => {
+                    bufferTeclado = "";
+                }, 150); 
+            }
+        });
+
+        // NFC Vía Web (Solo si se usa en Google Chrome en vez de la App nativa)
         async function leerNFC() {
             if ('NDEFReader' in window) {
                 try {
                     const ndef = new NDEFReader(); await ndef.scan();
-                    alert("✅ Lector NFC Activo. Acerca el celular a la caravana RFID/NFC...");
+                    alert("✅ Lector NFC Web Activo. Acerca el celular al chip...");
                     ndef.onreading = event => { 
                         const decoder = new TextDecoder(); 
                         for (const record of event.message.records) { 
-                            try { 
-                                const rp = decoder.decode(record.data).trim(); 
-                                if(rp) window.recibirTagNFC(rp); 
-                            } catch(e) {} 
+                            try { const rp = decoder.decode(record.data).trim(); if(rp) window.recibirTagNFC(rp); } catch(e) {} 
                         } 
                     };
-                    ndef.onreadingerror = () => { alert("⚠️ Error de lectura NFC."); };
                 } catch (error) { alert("❌ Error al iniciar lector NFC."); }
-            } else { alert("Tu navegador no soporta lectura NFC directa. Utiliza el lector nativo de la App."); }
+            } else { alert("NFC Web no soportado. Se usará el lector nativo de Android."); }
         }
 
         function obtenerRegistrosActivos() {
@@ -606,6 +621,84 @@
                 datosActivos.filter(d => d.accion === 'Cambio de Caravana' && String(d.valor) === c).forEach(o => { if(!buscadas.includes(String(o.caravana))) buscadas.push(String(o.caravana)); }); i++;
             }
             return hist.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+        }
+
+        // ==========================================
+        // 4. FUNCIÓN BUSCAR CARAVANA (La que había desaparecido)
+        // ==========================================
+        function buscarCaravanaBtn(rpForzado = null) {
+            try {
+                let rp = rpForzado ? rpForzado : document.getElementById('buscador-caravana').value.trim(); 
+                if(!rp) return; 
+                
+                let esRFIDRegistrado = baseDeDatosCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === rp.toLowerCase());
+                if(esRFIDRegistrado) rp = esRFIDRegistrado.caravana;
+
+                caravanaActiva = rp; 
+                document.getElementById('ficha-animal').classList.remove('oculto'); 
+                const elCaravanaTop = document.getElementById('val-caravana'); 
+                if(elCaravanaTop) elCaravanaTop.innerText = rp;
+                
+                const regs = obtenerHistorial(rp); 
+                let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", nutricion="-", sanidad="-", inseminacion="-"; 
+                
+                if(regs.length > 0) {
+                    const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor || "").split('|'); raza = p[0] || "-"; edad = p[1] || "-"; padre = p[2] || "-"; madre = p[3] || "-"; cat = String(uP.detalles || "").split('|')[0] || "-"; } 
+                    const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor || "").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-"; } 
+                    const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
+                    const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
+                    const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nutricion = (uNut.valor || "-") + " | " + (uNut.detalles || "");
+                    const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) sanidad = (uSan.valor || "-") + " | " + (uSan.detalles || "");
+                    const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) inseminacion = (uIns.valor || "-") + " | " + (uIns.detalles || "");
+                    
+                    let ultComentario = "Sin comentarios.";
+                    regs.forEach(r => {
+                        try {
+                            let acc = String(r.accion).trim(); let det = String(r.detalles || ""); let notaTexto = "";
+                            if (acc === 'Comentario') { notaTexto = det.split('|')[0] || ""; if(ultComentario === "Sin comentarios.") ultComentario = notaTexto; } 
+                            else if (det.includes('Notas:')) { let parts = det.split('Notas:'); if (parts.length > 1) { let n = parts[1].split('|')[0].trim(); if(n && n !== "-" && n !== "") notaTexto = `[${acc}] ${n}`; } }
+                        } catch(e) {}
+                    });
+                    document.getElementById('val-comentario').innerText = ultComentario;
+
+                    const uAccion = regs.find(r => r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master' && r.accion !== 'Comentario' && !r.accion.includes('Vinculacion'));
+                    if(uAccion) {
+                        document.getElementById('panel-ultima-nota').classList.remove('oculto');
+                        document.getElementById('nota-accion-titulo').innerText = uAccion.accion + " (" + new Date(uAccion.fecha).toLocaleDateString() + ")";
+                        document.getElementById('nota-accion-texto').innerText = uAccion.valor + " | " + uAccion.detalles;
+                    } else {
+                        document.getElementById('panel-ultima-nota').classList.add('oculto');
+                    }
+                } else {
+                    document.getElementById('val-comentario').innerText = "Sin comentarios.";
+                    document.getElementById('panel-ultima-nota').classList.add('oculto');
+                }
+                
+                const elCat = document.getElementById('val-categoria'); if(elCat) elCat.innerText = cat;
+                const elPeso = document.getElementById('val-peso'); if(elPeso) elPeso.innerText = peso;
+                const elDx = document.getElementById('val-dx'); if(elDx) elDx.innerText = dx;
+                const elLote = document.getElementById('val-lote'); if(elLote) elLote.innerText = lote;
+                const elCarimbo = document.getElementById('val-carimbo'); if(elCarimbo) elCarimbo.innerText = carimbo;
+                const elGenealogia = document.getElementById('val-genealogia'); if(elGenealogia) elGenealogia.innerText = padre + " / " + madre;
+                const elNutricion = document.getElementById('val-nutricion'); if(elNutricion) elNutricion.innerText = nutricion;
+                const elSanidad = document.getElementById('val-sanidad'); if(elSanidad) elSanidad.innerText = sanidad;
+                const elInseminacion = document.getElementById('val-inseminacion'); if(elInseminacion) elInseminacion.innerText = inseminacion;
+                const elRaza = document.getElementById('val-raza'); if(elRaza) elRaza.innerText = raza;
+                const elEdad = document.getElementById('val-edad'); if(elEdad) elEdad.innerText = edad;
+                
+                const fRaza = document.getElementById('f-raza'); if(fRaza) fRaza.value = raza !== "-" ? raza : ""; 
+                const fEdad = document.getElementById('f-edad'); if(fEdad) fEdad.value = edad !== "-" ? edad : ""; 
+                const fPadre = document.getElementById('f-padre'); if(fPadre) fPadre.value = padre !== "-" ? padre : ""; 
+                const fMadre = document.getElementById('f-madre'); if(fMadre) fMadre.value = madre !== "-" ? madre : ""; 
+                const inputCarimbo = document.getElementById('input-carimbo-rapido'); if(inputCarimbo) inputCarimbo.value = carimbo !== "-" ? carimbo : ""; 
+                const inputLote = document.getElementById('input-lote-rapido'); if(inputLote) inputLote.value = lote !== "-" ? lote : ""; 
+                const fComentario = document.getElementById('f-comentario-txt'); if(fComentario) fComentario.value = ""; 
+                
+                const catSelect = document.getElementById('input-cat-rapida'); 
+                if(catSelect) {
+                    for(let i=0; i<catSelect.options.length; i++) { if(catSelect.options[i].value === cat) catSelect.selectedIndex = i; }
+                }
+            } catch(e) { console.error("Error al visualizar ficha", e); }
         }
 
         if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
@@ -703,19 +796,6 @@
             }).catch(e => { console.warn("Error sync de fondo"); });
         }
         setInterval(() => sincronizarFondo(false), 30000);
-
-        async function conectarHardwareBLE() {
-            const btn = document.querySelector('.btn-guardar');
-            try {
-                btn.innerText = "Buscando Lector..."; dispositivoBLE = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb', '6e400001-b5a3-f393-e0a9-e50e24dcca9e'] });
-                dispositivoBLE.addEventListener('gattserverdisconnected', () => { btn.innerText = "Vincular Lector"; btn.style.background = "#0284c7"; alert("⚠️ Lector desconectado"); });
-                bleServer = await dispositivoBLE.gatt.connect(); await new Promise(r => setTimeout(r, 600)); 
-                try { bleService = await bleServer.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb'); bleCharacteristic = await bleService.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb'); } 
-                catch(e) { bleService = await bleServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e'); bleCharacteristic = await bleService.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e'); }
-                await bleCharacteristic.startNotifications(); bleCharacteristic.addEventListener('characteristicvaluechanged', (event) => { let valor = new TextDecoder().decode(event.target.value).trim(); if(valor) procesarTramaBLE(valor); });
-                btn.innerText = "📡 Lector Conectado"; btn.style.background = "var(--exito)"; alert("✅ Lector BLE conectado.");
-            } catch (e) { btn.innerText = "Vincular Lector"; btn.style.background = "#0284c7"; }
-        }
 
         function guardarVinculacionNFC() {
             const rpFinal = document.getElementById('input-rp-vinculacion').value.trim();
@@ -1035,7 +1115,7 @@
                     <h3 style="font-size:16px; margin: 0 0 10px 0;">Resumen del Perfil</h3><table style="width: 100%; font-size: 11px; table-layout: fixed;"><tr style="page-break-inside: avoid !important;"><td style="border: 1px solid #000; padding: 6px;"><strong>Categoría:</strong> ${cat}</td><td style="border: 1px solid #000; padding: 6px;"><strong>Lote:</strong> ${lote}</td><td style="border: 1px solid #000; padding: 6px;"><strong>Carimbo:</strong> ${carimbo}</td></tr><tr style="page-break-inside: avoid !important;"><td style="border: 1px solid #000; padding: 6px;"><strong>Raza:</strong> ${raza}</td><td style="border: 1px solid #000; padding: 6px;"><strong>Edad:</strong> ${edad}</td><td style="border: 1px solid #000; padding: 6px;"><strong>Último Peso:</strong> ${peso}</td></tr><tr style="page-break-inside: avoid !important;"><td style="border: 1px solid #000; padding: 6px;"><strong>Dx Actual:</strong> ${dx}</td><td style="border: 1px solid #000; padding: 6px;"><strong>Genealogía:</strong> ${pa} / ${ma}</td><td style="border: 1px solid #000; padding: 6px;"><strong>Régimen:</strong> ${nut}</td></tr><tr style="page-break-inside: avoid !important;"><td style="border: 1px solid #000; padding: 6px;"><strong>Últ. Sanidad:</strong> ${san}</td><td style="border: 1px solid #000; padding: 6px;" colspan="2"><strong>Últ. Inseminación:</strong> ${ins}</td></tr></table>
                     <h3 style="font-size:16px; margin: 20px 0 10px 0;">Trazabilidad Histórica de Sucesos</h3><table style="width: 100%; font-size: 11px; table-layout: fixed;"><thead><tr><th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 12%;">Fecha</th><th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 25%;">Procedimiento</th><th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 25%;">Valor Principal</th><th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 38%;">Observaciones Adicionales</th></tr></thead><tbody>`;
                 let rows = document.getElementById('tb-informe-individual').querySelectorAll('tr'); 
-                rows.forEach(tr => { htmlContent += `<tr style="page-break-inside: avoid !important;">`; tr.querySelectorAll('td').forEach(td => { htmlContent += `<td style="border: 1px solid #000; padding: 6px;">${td.innerHTML}</td>`; }); htmlContent += `</tr>`; });
+                rows.forEach(tr => { htmlContent += `<tr style="page-break-inside: avoid !important;">`; tr.querySelectorAll('td').forEach(td => { htmlContent += `<td>${td.innerHTML}</td>`; }); htmlContent += `</tr>`; });
                 htmlContent += `</tbody></table></div>`;
             } else {
                 const titulo = modo === 'inventario' ? "Reporte Analítico de Inventario General" : "Reporte Analítico de Trabajos y Procedimientos";
@@ -1057,7 +1137,7 @@
                 htmlContent += `</tbody></table></div>`;
             }
             
-            const opt = { margin: 10, filename: rpPrint !== "" ? `Dossier_${rpPrint.toUpperCase()}.pdf` : 'Reporte_Taurus.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, letterRendering: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: 'css', avoid: 'tr' } };
+            const opt = { margin: [10, 10, 10, 10], filename: rpPrint !== "" ? `Dossier_${rpPrint.toUpperCase()}.pdf` : 'Reporte_Taurus.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, letterRendering: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
             html2pdf().set(opt).from(htmlContent).toPdf().get('pdf').then(function(pdf) {
                 if (window.AndroidTaurus) { const base64 = pdf.output('datauristring'); window.AndroidTaurus.guardarPDF(base64, opt.filename); } else { pdf.save(opt.filename); }
                 btn.innerHTML = rpPrint !== "" ? `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}` : "🖨️ Descargar Informe PDF"; 
