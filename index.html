@@ -114,8 +114,6 @@
         .b-ins { background-color: #9333ea; }
         .b-gral { background-color: #64748b; }
 
-        .check-opcion { display: flex; align-items: center; gap: 10px; color: var(--texto); margin-bottom: 15px; font-size: 14px; cursor: pointer; padding: 10px; border: 1px solid var(--borde); border-radius: 8px; background: #1e293b; transition: 0.3s;}
-        
         .nav-inferior { position: fixed; bottom: 0; left: 0; width: 100%; background: #0f172a; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid var(--borde); z-index: 100; transition: 0.3s;}
         .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); font-size: 10px; font-weight: bold; width: 20%; cursor: pointer;}
         .nav-item.activo { color: var(--secundario); }
@@ -140,7 +138,6 @@
 </head>
 <body>
 
-    <!-- LOGIN -->
     <div id="pantalla-login">
         <div class="login-contenedor">
             <div class="logo-icono">
@@ -151,12 +148,11 @@
             <input type="password" id="password" class="form-control-login" placeholder="Contraseña" autocomplete="current-password">
             <div id="error-login" class="error-msj">Datos incorrectos</div>
             <button id="btn-ingreso" class="btn-ingresar" onclick="procesarIngreso()">Iniciar Sesión</button>
-            <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">Taurus Control - Versión Mobile<br><strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">Desarrollado por Fernando Rodriguez &copy; 2026</strong></div>
+            <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">Taurus Control<br><strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">Desarrollado por Fernando Rodriguez &copy; 2026</strong></div>
         </div>
         <div id="indicador-sync">Verificando credenciales... ⏳</div>
     </div>
 
-    <!-- APP -->
     <div id="pantalla-app" class="oculto">
         <div id="banner-offline" class="alerta-offline-banner">Estás sin internet. Los datos se guardan en el teléfono.</div>
         <header class="cabecera">
@@ -169,7 +165,6 @@
 
         <div class="contenedor">
             
-            <!-- DASHBOARD -->
             <div id="vista-dashboard">
                 <div class="grid-kpis">
                     <div class="kpi-caja" onclick="cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2])"><div class="kpi-valor" id="dash-cabezas">0</div><div class="kpi-label">Cabezas Únicas</div></div>
@@ -179,7 +174,6 @@
                 <div id="contenedor-graficos-dinamicos"></div>
             </div>
 
-            <!-- FICHA / MANGA -->
             <div id="vista-manga" class="oculto">
                 <div class="buscador-contenedor">
                     <input type="text" id="buscador-caravana" class="buscador-input" placeholder="Nº Caravana / RP" type="number">
@@ -191,7 +185,7 @@
                     <div class="botones-perfil">
                         <button class="btn-mini" onclick="abrirModal('modal-perfil')">✏️ Datos Base</button>
                         <button class="btn-mini" onclick="abrirModal('modal-clasificacion')">🏷️ Cambiar Lote/Cat</button>
-                        <button class="btn-mini" onclick="abrirModal('modal-renombrar')">🔄 Renombrar</button>
+                        <button class="btn-mini" style="color:var(--alerta); border-color:var(--alerta);" onclick="abrirModal('modal-renombrar')">🔄 Renombrar</button>
                     </div>
                     <div class="panel-comentario"><div style="flex:1;"><span style="font-size:12px; font-weight:bold; color:var(--secundario); display:block;">NOTAS GENERALES</span><span id="val-comentario" style="font-size:14px; font-style:italic; display:block; margin-top:3px;">Sin comentarios.</span></div><button class="btn-mini" style="background:var(--secundario); color:white; border:none;" onclick="abrirModal('modal-comentario')">Editar</button></div>
                     <div id="panel-ultima-nota" class="panel-notas oculto"><div style="font-weight:bold;font-size:12px;margin-bottom:5px;">Última Acción Registrada</div><div id="nota-accion-titulo" style="font-size:14px;font-weight:bold;">---</div><div id="nota-accion-texto" style="font-size:13px;">---</div></div>
@@ -217,12 +211,11 @@
                         <button class="btn-accion" onclick="abrirModal('modal-inseminacion')"><span style="color:#9333ea;">🧬</span> Inseminar</button>
                         <button class="btn-accion" onclick="abrirModal('modal-nut')"><span style="color:var(--alerta);">🌾</span> Nutrición</button>
                         <button class="btn-accion" onclick="verHistorial()"><span>📋</span> Historial</button>
-                        <button class="btn-accion" onclick="borrarCaravana()"><span style="color:var(--peligro);">🗑️</span> Borrar/Reset</button>
+                        <button class="btn-accion" style="color:var(--peligro); border-color:var(--peligro);" onclick="borrarCaravana()"><span>🗑️</span> Borrar RP</button>
                     </div>
                 </div>
             </div>
 
-            <!-- LISTA BUSCAR -->
             <div id="vista-registro" class="oculto">
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">📋 Base de Datos Activa</div>
@@ -231,12 +224,11 @@
                 </div>
             </div>
 
-            <!-- INFORMES -->
             <div id="vista-informe" class="oculto">
                 <div class="tarjeta">
                     <button class="btn-descargar no-print" onclick="ejecutarDescargaPDF()">🖨️ Descargar Informe PDF</button>
 
-                    <div class="encabezado-impresion">
+                    <div class="encabezado-impresion" id="panel-membrete-reporte">
                         <div class="logo-upload no-print-border" onclick="document.getElementById('input-logo').click()">
                             <img id="img-logo" src="" alt="Logo" style="display:none; max-width:80px; max-height:80px; object-fit:contain;">
                             <span id="texto-subir-logo">📷 Subir Logo</span>
@@ -255,7 +247,6 @@
                             <option value="inventario">📊 INVENTARIO GENERAL (Estado Actual)</option>
                         </select>
 
-                        <!-- MODO 1: EVENTOS / TRATAMIENTOS -->
                         <div id="filtros-eventos" style="display: flex; flex-direction: column; gap: 10px;">
                             <label style="font-size:12px; color:var(--muted); font-weight:bold; margin-bottom:-5px;">Tipo de Trabajo a Buscar:</label>
                             <div class="tabs-filtro" id="tabs-acciones">
@@ -285,7 +276,6 @@
                             <input type="text" id="f-inf-keyword" class="filtro-sel" placeholder="🔍 Buscar producto (Ej: Aftosa, Ivermectina)" onkeyup="actualizarInformeAvanzado()">
                         </div>
 
-                        <!-- MODO 2: INVENTARIO -->
                         <div id="filtros-inventario" class="oculto" style="display: none; flex-direction: column; gap: 10px;">
                             <select class="filtro-sel" id="f-inf-lote" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Lotes</option><option value="Hacienda General">Hacienda General</option><option value="Lecheras">Lecheras</option><option value="Preñadas">Preñadas</option><option value="Inseminadas">Inseminadas</option></select>
                             <select class="filtro-sel" id="f-inf-cat" onchange="actualizarInformeAvanzado()"><option value="ALL">Todas las Categorías</option><option value="V:">Vacas / Vaquillas (V)</option><option value="VV:">Vacas Viejas (VV)</option><option value="T">Terneros/as (TH/TM)</option><option value="D">Desmamantes (DH/DM)</option><option value="Toros">Toros</option></select>
@@ -293,13 +283,12 @@
                         </div>
 
                         <hr style="border-color: var(--borde); width: 100%; margin: 5px 0;">
-                        <!-- BUSCADOR INDIVIDUAL -->
                         <input type="number" id="f-inf-rp" class="filtro-sel" style="border-color:var(--exito);" placeholder="🔍 Buscar UN solo RP (Dossier Clínico Individual)" onkeyup="actualizarInformeAvanzado()">
                     </div>
 
                     <div class="grid-kpis">
                         <div class="kpi-caja" style="background:var(--fondo-cuerpo); border-color:var(--borde);"><div class="kpi-valor" id="inf-total" style="color:var(--texto);">0</div><div class="kpi-label" id="lbl-total">Trabajos Listados</div></div>
-                        <div class="kpi-caja" style="background:var(--fondo-cuerpo); border-color:var(--borde);"><div class="kpi-valor" id="inf-prenadas" style="color:var(--exito);">-</div><div class="kpi-label" id="lbl-prenadas">-</div></div>
+                        <div class="kpi-caja" style="background:var(--fondo-cuerpo); border-color:var(--borde);"><div class="kpi-valor" id="inf-prenadas" style="color:var(--exito);">-</div><div class="kpi-label" id="lbl-prenadas">PREÑADAS CONF.</div></div>
                     </div>
                     
                     <div class="tabla-responsive">
@@ -313,35 +302,58 @@
             <!-- AJUSTES -->
             <div id="vista-config" class="oculto">
                 <div class="tarjeta">
+                    <div class="tarjeta-titulo">👤 Mi Perfil</div>
+                    <div class="form-grupo"><label>Sesión iniciada como:</label><input type="text" id="usuario-activo-lbl" class="form-control" readonly style="font-weight:bold; color:var(--exito);"></div>
+                    <div class="form-grupo" id="panel-licencia" style="margin-top: 15px;"><label>Vencimiento de Licencia:</label><input type="text" id="lbl-licencia" class="form-control" readonly style="font-weight:bold;"></div>
+                    <div class="form-grupo" style="margin-top: 15px;"><label>Cambiar mi Contraseña</label><input type="password" id="nueva-clave" class="form-control" placeholder="Escribe tu nueva clave"></div>
+                    <button class="btn-guardar" onclick="cambiarMiContrasena()">Actualizar mi Contraseña</button>
+                </div>
+
+                <div class="tarjeta" id="panel-crear-peones">
+                    <div class="tarjeta-titulo">👷 Control de Operadores</div>
+                    <div class="form-grupo">
+                        <label>Rol del Nuevo Usuario</label>
+                        <select id="op-rol" class="form-control">
+                            <option value="Operador">Operador (Limitado)</option>
+                            <option value="Propietario">Propietario (Acceso Total)</option>
+                        </select>
+                    </div>
+                    <div class="form-grupo"><label>Usuario del Operador</label><input type="text" id="peon-usu" class="form-control" placeholder="Ej: juan"></div>
+                    <div class="form-grupo"><label>Contraseña</label><input type="password" id="peon-pass" class="form-control" placeholder="Clave"></div>
+                    <button class="btn-guardar" style="background:#10b981;" onclick="crearOperador()">Registrar Usuario</button>
+                    
+                    <hr style="border-color:var(--borde); margin:20px 0;">
+                    
+                    <div class="form-grupo">
+                        <label>Eliminar Operador</label>
+                        <select id="op-del-usu-sel" class="form-control">
+                            <option value="">-- Seleccione un operador --</option>
+                        </select>
+                    </div>
+                    <button class="btn-guardar" style="background:var(--peligro);" onclick="eliminarOperador()">Eliminar Operador de la Nube</button>
+                </div>
+
+                <div class="tarjeta">
                     <div class="tarjeta-titulo">🎨 Apariencia de la App</div>
                     <div style="display: flex; align-items: center; justify-content: space-between;">
                         <span style="font-weight: bold; color: var(--texto);">Tema Claro / Oscuro</span>
                         <button class="btn-mini" onclick="toggleTema()">Cambiar Tema</button>
                     </div>
                 </div>
+                
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">🔌 Lector Inalámbrico</div>
                     <p style="font-size: 13px; color: var(--muted); margin-bottom: 15px;">Vincula un Bastón o Balanza Bluetooth automáticamente.</p>
                     <button class="btn-guardar" style="background: #0284c7; margin-top: 0;" onclick="if(window.AndroidTaurus){window.AndroidTaurus.conectarBLE();}else{conectarHardwareBLE();}">Vincular Hardware</button>
                 </div>
+                
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">📡 Estado del Sistema</div>
                     <div class="form-grupo"><label>Pendientes de envío:</label><input type="text" id="lbl-pendientes" class="form-control" readonly style="font-weight:bold; color:var(--alerta);" value="0 registros pendientes"></div>
                     <button class="btn-guardar" onclick="sincronizarPendientesManual()">Forzar Sincronización</button>
                 </div>
-                <div class="tarjeta">
-                    <div class="tarjeta-titulo">👤 Mi Perfil</div>
-                    <div class="form-grupo"><label>Sesión iniciada como:</label><input type="text" id="usuario-activo-lbl" class="form-control" readonly style="font-weight:bold; color:var(--exito);"></div>
-                    <div class="form-grupo" style="margin-top: 15px;"><label>Cambiar mi Contraseña</label><input type="password" id="nueva-clave" class="form-control" placeholder="Escribe tu nueva clave"></div>
-                    <button class="btn-guardar" onclick="cambiarMiContrasena()">Actualizar mi Contraseña</button>
-                </div>
-                <div class="tarjeta" id="panel-crear-peones">
-                    <div class="tarjeta-titulo">👷 Crear Operador</div>
-                    <p style="font-size: 13px; color: var(--muted); margin-bottom:15px;">Registrarán datos bajo tu hacienda.</p>
-                    <div class="form-grupo"><label>Usuario del Operador</label><input type="text" id="peon-usu" class="form-control" placeholder="Ej: juan"></div>
-                    <div class="form-grupo"><label>Contraseña</label><input type="password" id="peon-pass" class="form-control" placeholder="Clave"></div>
-                    <button class="btn-guardar" style="background:#10b981;" onclick="crearPeon()">Crear Operador</button>
-                </div>
+
+                <a href="https://wa.me/595976139617" target="_blank" rel="noopener noreferrer" class="btn-guardar" style="display:block; text-align:center; background:#25D366; text-decoration:none; margin-top:20px; box-sizing:border-box;">💬 Soporte Técnico WhatsApp</a>
             </div>
         </div>
 
@@ -350,7 +362,7 @@
             <div class="nav-item" onclick="cambiarVista('vista-manga', this)"><span class="nav-icon">🐄</span>Ficha</div>
             <div class="nav-item" onclick="cambiarVista('vista-registro', this); cargarListaRegistro();"><span class="nav-icon">📋</span>Buscar</div>
             <div class="nav-item" onclick="cambiarVista('vista-informe', this); cambiarModoReporte();"><span class="nav-icon">📄</span>Informes</div>
-            <div class="nav-item" onclick="cambiarVista('vista-config', this)"><span class="nav-icon">⚙️</span>Ajustes</div>
+            <div class="nav-item" onclick="cambiarVista('vista-config', this); cargarListaOperadores();"><span class="nav-icon">⚙️</span>Ajustes</div>
         </nav>
     </div>
 
@@ -365,7 +377,7 @@
         </div>
     </div>
     
-    <div id="modal-renombrar" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-renombrar')">&times;</span><h3>Modificar Número RP</h3><div class="form-grupo"><label>Nuevo RP</label><input type="text" class="form-control" id="f-nueva-caravana"></div><button class="btn-guardar" onclick="guardarCambioCaravana()">Confirmar</button></div></div>
+    <div id="modal-renombrar" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-renombrar')">&times;</span><h3>Modificar Número RP</h3><p style="font-size:12px; color:var(--muted); margin-bottom:15px;">El historial clínico se enlazará al nuevo número.</p><div class="form-grupo"><label>Nuevo RP</label><input type="text" class="form-control" id="f-nueva-caravana"></div><button class="btn-guardar" onclick="guardarCambioCaravana()">Confirmar</button></div></div>
 
     <div id="modal-comentario" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-comentario')">&times;</span><h3>Anotación General</h3><div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-comentario', 'Comentario')">Guardar Nota</button></div></div>
     
@@ -504,7 +516,7 @@
 
         window.loginBiometricoExitoso = function() {
             const credStr = localStorage.getItem('tc_cred');
-            if(credStr) { const cred = JSON.parse(credStr); document.getElementById('usuario').value = cred.usu; document.getElementById('password').value = cred.pass; procesarIngreso(); } 
+            if(credStr) { const cred = JSON.parse(credStr); document.getElementById('usuario').value = cred.u; document.getElementById('password').value = cred.p; procesarIngreso(); } 
             else { alert("Inicia sesión manualmente por primera vez."); }
         };
 
@@ -517,7 +529,7 @@
                 try {
                     const ndef = new NDEFReader(); await ndef.scan();
                     alert("✅ Lector NFC Activo. Acerca el celular a la caravana RFID/NFC...");
-                    ndef.onreading = event => { const decoder = new TextDecoder(); for (const record of event.message.records) { try { const rp = decoder.decode(record.data).trim(); if(rp) recibirTagNFC(rp); } catch(e) {} } };
+                    ndef.onreading = event => { const decoder = new TextDecoder(); for (const record of event.message.records) { try { const rp = decoder.decode(record.data).trim(); if(rp) procesarTramaBLE(rp); } catch(e) {} } };
                     ndef.onreadingerror = () => { alert("⚠️ Error de lectura NFC."); };
                 } catch (error) { alert("❌ Error al iniciar lector NFC."); }
             } else { alert("Tu navegador no soporta lectura NFC directa."); }
@@ -534,7 +546,7 @@
                 validos = validos.concat(regs);
             });
             const globalEvents = baseDeDatosCache.filter(d => d.caravana === "---" || !d.caravana);
-            return validos.concat(globalEvents);
+            return validos.concat(globalEvents).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
         }
 
         if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
@@ -562,16 +574,16 @@
                 if(res.vencimiento && new Date() > new Date(res.vencimiento)) throw new Error("Su licencia ha vencido.");
 
                 localStorage.setItem('tc_hacienda', JSON.stringify({ nombre: res.hacienda, logo: res.logo }));
-                localStorage.setItem('tc_cred', JSON.stringify({usu: usu, pass: pass, maestro: res.maestro, rol: res.rol, vencimiento: res.vencimiento}));
+                localStorage.setItem('tc_cred', JSON.stringify({u: usu, p: pass, m: res.maestro, r: res.rol, v: res.vencimiento}));
                 let dataLimpia = Array.isArray(res.data) ? res.data : []; localStorage.setItem('tc_db', JSON.stringify(dataLimpia));
                 iniciarSesionUI(dataLimpia, usu, res.maestro, res.rol);
             } catch(e) {
                 const credStr = localStorage.getItem('tc_cred');
                 if(credStr) {
                     const cred = JSON.parse(credStr);
-                    if(cred.usu.toLowerCase() === usu.toLowerCase() && cred.pass === pass) {
-                        if(cred.vencimiento && new Date() > new Date(cred.vencimiento)) { err.innerText = "Licencia local vencida."; err.style.display = 'block'; } 
-                        else { const dbLocal = JSON.parse(localStorage.getItem('tc_db')) || []; iniciarSesionUI(dbLocal, cred.usu, cred.maestro, cred.rol); }
+                    if(cred.u.toLowerCase() === usu.toLowerCase() && cred.p === pass) {
+                        if(cred.v && new Date() > new Date(cred.v)) { err.innerText = "Licencia local vencida."; err.style.display = 'block'; } 
+                        else { const dbLocal = JSON.parse(localStorage.getItem('tc_db')) || []; iniciarSesionUI(dbLocal, cred.u, cred.m, cred.r); }
                     } else { err.innerText = "Credenciales locales incorrectas."; err.style.display = 'block'; }
                 } else { err.innerText = e.message === "Offline" || e.message.includes("token") ? "Sin internet y sin sesión guardada." : e.message; err.style.display = 'block'; }
             } finally { btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
@@ -579,13 +591,33 @@
 
         function iniciarSesionUI(datos, usu, maestro, rol) {
             let dbValida = Array.isArray(datos) ? datos.filter(d => d && d.fecha) : []; baseDeDatosCache = dbValida.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); 
-            usuarioActivo = usu; propMaestro = maestro; rolUsuario = rol; document.getElementById('usuario-activo-lbl').value = usuarioActivo.toUpperCase() + ` (${rolUsuario})`;
-            if(rolUsuario !== 'Dueño') document.getElementById('panel-crear-peones').style.display = 'none';
+            usuarioActivo = usu; propMaestro = maestro; rolUsuario = rol; 
+            
+            let displayRol = (rol === 'Propietario' || rol === 'Dueño') ? 'Propietario' : 'Operador';
+            document.getElementById('usuario-activo-lbl').value = usuarioActivo.toUpperCase() + ` (${displayRol})`;
+            
+            if(displayRol !== 'Propietario') {
+                document.getElementById('panel-crear-peones').style.display = 'none';
+                const pMemb = document.getElementById('panel-membrete-reporte'); if(pMemb) pMemb.style.display = 'none';
+                const pLic = document.getElementById('panel-licencia'); if(pLic) pLic.style.display = 'none';
+            }
+            
+            const cred = JSON.parse(localStorage.getItem('tc_cred')) || {};
+            const lblLic = document.getElementById('lbl-licencia');
+            if(cred.v) {
+                const fVenc = new Date(cred.v);
+                const diffDias = Math.ceil((fVenc - new Date()) / (1000 * 60 * 60 * 24));
+                if(diffDias < 0) { localStorage.clear(); window.location.reload(); return; } 
+                if(lblLic) { lblLic.value = fVenc.toLocaleDateString() + ` (${diffDias} días restantes)`; lblLic.style.color = diffDias <= 7 ? "var(--peligro)" : "var(--exito)"; }
+            } else { if(lblLic) lblLic.value = "Licencia Perpetua / Sin Límite"; }
+
             const prefs = JSON.parse(localStorage.getItem('tc_prefs')) || ['1', '2']; document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
             cargarDisenoDesdeDB(); actualizarEstadoRed(); procesarDatosDashboard(); actualizarContadorPendientes();
             
             document.getElementById('f-inf-rango-fecha').value = "30"; manejarRangoFechas();
-            document.getElementById('pantalla-login').classList.add('oculto'); document.getElementById('pantalla-app').classList.remove('oculto'); sincronizarPendientesAuto();
+            document.getElementById('pantalla-login').classList.add('oculto'); document.getElementById('pantalla-app').classList.remove('oculto'); 
+            sincronizarPendientesAuto();
+            cargarListaOperadores();
         }
 
         function fusionarDatos(nuevos) {
@@ -598,7 +630,7 @@
         function sincronizarFondo(esManual = false) {
             if(!usuarioActivo || !navigator.onLine) return; const credStr = localStorage.getItem('tc_cred'); if(!credStr) return; const cred = JSON.parse(credStr);
             if(esManual) document.getElementById('estado-red').innerText = '🔄 Actualizando...';
-            fetch(`${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(cred.usu)}&password=${encodeURIComponent(cred.pass)}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' })
+            fetch(`${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(cred.u)}&password=${encodeURIComponent(cred.p)}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' })
             .then(r => r.json()).then(res => {
                 if(!res.error) {
                     fusionarDatos(Array.isArray(res.data) ? res.data : []); localStorage.setItem('tc_hacienda', JSON.stringify({ nombre: res.hacienda, logo: res.logo })); cargarDisenoDesdeDB();
@@ -627,17 +659,35 @@
         function procesarTramaBLE(trama) {
             bufferBLE += trama; clearTimeout(timeoutBLE);
             timeoutBLE = setTimeout(() => {
-                let dataLimpia = bufferBLE.replace(/[^a-zA-Z0-9.-]/g, '').replace('TAG', ''); if(!dataLimpia) return;
-                if (dataLimpia.includes('.')) { if (!document.getElementById('vista-manga').classList.contains('oculto') && caravanaActiva) { abrirModal('modal-peso'); document.getElementById('i-peso-val').value = dataLimpia; } else { alert("⚖️ Balanza: Peso " + dataLimpia + " Kg. Abre la Ficha de un animal primero."); } } 
-                else { recibirTagNFC(dataLimpia); }
+                let dataLimpia = bufferBLE.replace(/[^a-zA-Z0-9.-]/g, '').trim(); 
+                if(!dataLimpia) return;
+
+                let isWeight = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
+
+                if (isWeight) {
+                    if (!document.getElementById('vista-manga').classList.contains('oculto') && caravanaActiva) {
+                        abrirModal('modal-peso');
+                        document.getElementById('i-peso-val').value = dataLimpia;
+                    } else {
+                        alert("⚖️ Peso recibido: " + dataLimpia + " Kg. Abra la ficha de un animal antes de pesar.");
+                    }
+                } else {
+                    let dataMinuscula = dataLimpia.toLowerCase();
+                    let esRFIDRegistrado = baseDeDatosCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === dataMinuscula);
+                    
+                    if(esRFIDRegistrado) {
+                        cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+                        document.getElementById('buscador-caravana').value = esRFIDRegistrado.caravana;
+                        buscarCaravanaBtn();
+                    } else {
+                        tagHuerfano = dataLimpia;
+                        document.getElementById('input-rp-vinculacion').value = '';
+                        abrirModal('modal-vinculacion');
+                        setTimeout(() => { document.getElementById('input-rp-vinculacion').focus(); }, 500);
+                    }
+                }
                 bufferBLE = "";
             }, 300);
-        }
-
-        function recibirTagNFC(tagHex) {
-            const vinculacion = baseDeDatosCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim() === String(tagHex).trim());
-            if (vinculacion && vinculacion.caravana) { cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]); document.getElementById('buscador-caravana').value = vinculacion.caravana; buscarCaravanaBtn(); } 
-            else { tagHuerfano = tagHex; document.getElementById('input-rp-vinculacion').value = ''; abrirModal('modal-vinculacion'); }
         }
 
         function guardarVinculacionNFC() {
@@ -649,7 +699,7 @@
         }
 
         function ejecutarAccion(tipoAccion, valor, detalles, btnActivo, modalId) {
-            const accionObj = { fecha: new Date().toISOString(), accion: tipoAccion, caravana: caravanaActiva, valor: valor, detalles: detalles + ` | Resp: ${usuarioActivo}`, maestro: propMaestro };
+            const accionObj = { fecha: new Date().toISOString(), accion: tipoAccion, caravana: caravanaActiva, valor: valor, detalles: detalles + ` | Op: ${usuarioActivo}`, maestro: propMaestro };
             baseDeDatosCache.unshift(accionObj); localStorage.setItem('tc_db', JSON.stringify(baseDeDatosCache));
 
             if(navigator.onLine) {
@@ -679,7 +729,7 @@
                 v = prod; d = `Lote/Marca: ${inputs[2].value}. Notas: ${inputs[3].value}`; 
             } 
             else if(tipoAccion === 'Diagnóstico') { v = "Dx: " + inputs[0].value; d = inputs[1].value || "-"; }
-            else if(tipoAccion === 'Inseminación') { v = "Ins: " + inputs[0].value; d = `Toro/Paj: ${inputs[1].value}. Notas: ${inputs[2].value}`; } 
+            else if(tipoAccion === 'Inseminación') { v = "Toro: " + inputs[1].value; d = `Ins: ${inputs[0].value}. Notas: ${inputs[2].value}`; } 
             else if(tipoAccion === 'Nutrición') { 
                 let prod = inputs[0].value; if(prod === 'OTRO') prod = inputs[1].value || 'Suplemento S/N';
                 v = prod; d = `Ración: ${inputs[2].value}. Notas: ${inputs[3].value}`; 
@@ -696,7 +746,7 @@
             if(!caravanaActiva) return; const cat = document.getElementById('input-cat-rapida').value; const car = document.getElementById('input-carimbo-rapido').value || "-"; const lot = document.getElementById('input-lote-rapido').value || "-";
             ejecutarAccion('Actualización de Datos', `Cat: ${cat} | Carimbo: ${car}`, `Lote: ${lot}`, event.target, 'modal-clasificacion');
         }
-        
+
         function guardarCambioCaravana() {
             const n = document.getElementById('f-nueva-caravana').value.trim();
             if(!n || n === caravanaActiva) { alert("Número inválido."); return; }
@@ -706,49 +756,88 @@
         }
 
         function borrarCaravana() { if(!caravanaActiva) return; if(confirm(`¿ELIMINAR el historial de la caravana ${caravanaActiva}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null, null); cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); } }
-        function cambiarMiContrasena() { if(!navigator.onLine) return; const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) return; const btn = event.target; btn.innerText = "Cambiando..."; const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usuarioActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { document.getElementById('nueva-clave').value = ''; btn.innerText = "Actualizar mi Contraseña"; let cred = JSON.parse(localStorage.getItem('tc_cred')); cred.pass = nueva; localStorage.setItem('tc_cred', JSON.stringify(cred)); }); }
+        function cambiarMiContrasena() { if(!navigator.onLine) return; const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) return; const btn = event.target; btn.innerText = "Cambiando..."; const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usuarioActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { document.getElementById('nueva-clave').value = ''; btn.innerText = "Actualizar mi Contraseña"; let cred = JSON.parse(localStorage.getItem('tc_cred')); cred.p = nueva; localStorage.setItem('tc_cred', JSON.stringify(cred)); }); }
         
-        function crearPeon() { 
-            if(!navigator.onLine) return; 
-            const pUsu = document.getElementById('peon-usu').value.trim(); 
-            const pPass = document.getElementById('peon-pass').value.trim(); 
-            if(!pUsu || !pPass) return; 
+        function crearOperador() { 
+            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
+            const u = document.getElementById('peon-usu').value.trim(); 
+            const p = document.getElementById('peon-pass').value.trim(); 
+            const rol = document.getElementById('op-rol').value;
+            if(!u || !p) { alert("Completar todos los datos."); return; } 
             const btn = event.target; btn.innerText = "Creando..."; 
             const fd = new URLSearchParams(); 
             fd.append('accion', 'crear_peon'); 
+            fd.append('maestro', propMaestro); 
             fd.append('usuario', usuarioActivo); 
-            fd.append('peon_usu', pUsu); 
-            fd.append('peon_pass', pPass); 
+            fd.append('peon_usu', u); 
+            fd.append('peon_pass', p); 
             fd.append('vencimiento', 'Heredado'); 
+            fd.append('peon_rol', rol);
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
                 document.getElementById('peon-usu').value = ''; 
                 document.getElementById('peon-pass').value = ''; 
-                btn.innerText = "Crear Operador"; 
+                btn.innerText = "Registrar Usuario"; 
+                alert("Usuario Registrado.");
             }); 
         }
 
+        function eliminarOperador() {
+            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; }
+            const selectEl = document.getElementById('op-del-usu-sel');
+            const u = selectEl.value.trim();
+            if(!u) { alert("Seleccione un operador de la lista."); return; }
+            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso del usuario "${u}"?`)) {
+                const fd = new URLSearchParams(); 
+                fd.append('accion', 'eliminar_peon'); 
+                fd.append('maestro', propMaestro); 
+                fd.append('usuario', usuarioActivo); 
+                fd.append('peon_usu', u); 
+                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
+                    alert(`Orden de eliminación de "${u}" enviada al servidor.`); 
+                    selectEl.value = ''; 
+                });
+            }
+        }
+
+        function cargarListaOperadores() {
+            let operadores = new Set();
+            baseDeDatosCache.forEach(d => {
+                let det = d.detalles || "";
+                if(det.includes('Op:')) { let nombre = det.split('Op:')[1].split('|')[0].trim(); if(nombre) operadores.add(nombre); }
+                if(det.includes('Resp:')) { let nombre = det.split('Resp:')[1].split('|')[0].trim(); if(nombre) operadores.add(nombre); }
+            });
+            const sel = document.getElementById('op-del-usu-sel');
+            if(sel) {
+                let options = '<option value="">-- Seleccione un operador --</option>';
+                operadores.forEach(o => { if(o.toLowerCase() !== usuarioActivo.toLowerCase()) { options += `<option value="${o}">${o}</option>`; } });
+                sel.innerHTML = options;
+            }
+        }
+
         function procesarDatosDashboard() {
-            const datosActivos = obtenerRegistrosActivos(); const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))];
+            const datosActivos = obtenerRegistrosActivos(); 
+            let aliasMap = {}; datosActivos.forEach(d => { if(d.accion === 'Cambio de Caravana') aliasMap[String(d.caravana)] = String(d.valor); });
+            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && !aliasMap[c]))];
+            
             document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
             if(datosActivos.length === 0) { document.getElementById('contenedor-graficos-dinamicos').innerHTML = "<p style='text-align:center;color:gray;padding:20px;'>Aún no hay datos registrados.</p>"; return; }
 
-            let g1={p:0,v:0}, g2={v:0,t:0,o:0}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0}; let alertasHTML = "";
-            datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; });
+            let g1={p:0,v:0}, g2={v:0,t:0,o:0}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}; let alertasHTML = "";
+            datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; });
 
             unicas.forEach(car => {
-                const regs = datosActivos.filter(d => d.caravana === car).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
-                let cat = "", lote = "General"; const uP = regs.find(d => d.accion === 'Perfil Master'); const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                if(uC) { cat = uC.valor.split('|')[0].replace('Cat:','').trim(); lote = uC.detalles.split('|')[0].replace('Lote:','').trim(); } else if(uP) { cat = uP.detalles.split('|')[0].trim(); }
+                const regs = obtenerHistorial(car); let cat = "", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                if(uC) { let v=String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : ""; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
                 cat = cat.toLowerCase(); const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
 
                 if(uDx) {
-                    if(uDx.valor.includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = uIns.valor.replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } }
-                    if(uDx.valor.includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong>${car}</strong> Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(uDx.valor.includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = uIns.valor.replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } }
+                    if(String(uDx.valor||"").includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } }
+                    if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--text-main);">${car}</strong> diagnosticada Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } }
                 }
                 if(cat.includes('vaca') || cat.includes('vaquilla')) g2.v++; else if(cat.includes('terne') || cat.includes('desmamante')) g2.t++; else g2.o++;
                 g3[lote] = (g3[lote] || 0) + 1;
                 if(uPeso) {
-                    if(uPeso.detalles.includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong>${car}</strong> Bajo Peso.</div></div>`; } else if(uPeso.detalles.includes('Sobre')) g4.sp++; else g4.opt++;
+                    if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--text-main);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; else g4.opt++;
                     let pVal = parseFloat(uPeso.valor); if(!isNaN(pVal)) { if(cat.includes('vaca') || cat.includes('vaquilla')) { g9.vw += pVal; g9.vc++; } if(cat.includes('terne') || cat.includes('desmamante')) { g9.tw += pVal; g9.tc++; } }
                 }
                 if(uSan) g6.con++; else g6.sin++;
@@ -770,7 +859,7 @@
                 else if(g === '7') { html += `<div class="tarjeta-titulo">🏆 Preñez x Lote</div>`; let lKeys = Object.keys(g7).sort((a,b)=>g7[b].p-g7[a].p).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'#10b981':i===1?'var(--secundario)':'#f59e0b'; html += makeBar(k, g7[k].p, g7[k].t, col); }); }
                 else if(g === '8') { html += `<div class="tarjeta-titulo">🧬 Eficacia Toro</div>`; let lKeys = Object.keys(g8).sort((a,b)=>g8[b].p-g8[a].p).slice(0,3); if(lKeys.length===0) html += `<p style="color:var(--muted); font-size:14px;">No hay cruces.</p>`; lKeys.forEach((k, i) => { html += makeBar(k, g8[k].p, g8[k].t, '#be185d'); }); }
                 else if(g === '9') { let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; html += `<div class="tarjeta-titulo">⚖️ Promedio Peso</div><div class="grid-kpis" style="margin-bottom:0;"><div class="kpi-caja"><div class="kpi-valor">${pv} Kg</div><div class="kpi-label" style="color:var(--texto);">Vacas</div></div><div class="kpi-caja"><div class="kpi-valor">${pt} Kg</div><div class="kpi-label" style="color:var(--texto);">Terneros</div></div></div>`; }
-                else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins || 1; html += `<div class="tarjeta-titulo">⚡ Volumen Trabajos</div>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Sanidad', g10.san, t, '#c2410c')}`; }
+                else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1; html += `<div class="tarjeta-titulo">⚡ Volumen Trabajos</div>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Nutrición', g10.nut, t, '#84cc16')}${makeBar('Sanidad', g10.san, t, '#c2410c')}`; }
                 html += `</div>`; htmlGraficos += html;
             }); document.getElementById('contenedor-graficos-dinamicos').innerHTML = htmlGraficos;
         }
@@ -780,33 +869,6 @@
         function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
         function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
         
-        function buscarCaravanaBtn() {
-            let input = document.getElementById('buscador-caravana').value.trim(); if(!input) return; 
-            const vinculacion = baseDeDatosCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim() === String(input).trim());
-            if(vinculacion) input = vinculacion.caravana;
-
-            caravanaActiva = input; document.getElementById('ficha-animal').classList.remove('oculto'); document.getElementById('val-caravana').innerText = input;
-            const datosActivos = obtenerRegistrosActivos();
-            const regs = datosActivos.filter(d => String(d.caravana) === String(input)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
-            
-            let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", comentario="Sin comentarios.", inseminacion="-", nutricion="-", sanidad="-";
-            document.getElementById('panel-ultima-nota').classList.add('oculto');
-            if(regs.length > 0) {
-                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { const p = uP.valor.split('|'); raza = p[0]||"-"; edad = p[1]||"-"; padre = p[2]||"-"; madre = p[3]||"-"; cat = uP.detalles.split('|')[0].trim(); }
-                const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { cat = uC.valor.split('|')[0].replace('Cat:','').trim(); carimbo = uC.valor.split('|')[1].replace('Carimbo:','').trim(); lote = uC.detalles.split('|')[0].replace('Lote:','').trim(); }
-                const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor; const uCom = regs.find(d => d.accion === 'Comentario'); if(uCom) comentario = uCom.detalles.split('|')[0].trim();
-                const uIns = regs.find(d => d.accion === 'Inseminación'); if(uIns) inseminacion = uIns.valor + " | " + uIns.detalles;
-                const uNut = regs.find(d => d.accion === 'Nutrición'); if(uNut) nutricion = uNut.valor + " | " + uNut.detalles;
-                const uSan = regs.find(d => d.accion === 'Sanidad'); if(uSan) sanidad = uSan.valor + " | " + uSan.detalles;
-                
-                const ultimaReal = regs.find(d => d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master' && d.accion !== 'Comentario' && !d.accion.includes('Vinculacion'));
-                if(ultimaReal) { document.getElementById('panel-ultima-nota').classList.remove('oculto'); document.getElementById('nota-accion-titulo').innerText = `${new Date(ultimaReal.fecha).toLocaleDateString()} - ${ultimaReal.accion} (${ultimaReal.valor})`; document.getElementById('nota-accion-texto').innerText = ultimaReal.detalles.split('|')[0]; }
-            }
-            document.getElementById('val-categoria').innerText = cat; document.getElementById('val-raza').innerText = raza; document.getElementById('val-peso').innerText = peso; document.getElementById('val-dx').innerText = dx; document.getElementById('val-lote').innerText = lote; document.getElementById('val-carimbo').innerText = carimbo; document.getElementById('val-edad').innerText = edad; document.getElementById('val-genealogia').innerText = padre + " / " + madre; document.getElementById('val-comentario').innerText = comentario; document.getElementById('val-inseminacion').innerText = inseminacion; document.getElementById('val-nutricion').innerText = nutricion; document.getElementById('val-sanidad').innerText = sanidad;
-            document.getElementById('f-raza').value = raza !== "-" ? raza : ""; document.getElementById('f-edad').value = edad !== "-" ? edad : ""; document.getElementById('f-padre').value = padre !== "-" ? padre : ""; document.getElementById('f-madre').value = madre !== "-" ? madre : ""; document.getElementById('input-carimbo-rapido').value = carimbo !== "-" ? carimbo : ""; document.getElementById('input-lote-rapido').value = lote !== "-" ? lote : ""; document.getElementById('f-comentario-txt').value = comentario !== "Sin comentarios." ? comentario : "";
-            let catSelect = document.getElementById('input-cat-rapida'); for(let i=0; i<catSelect.options.length; i++) { if(catSelect.options[i].value === cat) catSelect.selectedIndex = i; }
-        }
-
         function verHistorial() { 
             if(!caravanaActiva) return; abrirModal('modal-historial'); const datosActivos = obtenerRegistrosActivos();
             const d = datosActivos.filter(f => String(f.caravana) === String(caravanaActiva) && !f.accion.includes('Vinculacion')).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
@@ -816,9 +878,11 @@
         }
 
         function cargarListaRegistro() {
-            const datosActivos = obtenerRegistrosActivos(); const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))]; 
+            const datosActivos = obtenerRegistrosActivos(); 
+            let aliasMap = {}; datosActivos.forEach(d => { if(d.accion === 'Cambio de Caravana') aliasMap[String(d.caravana)] = String(d.valor); });
+            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && !aliasMap[c]))]; 
             const ul = document.getElementById('ul-registro'); ul.innerHTML = "";
-            unicas.forEach(car => { const regs = datosActivos.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); let info = "Sin datos", dxText = "", loteText = ""; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { info = c.valor.split('|')[0].replace('Cat:','').trim(); loteText = " | " + c.detalles.split('|')[0].replace('Lote:','').trim(); } else if(p) { info = p.detalles.split('|')[0].trim(); } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = ` - ${d.valor}`; ul.innerHTML += `<li onclick="navegarDesdeLista('${car}')"><div style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:18px; font-weight:bold; color:var(--texto);">${car}</span><span style="color:var(--muted); font-size:12px;">${info}${loteText}${dxText}</span></div><span style="color:var(--texto); font-size:20px;">›</span></li>`; });
+            unicas.forEach(car => { const regs = obtenerHistorial(car); let info = "Sin datos", dxText = "", loteText = ""; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { let vals = String(c.valor||"").split('|'); info = vals[0] ? vals[0].replace('Cat:','').trim() : info; loteText = " | " + (String(c.detalles||"").split('|')[0] ? String(c.detalles||"").split('|')[0].replace('Lote:','').trim() : ""); } else if(p) { info = String(p.detalles||"").split('|')[0] || "-"; } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = ` - ${d.valor}`; ul.innerHTML += `<li onclick="navegarDesdeLista('${car}')"><div style="display:flex; flex-direction:column; gap:4px;"><span style="font-size:18px; font-weight:bold; color:var(--texto);">${car}</span><span style="color:var(--muted); font-size:12px;">${info}${loteText}${dxText}</span></div><span style="color:var(--texto); font-size:20px;">›</span></li>`; });
         }
 
         function filtrarLista(t) { const lis = document.getElementById('ul-registro').getElementsByTagName('li'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "" : "none"; }
@@ -827,9 +891,9 @@
         function cambiarModoReporte() {
             const modo = document.getElementById('f-inf-modo').value;
             if(modo === 'inventario') {
-                document.getElementById('filtros-inventario').style.display = 'flex'; document.getElementById('filtros-eventos').style.display = 'none'; document.getElementById('lbl-prenadas').innerText = "Preñadas (Filtro)"; document.getElementById('lbl-total').innerText = "Total Cabezas";
+                document.getElementById('filtros-inventario').style.display = 'flex'; document.getElementById('filtros-eventos').style.display = 'none'; document.getElementById('lbl-prenadas').innerText = "PREÑADAS CONF."; 
             } else {
-                document.getElementById('filtros-inventario').style.display = 'none'; document.getElementById('filtros-eventos').style.display = 'flex'; document.getElementById('lbl-prenadas').innerText = "-"; document.getElementById('lbl-total').innerText = "Trabajos Listados";
+                document.getElementById('filtros-inventario').style.display = 'none'; document.getElementById('filtros-eventos').style.display = 'flex'; document.getElementById('lbl-prenadas').innerText = "-"; 
             }
             actualizarInformeAvanzado();
         }
@@ -850,25 +914,31 @@
         function setFiltroAccion(accion, btnObj) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activa')); btnObj.classList.add('activa'); document.getElementById('f-inf-accion-oculto').value = accion; actualizarInformeAvanzado(); }
 
         function obtenerBadgeAccion(accion) {
-            if(accion === 'Sanidad') return `💉 Sanidad`;
-            if(accion === 'Peso') return `⚖️ Peso`;
-            if(accion === 'Diagnóstico') return `🩺 Tacto`;
-            if(accion === 'Inseminación') return `🧬 Reproducción`;
-            if(accion === 'Nutrición') return `🌾 Nutrición`;
-            return `${accion}`;
+            if(accion === 'Sanidad') return `💉 Sanidad`; if(accion === 'Peso') return `⚖️ Peso`; if(accion === 'Diagnóstico') return `🩺 Tacto`; if(accion === 'Inseminación') return `🧬 Reproducción`; if(accion === 'Nutrición') return `🌾 Nutrición`; return `${accion}`;
         }
 
         function actualizarInformeAvanzado() {
             const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
-            const datosActivos = obtenerRegistrosActivos(); const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))]; 
+            const datosActivos = obtenerRegistrosActivos(); 
+            let aliasMap = {}; datosActivos.forEach(d => { if(d.accion === 'Cambio de Caravana') aliasMap[String(d.caravana)] = String(d.valor); });
+            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && !aliasMap[c]))]; 
+            
             const tbodyMasivo = document.getElementById('tb-informe-masivo'); const tbodyEventos = document.getElementById('tb-informe-eventos'); const tbodyIndiv = document.getElementById('tb-informe-individual');
             document.getElementById('tabla-masiva').classList.add('oculto'); document.getElementById('tabla-eventos').classList.add('oculto'); document.getElementById('tabla-individual').classList.add('oculto');
             
+            let tPreGlobal = 0;
+            unicas.forEach(car => {
+                const regs = obtenerHistorial(car);
+                const uDx = regs.find(d => d.accion === 'Diagnóstico');
+                if (uDx && String(uDx.valor).includes('Preñada')) tPreGlobal++;
+            });
+            document.getElementById('inf-prenadas').innerText = tPreGlobal;
+            
             if(fRp !== "") {
                 rpPrint = fRp; document.querySelector('.btn-descargar').innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
-                const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === fRp && !d.accion.includes('Vinculacion') && d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master').sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-                let hInd = ""; regs.forEach(r => { hInd+=`<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
-                tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.length; document.getElementById('inf-prenadas').innerText = "-"; return;
+                const regs = obtenerHistorial(fRp);
+                let hInd = ""; regs.forEach(r => { if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') hInd+=`<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
+                tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.filter(r => !r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master').length; document.getElementById('inf-prenadas').innerText = "-"; return;
             }
 
             rpPrint = ""; document.querySelector('.btn-descargar').innerHTML = `🖨️ Descargar Informe PDF`;
@@ -876,73 +946,82 @@
             if(modo === 'inventario') {
                 document.getElementById('tabla-masiva').classList.remove('oculto');
                 const fLote = document.getElementById('f-inf-lote').value; const fCat = document.getElementById('f-inf-cat').value; const fDx = document.getElementById('f-inf-dx').value; 
-                tbodyMasivo.innerHTML = ""; let countTotal = 0, countPrenadas = 0;
+                tbodyMasivo.innerHTML = ""; let countTotal = 0;
                 unicas.forEach(car => {
-                    const regs = datosActivos.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); let cat = "-", peso = "-", dx = "-", lote = "-";
-                    const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = uP.detalles.split('|')[0].trim();
-                    const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { cat = uC.valor.split('|')[0].replace('Cat:','').trim(); lote = uC.detalles.split('|')[0].replace('Lote:','').trim(); }
-                    const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor;
+                    const regs = obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-";
+                    const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
+                    const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v=String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; }
+                    const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-";
                     let pasaFiltro = true; if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; if(fCat !== "ALL" && !cat.includes(fCat)) pasaFiltro = false; if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false;
-                    if(pasaFiltro) { countTotal++; if(dx.includes('Preñada')) countPrenadas++; tbodyMasivo.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:16px;">${car}</td><td style="color:#000; border-color:#cbd5e1;">${cat}<br><span style="font-size:11px; color:gray;">${lote}</span></td><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${peso}</td><td style="color:#000; border-color:#cbd5e1;">${dx}</td></tr>`; }
+                    if(pasaFiltro) { countTotal++; tbodyMasivo.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:16px;">${car}</td><td style="color:#000; border-color:#cbd5e1;">${cat}<br><span style="font-size:11px; color:gray;">${lote}</span></td><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${peso}</td><td style="color:#000; border-color:#cbd5e1;">${dx}</td></tr>`; }
                 });
-                document.getElementById('inf-total').innerText = countTotal; document.getElementById('inf-prenadas').innerText = countPrenadas;
+                document.getElementById('inf-total').innerText = countTotal; 
             } else {
                 document.getElementById('tabla-eventos').classList.remove('oculto');
                 const fAcc = document.getElementById('f-inf-accion-oculto').value; const fDesde = document.getElementById('f-inf-desde').value; const fHasta = document.getElementById('f-inf-hasta').value; const fKey = document.getElementById('f-inf-keyword').value.trim().toLowerCase();
                 let eventos = datosActivos.filter(d => !d.accion.includes('Vinculacion') && d.accion !== 'Perfil Master' && d.accion !== 'Actualización de Datos' && d.caravana !== "---");
                 if(fAcc !== "ALL") eventos = eventos.filter(d => d.accion === fAcc); if(fDesde) eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00'));
-                if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); if(fKey) eventos = eventos.filter(d => (d.valor + d.detalles).toLowerCase().includes(fKey));
+                if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); if(fKey) eventos = eventos.filter(d => (String(d.valor) + String(d.detalles)).toLowerCase().includes(fKey));
                 tbodyEventos.innerHTML = "";
                 eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { tbodyEventos.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:16px;">${r.caravana}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
-                document.getElementById('inf-total').innerText = eventos.length; document.getElementById('inf-prenadas').innerText = "-";
+                document.getElementById('inf-total').innerText = eventos.length; 
             }
         }
 
         function ejecutarDescargaPDF() {
             const btn = document.querySelector('.btn-descargar'); btn.innerText = "⏳ Generando PDF...";
             const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; const h_nom = hd.nombre || 'TAURUS CONTROL'; const h_log = hd.logo || "";
+            const modo = document.getElementById('f-inf-modo').value;
             
-            let htmlContent = `<div style="background-color: #ffffff; padding: 20px; width: 100%; max-width: 1000px; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000000; padding-bottom: 15px; margin-bottom: 20px;"><div><h2 style="margin:0 0 10px 0; font-size:26px; text-transform:uppercase;">${h_nom}</h2>`;
+            let htmlContent = `
+            <style>
+                table { width: 100%; border-collapse: collapse; page-break-inside: auto; margin-top: 15px; }
+                tr { page-break-inside: avoid !important; page-break-after: auto; }
+                th, td { border: 1px solid #000000; padding: 6px; word-wrap: break-word; overflow-wrap: break-word; text-align: left; vertical-align: middle; }
+                th { background-color: #f1f5f9; }
+                thead { display: table-header-group; }
+            </style>
+            <div style="background-color: #ffffff; padding: 20px; width: 1000px; margin: 0 auto; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000000; padding-bottom: 15px; margin-bottom: 20px;">
+                    <div><h2 style="margin:0 0 10px 0; font-size:26px; text-transform:uppercase;">${h_nom}</h2>`;
             
             if(rpPrint !== "") {
-                const datosActivos = obtenerRegistrosActivos(); const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === String(rpPrint).toLowerCase() && !d.accion.includes('Vinculacion')).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
-                if(regs.length===0){ btn.innerHTML = `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}`; return;}
+                const regs = obtenerHistorial(rpPrint); if(regs.length===0){alert("Sin registros."); btn.innerHTML = `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}`; return;}
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
-                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = uP.valor.split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=uP.detalles.split('|')[0]||"-"; } 
-                const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { cat=uC.valor.split('|')[0].replace('Cat:','').trim(); carimbo=uC.valor.split('|')[1].replace('Carimbo:','').trim(); lote=uC.detalles.split('|')[0].replace('Lote:','').trim(); } 
+                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor||"").split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=String(uP.detalles||"").split('|')[0]||"-"; } 
+                const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; lote=String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; } 
                 const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
                 const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nut = (uNut.valor || "") + " | " + (uNut.detalles || "");
                 const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "") + " | " + (uSan.detalles || "");
                 const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) ins = (uIns.valor || "") + " | " + (uIns.detalles || "");
 
-                htmlContent += `<p style="margin:0; font-size:14px;">Dossier Clínico Histórico - RP: <strong>${rpPrint.toUpperCase()}</strong></p><p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${h_log ? `<div style="text-align: right;"><img src="${h_log}" style="max-height:100px; max-width: 250px; object-fit: contain;"></div>` : ''}</div>
-                    <h3 style="font-size:16px; margin: 0 0 10px 0;">Resumen del Perfil</h3><table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 12px; table-layout: fixed; word-wrap: break-word;"><tr><td style="border: 1px solid #000000; padding: 8px;"><strong>Categoría:</strong> ${cat}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Lote:</strong> ${lote}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Carimbo:</strong> ${carimbo}</td></tr><tr><td style="border: 1px solid #000000; padding: 8px;"><strong>Raza:</strong> ${raza}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Edad:</strong> ${edad}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Último Peso:</strong> ${peso}</td></tr><tr><td style="border: 1px solid #000000; padding: 8px;"><strong>Dx Actual:</strong> ${dx}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Genealogía:</strong> ${pa} / ${ma}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Régimen:</strong> ${nut}</td></tr><tr><td style="border: 1px solid #000000; padding: 8px;"><strong>Últ. Sanidad:</strong> ${san}</td><td style="border: 1px solid #000000; padding: 8px;" colspan="2"><strong>Últ. Inseminación:</strong> ${ins}</td></tr></table>
-                    <h3 style="font-size:16px; margin: 0 0 10px 0;">Historial Clínico y Procedimientos</h3><table style="width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; word-wrap: break-word;"><thead><tr><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 15%;">Fecha</th><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 85%;">Procedimiento / Notas Completas</th></tr></thead><tbody>`;
+                htmlContent += `<p style="margin:0; font-size:14px;">Dossier Clínico Histórico - RP: <strong>${rpPrint.toUpperCase()}</strong></p><p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${h_log ? `<div style="text-align: right;"><img src="${h_log}" style="max-width:150px; max-height:80px; object-fit: contain;"></div>` : ''}</div>
+                    <h3 style="font-size:16px; margin: 0 0 10px 0;">Resumen del Perfil</h3><table style="width: 100%; font-size: 11px; table-layout: fixed;"><tr><td><strong>Categoría:</strong> ${cat}</td><td><strong>Lote:</strong> ${lote}</td><td><strong>Carimbo:</strong> ${carimbo}</td></tr><tr><td><strong>Raza:</strong> ${raza}</td><td><strong>Edad:</strong> ${edad}</td><td><strong>Último Peso:</strong> ${peso}</td></tr><tr><td><strong>Dx Actual:</strong> ${dx}</td><td><strong>Genealogía:</strong> ${pa} / ${ma}</td><td><strong>Régimen:</strong> ${nut}</td></tr><tr><td><strong>Últ. Sanidad:</strong> ${san}</td><td colspan="2"><strong>Últ. Inseminación:</strong> ${ins}</td></tr></table>
+                    <h3 style="font-size:16px; margin: 20px 0 10px 0;">Trazabilidad Histórica de Sucesos</h3><table style="width: 100%; font-size: 11px; table-layout: fixed;"><thead><tr><th style="width: 12%;">Fecha</th><th style="width: 25%;">Procedimiento</th><th style="width: 25%;">Valor Principal</th><th style="width: 38%;">Observaciones Adicionales</th></tr></thead><tbody>`;
                 let rows = document.getElementById('tb-informe-individual').querySelectorAll('tr'); 
-                rows.forEach(tr => { let tds = tr.querySelectorAll('td'); if(tds.length >= 3) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 8px; overflow: hidden;">${tds[0].innerHTML}</td><td style="border: 1px solid #000000; padding: 8px; overflow: hidden;">${tds[1].innerHTML} - ${tds[2].innerHTML}</td></tr>`; });
+                rows.forEach(tr => { htmlContent += `<tr>`; tr.querySelectorAll('td').forEach(td => { htmlContent += `<td>${td.innerHTML}</td>`; }); htmlContent += `</tr>`; });
                 htmlContent += `</tbody></table></div>`;
             } else {
-                const modo = document.getElementById('f-inf-modo').value;
-                const titulo = modo === 'inventario' ? "Reporte Analítico de Inventario" : "Reporte Analítico de Trabajos y Procedimientos";
+                const titulo = modo === 'inventario' ? "Reporte Analítico de Inventario General" : "Reporte Analítico de Trabajos y Procedimientos";
                 
-                htmlContent += `<p style="margin:0; font-size:14px;">${titulo}</p><p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${h_log ? `<div style="text-align: right;"><img src="${h_log}" style="max-height:100px; max-width: 250px; object-fit: contain;"></div>` : ''}</div>
-                    <table style="width: 50%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;"><tr><td style="border: 1px solid #000000; padding: 8px;"><strong>Resultados Filtrados:</strong> ${document.getElementById('inf-total').innerText}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Preñadas (Filtro):</strong> ${document.getElementById('inf-prenadas').innerText}</td></tr></table>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; word-wrap: break-word;"><thead>`;
+                htmlContent += `<p style="margin:0; font-size:14px;">${titulo}</p><p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${h_log ? `<div style="text-align: right;"><img src="${h_log}" style="max-width:150px; max-height:80px; object-fit: contain;"></div>` : ''}</div>
+                    <table style="width: 50%; font-size: 11px;"><tr><td><strong>Total Registros Listados:</strong> ${document.getElementById('inf-total').innerText}</td><td><strong>Total Preñadas Global:</strong> ${document.getElementById('inf-prenadas').innerText}</td></tr></table>
+                    <table style="width: 100%; font-size: 11px; table-layout: fixed;"><thead>`;
                         
                 if(modo === 'inventario') {
-                    htmlContent += `<tr><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 15%;">Caravana</th><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 40%;">Categoría y Lote</th><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 15%;">Último Peso</th><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 30%;">Dx Actual</th></tr></thead><tbody>`;
+                    htmlContent += `<tr><th style="width: 15%;">Caravana</th><th style="width: 45%;">Categoría y Ubicación</th><th style="width: 15%;">Último Peso</th><th style="width: 25%;">Diagnóstico Actual</th></tr></thead><tbody>`;
                     let rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr'); 
-                    rows.forEach(tr => { let tds = tr.querySelectorAll('td'); if(tds.length >= 4) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 8px;">${tds[0].innerText}</td><td style="border: 1px solid #000000; padding: 8px;">${tds[1].innerHTML}</td><td style="border: 1px solid #000000; padding: 8px;">${tds[2].innerText}</td><td style="border: 1px solid #000000; padding: 8px;">${tds[3].innerText}</td></tr>`; });
+                    rows.forEach(tr => { htmlContent += `<tr>`; let tds = tr.querySelectorAll('td'); if (tds.length >= 4) { htmlContent += `<td style="text-align:center;"><b>${tds[0].innerHTML}</b></td><td>${tds[1].innerHTML}</td><td style="text-align:center;">${tds[2].innerHTML}</td><td style="text-align:center;">${tds[3].innerHTML}</td>`; } htmlContent += `</tr>`; });
                 } else {
-                    htmlContent += `<tr><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 15%;">Fecha</th><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 15%;">Caravana</th><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 70%;">Trabajo Realizado y Detalles</th></tr></thead><tbody>`;
+                    htmlContent += `<tr><th style="width: 10%;">Fecha</th><th style="width: 12%;">Caravana</th><th style="width: 23%;">Trabajo Realizado</th><th style="width: 55%;">Detalles Extras</th></tr></thead><tbody>`;
                     let rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr'); 
-                    rows.forEach(tr => { let tds = tr.querySelectorAll('td'); if(tds.length >= 4) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 8px;">${tds[0].innerText}</td><td style="border: 1px solid #000000; padding: 8px; text-align:center;"><strong>${tds[1].innerText}</strong></td><td style="border: 1px solid #000000; padding: 8px;"><strong>${tds[2].innerText}</strong> - ${tds[3].innerText}</td></tr>`; });
+                    rows.forEach(tr => { htmlContent += `<tr>`; let tds = tr.querySelectorAll('td'); if(tds.length >= 4) { htmlContent += `<td style="text-align:center;">${tds[0].innerHTML}</td><td style="text-align:center;"><b>${tds[1].innerText}</b></td><td style="text-align:center;">${tds[2].innerText}</td><td>${tds[3].innerHTML}</td>`; } htmlContent += `</tr>`; });
                 }
                 
                 htmlContent += `</tbody></table></div>`;
             }
             
-            const opt = { margin: 10, filename: rpPrint !== "" ? `Dossier_${rpPrint.toUpperCase()}.pdf` : 'Reporte_Taurus.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' } };
+            const opt = { margin: 10, filename: rpPrint !== "" ? `Dossier_${rpPrint.toUpperCase()}.pdf` : 'Reporte_Taurus.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, letterRendering: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
             html2pdf().set(opt).from(htmlContent).toPdf().get('pdf').then(function(pdf) {
                 if (window.AndroidTaurus) { const base64 = pdf.output('datauristring'); window.AndroidTaurus.guardarPDF(base64, opt.filename); } else { pdf.save(opt.filename); }
                 btn.innerHTML = rpPrint !== "" ? `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}` : "🖨️ Descargar Informe PDF"; 
