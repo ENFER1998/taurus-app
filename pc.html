@@ -161,6 +161,7 @@
         <div class="topbar">
             <div class="topbar-title">Terminal Corporativa de Trazabilidad</div>
             <div class="topbar-right" style="display:flex; gap:10px; align-items:center;">
+                <!-- BOTONES PEQUEÑOS Y BLUETOOTH UNIFICADO -->
                 <button id="btn-bluetooth" class="btn-outline" style="padding: 4px 10px; font-size: 11px; border-color:var(--primary); color:var(--primary);" onclick="conectarBluetooth()">🔗 Bluetooth</button>
                 <button class="btn-outline" style="padding: 4px 10px; font-size: 11px;" onclick="sincronizarFondo(true)">🔄 Actualizar Servidor</button>
                 <div id="estado-red" class="badge online" style="padding: 4px 10px; font-size: 11px; margin: 0;">🟢 Conectado</div>
@@ -389,7 +390,7 @@
                         </div>
                     </div>
                     
-                    <!-- BOTÓN DE WHATSAPP -->
+                    <!-- BOTÓN DE WHATSAPP CON NAVEGADOR EXTERNO -->
                     <button class="btn-primary" style="display:block; width:100%; text-align:center; background:#25D366; margin-top:20px;" onclick="abrirSoporte()">💬 Soporte Técnico WhatsApp</button>
                 </div>
             </div>
@@ -500,7 +501,7 @@
                 
             } catch (error) {
                 console.error(error);
-                btn.innerHTML = "🔗 Bluetooth: Inactivo";
+                btn.innerHTML = "🔗 Bluetooth";
             }
         }
 
@@ -573,18 +574,17 @@
         // WHATSAPP SOPORTE EXTERNO
         // ==========================================
         function abrirSoporte() {
+            let url = 'https://wa.me/595976139617';
             try {
                 if (typeof require !== 'undefined') {
-                    const { shell } = require('electron');
-                    shell.openExternal('https://wa.me/595976139617');
+                    require('electron').shell.openExternal(url);
                 } else if (window.require) {
-                    const { shell } = window.require('electron');
-                    shell.openExternal('https://wa.me/595976139617');
+                    window.require('electron').shell.openExternal(url);
                 } else {
-                    window.open('https://wa.me/595976139617', '_blank');
+                    window.open(url, '_blank');
                 }
             } catch(e) {
-                window.open('https://wa.me/595976139617', '_blank');
+                window.open(url, '_blank');
             }
         }
 
@@ -694,7 +694,7 @@
                 document.getElementById('lbl-perfil-usu').innerText = `${u.toUpperCase()} (Rol: ${displayRol})`;
                 
                 // Ocultar privilegios de administrador si es operador
-                if(r !== 'Propietario' && r !== 'Dueño') {
+                if(displayRol !== 'Propietario') {
                     document.getElementById('panel-crear-peones').style.display = 'none'; 
                     document.getElementById('panel-membrete').style.display = 'none';
                     document.getElementById('panel-licencia').style.display = 'none';
@@ -1017,16 +1017,9 @@
             const h_log = lsGet('tc_hacienda', {}).logo || "";
             const modo = document.getElementById('f-inf-modo').value;
             
-            // ESTRUCTURA CSS BLINDADA PARA EVITAR CORTES Y DAR BORDES A TODAS LAS TABLAS
+            // LA CLAVE: No forzar anchos en CSS inyectado, usar inline table puro
             let htmlContent = `
-            <style>
-                table { width: 100%; border-collapse: collapse; page-break-inside: auto; margin-top: 15px; }
-                tr { page-break-inside: avoid !important; page-break-after: auto; }
-                th, td { border: 1px solid #000000; padding: 6px; word-wrap: break-word; overflow-wrap: break-word; text-align: left; vertical-align: middle; }
-                th { background-color: #f1f5f9; }
-                thead { display: table-header-group; }
-            </style>
-            <div style="background-color: #ffffff; padding: 20px; width: 100%; max-width: 1000px; margin: 0 auto; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;">
+            <div style="background-color: #ffffff; padding: 20px; width: 750px; margin: 0 auto; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;">
                 <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #000000; padding-bottom: 15px; margin-bottom: 20px;">
                     <div>
                         <h2 style="margin:0 0 10px 0; font-size:24px; text-transform:uppercase;">${h_nom}</h2>`;
@@ -1050,36 +1043,36 @@
                 </div>
                 
                 <h3 style="font-size:16px; margin: 0 0 10px 0;">Resumen del Perfil</h3>
-                <table style="font-size: 11px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; word-wrap: break-word;">
                     <tr>
-                        <td><strong>Categoría:</strong> ${cat}</td>
-                        <td><strong>Lote:</strong> ${lote}</td>
-                        <td><strong>Carimbo:</strong> ${carimbo}</td>
+                        <td style="border: 1px solid #000; padding: 6px;"><strong>Categoría:</strong> ${cat}</td>
+                        <td style="border: 1px solid #000; padding: 6px;"><strong>Lote:</strong> ${lote}</td>
+                        <td style="border: 1px solid #000; padding: 6px;"><strong>Carimbo:</strong> ${carimbo}</td>
                     </tr>
                     <tr>
-                        <td><strong>Raza:</strong> ${raza}</td>
-                        <td><strong>Edad:</strong> ${edad}</td>
-                        <td><strong>Último Peso:</strong> ${peso}</td>
+                        <td style="border: 1px solid #000; padding: 6px;"><strong>Raza:</strong> ${raza}</td>
+                        <td style="border: 1px solid #000; padding: 6px;"><strong>Edad:</strong> ${edad}</td>
+                        <td style="border: 1px solid #000; padding: 6px;"><strong>Último Peso:</strong> ${peso}</td>
                     </tr>
                     <tr>
-                        <td><strong>Dx Actual:</strong> ${dx}</td>
-                        <td><strong>Genealogía:</strong> ${pa} / ${ma}</td>
-                        <td><strong>Régimen:</strong> ${nut}</td>
+                        <td style="border: 1px solid #000; padding: 6px;"><strong>Dx Actual:</strong> ${dx}</td>
+                        <td style="border: 1px solid #000; padding: 6px;"><strong>Genealogía:</strong> ${pa} / ${ma}</td>
+                        <td style="border: 1px solid #000; padding: 6px;"><strong>Régimen:</strong> ${nut}</td>
                     </tr>
                     <tr>
-                        <td><strong>Últ. Sanidad:</strong> ${san}</td>
-                        <td colspan="2"><strong>Últ. Inseminación:</strong> ${ins}</td>
+                        <td style="border: 1px solid #000; padding: 6px;"><strong>Últ. Sanidad:</strong> ${san}</td>
+                        <td style="border: 1px solid #000; padding: 6px;" colspan="2"><strong>Últ. Inseminación:</strong> ${ins}</td>
                     </tr>
                 </table>
                 
                 <h3 style="font-size:16px; margin: 20px 0 10px 0;">Trazabilidad Histórica de Sucesos</h3>
-                <table style="font-size: 11px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; word-wrap: break-word;">
                     <thead>
                         <tr>
-                            <th style="width: 12%;">Fecha</th>
-                            <th style="width: 25%;">Procedimiento</th>
-                            <th style="width: 25%;">Valor Principal</th>
-                            <th style="width: 38%;">Observaciones Adicionales</th>
+                            <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 12%;">Fecha</th>
+                            <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 25%;">Procedimiento</th>
+                            <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 25%;">Valor Principal</th>
+                            <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 38%;">Observaciones Adicionales</th>
                         </tr>
                     </thead>
                     <tbody>`;
@@ -1087,7 +1080,7 @@
                 let rows = document.getElementById('tb-informe-individual').querySelectorAll('tr');
                 rows.forEach(tr => {
                     htmlContent += `<tr>`;
-                    tr.querySelectorAll('td').forEach(td => { htmlContent += `<td>${td.innerHTML}</td>`; });
+                    tr.querySelectorAll('td').forEach(td => { htmlContent += `<td style="border: 1px solid #000; padding: 6px;">${td.innerHTML}</td>`; });
                     htmlContent += `</tr>`;
                 });
                 
@@ -1098,41 +1091,40 @@
                         <p style="margin:0; font-size:14px;">${titulo}</p>
                         <p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p>
                     </div>
-                    ${(h_log && h_log.startsWith('data:image'))?`<img src="${h_log}" style="max-width:150px; max-height:80px; object-fit:contain;">`:''}
+                    ${h_log?`<img src="${h_log}" style="max-width:150px; max-height:80px; object-fit:contain;">`:''}
                 </div>
                 
-                <table style="width: 50%; font-size: 11px;">
+                <table style="width: 50%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
                     <tr>
-                        <td><strong>Total Registros Listados:</strong> ${document.getElementById('inf-total').innerText}</td>
-                        <td><strong>Total Preñadas Global:</strong> ${document.getElementById('inf-prenadas').innerText}</td>
+                        <td style="border: 1px solid #000; padding: 6px;"><strong>Total Registros Listados:</strong> ${document.getElementById('inf-total').innerText}</td>
+                        <td style="border: 1px solid #000; padding: 6px;"><strong>Total Preñadas Global:</strong> ${document.getElementById('inf-prenadas').innerText}</td>
                     </tr>
                 </table>
                 
-                <table style="font-size: 11px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; word-wrap: break-word;">
                     <thead>`;
                         
                 if(modo === 'inventario') {
                     htmlContent += `<tr>
-                        <th style="width: 15%;">Caravana</th>
-                        <th style="width: 25%;">Categoría</th>
-                        <th style="width: 25%;">Ubicación / Lote</th>
-                        <th style="width: 15%;">Último Peso</th>
-                        <th style="width: 20%;">Diagnóstico Actual</th>
+                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 15%;">Caravana</th>
+                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 25%;">Categoría</th>
+                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 25%;">Ubicación / Lote</th>
+                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 15%;">Último Peso</th>
+                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 20%;">Diagnóstico Actual</th>
                     </tr></thead><tbody>`;
                         
                     let rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr');
                     rows.forEach(tr => {
                         htmlContent += `<tr>`;
-                        tr.querySelectorAll('td').forEach(td => { htmlContent += `<td>${td.innerHTML}</td>`; });
+                        tr.querySelectorAll('td').forEach(td => { htmlContent += `<td style="border: 1px solid #000; padding: 6px;">${td.innerHTML}</td>`; });
                         htmlContent += `</tr>`;
                     });
                 } else {
-                    // Ajuste de las columnas: Trabajo más pequeño, Detalles más grande
                     htmlContent += `<tr>
-                        <th style="width: 12%;">Fecha</th>
-                        <th style="width: 12%;">Caravana</th>
-                        <th style="width: 15%;">Trabajo Realizado</th>
-                        <th style="width: 61%;">Detalles Extras</th>
+                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 15%;">Fecha</th>
+                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 15%;">Caravana</th>
+                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 25%;">Trabajo Realizado</th>
+                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 45%;">Detalles Extras</th>
                     </tr></thead><tbody>`;
                     
                     let rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr');
@@ -1140,10 +1132,10 @@
                         htmlContent += `<tr>`;
                         let tds = tr.querySelectorAll('td');
                         if(tds.length >= 4) {
-                            htmlContent += `<td>${tds[0].innerHTML}</td>`;
-                            htmlContent += `<td style="text-align:center;"><b>${tds[1].innerText}</b></td>`;
-                            htmlContent += `<td style="text-align:center;">${tds[2].innerText}</td>`;
-                            htmlContent += `<td>${tds[3].innerHTML}</td>`;
+                            htmlContent += `<td style="border: 1px solid #000; padding: 6px;">${tds[0].innerHTML}</td>`;
+                            htmlContent += `<td style="border: 1px solid #000; padding: 6px; text-align:center;"><b>${tds[1].innerText}</b></td>`;
+                            htmlContent += `<td style="border: 1px solid #000; padding: 6px; text-align:center;">${tds[2].innerText}</td>`;
+                            htmlContent += `<td style="border: 1px solid #000; padding: 6px;">${tds[3].innerHTML}</td>`;
                         }
                         htmlContent += `</tr>`;
                     });
@@ -1155,12 +1147,11 @@
             htmlContent += `</div>`;
             
             const opt = { 
-                margin: 10, 
+                margin: [10, 10, 10, 10], 
                 filename: rpPrint !== "" ? `Dossier_RP_${rpPrint.toUpperCase()}.pdf` : 'Reporte_General.pdf',
                 image: { type: 'jpeg', quality: 0.98 }, 
-                html2canvas: { scale: 2, useCORS: true, windowWidth: 1000 }, 
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['css', 'legacy'] }
+                html2canvas: { scale: 2, useCORS: true }, 
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
             
             html2pdf().set(opt).from(htmlContent).save().then(()=>{ 
