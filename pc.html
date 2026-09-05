@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taurus Control - Creado por Fernando Rodriguez</title>
+    <title>Taurus Control - Terminal PC</title>
     
     <!-- MOTOR DE DESCARGA PDF DIRECTA -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -285,32 +285,65 @@
         <!-- REPORTES PDF UNIFICADO -->
         <div id="v-reporte" class="vista oculto">
             <h2 class="titulo-seccion">Centro de Reportes y Documentos PDF</h2>
-            
             <div class="tarjeta">
-                <div class="grid-4" style="margin-bottom: 0; display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-                    <select class="form-control" id="f-inf-lote" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Lotes</option><option value="Hacienda General">Hacienda General</option><option value="Lecheras">Lecheras</option><option value="Preñadas">Preñadas</option><option value="Inseminadas">Inseminadas</option></select>
-                    <select class="form-control" id="f-inf-cat" onchange="actualizarInformeAvanzado()"><option value="ALL">Todas las Categorías</option><option value="V:">Vacas (V / VV)</option><option value="T">Terneros (TH/TM)</option><option value="D">Desmamantes</option><option value="Toros">Toros</option></select>
-                    <select class="form-control" id="f-inf-dx" onchange="actualizarInformeAvanzado()"><option value="ALL">Cualquier Estado Clínico</option><option value="Preñada">Solo Preñadas</option><option value="Vacía">Solo Vacías</option></select>
-                    <input type="text" id="f-inf-rp" class="form-control" style="border-color:var(--primary);" placeholder="🔍 Ingrese Nº RP para descargar Dossier..." onkeyup="actualizarInformeAvanzado()">
+                <select class="form-control" id="f-inf-modo" onchange="cambiarModoReporte()" style="margin-bottom:15px; font-weight:bold; background:var(--primary); color:white;">
+                    <option value="eventos">📋 TRATAMIENTOS Y TRABAJOS (Historial)</option>
+                    <option value="inventario">📊 INVENTARIO GENERAL (Estado Actual)</option>
+                </select>
+
+                <!-- MODO 1: EVENTOS / TRATAMIENTOS -->
+                <div id="filtros-eventos" style="display: flex; flex-direction: column; gap: 10px; margin-bottom:15px;">
+                    <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                        <select class="form-control" style="width:auto; flex:1;" id="f-inf-rango-fecha" onchange="manejarRangoFechas()">
+                            <option value="30">Últimos 30 Días</option>
+                            <option value="hoy">Trabajos de Hoy</option>
+                            <option value="7">Últimos 7 Días</option>
+                            <option value="todo">Ver Todo el Historial</option>
+                            <option value="custom">📅 Elegir Rango Manual...</option>
+                        </select>
+                        <select class="form-control" style="width:auto; flex:1;" onchange="document.getElementById('f-inf-accion-oculto').value = this.value; actualizarInformeAvanzado();">
+                            <option value="ALL">Todos los Trabajos</option>
+                            <option value="Sanidad">💉 Sanidad</option>
+                            <option value="Peso">⚖️ Pesos</option>
+                            <option value="Diagnóstico">🩺 Tactos</option>
+                            <option value="Inseminación">🧬 Reproducción</option>
+                            <option value="Nutrición">🌾 Nutrición</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="f-inf-accion-oculto" value="ALL">
+
+                    <div id="caja-fechas-custom" style="display: none; gap: 10px; background: rgba(37, 99, 235, 0.1); border-radius: 4px; padding: 10px;">
+                        <div style="flex:1;"><label style="font-size:11px; display:block; margin-bottom:3px;">Desde:</label><input type="date" id="f-inf-desde" class="form-control" style="margin:0;" onchange="actualizarInformeAvanzado()"></div>
+                        <div style="flex:1;"><label style="font-size:11px; display:block; margin-bottom:3px;">Hasta:</label><input type="date" id="f-inf-hasta" class="form-control" style="margin:0;" onchange="actualizarInformeAvanzado()"></div>
+                    </div>
+
+                    <input type="text" id="f-inf-keyword" class="form-control" placeholder="🔍 Buscar producto (Ej: Aftosa, Ivermectina)" onkeyup="actualizarInformeAvanzado()">
                 </div>
-                
+
+                <!-- MODO 2: INVENTARIO -->
+                <div id="filtros-inventario" class="oculto" style="display: none; flex-direction: column; gap: 10px; margin-bottom:15px;">
+                    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                        <select class="form-control" id="f-inf-lote" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Lotes</option><option value="Hacienda General">Hacienda General</option><option value="Lecheras">Lecheras</option><option value="Preñadas">Preñadas</option><option value="Inseminadas">Inseminadas</option></select>
+                        <select class="form-control" id="f-inf-cat" onchange="actualizarInformeAvanzado()"><option value="ALL">Todas las Categorías</option><option value="V:">Vacas / Vaquillas (V)</option><option value="VV:">Vacas Viejas (VV)</option><option value="T">Terneros/as (TH/TM)</option><option value="D">Desmamantes (DH/DM)</option><option value="Toros">Toros</option></select>
+                        <select class="form-control" id="f-inf-dx" onchange="actualizarInformeAvanzado()"><option value="ALL">Cualquier Estado Clínico</option><option value="Preñada">Solo Preñadas</option><option value="Vacía">Solo Vacías</option></select>
+                    </div>
+                </div>
+
+                <hr style="border-color: var(--border); width: 100%; margin: 15px 0;">
+                <input type="text" id="f-inf-rp" class="form-control" style="border-color:var(--success);" placeholder="🔍 Buscar UN solo RP (Dossier Clínico Individual)" onkeyup="actualizarInformeAvanzado()">
+
                 <div style="display:flex; justify-content:space-between; align-items:center; margin:15px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:15px 0;">
                     <div style="display:flex; gap:30px;">
-                        <div><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;">REGISTROS EN TABLA</span><strong style="font-size:22px;" id="inf-total">0</strong></div>
-                        <div><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;">PREÑADAS CONFIRMADAS</span><strong style="font-size:22px; color:var(--success);" id="inf-prenadas">0</strong></div>
+                        <div><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;">REGISTROS LISTADOS</span><strong style="font-size:22px;" id="inf-total">0</strong></div>
+                        <div><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;" id="lbl-prenadas">PREÑADAS CONFIRMADAS</span><strong style="font-size:22px; color:var(--success);" id="inf-prenadas">0</strong></div>
                     </div>
-                    <button id="btn-print-magico" class="btn-primary" style="width:auto; padding:10px 25px; background:var(--primary);" onclick="ejecutarDescargaPDF()">🖨️ Descargar Inventario PDF</button>
+                    <button id="btn-print-magico" class="btn-primary" style="width:auto; padding:10px 25px; background:var(--primary);" onclick="ejecutarDescargaPDF()">🖨️ Descargar Informe PDF</button>
                 </div>
                 
                 <div style="overflow-y:auto; max-height: 50vh;">
-                    <table class="tabla-datos" id="tabla-masiva">
-                        <thead><tr><th>Caravana</th><th>Categoría</th><th>Lote</th><th>Últ. Peso</th><th>Diagnóstico</th></tr></thead>
-                        <tbody id="tb-informe-masivo"></tbody>
-                    </table>
-                    <table class="tabla-datos oculto" id="tabla-individual">
-                        <thead><tr><th>Fecha</th><th>Procedimiento</th><th>Valor Principal</th><th>Observaciones Adicionales</th></tr></thead>
-                        <tbody id="tb-informe-individual"></tbody>
-                    </table>
+                    <table class="tabla-datos" id="tabla-eventos"><thead><tr><th>Fecha</th><th>RP</th><th>Trabajo Realizado</th><th>Detalles Extras</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
+                    <table class="tabla-datos oculto" id="tabla-masiva"><thead><tr><th>Caravana</th><th>Categoría / Lote</th><th>Últ. Peso</th><th>Dx Actual</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
+                    <table class="tabla-datos oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Procedimiento</th><th>Valor Principal</th><th>Observaciones Adicionales</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
                 </div>
             </div>
         </div>
@@ -415,18 +448,13 @@
 
     <!-- CÓDIGO CORE BLINDADO CON ASYNC/AWAIT -->
     <script>
-        // EL NUEVO ENLACE DEFINITIVO HA SIDO INSERTADO AQUÍ
         const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzyWvEMlfCCQXGP0-ssUUQ2je4tsFPXd6Yu0C9WwsTa7sgqFkkz3jr0a8CXqrI9ydk/exec";
         
-        // MEMORIA LOCAL DE SEGURIDAD
         function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 
         let dbCache = []; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
 
-        // ==========================================
-        // MÓDULO BLUETOOTH (BALANZAS Y BASTONES BLE)
-        // ==========================================
         let bleDevice = null;
         let bleServer = null;
         let rfidPendiente = "";
@@ -443,7 +471,7 @@
                 
                 bleDevice = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
-                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb', '6e400001-b5a3-f393-e0a9-e50e24dcca9e'] // UUIDs comunes para módulos Seriales BLE
+                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb', '6e400001-b5a3-f393-e0a9-e50e24dcca9e']
                 });
 
                 bleDevice.addEventListener('gattserverdisconnected', () => {
@@ -481,7 +509,7 @@
             } catch (error) {
                 console.error(error);
                 btn.innerHTML = "🔗 Bluetooth";
-                alert("Conexión cancelada o fallida. Asegúrate de tener el Bluetooth encendido.");
+                alert("Error de conexión. Si usas el .exe compilado en Electron, es posible que no tengas configurado el evento de permisos select-bluetooth-device en el main.js. Para que funcione inmediatamente, abre tu web en GitHub directamente desde Google Chrome.");
             }
         }
 
@@ -498,16 +526,13 @@
                     document.getElementById('i-peso-val').value = dataLimpia;
                 } 
                 else {
-                    // LÓGICA DE BASTÓN RFID INTELIGENTE
                     let esRFIDRegistrado = dbCache.find(d => d.accion === 'Vinculación RFID' && d.valor === dataLimpia);
                     
                     if(esRFIDRegistrado) {
-                        // El chip ya existe: Buscamos automáticamente la caravana visual vinculada
                         document.getElementById('buscador-caravana').value = esRFIDRegistrado.caravana;
-                        document.querySelectorAll('.sidebar-nav li')[1].click(); // Simula clic en "Ficha Clínica"
+                        document.querySelectorAll('.sidebar-nav li')[1].click(); 
                         buscarCaravanaBtn();
                     } else {
-                        // Chip Nuevo: Solicitar emparejamiento visual
                         rfidPendiente = dataLimpia;
                         document.getElementById('lbl-rfid-scaneado').innerText = dataLimpia;
                         document.getElementById('f-rfid-caravana').value = "";
@@ -515,35 +540,29 @@
                     }
                 }
                 bufferBT = "";
-            }, 300); // 300ms es el tiempo de gracia para unir los trozos de texto que envía el BT
+            }, 300); 
         }
         
         function guardarVinculacionRFID() {
             let car = document.getElementById('f-rfid-caravana').value.trim();
             if(!car) { alert("Debe ingresar un número de caravana (RP)."); return; }
             
-            // Creamos y guardamos el registro de vinculación
             const obj = { fecha: new Date().toISOString(), accion: 'Vinculación RFID', caravana: car, valor: rfidPendiente, detalles: `Vinculado por Bastón BT | Op: ${usActivo}`, maestro: maestroId };
             dbCache.unshift(obj);
             cerrarModal('m-rfid');
             
-            // Enviar a la nube / offline
             if(navigator.onLine) {
                 const fd = new URLSearchParams(); for(let k in obj) fd.append(k, obj[k]); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { sincronizarFondo(false); });
             } else {
                 let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p);
             }
             
-            // Automáticamente abrimos la ficha de este animal
             document.getElementById('buscador-caravana').value = car;
             document.querySelectorAll('.sidebar-nav li')[1].click();
             buscarCaravanaBtn();
             procesarDatosDashboard();
         }
 
-        // ==========================================
-        // FILTRO GLOBAL
-        // ==========================================
         function obtenerRegistrosActivos() {
             let validos = [];
             const unicas = [...new Set(dbCache.map(d => d.caravana).filter(c => c !== "---" && c != null))];
@@ -563,18 +582,12 @@
             return validos.concat(globalEvents).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
         }
 
-        // ==========================================
-        // TEMA CLARO / OSCURO
-        // ==========================================
         if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
         function toggleTema() {
             document.body.classList.toggle('tema-claro');
             localStorage.setItem('tc_tema', document.body.classList.contains('tema-claro') ? 'claro' : 'oscuro');
         }
 
-        // ==========================================
-        // ESTADO DE RED
-        // ==========================================
         function setEstadoRed(online) {
             const b = document.getElementById('estado-red');
             if(!b) return;
@@ -583,9 +596,6 @@
         }
         window.addEventListener('online', () => setEstadoRed(true)); window.addEventListener('offline', () => setEstadoRed(false));
 
-        // ==========================================
-        // LOGIN INFALIBLE
-        // ==========================================
         async function procesarIngreso() {
             const u = document.getElementById('usuario').value.trim(); 
             const p = document.getElementById('password').value.trim();
@@ -668,9 +678,6 @@
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
 
-        // ==========================================
-        // SINCRONIZACIÓN AUTOMÁTICA
-        // ==========================================
         function fusionarDatos(nuevos) {
             let mapa = new Map();
             if(Array.isArray(dbCache)) dbCache.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
@@ -704,9 +711,6 @@
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_pendientes', []); sincronizarFondo(false); });
         }
 
-        // ==========================================
-        // FICHA CLÍNICA INTELIGENTE 
-        // ==========================================
         function obtenerHistorial(caravana) {
             const datosActivos = obtenerRegistrosActivos();
             let hist = []; let buscadas = [String(caravana)]; let i = 0;
@@ -722,7 +726,6 @@
                 let rp = rpForzado ? rpForzado : document.getElementById('buscador-caravana').value.trim(); 
                 if(!rp) return; 
                 
-                // Si el usuario por error escanea o tipea el chip RFID directamente en el buscador, lo traducimos
                 let esRFIDRegistrado = dbCache.find(d => d.accion === 'Vinculación RFID' && d.valor === rp);
                 if(esRFIDRegistrado) rp = esRFIDRegistrado.caravana;
 
@@ -781,9 +784,6 @@
             } catch(e) { console.error("Error al visualizar ficha", e); }
         }
 
-        // ==========================================
-        // GUARDADO DE ACCIONES
-        // ==========================================
         function ejecutarAccion(tipo, val, det, modalId) {
             const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: rpActivo, valor: val, detalles: det + ` | Op: ${usActivo}`, maestro: maestroId };
             dbCache.unshift(obj); buscarCaravanaBtn(rpActivo); procesarDatosDashboard(); 
@@ -823,51 +823,144 @@
 
         function verTrazabilidad() { abrirModal('m-traza'); let h = ""; obtenerHistorial(rpActivo).forEach(r => { h += `<tr><td style="white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${r.accion}</strong></td><td>${r.valor}</td><td style="font-size:12px;">${r.detalles}</td></tr>`; }); document.getElementById('tb-traza').innerHTML = h; }
 
-        // ==========================================
-        // REPORTES MASIVOS 
-        // ==========================================
-        function actualizarInformeAvanzado() {
-            const l = document.getElementById('f-inf-lote').value; const c = document.getElementById('f-inf-cat').value; const dx = document.getElementById('f-inf-dx').value; const rp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
-            
-            const datosActivos = obtenerRegistrosActivos();
-            let aliasMap = {}; datosActivos.forEach(d => { if(d.accion === 'Cambio de Caravana') aliasMap[String(d.caravana)] = String(d.valor); });
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(x => x !== "---" && !aliasMap[x]))]; 
-            let tTot = 0, tPre = 0;
-            
-            if(rp !== "") {
-                rpPrint = rp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar Dossier de RP: ${rp.toUpperCase()}`; document.getElementById('btn-print-magico').style.background = "#0284c7";
-                document.getElementById('tabla-masiva').classList.add('oculto'); document.getElementById('tabla-individual').classList.remove('oculto');
-                const regs = obtenerHistorial(rp); let hInd = ""; regs.forEach(r => { hInd+=`<tr><td style="white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${r.accion}</strong></td><td>${r.valor}</td><td style="font-size:12px;">${r.detalles}</td></tr>`; });
-                document.getElementById('tb-informe-individual').innerHTML = hInd; document.getElementById('inf-total').innerText = regs.length; document.getElementById('inf-prenadas').innerText = "-";
+        function cambiarModoReporte() {
+            const modo = document.getElementById('f-inf-modo').value;
+            if(modo === 'inventario') {
+                document.getElementById('filtros-inventario').style.display = 'flex'; 
+                document.getElementById('filtros-eventos').style.display = 'none'; 
+                document.getElementById('lbl-prenadas').innerText = "Preñadas (Filtro)"; 
             } else {
-                rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar Inventario General PDF`; document.getElementById('btn-print-magico').style.background = "var(--primary)";
-                document.getElementById('tabla-masiva').classList.remove('oculto'); document.getElementById('tabla-individual').classList.add('oculto');
-                let hMas = "";
+                document.getElementById('filtros-inventario').style.display = 'none'; 
+                document.getElementById('filtros-eventos').style.display = 'flex'; 
+                document.getElementById('lbl-prenadas').innerText = "-"; 
+            }
+            actualizarInformeAvanzado();
+        }
+
+        function manejarRangoFechas() {
+            const rango = document.getElementById('f-inf-rango-fecha').value; 
+            const cajaManual = document.getElementById('caja-fechas-custom');
+            const dDesde = document.getElementById('f-inf-desde'); 
+            const dHasta = document.getElementById('f-inf-hasta');
+            let hoy = new Date(); let desde = new Date();
+            if (rango === 'custom') { 
+                cajaManual.style.display = 'flex'; 
+            } else {
+                cajaManual.style.display = 'none';
+                if(rango === 'hoy') { } 
+                else if (rango === '7') { desde.setDate(hoy.getDate() - 7); } 
+                else if (rango === '30') { desde.setDate(hoy.getDate() - 30); } 
+                else if (rango === 'todo') { desde = new Date('2000-01-01'); }
+                dDesde.value = desde.toISOString().split('T')[0]; 
+                dHasta.value = hoy.toISOString().split('T')[0];
+            }
+            actualizarInformeAvanzado();
+        }
+
+        function obtenerBadgeAccion(accion) {
+            if(accion === 'Sanidad') return `💉 Sanidad`;
+            if(accion === 'Peso') return `⚖️ Peso`;
+            if(accion === 'Diagnóstico') return `🩺 Tacto`;
+            if(accion === 'Inseminación') return `🧬 Reproducción`;
+            if(accion === 'Nutrición') return `🌾 Nutrición`;
+            return `${accion}`;
+        }
+
+        function actualizarInformeAvanzado() {
+            const modo = document.getElementById('f-inf-modo').value; 
+            const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
+            const datosActivos = obtenerRegistrosActivos(); 
+            
+            let aliasMap = {}; datosActivos.forEach(d => { if(d.accion === 'Cambio de Caravana') aliasMap[String(d.caravana)] = String(d.valor); });
+            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && !aliasMap[c]))]; 
+            
+            const tbodyMasivo = document.getElementById('tb-informe-masivo'); 
+            const tbodyEventos = document.getElementById('tb-informe-eventos'); 
+            const tbodyIndiv = document.getElementById('tb-informe-individual');
+            
+            document.getElementById('tabla-masiva').classList.add('oculto'); 
+            document.getElementById('tabla-eventos').classList.add('oculto'); 
+            document.getElementById('tabla-individual').classList.add('oculto');
+            
+            if(fRp !== "") {
+                rpPrint = fRp; 
+                document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`; 
+                document.getElementById('tabla-individual').classList.remove('oculto');
+                const regs = obtenerHistorial(fRp);
+                let hInd = ""; 
+                regs.forEach(r => { 
+                    if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') 
+                        hInd+=`<tr><td>${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${obtenerBadgeAccion(r.accion)}</strong></td><td>${r.valor}</td><td style="font-size:12px; color:var(--text-muted);">${r.detalles}</td></tr>`; 
+                });
+                tbodyIndiv.innerHTML = hInd; 
+                document.getElementById('inf-total').innerText = regs.filter(r => !r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master').length; 
+                document.getElementById('inf-prenadas').innerText = "-"; 
+                return;
+            }
+
+            rpPrint = ""; 
+            document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar Informe PDF`;
+
+            if(modo === 'inventario') {
+                document.getElementById('tabla-masiva').classList.remove('oculto');
+                const fLote = document.getElementById('f-inf-lote').value; 
+                const fCat = document.getElementById('f-inf-cat').value; 
+                const fDx = document.getElementById('f-inf-dx').value; 
+                tbodyMasivo.innerHTML = ""; let countTotal = 0, countPrenadas = 0;
+                
                 unicas.forEach(car => {
-                    const regs = obtenerHistorial(car); let cat = "-", peso = "-", d = "-", lote = "-"; 
-                    const uP = regs.find(x => x.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-"; 
-                    const uC = regs.find(x => x.accion === 'Actualización de Datos'); if(uC) { let v=String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
-                    const uPz = regs.find(x => x.accion === 'Peso'); if(uPz) peso = uPz.valor || "-"; 
-                    const uDx = regs.find(x => x.accion === 'Diagnóstico'); if(uDx) d = uDx.valor || "-"; 
-                    let p = true; if(l !== "ALL" && !lote.includes(l)) p = false; if(c !== "ALL" && !cat.includes(c)) p = false; if(dx !== "ALL" && !d.includes(dx)) p = false; 
-                    if(p) { tTot++; if(String(d||"").includes('Preñada')) tPre++; hMas += `<tr><td><strong>${car}</strong></td><td>${cat}</td><td>${lote}</td><td>${peso}</td><td>${d}</td></tr>`; }
-                }); 
-                document.getElementById('inf-total').innerText = tTot; document.getElementById('inf-prenadas').innerText = tPre; document.getElementById('tb-informe-masivo').innerHTML = hMas;
+                    const regs = obtenerHistorial(car); 
+                    let cat = "-", peso = "-", dx = "-", lote = "-";
+                    const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
+                    const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v=String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; }
+                    const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
+                    const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-";
+                    
+                    let pasaFiltro = true; 
+                    if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; 
+                    if(fCat !== "ALL" && !cat.includes(fCat)) pasaFiltro = false; 
+                    if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false;
+                    
+                    if(pasaFiltro) { 
+                        countTotal++; 
+                        if(dx.includes('Preñada')) countPrenadas++; 
+                        tbodyMasivo.innerHTML += `<tr><td><strong>${car}</strong></td><td>${cat}<br><span style="font-size:11px; color:var(--text-muted);">${lote}</span></td><td>${peso}</td><td>${dx}</td></tr>`; 
+                    }
+                });
+                document.getElementById('inf-total').innerText = countTotal; 
+                document.getElementById('inf-prenadas').innerText = countPrenadas;
+            } else {
+                document.getElementById('tabla-eventos').classList.remove('oculto');
+                const fAcc = document.getElementById('f-inf-accion-oculto').value; 
+                const fDesde = document.getElementById('f-inf-desde').value; 
+                const fHasta = document.getElementById('f-inf-hasta').value; 
+                const fKey = document.getElementById('f-inf-keyword').value.trim().toLowerCase();
+                
+                let eventos = datosActivos.filter(d => !d.accion.includes('Vinculacion') && d.accion !== 'Perfil Master' && d.accion !== 'Actualización de Datos' && d.caravana !== "---");
+                if(fAcc !== "ALL") eventos = eventos.filter(d => d.accion === fAcc); 
+                if(fDesde) eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00'));
+                if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); 
+                if(fKey) eventos = eventos.filter(d => (String(d.valor) + String(d.detalles)).toLowerCase().includes(fKey));
+                
+                tbodyEventos.innerHTML = "";
+                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { 
+                    tbodyEventos.innerHTML += `<tr><td>${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${r.caravana}</strong></td><td>${obtenerBadgeAccion(r.accion)}</td><td><strong>${r.valor}</strong><br><span style="color:var(--text-muted);">${r.detalles}</span></td></tr>`; 
+                });
+                document.getElementById('inf-total').innerText = eventos.length; 
+                document.getElementById('inf-prenadas').innerText = "-";
             }
         }
 
-        // ==========================================
-        // MOTOR PDF COMPLETAMENTE AUTÓNOMO
-        // ==========================================
         function ejecutarDescargaPDF() {
             const btn = document.getElementById('btn-print-magico');
             btn.innerText = "⏳ Generando Archivo PDF...";
             
             const h_nom = document.getElementById('cfg-nom').value || 'TAURUS CONTROL';
             const h_log = lsGet('tc_hacienda', {}).logo || "";
+            const modo = document.getElementById('f-inf-modo').value;
             
             let htmlContent = `
-            <div style="background-color: #ffffff; padding: 20px; width: 700px; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;">
+            <div style="background-color: #ffffff; padding: 20px; width: 100%; max-width: 1000px; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;">
                 <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #000000; padding-bottom: 15px; margin-bottom: 20px;">
                     <div>
                         <h2 style="margin:0 0 10px 0; font-size:24px; text-transform:uppercase;">${h_nom}</h2>`;
@@ -936,8 +1029,9 @@
                 
                 htmlContent += `</tbody></table>`;
             } else {
+                const titulo = modo === 'inventario' ? "Reporte Analítico de Inventario General" : "Reporte Analítico de Trabajos y Procedimientos";
                 htmlContent += `
-                        <p style="margin:0; font-size:14px;">Reporte Analítico de Inventario General</p>
+                        <p style="margin:0; font-size:14px;">${titulo}</p>
                         <p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p>
                     </div>
                     ${h_log?`<img src="${h_log}" style="max-height:60px; max-width: 150px;">`:''}
@@ -945,31 +1039,47 @@
                 
                 <table style="width: 50%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
                     <tr>
-                        <td style="border: 1px solid #000000; padding: 6px;"><strong>Total Cabezas Filtradas:</strong> ${document.getElementById('inf-total').innerText}</td>
-                        <td style="border: 1px solid #000000; padding: 6px;"><strong>Total Preñadas:</strong> ${document.getElementById('inf-prenadas').innerText}</td>
+                        <td style="border: 1px solid #000000; padding: 6px;"><strong>Total Registros:</strong> ${document.getElementById('inf-total').innerText}</td>
+                        <td style="border: 1px solid #000000; padding: 6px;"><strong>Preñadas Conf.:</strong> ${document.getElementById('inf-prenadas').innerText}</td>
                     </tr>
                 </table>
                 
                 <table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; word-wrap: break-word;">
-                    <thead>
-                        <tr>
-                            <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 20%;">Caravana</th>
-                            <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 25%;">Categoría</th>
-                            <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 25%;">Ubicación / Lote</th>
-                            <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Último Peso</th>
-                            <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Diagnóstico Actual</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
+                    <thead>`;
                         
-                let rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr');
-                rows.forEach(tr => {
-                    htmlContent += `<tr>`;
-                    tr.querySelectorAll('td').forEach(td => {
-                        htmlContent += `<td style="border: 1px solid #000000; padding: 6px; overflow: hidden;">${td.innerHTML}</td>`;
+                if(modo === 'inventario') {
+                    htmlContent += `<tr>
+                        <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 20%;">Caravana</th>
+                        <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 25%;">Categoría</th>
+                        <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 25%;">Ubicación / Lote</th>
+                        <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Último Peso</th>
+                        <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Diagnóstico Actual</th>
+                    </tr></thead><tbody>`;
+                        
+                    let rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr');
+                    rows.forEach(tr => {
+                        htmlContent += `<tr>`;
+                        tr.querySelectorAll('td').forEach(td => {
+                            htmlContent += `<td style="border: 1px solid #000000; padding: 6px; overflow: hidden;">${td.innerHTML}</td>`;
+                        });
+                        htmlContent += `</tr>`;
                     });
-                    htmlContent += `</tr>`;
-                });
+                } else {
+                    htmlContent += `<tr>
+                        <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Fecha</th>
+                        <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Caravana</th>
+                        <th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 70%;">Trabajo Realizado y Detalles</th>
+                    </tr></thead><tbody>`;
+                    
+                    let rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr');
+                    rows.forEach(tr => {
+                        htmlContent += `<tr>`;
+                        tr.querySelectorAll('td').forEach(td => {
+                            htmlContent += `<td style="border: 1px solid #000000; padding: 6px; overflow: hidden;">${td.innerHTML}</td>`;
+                        });
+                        htmlContent += `</tr>`;
+                    });
+                }
                 
                 htmlContent += `</tbody></table>`;
             }
@@ -978,24 +1088,21 @@
             
             const opt = { 
                 margin: 10, 
-                filename: rpPrint !== "" ? `Dossier_RP_${rpPrint.toUpperCase()}.pdf` : 'Reporte_Inventario.pdf',
+                filename: rpPrint !== "" ? `Dossier_RP_${rpPrint.toUpperCase()}.pdf` : 'Reporte_General.pdf',
                 image: { type: 'jpeg', quality: 0.98 }, 
                 html2canvas: { scale: 2, useCORS: true }, 
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: 'avoid-all', avoid: 'tr' }
+                pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' }
             };
             
             html2pdf().set(opt).from(htmlContent).save().then(()=>{ 
-                btn.innerHTML = rpPrint !== "" ? `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}` : "🖨️ Descargar Inventario General PDF"; 
+                btn.innerHTML = rpPrint !== "" ? `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}` : "🖨️ Descargar Informe PDF"; 
             }).catch(e => {
                 alert("Hubo un error generando el PDF.");
                 btn.innerHTML = "🖨️ Reintentar Descarga";
             });
         }
 
-        // ==========================================
-        // DASHBOARD GRÁFICO 
-        // ==========================================
         function procesarDatosDashboard() {
             const datosActivos = obtenerRegistrosActivos();
             
@@ -1042,9 +1149,6 @@
             }); document.getElementById('contenedor-graficos').innerHTML = htmlGraficos;
         }
 
-        // ==========================================
-        // NAVEGACIÓN Y CONFIGURACIÓN
-        // ==========================================
         function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.sidebar-nav li').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
         function abrirModal(id) { document.getElementById(id).style.display = 'flex'; } function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
 
@@ -1132,11 +1236,13 @@
             const fd = new URLSearchParams(); 
             fd.append('accion', 'crear_peon'); 
             fd.append('maestro', maestroId); 
+            fd.append('usuario', usActivo); 
             fd.append('peon_usu', u); 
             fd.append('peon_pass', p); 
+            fd.append('vencimiento', 'Heredado');
             
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
-                alert("Operador Registrado en el servidor."); 
+                alert("Operador Registrado en el servidor. Puede tardar unos 15 segundos en procesarse en la nube."); 
                 document.getElementById('op-usu').value = ''; 
                 document.getElementById('op-pass').value = ''; 
             }); 
