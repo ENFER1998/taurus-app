@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Taurus Control - Terminal PC</title>
     
-    <!-- MOTOR DE DESCARGA PDF DIRECTA -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
-        /* ================= DISEÑO INDUSTRIAL ================= */
         :root { 
             --bg-base: #0f172a; --bg-panel: #1e293b; --bg-card: #334155; 
             --border: #475569; --primary: #2563eb; --primary-hover: #1d4ed8; 
@@ -17,27 +15,20 @@
             --text-main: #f8fafc; --text-muted: #94a3b8; 
         }
 
-        /* ================= MODO CLARO ================= */
         body.tema-claro {
-            --bg-base: #f1f5f9;
-            --bg-panel: #ffffff;
-            --bg-card: #f8fafc;
-            --border: #cbd5e1;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
+            --bg-base: #f1f5f9; --bg-panel: #ffffff; --bg-card: #f8fafc;
+            --border: #cbd5e1; --text-main: #0f172a; --text-muted: #64748b;
         }
 
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: var(--bg-base); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; font-size: 14px; transition: background 0.3s, color 0.3s; }
         .oculto { display: none !important; }
 
-        /* SCROLLBARS */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg-base); }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-        /* LOGIN */
         #pantalla-login { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-base); display: flex; align-items: center; justify-content: center; z-index: 999; }
         .login-box { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 6px; padding: 40px; width: 380px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
         .login-box img { width: 90px; margin-bottom: 15px; }
@@ -49,7 +40,6 @@
         .btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
         .error-msg { color: var(--danger); font-size: 13px; margin-bottom: 15px; font-weight: bold; display: none; }
 
-        /* SIDEBAR */
         #sidebar { width: 240px; background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
         .sidebar-header { padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border); background: var(--bg-card);}
         .sidebar-header img { width: 35px; }
@@ -61,7 +51,6 @@
         .sidebar-footer { padding: 15px; font-size: 11px; color: var(--text-muted); text-align: center; border-top: 1px solid var(--border); background: var(--bg-card); }
         .sidebar-footer strong { color: var(--text-main); display: block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase;}
 
-        /* ÁREA PRINCIPAL */
         #main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg-base); overflow: hidden; }
         .topbar { background: var(--bg-panel); border-bottom: 1px solid var(--border); padding: 10px 25px; display: flex; justify-content: space-between; align-items: center; }
         .topbar-title { font-size: 13px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;}
@@ -83,21 +72,18 @@
         .kpi-box span { display: block; font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; }
         .kpi-box strong { display: block; font-size: 28px; margin-top: 5px; color: var(--text-main); }
 
-        /* ALERTAS */
         .contenedor-scroll-alertas { max-height: 180px; overflow-y: auto; padding-right: 10px; }
         .alerta-item { display: flex; align-items: center; gap: 10px; background: rgba(245,158,11,0.1); padding: 12px; border-radius: 6px; border-left: 4px solid var(--warning); margin-bottom: 10px; font-size: 13px; cursor: pointer; border: 1px solid rgba(245,158,11,0.3); transition: 0.2s;}
         .alerta-item:hover { background: rgba(245,158,11,0.2); }
         .alerta-item.peligro { background: rgba(239,68,68,0.1); border-left-color: var(--danger); border-color: rgba(239,68,68,0.3);}
         .alerta-item.peligro:hover { background: rgba(239,68,68,0.2); }
 
-        /* TABLAS */
         .search-bar { display: flex; gap: 10px; margin-bottom: 15px; }
         table.tabla-datos { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
         table.tabla-datos th { background: var(--bg-card); padding: 10px 15px; color: var(--text-muted); text-transform: uppercase; font-size: 11px; font-weight: bold; border-bottom: 2px solid var(--bg-base); white-space: nowrap;}
         table.tabla-datos td { padding: 10px 15px; border-bottom: 1px solid var(--border); }
         table.tabla-datos tr:hover td { background: var(--bg-card); cursor: pointer;}
 
-        /* FICHA INDIVIDUAL */
         .rp-header { font-size: 28px; font-weight: 900; margin: 0 0 20px 0; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 15px;}
         .dato-box { background: var(--bg-base); padding: 12px; border: 1px solid var(--border); border-radius: 4px; }
         .dato-box span { display: block; font-size: 10px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; margin-bottom: 4px; }
@@ -107,7 +93,6 @@
         .nota-item .f { font-size: 11px; color: var(--primary); font-weight: bold; display: block; margin-bottom: 2px;}
         .nota-item .t { font-size: 13px; color: var(--text-main); line-height: 1.4; }
 
-        /* GRÁFICOS */
         .torta-container { position: relative; width: 120px; height: 120px; margin: 0 auto 15px auto; }
         .torta { width: 100%; height: 100%; border-radius: 50%; background: var(--border); transition: background 1s ease-in-out;}
         .torta-centro { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 75px; height: 75px; background: var(--bg-panel); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 20px; color: var(--text-main);}
@@ -118,7 +103,6 @@
         .barra-bg { width: 100%; background: var(--border); height: 6px; border-radius: 3px; overflow: hidden;}
         .barra-fill { height: 100%; border-radius: 3px; width: 0%; transition: width 1s ease;}
 
-        /* MODALES */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); z-index: 2000; align-items: center; justify-content: center;}
         .modal-body { background: var(--bg-panel); width: 450px; border-radius: 6px; padding: 25px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5);}
         .modal-body h3 { margin: 0 0 20px 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; font-size: 16px; text-transform: uppercase; color: var(--text-main);}
@@ -177,8 +161,8 @@
         <div class="topbar">
             <div class="topbar-title">Terminal Corporativa de Trazabilidad</div>
             <div class="topbar-right" style="display:flex; gap:10px; align-items:center;">
-                <!-- BOTONES ACHICADOS -->
-                <button id="btn-bluetooth" class="btn-outline" style="padding: 4px 10px; font-size: 11px; border-color:var(--primary); color:var(--primary);" onclick="conectarBluetooth()">🔗 Bluetooth: Inactivo</button>
+                <!-- BOTONES PEQUEÑOS Y BLUETOOTH UNIFICADO -->
+                <button id="btn-bluetooth" class="btn-outline" style="padding: 4px 10px; font-size: 11px; border-color:var(--primary); color:var(--primary);" onclick="conectarBluetooth()">🔗 Bluetooth</button>
                 <button class="btn-outline" style="padding: 4px 10px; font-size: 11px;" onclick="sincronizarFondo(true)">🔄 Actualizar Servidor</button>
                 <div id="estado-red" class="badge online" style="padding: 4px 10px; font-size: 11px; margin: 0;">🟢 Conectado</div>
             </div>
@@ -343,7 +327,7 @@
                             <span>Usuario Activo</span>
                             <strong id="lbl-perfil-usu">-</strong>
                         </div>
-                        <div class="dato-box" style="margin-top:10px;">
+                        <div class="dato-box" id="panel-licencia" style="margin-top:10px;">
                             <span>Vencimiento de Licencia</span>
                             <strong id="lbl-licencia">-</strong>
                         </div>
@@ -370,9 +354,14 @@
                                 <option value="Dueño">Segundo Dueño (Acceso Total)</option>
                             </select>
                         </div>
-                        <div class="form-grupo"><label>Usuario</label><input type="text" id="op-usu" class="form-control"></div>
-                        <div class="form-grupo"><label>Contraseña de Acceso</label><input type="password" id="op-pass" class="form-control"></div>
+                        <div class="form-grupo"><label>Crear Nuevo Usuario</label><input type="text" id="op-usu" class="form-control" placeholder="Nombre de usuario"></div>
+                        <div class="form-grupo"><label>Contraseña de Acceso</label><input type="password" id="op-pass" class="form-control" placeholder="Clave"></div>
                         <button class="btn-primary" onclick="crearOperador()">Registrar Usuario</button>
+                        
+                        <hr style="border-color:var(--border); margin:20px 0;">
+                        
+                        <div class="form-grupo"><label>Eliminar Operador (Escriba el nombre exacto)</label><input type="text" id="op-del-usu" class="form-control" placeholder="Nombre del operador a borrar"></div>
+                        <button class="btn-primary" style="background:var(--danger);" onclick="eliminarOperador()">Eliminar Operador de la Nube</button>
                     </div>
                 </div>
 
@@ -402,7 +391,7 @@
                     </div>
                     
                     <!-- BOTÓN DE WHATSAPP -->
-                    <a href="https://wa.me/595976139617" target="_blank" class="btn-primary" style="display:block; text-align:center; background:#25D366; margin-top:20px; text-decoration:none;">💬 Soporte Técnico WhatsApp</a>
+                    <button class="btn-primary" style="display:block; width:100%; text-align:center; background:#25D366; margin-top:20px;" onclick="abrirSoporte()">💬 Soporte Técnico WhatsApp</button>
                 </div>
             </div>
         </div>
@@ -451,7 +440,6 @@
     <div id="m-nut" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-nut')">&times;</span><h3>Suplemento Nutricional</h3><div class="form-grupo"><label>Alimento Suministrado</label><input type="text" class="form-control" id="i-nut-prod" list="lista-alimentos"><datalist id="lista-alimentos"><option value="FOSFO Plus! 90f (Sal Mineral)"></option><option value="FOSFO Plus! Proteica Ternero"></option><option value="Forraje / Pastura"></option></datalist></div><div class="form-grupo"><label>Dosificación</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 0.50gr/kg/día..."></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-nut', 'Nutrición')">Registrar Nutrición</button></div></div>
     <div id="m-traza" class="modal"><div class="modal-body" style="width:700px;"><span class="btn-cerrar" onclick="cerrarModal('m-traza')">&times;</span><h3>Trazabilidad Completa del RP</h3><div style="max-height:450px;overflow-y:auto; margin-top:15px;"><table class="tabla-datos"><thead><tr><th>Fecha</th><th>Acción</th><th>Valor Principal</th><th>Detalles Adicionales</th></tr></thead><tbody id="tb-traza"></tbody></table></div></div></div>
 
-    <!-- CÓDIGO CORE BLINDADO CON ASYNC/AWAIT -->
     <script>
         const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzyWvEMlfCCQXGP0-ssUUQ2je4tsFPXd6Yu0C9WwsTa7sgqFkkz3jr0a8CXqrI9ydk/exec";
         
@@ -461,7 +449,7 @@
         let dbCache = []; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
 
         // ==========================================
-        // MÓDULO BLUETOOTH CON FOCUS CORREGIDO
+        // MÓDULO BLUETOOTH CON ENFOQUE Y FILTRO PESO/RFID
         // ==========================================
         let bleDevice = null;
         let bleServer = null;
@@ -479,7 +467,7 @@
                 });
 
                 bleDevice.addEventListener('gattserverdisconnected', () => {
-                    btn.innerHTML = "🔗 Bluetooth: Inactivo";
+                    btn.innerHTML = "🔗 Bluetooth";
                     btn.style.color = "var(--primary)";
                     btn.style.borderColor = "var(--primary)";
                     alert("Dispositivo Bluetooth desconectado.");
@@ -513,7 +501,7 @@
                 
             } catch (error) {
                 console.error(error);
-                btn.innerHTML = "🔗 Bluetooth: Inactivo";
+                btn.innerHTML = "🔗 Bluetooth";
             }
         }
 
@@ -527,17 +515,20 @@
                 let dataLimpia = bufferBT.replace(/[^a-zA-Z0-9.-]/g, '').trim(); 
                 if(!dataLimpia) return;
 
-                if (dataLimpia.includes('.')) {
-                    // Es un peso
+                // Detecta si es un Peso: Es un número menor a 6 caracteres (ej. "347" o "413.5") o tiene punto decimal
+                let isWeight = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
+
+                if (isWeight) {
                     if (!document.getElementById('v-ficha').classList.contains('oculto') && rpActivo) {
                         abrirModal('m-peso');
                         document.getElementById('i-peso-val').value = dataLimpia;
                     } else {
-                        alert("⚖️ Peso recibido: " + dataLimpia + " Kg. Primero busque y abra la ficha de un animal.");
+                        alert("⚖️ Peso recibido: " + dataLimpia + " Kg. Abra la ficha de un animal antes de pesar.");
                     }
                 } else {
                     // Es un RFID
-                    let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim() === dataLimpia);
+                    let dataMinuscula = dataLimpia.toLowerCase();
+                    let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === dataMinuscula);
                     
                     if(esRFIDRegistrado) {
                         cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1]);
@@ -548,8 +539,11 @@
                         document.getElementById('lbl-rfid-scaneado').innerText = dataLimpia;
                         document.getElementById('f-rfid-caravana').value = "";
                         abrirModal('m-rfid');
-                        // El focus con timeout arregla el problema de minimizar y maximizar para poder escribir
-                        setTimeout(() => document.getElementById('f-rfid-caravana').focus(), 100);
+                        
+                        // Forzamos el cursor al input después de que se renderiza el modal
+                        setTimeout(() => {
+                            document.getElementById('f-rfid-caravana').focus();
+                        }, 500);
                     }
                 }
                 bufferBT = "";
@@ -570,12 +564,26 @@
                 let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p);
             }
             
+            cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1]);
             document.getElementById('buscador-caravana').value = car;
-            document.querySelectorAll('.sidebar-nav li')[1].click();
             buscarCaravanaBtn();
             procesarDatosDashboard();
         }
 
+        // ==========================================
+        // WHATSAPP SOPORTE EXTERNO
+        // ==========================================
+        function abrirSoporte() {
+            try {
+                require('electron').shell.openExternal('https://wa.me/595976139617');
+            } catch(e) {
+                window.open('https://wa.me/595976139617', '_blank');
+            }
+        }
+
+        // ==========================================
+        // FILTRO GLOBAL
+        // ==========================================
         function obtenerRegistrosActivos() {
             let validos = [];
             const unicas = [...new Set(dbCache.map(d => d.caravana).filter(c => c !== "---" && c != null))];
@@ -673,13 +681,16 @@
                 dbCache = dbValida.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); 
                 usActivo = u; maestroId = m; usRol = r; 
                 
-                document.getElementById('lbl-sidebar-user').innerText = `${u.toUpperCase()} (${r})`;
-                document.getElementById('lbl-perfil-usu').innerText = `${u.toUpperCase()} (Rol: ${r})`;
+                let displayRol = (r === 'Dueño') ? 'Dueño' : 'Operador';
+                
+                document.getElementById('lbl-sidebar-user').innerText = `${u.toUpperCase()} (${displayRol})`;
+                document.getElementById('lbl-perfil-usu').innerText = `${u.toUpperCase()} (Rol: ${displayRol})`;
                 
                 // Ocultar privilegios de administrador si es operador
                 if(r !== 'Dueño') {
                     document.getElementById('panel-crear-peones').style.display = 'none'; 
                     document.getElementById('panel-membrete').style.display = 'none';
+                    document.getElementById('panel-licencia').style.display = 'none';
                 }
                 
                 // Cargar panel de licencia
@@ -762,7 +773,7 @@
                 let rp = rpForzado ? rpForzado : document.getElementById('buscador-caravana').value.trim(); 
                 if(!rp) return; 
                 
-                let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim() === rp);
+                let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === rp.toLowerCase());
                 if(esRFIDRegistrado) rp = esRFIDRegistrado.caravana;
 
                 rpActivo = rp; document.getElementById('ficha-animal').classList.remove('oculto'); 
@@ -864,11 +875,9 @@
             if(modo === 'inventario') {
                 document.getElementById('filtros-inventario').style.display = 'flex'; 
                 document.getElementById('filtros-eventos').style.display = 'none'; 
-                document.getElementById('lbl-prenadas').innerText = "PREÑADAS CONFIRMADAS"; 
             } else {
                 document.getElementById('filtros-inventario').style.display = 'none'; 
                 document.getElementById('filtros-eventos').style.display = 'flex'; 
-                document.getElementById('lbl-prenadas').innerText = "-"; 
             }
             actualizarInformeAvanzado();
         }
@@ -918,7 +927,7 @@
             document.getElementById('tabla-eventos').classList.add('oculto'); 
             document.getElementById('tabla-individual').classList.add('oculto');
             
-            // Forzar siempre el recuento correcto de preñadas globales
+            // Calculo global de preñadas reales, sin importar el modo
             let tPreGlobal = 0;
             unicas.forEach(car => {
                 const regs = obtenerHistorial(car);
@@ -990,7 +999,6 @@
                     tbodyEventos.innerHTML += `<tr><td>${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${r.caravana}</strong></td><td>${obtenerBadgeAccion(r.accion)}</td><td><strong>${r.valor}</strong><br><span style="color:var(--text-muted);">${r.detalles}</span></td></tr>`; 
                 });
                 document.getElementById('inf-total').innerText = eventos.length; 
-                document.getElementById('inf-prenadas').innerText = "-";
             }
         }
 
@@ -1007,7 +1015,8 @@
             <style>
                 table { width: 100%; border-collapse: collapse; page-break-inside: auto; margin-top: 15px; }
                 tr { page-break-inside: avoid !important; page-break-after: auto; }
-                th, td { border: 1px solid #000000; padding: 6px; word-wrap: break-word; text-align: left; vertical-align: middle; }
+                th, td { border: 1px solid #000000; padding: 6px; word-wrap: break-word; overflow-wrap: break-word; text-align: left; vertical-align: middle; }
+                th { background-color: #f1f5f9; }
                 thead { display: table-header-group; }
             </style>
             <div style="background-color: #ffffff; padding: 20px; width: 100%; max-width: 1000px; margin: 0 auto; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;">
@@ -1030,7 +1039,7 @@
                         <p style="margin:0; font-size:14px;">Dossier Clínico Histórico - RP: <strong>${rpPrint.toUpperCase()}</strong></p>
                         <p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p>
                     </div>
-                    ${h_log?`<img src="${h_log}" style="max-width:120px; max-height:80px; object-fit:contain;">`:''}
+                    ${h_log?`<img src="${h_log}" style="max-width:150px; max-height:80px; object-fit:contain;">`:''}
                 </div>
                 
                 <h3 style="font-size:16px; margin: 0 0 10px 0;">Resumen del Perfil</h3>
@@ -1060,10 +1069,10 @@
                 <table style="font-size: 11px;">
                     <thead>
                         <tr>
-                            <th style="background-color: #f1f5f9; width: 15%;">Fecha</th>
-                            <th style="background-color: #f1f5f9; width: 20%;">Procedimiento</th>
-                            <th style="background-color: #f1f5f9; width: 30%;">Valor Principal</th>
-                            <th style="background-color: #f1f5f9; width: 35%;">Observaciones Adicionales</th>
+                            <th style="width: 12%;">Fecha</th>
+                            <th style="width: 25%;">Procedimiento</th>
+                            <th style="width: 25%;">Valor Principal</th>
+                            <th style="width: 38%;">Observaciones Adicionales</th>
                         </tr>
                     </thead>
                     <tbody>`;
@@ -1082,7 +1091,7 @@
                         <p style="margin:0; font-size:14px;">${titulo}</p>
                         <p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p>
                     </div>
-                    ${h_log?`<img src="${h_log}" style="max-width:120px; max-height:80px; object-fit:contain;">`:''}
+                    ${h_log?`<img src="${h_log}" style="max-width:150px; max-height:80px; object-fit:contain;">`:''}
                 </div>
                 
                 <table style="width: 50%; font-size: 11px;">
@@ -1097,11 +1106,11 @@
                         
                 if(modo === 'inventario') {
                     htmlContent += `<tr>
-                        <th style="background-color: #f1f5f9; width: 15%;">Caravana</th>
-                        <th style="background-color: #f1f5f9; width: 25%;">Categoría</th>
-                        <th style="background-color: #f1f5f9; width: 25%;">Ubicación / Lote</th>
-                        <th style="background-color: #f1f5f9; width: 15%;">Último Peso</th>
-                        <th style="background-color: #f1f5f9; width: 20%;">Diagnóstico Actual</th>
+                        <th style="width: 15%;">Caravana</th>
+                        <th style="width: 25%;">Categoría</th>
+                        <th style="width: 25%;">Ubicación / Lote</th>
+                        <th style="width: 15%;">Último Peso</th>
+                        <th style="width: 20%;">Diagnóstico Actual</th>
                     </tr></thead><tbody>`;
                         
                     let rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr');
@@ -1111,11 +1120,12 @@
                         htmlContent += `</tr>`;
                     });
                 } else {
+                    // Ajuste de las columnas: Trabajo más pequeño, Detalles más grande
                     htmlContent += `<tr>
-                        <th style="background-color: #f1f5f9; width: 12%;">Fecha</th>
-                        <th style="background-color: #f1f5f9; width: 12%;">Caravana</th>
-                        <th style="background-color: #f1f5f9; width: 20%;">Trabajo Realizado</th>
-                        <th style="background-color: #f1f5f9; width: 56%;">Detalles Extras</th>
+                        <th style="width: 12%;">Fecha</th>
+                        <th style="width: 12%;">Caravana</th>
+                        <th style="width: 18%;">Trabajo Realizado</th>
+                        <th style="width: 58%;">Detalles Extras</th>
                     </tr></thead><tbody>`;
                     
                     let rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr');
@@ -1233,6 +1243,24 @@
                 document.getElementById('op-usu').value = ''; 
                 document.getElementById('op-pass').value = ''; 
             }); 
+        }
+
+        function eliminarOperador() {
+            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; }
+            const u = document.getElementById('op-del-usu').value.trim();
+            if(!u) { alert("Escribe el nombre del operador a eliminar."); return; }
+            if(confirm(`¿Estás seguro de eliminar el acceso del usuario: ${u}?`)) {
+                const fd = new URLSearchParams(); 
+                fd.append('accion', 'eliminar_peon'); 
+                fd.append('maestro', maestroId); 
+                fd.append('usuario', usActivo); 
+                fd.append('peon_usu', u); 
+                
+                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
+                    alert("Orden de eliminación enviada al servidor."); 
+                    document.getElementById('op-del-usu').value = ''; 
+                });
+            }
         }
 
         function cambiarMiContrasena() { if(!navigator.onLine) { alert("Necesitas conexión."); return; } const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) { alert("Mínimo 4 caracteres."); return; } const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { alert("Contraseña actualizada con éxito."); document.getElementById('nueva-clave').value = ''; let cred = lsGet('tc_cred', {}); cred.p = nueva; lsSet('tc_cred', cred); }); }
