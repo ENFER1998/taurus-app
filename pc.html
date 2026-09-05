@@ -121,10 +121,12 @@
         <div class="login-box">
             <img src="gemini-svg.ico" alt="Logo Taurus">
             <h1 style="margin-bottom: 25px;">Taurus Control</h1>
+            
             <input type="text" id="usuario" class="form-control" placeholder="Usuario" autocomplete="off">
             <input type="password" id="password" class="form-control" placeholder="Contraseña">
             <div id="error-login" class="error-msg"></div>
             <button id="btn-ingreso" class="btn-primary" onclick="procesarIngreso()">Ingresar al Sistema</button>
+            
             <div style="margin-top: 25px; line-height: 1.6;">
                 <span style="color: var(--text-muted); font-size: 13px;">Taurus Control</span><br>
                 <strong style="color: var(--text-main); font-size: 14px;">Desarrollado por Fernando Rodriguez &copy; 2026</strong>
@@ -142,7 +144,7 @@
             <li onclick="cambiarVista('v-ficha', this)">🐄 Ficha Clínica</li>
             <li onclick="cambiarVista('v-base', this); cargarListaRegistro();">📋 Base de Datos</li>
             <li onclick="cambiarVista('v-reporte', this); actualizarInformeAvanzado();">📄 Reportes PDF</li>
-            <li onclick="cambiarVista('v-config', this)">⚙️ Configuración</li>
+            <li onclick="cambiarVista('v-config', this); cargarListaOperadores();">⚙️ Configuración</li>
             <li onclick="cerrarSesion()" style="color: var(--danger); margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;">🚪 Cerrar Sesión</li>
         </ul>
         <div class="sidebar-footer">
@@ -161,24 +163,24 @@
             </div>
         </div>
 
-        <!-- DASHBOARD -->
         <div id="v-dash" class="vista">
             <h2 class="titulo-seccion">Panel de Control General</h2>
             <div class="grid-2" style="margin-bottom: 20px;">
                 <div class="kpi-box" style="border-color: var(--primary);"><span>Inventario General Activo</span><strong id="dash-cabezas">0</strong></div>
                 <div class="kpi-box" style="border-color: var(--success);"><span>Registros Históricos Procesados</span><strong id="dash-acciones">0</strong></div>
             </div>
+            
             <div class="tarjeta" id="contenedor-alertas" style="display:none; border-color:var(--warning);">
                 <h3 style="margin-top:0; font-size:14px; color:var(--warning); text-transform:uppercase;">⚠️ Alertas Clínicas Relevantes</h3>
                 <div class="contenedor-scroll-alertas" id="lista-alertas"></div>
             </div>
+
             <div class="tarjeta">
                 <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; color:var(--text-muted);">Métricas Dinámicas</h3>
                 <div id="contenedor-graficos" class="grid-2"></div>
             </div>
         </div>
 
-        <!-- FICHA CLÍNICA -->
         <div id="v-ficha" class="vista oculto">
             <h2 class="titulo-seccion">Expediente Clínico Individual</h2>
             <div class="search-bar">
@@ -196,6 +198,7 @@
                             <button class="btn-outline" style="padding: 6px 12px; font-size: 12px; border-color:var(--warning); color:var(--warning);" onclick="abrirModal('m-renombrar')">Renombrar RP</button>
                         </div>
                     </div>
+
                     <div class="grid-2">
                         <div>
                             <div class="grid-3">
@@ -211,6 +214,7 @@
                                 <div class="dato-box" style="grid-column: 1 / 3; border-color:var(--primary);"><span>Régimen Nutricional Actual</span><strong id="val-nutricion">-</strong></div>
                                 <div class="dato-box" style="border-color:#c2410c;"><span>Última Sanidad</span><strong id="val-sanidad">-</strong></div>
                             </div>
+                            
                             <div class="muro-notas" style="margin-top:15px;">
                                 <div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:8px;">
                                     <strong style="font-size:11px; color:var(--text-muted);">HISTORIAL DE OBSERVACIONES</strong>
@@ -219,6 +223,7 @@
                                 <div id="val-notas"></div>
                             </div>
                         </div>
+
                         <div>
                             <div style="background:var(--bg-base); padding:15px; border:1px solid var(--border); border-radius:4px; height:100%;">
                                 <h4 style="margin-top:0; font-size:12px; color:var(--text-muted); text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">Registrar Suceso Clínico</h4>
@@ -238,7 +243,6 @@
             </div>
         </div>
 
-        <!-- BASE DE DATOS -->
         <div id="v-base" class="vista oculto">
             <h2 class="titulo-seccion">Inventario General Activo</h2>
             <div class="search-bar">
@@ -252,9 +256,9 @@
             </div>
         </div>
 
-        <!-- REPORTES PDF -->
         <div id="v-reporte" class="vista oculto">
             <h2 class="titulo-seccion">Centro de Reportes y Documentos PDF</h2>
+            
             <div class="tarjeta">
                 <select class="form-control" id="f-inf-modo" onchange="cambiarModoReporte()" style="margin-bottom:15px; font-weight:bold; background:var(--primary); color:white;">
                     <option value="eventos">📋 TRATAMIENTOS Y TRABAJOS (Historial)</option>
@@ -291,7 +295,7 @@
                 
                 <div style="overflow-y:auto; max-height: 50vh;">
                     <table class="tabla-datos" id="tabla-eventos"><thead><tr><th>Fecha</th><th>RP</th><th>Trabajo Realizado</th><th>Detalles Extras</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
-                    <table class="tabla-datos oculto" id="tabla-masiva"><thead><tr><th>Caravana</th><th>Categoría / Lote</th><th>Últ. Peso</th><th>Dx Actual</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
+                    <table class="tabla-datos oculto" id="tabla-masiva"><thead><tr><th>Caravana</th><th>Categoría y Lote</th><th>Últ. Peso</th><th>Dx Actual</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
                     <table class="tabla-datos oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Procedimiento</th><th>Valor Principal</th><th>Observaciones Adicionales</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
                 </div>
             </div>
@@ -302,7 +306,6 @@
             <h2 class="titulo-seccion">Administración del Software</h2>
             <div class="grid-2">
                 <div>
-                    <!-- PANEL DE PERFIL Y LICENCIA -->
                     <div class="tarjeta">
                         <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">👤 Mi Perfil</h3>
                         <div class="dato-box">
@@ -347,6 +350,7 @@
                             <select id="op-del-usu-sel" class="form-control">
                                 <option value="">-- Seleccione un operador --</option>
                             </select>
+                            <span style="font-size:11px; color:var(--text-muted); display:block; margin-top:5px;">Se listan los usuarios registrados (solo se permite borrar Operadores).</span>
                         </div>
                         <button class="btn-primary" style="background:var(--danger);" onclick="eliminarOperador()">Eliminar Operador de la Nube</button>
                     </div>
@@ -377,7 +381,7 @@
                         </div>
                     </div>
                     
-                    <!-- BOTÓN DE WHATSAPP EXTERNO ENLACE PURO -->
+                    <!-- ENLACE DIRECTO WHATSAPP EXTERNO -->
                     <a href="https://wa.me/595976139617" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:block; width:100%; text-align:center; background:#25D366; margin-top:20px; text-decoration:none; padding:12px; box-sizing:border-box;">💬 Soporte Técnico WhatsApp</a>
                 </div>
             </div>
@@ -424,7 +428,7 @@
                 });
 
                 bleDevice.addEventListener('gattserverdisconnected', () => {
-                    btn.innerHTML = "🔗 Bluetooth";
+                    btn.innerHTML = "🔗 Bluetooth: Inactivo";
                     btn.style.color = "var(--primary)";
                     btn.style.borderColor = "var(--primary)";
                     alert("Dispositivo Bluetooth desconectado.");
@@ -522,7 +526,7 @@
         }
 
         // ==========================================
-        // FILTRO GLOBAL
+        // FILTRO GLOBAL Y LISTA OPERADORES
         // ==========================================
         function obtenerRegistrosActivos() {
             let validos = [];
@@ -541,6 +545,32 @@
             });
             const globalEvents = dbCache.filter(d => d.caravana === "---" || !d.caravana);
             return validos.concat(globalEvents).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+        }
+
+        function cargarListaOperadores() {
+            let operadores = new Set();
+            dbCache.forEach(d => {
+                let det = d.detalles || "";
+                if(det.includes('Op:')) {
+                    let nombre = det.split('Op:')[1].split('|')[0].trim();
+                    if(nombre) operadores.add(nombre);
+                }
+                if(det.includes('Resp:')) {
+                    let nombre = det.split('Resp:')[1].split('|')[0].trim();
+                    if(nombre) operadores.add(nombre);
+                }
+            });
+            const sel = document.getElementById('op-del-usu-sel');
+            if(sel) {
+                let options = '<option value="">-- Seleccione un operador --</option>';
+                operadores.forEach(o => {
+                    // Prevenir que el usuario activo se borre a sí mismo
+                    if(o.toLowerCase() !== usActivo.toLowerCase()) {
+                        options += `<option value="${o}">${o}</option>`;
+                    }
+                });
+                sel.innerHTML = options;
+            }
         }
 
         if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
@@ -571,12 +601,18 @@
 
             try {
                 if(!navigator.onLine) throw new Error("Offline");
+                
                 const url = `${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&t=${Date.now()}`;
                 const response = await fetch(url);
+                
                 if (!response.ok) throw new Error("Error de conexión al servidor.");
                 const res = await response.json();
+                
                 if(res.error) throw new Error(res.mensaje);
-                if(res.vencimiento && new Date() > new Date(res.vencimiento)) throw new Error("Su licencia ha vencido.");
+                
+                if(res.vencimiento && new Date() > new Date(res.vencimiento)) {
+                    throw new Error("Su licencia ha vencido.");
+                }
                 
                 let dataLimpia = Array.isArray(res.data) ? res.data : [];
                 lsSet('tc_cred', { u: u, p: p, m: res.maestro, r: res.rol, v: res.vencimiento }); 
@@ -584,16 +620,29 @@
                 lsSet('tc_hacienda', { nombre: res.hacienda, logo: res.logo }); 
                 
                 arrancarSistema(dataLimpia, u, res.maestro, res.rol);
+                
             } catch(error) {
+                console.warn("Fallo de red, revisando memoria local...", error);
+                
                 const cred = lsGet('tc_cred', null);
                 if(cred && String(cred.u).toLowerCase() === u.toLowerCase() && cred.p === p) { 
                     if(cred.v && new Date() > new Date(cred.v)) {
-                        err.innerText = "Licencia local vencida."; err.style.display = 'block';
-                    } else { arrancarSistema(lsGet('tc_db', []), cred.u, cred.m, cred.r); }
+                        err.innerText = "Licencia local vencida."; 
+                        err.style.display = 'block';
+                    } else {
+                        arrancarSistema(lsGet('tc_db', []), cred.u, cred.m, cred.r);
+                    }
                 } else {
-                    err.innerText = error.message === "Offline" ? "Sin Internet y no hay sesión guardada." : error.message; err.style.display = 'block';
+                    let mensajeError = error.message === "Offline" || error.message.includes("Unexpected token") 
+                        ? "Sin Internet y no hay sesión guardada." 
+                        : error.message;
+                    err.innerText = mensajeError; 
+                    err.style.display = 'block';
                 }
-            } finally { btn.disabled = false; btn.innerText = "Ingresar al Sistema"; }
+            } finally {
+                btn.disabled = false; 
+                btn.innerText = "Ingresar al Sistema";
+            }
         }
 
         function arrancarSistema(datos, u, m, r) {
@@ -643,6 +692,7 @@
                 document.getElementById('main-content').classList.remove('oculto');
                 
                 sincronizarPendientesAuto();
+                cargarListaOperadores();
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
 
@@ -832,37 +882,6 @@
             return `${accion}`;
         }
 
-        function cargarListaOperadores() {
-            let operadores = new Set();
-            dbCache.forEach(d => {
-                let det = d.detalles || "";
-                if(det.includes('Op:')) {
-                    let partes = det.split('Op:');
-                    if(partes.length > 1) {
-                        let nombre = partes[1].split('|')[0].trim();
-                        if(nombre) operadores.add(nombre);
-                    }
-                }
-                if(det.includes('Resp:')) {
-                    let partes = det.split('Resp:');
-                    if(partes.length > 1) {
-                        let nombre = partes[1].split('|')[0].trim();
-                        if(nombre) operadores.add(nombre);
-                    }
-                }
-            });
-            const sel = document.getElementById('op-del-usu-sel');
-            if(sel) {
-                let options = '<option value="">-- Seleccione un operador --</option>';
-                operadores.forEach(o => {
-                    if(o.toLowerCase() !== usActivo.toLowerCase()) {
-                        options += `<option value="${o}">${o}</option>`;
-                    }
-                });
-                sel.innerHTML = options;
-            }
-        }
-
         function actualizarInformeAvanzado() {
             const modo = document.getElementById('f-inf-modo').value; 
             const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
@@ -962,8 +981,9 @@
             const h_log = lsGet('tc_hacienda', {}).logo || "";
             const modo = document.getElementById('f-inf-modo').value;
             
+            // LA CLAVE: No forzar anchos en CSS inyectado, usar inline table puro
             let htmlContent = `
-            <div style="background-color: #ffffff; padding: 20px; width: 1000px; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;">
+            <div style="background-color: #ffffff; padding: 20px; width: 750px; margin: 0 auto; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;">
                 <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #000000; padding-bottom: 15px; margin-bottom: 20px;">
                     <div>
                         <h2 style="margin:0 0 10px 0; font-size:24px; text-transform:uppercase;">${h_nom}</h2>`;
@@ -987,30 +1007,30 @@
                 </div>
                 
                 <h3 style="font-size:16px; margin: 0 0 10px 0;">Resumen del Perfil</h3>
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                    <tr>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; word-wrap: break-word;">
+                    <tr style="page-break-inside: avoid;">
                         <td style="border: 1px solid #000; padding: 6px;"><strong>Categoría:</strong> ${cat}</td>
                         <td style="border: 1px solid #000; padding: 6px;"><strong>Lote:</strong> ${lote}</td>
                         <td style="border: 1px solid #000; padding: 6px;"><strong>Carimbo:</strong> ${carimbo}</td>
                     </tr>
-                    <tr>
+                    <tr style="page-break-inside: avoid;">
                         <td style="border: 1px solid #000; padding: 6px;"><strong>Raza:</strong> ${raza}</td>
                         <td style="border: 1px solid #000; padding: 6px;"><strong>Edad:</strong> ${edad}</td>
                         <td style="border: 1px solid #000; padding: 6px;"><strong>Último Peso:</strong> ${peso}</td>
                     </tr>
-                    <tr>
+                    <tr style="page-break-inside: avoid;">
                         <td style="border: 1px solid #000; padding: 6px;"><strong>Dx Actual:</strong> ${dx}</td>
                         <td style="border: 1px solid #000; padding: 6px;"><strong>Genealogía:</strong> ${pa} / ${ma}</td>
                         <td style="border: 1px solid #000; padding: 6px;"><strong>Régimen:</strong> ${nut}</td>
                     </tr>
-                    <tr>
+                    <tr style="page-break-inside: avoid;">
                         <td style="border: 1px solid #000; padding: 6px;"><strong>Últ. Sanidad:</strong> ${san}</td>
                         <td style="border: 1px solid #000; padding: 6px;" colspan="2"><strong>Últ. Inseminación:</strong> ${ins}</td>
                     </tr>
                 </table>
                 
                 <h3 style="font-size:16px; margin: 20px 0 10px 0;">Trazabilidad Histórica de Sucesos</h3>
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; word-wrap: break-word;">
                     <thead>
                         <tr>
                             <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 12%;">Fecha</th>
@@ -1023,7 +1043,7 @@
                 
                 let rows = document.getElementById('tb-informe-individual').querySelectorAll('tr');
                 rows.forEach(tr => {
-                    htmlContent += `<tr>`;
+                    htmlContent += `<tr style="page-break-inside: avoid;">`;
                     tr.querySelectorAll('td').forEach(td => { htmlContent += `<td style="border: 1px solid #000; padding: 6px;">${td.innerHTML}</td>`; });
                     htmlContent += `</tr>`;
                 });
@@ -1039,17 +1059,16 @@
                 </div>
                 
                 <table style="width: 50%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
-                    <tr>
+                    <tr style="page-break-inside: avoid;">
                         <td style="border: 1px solid #000; padding: 6px;"><strong>Total Registros Listados:</strong> ${document.getElementById('inf-total').innerText}</td>
                         <td style="border: 1px solid #000; padding: 6px;"><strong>Total Preñadas Global:</strong> ${document.getElementById('inf-prenadas').innerText}</td>
                     </tr>
                 </table>
                 
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; word-wrap: break-word;">
                     <thead>`;
                         
                 if(modo === 'inventario') {
-                    // Corrección a las 4 columnas exactas que requiere el Inventario
                     htmlContent += `<tr>
                         <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 15%;">Caravana</th>
                         <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 45%;">Categoría y Ubicación</th>
@@ -1059,7 +1078,7 @@
                         
                     let rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr');
                     rows.forEach(tr => {
-                        htmlContent += `<tr>`;
+                        htmlContent += `<tr style="page-break-inside: avoid;">`;
                         let tds = tr.querySelectorAll('td');
                         if (tds.length >= 4) {
                             htmlContent += `<td style="border: 1px solid #000; padding: 6px; text-align:center;"><b>${tds[0].innerHTML}</b></td>`;
@@ -1070,17 +1089,16 @@
                         htmlContent += `</tr>`;
                     });
                 } else {
-                    // Corrección a las columnas exactas de Eventos
                     htmlContent += `<tr>
                         <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 10%;">Fecha</th>
                         <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 12%;">Caravana</th>
-                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 20%;">Trabajo Realizado</th>
-                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 58%;">Detalles Extras</th>
+                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 23%;">Trabajo Realizado</th>
+                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 55%;">Detalles Extras</th>
                     </tr></thead><tbody>`;
                     
                     let rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr');
                     rows.forEach(tr => {
-                        htmlContent += `<tr>`;
+                        htmlContent += `<tr style="page-break-inside: avoid;">`;
                         let tds = tr.querySelectorAll('td');
                         if(tds.length >= 4) {
                             htmlContent += `<td style="border: 1px solid #000; padding: 6px; text-align:center;">${tds[0].innerHTML}</td>`;
@@ -1101,8 +1119,9 @@
                 margin: 10, 
                 filename: rpPrint !== "" ? `Dossier_RP_${rpPrint.toUpperCase()}.pdf` : 'Reporte_General.pdf',
                 image: { type: 'jpeg', quality: 0.98 }, 
-                html2canvas: { scale: 2, useCORS: true, windowWidth: 1000 }, 
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                html2canvas: { scale: 2, useCORS: true, letterRendering: true }, 
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: 'css', avoid: 'tr' }
             };
             
             html2pdf().set(opt).from(htmlContent).save().then(()=>{ 
@@ -1146,8 +1165,6 @@
             const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
             const prefs = lsGet('tc_prefs', ['1', '3']); let htmlGraficos = ""; const makeBar = (lbl, val, total, col) => { let p = total>0 ? Math.round((val/total)*100) : 0; return `<div class="barra-cat"><div class="barra-head"><span style="color:var(--text-main);">${lbl} (${val})</span><span style="color:var(--text-main);">${p}%</span></div><div class="barra-bg"><div class="barra-fill" style="background:${col}; width:${p}%;"></div></div></div>`; };
             
-            cargarListaOperadores();
-
             prefs.forEach(g => {
                 let html = `<div>`;
                 if(g === '1') { let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Tasa de Preñez Dinámica</h4><div style="display:flex; gap:20px; align-items:center;"><div class="torta-container"><div class="torta" style="background: conic-gradient(var(--success) 0% ${pp}%, var(--danger) ${pp}% 100%);"></div><div class="torta-centro">${pp}%</div></div><div class="leyenda-torta"><div><span class="punto" style="background: var(--success);"></span> Preñadas (${g1.p})</div><div><span class="punto" style="background: var(--danger);"></span> Vacías (${g1.v})</div></div></div></div>`; } 
