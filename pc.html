@@ -129,8 +129,8 @@
             <button id="btn-ingreso" class="btn-primary" onclick="procesarIngreso()">Ingresar al Sistema</button>
             
             <div style="margin-top: 25px; line-height: 1.6;">
-                <span style="color: var(--text-muted); font-size: 13px;">Taurus Control - SaaS Edition</span><br>
-                <strong style="color: var(--text-main); font-size: 14px;">Creado por Fernando Rodriguez &copy; 2026</strong>
+                <span style="color: var(--text-muted); font-size: 13px;">Taurus Control</span><br>
+                <strong style="color: var(--text-main); font-size: 14px;">Desarrollado por Fernando Rodriguez &copy; 2026</strong>
             </div>
         </div>
     </div>
@@ -161,7 +161,6 @@
         <div class="topbar">
             <div class="topbar-title">Terminal Corporativa de Trazabilidad</div>
             <div class="topbar-right" style="display:flex; gap:10px; align-items:center;">
-                <!-- BOTONES PEQUEÑOS Y BLUETOOTH UNIFICADO -->
                 <button id="btn-bluetooth" class="btn-outline" style="padding: 4px 10px; font-size: 11px; border-color:var(--primary); color:var(--primary);" onclick="conectarBluetooth()">🔗 Bluetooth</button>
                 <button class="btn-outline" style="padding: 4px 10px; font-size: 11px;" onclick="sincronizarFondo(true)">🔄 Actualizar Servidor</button>
                 <div id="estado-red" class="badge online" style="padding: 4px 10px; font-size: 11px; margin: 0;">🟢 Conectado</div>
@@ -351,7 +350,7 @@
                             <label>Rol del Nuevo Usuario</label>
                             <select id="op-rol" class="form-control">
                                 <option value="Operador">Operador (Limitado)</option>
-                                <option value="Dueño">Segundo Dueño (Acceso Total)</option>
+                                <option value="Propietario">Propietario (Acceso Total)</option>
                             </select>
                         </div>
                         <div class="form-grupo"><label>Crear Nuevo Usuario</label><input type="text" id="op-usu" class="form-control" placeholder="Nombre de usuario"></div>
@@ -467,7 +466,7 @@
                 });
 
                 bleDevice.addEventListener('gattserverdisconnected', () => {
-                    btn.innerHTML = "🔗 Bluetooth";
+                    btn.innerHTML = "🔗 Bluetooth: Inactivo";
                     btn.style.color = "var(--primary)";
                     btn.style.borderColor = "var(--primary)";
                     alert("Dispositivo Bluetooth desconectado.");
@@ -501,7 +500,7 @@
                 
             } catch (error) {
                 console.error(error);
-                btn.innerHTML = "🔗 Bluetooth";
+                btn.innerHTML = "🔗 Bluetooth: Inactivo";
             }
         }
 
@@ -575,7 +574,15 @@
         // ==========================================
         function abrirSoporte() {
             try {
-                require('electron').shell.openExternal('https://wa.me/595976139617');
+                if (typeof require !== 'undefined') {
+                    const { shell } = require('electron');
+                    shell.openExternal('https://wa.me/595976139617');
+                } else if (window.require) {
+                    const { shell } = window.require('electron');
+                    shell.openExternal('https://wa.me/595976139617');
+                } else {
+                    window.open('https://wa.me/595976139617', '_blank');
+                }
             } catch(e) {
                 window.open('https://wa.me/595976139617', '_blank');
             }
@@ -681,13 +688,13 @@
                 dbCache = dbValida.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); 
                 usActivo = u; maestroId = m; usRol = r; 
                 
-                let displayRol = (r === 'Dueño') ? 'Dueño' : 'Operador';
+                let displayRol = (r === 'Propietario' || r === 'Dueño') ? 'Propietario' : 'Operador';
                 
                 document.getElementById('lbl-sidebar-user').innerText = `${u.toUpperCase()} (${displayRol})`;
                 document.getElementById('lbl-perfil-usu').innerText = `${u.toUpperCase()} (Rol: ${displayRol})`;
                 
                 // Ocultar privilegios de administrador si es operador
-                if(r !== 'Dueño') {
+                if(r !== 'Propietario' && r !== 'Dueño') {
                     document.getElementById('panel-crear-peones').style.display = 'none'; 
                     document.getElementById('panel-membrete').style.display = 'none';
                     document.getElementById('panel-licencia').style.display = 'none';
@@ -1091,7 +1098,7 @@
                         <p style="margin:0; font-size:14px;">${titulo}</p>
                         <p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p>
                     </div>
-                    ${h_log?`<img src="${h_log}" style="max-width:150px; max-height:80px; object-fit:contain;">`:''}
+                    ${(h_log && h_log.startsWith('data:image'))?`<img src="${h_log}" style="max-width:150px; max-height:80px; object-fit:contain;">`:''}
                 </div>
                 
                 <table style="width: 50%; font-size: 11px;">
@@ -1124,8 +1131,8 @@
                     htmlContent += `<tr>
                         <th style="width: 12%;">Fecha</th>
                         <th style="width: 12%;">Caravana</th>
-                        <th style="width: 18%;">Trabajo Realizado</th>
-                        <th style="width: 58%;">Detalles Extras</th>
+                        <th style="width: 15%;">Trabajo Realizado</th>
+                        <th style="width: 61%;">Detalles Extras</th>
                     </tr></thead><tbody>`;
                     
                     let rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr');
