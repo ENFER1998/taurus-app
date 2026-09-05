@@ -10,7 +10,6 @@
     <link rel="icon" href="gemini-svg.ico">
     <link rel="apple-touch-icon" href="gemini-svg.ico">
 
-    <!-- MOTOR DE DESCARGA PDF DIRECTA -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
@@ -103,12 +102,10 @@
         .tabla-informe th { background: #e2e8f0; padding: 10px; text-align: left; border: 1px solid #cbd5e1; color: black;}
         .tabla-informe td { padding: 10px; border: 1px solid #cbd5e1; color: black;}
         
-        /* BOTONES DE FILTRO RAPIDO (Pestañas en Reportes) */
         .tabs-filtro { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 10px; }
         .tab-btn { background: #1e293b; border: 1px solid var(--borde); color: var(--muted); padding: 8px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; cursor: pointer; white-space: nowrap; transition: 0.3s; }
         .tab-btn.activa { background: var(--secundario); color: white; border-color: var(--secundario); }
 
-        /* ETIQUETAS DE ACCIÓN EN TABLAS */
         .badge-acc { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; display: inline-block; }
         .b-sanidad { background-color: var(--peligro); }
         .b-peso { background-color: var(--secundario); }
@@ -476,7 +473,7 @@
 
     <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial de este Animal</h3><div id="contenido-historial"></div></div></div>
 
-    <!-- JAVASCRIPT BLINDADO (MOBILE) -->
+    <!-- JAVASCRIPT BLINDADO -->
     <script>
         const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzyWvEMlfCCQXGP0-ssUUQ2je4tsFPXd6Yu0C9WwsTa7sgqFkkz3jr0a8CXqrI9ydk/exec";
         
@@ -534,7 +531,7 @@
                 validos = validos.concat(regs);
             });
             const globalEvents = baseDeDatosCache.filter(d => d.caravana === "---" || !d.caravana);
-            return validos.concat(globalEvents);
+            return validos.concat(globalEvents).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
         }
 
         if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
@@ -579,31 +576,26 @@
             } finally { btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
         }
 
-        // FUNCIÓN BLINDADA CONTRA ERRORES DE PANTALLA
+        // MOTOR DE ARRANQUE SEGURO 
         function iniciarSesionUI(datos, usu, maestro, rol) {
-            try {
-                let dbValida = Array.isArray(datos) ? datos.filter(d => d && d.fecha) : []; baseDeDatosCache = dbValida.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); 
-                usuarioActivo = usu; propMaestro = maestro; rolUsuario = rol; 
-                
-                try { let lblUser = document.getElementById('usuario-activo-lbl'); if(lblUser) lblUser.value = usuarioActivo.toUpperCase() + ` (${rolUsuario})`; } catch(e){}
-                try { let panelPeon = document.getElementById('panel-crear-peones'); if(panelPeon && rolUsuario !== 'Dueño') panelPeon.style.display = 'none'; } catch(e){}
-                try { const prefs = JSON.parse(localStorage.getItem('dash_graphs')) || ['1', '2']; document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); }); } catch(e){}
-                
-                try { cargarDisenoDesdeDB(); } catch(e){}
-                try { actualizarEstadoRed(); } catch(e){}
-                try { procesarDatosDashboard(); } catch(e){}
-                try { actualizarContadorPendientes(); } catch(e){}
-                
-                try { let rFec = document.getElementById('f-inf-rango-fecha'); if(rFec){ rFec.value = "30"; manejarRangoFechas(); } } catch(e){}
-                
-                try { let pLog = document.getElementById('pantalla-login'); if(pLog) pLog.classList.add('oculto'); } catch(e){}
-                try { let pApp = document.getElementById('pantalla-app'); if(pApp) pApp.classList.remove('oculto'); } catch(e){}
-                
-                sincronizarPendientesAuto();
-            } catch(e) {
-                console.warn("Fallo visual en Mobile", e);
-                let pLog = document.getElementById('pantalla-login'); if(pLog) pLog.style.display = 'none';
-            }
+            let dbValida = Array.isArray(datos) ? datos.filter(d => d && d.fecha) : []; baseDeDatosCache = dbValida.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); 
+            usuarioActivo = usu; propMaestro = maestro; rolUsuario = rol; 
+            
+            // Forzar mostrar la app (Elimina pantalla en blanco)
+            let pLog = document.getElementById('pantalla-login'); if(pLog) pLog.style.display = 'none';
+            let pApp = document.getElementById('pantalla-app'); if(pApp) pApp.classList.remove('oculto');
+            
+            try { let lblUser = document.getElementById('usuario-activo-lbl'); if(lblUser) lblUser.value = usuarioActivo.toUpperCase() + ` (${rolUsuario})`; } catch(e){}
+            try { let panelPeon = document.getElementById('panel-crear-peones'); if(panelPeon && rolUsuario !== 'Dueño') panelPeon.style.display = 'none'; } catch(e){}
+            try { const prefs = JSON.parse(localStorage.getItem('dash_graphs')) || ['1', '2']; document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); }); } catch(e){}
+            
+            try { cargarDisenoDesdeDB(); } catch(e){}
+            try { actualizarEstadoRed(); } catch(e){}
+            try { procesarDatosDashboard(); } catch(e){}
+            try { actualizarContadorPendientes(); } catch(e){}
+            try { let rFec = document.getElementById('f-inf-rango-fecha'); if(rFec){ rFec.value = "30"; manejarRangoFechas(); } } catch(e){}
+            
+            sincronizarPendientesAuto();
         }
 
         function fusionarDatos(nuevos) {
@@ -621,7 +613,7 @@
                 if(!res.error) {
                     fusionarDatos(Array.isArray(res.data) ? res.data : []); localStorage.setItem('tc_hacienda', JSON.stringify({ nombre: res.hacienda, logo: res.logo })); cargarDisenoDesdeDB();
                     let vManga = document.getElementById('vista-manga');
-                    if(caravanaActiva && vManga && !vManga.classList.contains('oculto')) { buscarCaravanaBtn(); }
+                    if(caravanaActiva && vManga && !vManga.classList.contains('oculto')) { buscarCaravanaBtn(caravanaActiva); }
                     procesarDatosDashboard(); 
                     let vReg = document.getElementById('vista-registro'); if(vReg && !vReg.classList.contains('oculto')) cargarListaRegistro(); 
                     let vInf = document.getElementById('vista-informe'); if(vInf && !vInf.classList.contains('oculto')) actualizarInformeAvanzado();
@@ -673,8 +665,7 @@
             const rpFinal = iRp ? iRp.value.trim() : "";
             if(!rpFinal) { if(iRp){ iRp.style.borderColor = "var(--peligro)"; setTimeout(() => iRp.style.borderColor = "var(--borde)", 2000); } return; }
             caravanaActiva = rpFinal; ejecutarAccion('Vinculacion_RFID', tagHuerfano, 'Chip vinculado a ' + rpFinal, null, 'modal-vinculacion');
-            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]); let bCar = document.getElementById('buscador-caravana'); if(bCar) bCar.value = rpFinal; buscarCaravanaBtn();
-            const datosActivos = obtenerRegistrosActivos(); if(datosActivos.filter(d => String(d.caravana) === String(rpFinal)).length <= 1) setTimeout(() => abrirModal('modal-perfil'), 600);
+            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]); let bCar = document.getElementById('buscador-caravana'); if(bCar) bCar.value = rpFinal; buscarCaravanaBtn(rpFinal);
         }
 
         function ejecutarAccion(tipoAccion, valor, detalles, btnActivo, modalId) {
@@ -685,9 +676,9 @@
                 if(btnActivo) btnActivo.innerText = "Subiendo..."; const fd = new URLSearchParams(); for(let key in accionObj) fd.append(key, accionObj[key]); fd.append('usuario', usuarioActivo); 
                 fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => {
                     if(modalId) cerrarModal(modalId); if(btnActivo) btnActivo.innerText = "Guardar";
-                    if(caravanaActiva !== "---") buscarCaravanaBtn(); procesarDatosDashboard();
-                }).catch(e => { encolarOffline(accionObj); if(modalId) cerrarModal(modalId); if(btnActivo) btnActivo.innerText = "Guardar"; if(caravanaActiva !== "---") buscarCaravanaBtn(); procesarDatosDashboard(); });
-            } else { encolarOffline(accionObj); if(modalId) cerrarModal(modalId); if(btnActivo) btnActivo.innerText = "Guardar"; if(caravanaActiva !== "---") buscarCaravanaBtn(); procesarDatosDashboard(); }
+                    if(caravanaActiva !== "---") buscarCaravanaBtn(caravanaActiva); procesarDatosDashboard();
+                }).catch(e => { encolarOffline(accionObj); if(modalId) cerrarModal(modalId); if(btnActivo) btnActivo.innerText = "Guardar"; if(caravanaActiva !== "---") buscarCaravanaBtn(caravanaActiva); procesarDatosDashboard(); });
+            } else { encolarOffline(accionObj); if(modalId) cerrarModal(modalId); if(btnActivo) btnActivo.innerText = "Guardar"; if(caravanaActiva !== "---") buscarCaravanaBtn(caravanaActiva); procesarDatosDashboard(); }
         }
 
         function encolarOffline(obj) { let pendientes = JSON.parse(localStorage.getItem('taurus_pendientes')) || []; pendientes.push(obj); localStorage.setItem('taurus_pendientes', JSON.stringify(pendientes)); actualizarContadorPendientes(); }
@@ -712,10 +703,10 @@
 
         function guardarPerfilCompleto() {
             if(!caravanaActiva) return; 
-            let fR = document.getElementById('f-raza'); const r = fR ? fR.value : "-"; 
-            let fE = document.getElementById('f-edad'); const e = fE ? fE.value : "-"; 
-            let fP = document.getElementById('f-padre'); const p = fP ? fP.value : "-"; 
-            let fM = document.getElementById('f-madre'); const m = fM ? fM.value : "-";
+            let eR = document.getElementById('f-raza'); const r = eR ? eR.value : "-"; 
+            let eE = document.getElementById('f-edad'); const e = eE ? eE.value : "-"; 
+            let eP = document.getElementById('f-padre'); const p = eP ? eP.value : "-"; 
+            let eM = document.getElementById('f-madre'); const m = eM ? eM.value : "-";
             let vC = document.getElementById('val-categoria'); const cat = vC ? vC.innerText : "-";
             ejecutarAccion('Perfil Master', `${r}|${e}|${p}|${m}`, cat, event.target, 'modal-perfil');
         }
@@ -723,13 +714,13 @@
         function guardarClasificacion() {
             if(!caravanaActiva) return; 
             let iC = document.getElementById('input-cat-rapida'); const cat = iC ? iC.value : "-"; 
-            let iCa = document.getElementById('input-carimbo-rapido'); const car = iCa ? iCa.value : "-"; 
+            let iCar = document.getElementById('input-carimbo-rapido'); const car = iCar ? iCar.value : "-"; 
             let iL = document.getElementById('input-lote-rapido'); const lot = iL ? iL.value : "-";
             ejecutarAccion('Actualización de Datos', `Cat: ${cat} | Carimbo: ${car}`, `Lote: ${lot}`, event.target, 'modal-clasificacion');
         }
 
-        function borrarCaravana() { if(!caravanaActiva) return; if(confirm(`¿ELIMINAR el historial de la caravana ${caravanaActiva}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null, null); cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); } }
-        function cambiarMiContrasena() { if(!navigator.onLine) return; let elNc = document.getElementById('nueva-clave'); if(!elNc) return; const nueva = elNc.value.trim(); if(!nueva || nueva.length < 4) return; const btn = event.target; btn.innerText = "Cambiando..."; const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usuarioActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { elNc.value = ''; btn.innerText = "Actualizar mi Contraseña"; let cred = JSON.parse(localStorage.getItem('taurus_cred')); cred.pass = nueva; localStorage.setItem('taurus_cred', JSON.stringify(cred)); }); }
+        function borrarCaravana() { if(!caravanaActiva) return; if(confirm(`¿ELIMINAR el historial de la caravana ${caravanaActiva}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Borrado', null, null); cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); } }
+        function cambiarMiContrasena() { if(!navigator.onLine) return; let elN = document.getElementById('nueva-clave'); if(!elN) return; const nueva = elN.value.trim(); if(!nueva || nueva.length < 4) return; const btn = event.target; btn.innerText = "Cambiando..."; const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usuarioActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { elN.value = ''; btn.innerText = "Actualizar mi Contraseña"; let cred = JSON.parse(localStorage.getItem('taurus_cred')); cred.pass = nueva; localStorage.setItem('taurus_cred', JSON.stringify(cred)); }); }
         function crearPeon() { if(!navigator.onLine) return; let eU = document.getElementById('peon-usu'); let eP = document.getElementById('peon-pass'); if(!eU || !eP) return; const pUsu = eU.value.trim(); const pPass = eP.value.trim(); if(!pUsu || !pPass) return; const btn = event.target; btn.innerText = "Creando..."; const fd = new URLSearchParams(); fd.append('accion', 'crear_peon'); fd.append('usuario', usuarioActivo); fd.append('peon_usu', pUsu); fd.append('peon_pass', pPass); fd.append('vencimiento', 'Heredado'); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { eU.value = ''; eP.value = ''; btn.innerText = "Crear Operador"; }); }
 
         function procesarDatosDashboard() {
@@ -737,14 +728,14 @@
             let dC = document.getElementById('dash-cabezas'); if(dC) dC.innerText = unicas.length; 
             let dA = document.getElementById('dash-acciones'); if(dA) dA.innerText = datosActivos.length;
             
-            let cG = document.getElementById('contenedor-graficos-dinamicos');
-            if(datosActivos.length === 0) { if(cG) cG.innerHTML = "<p style='text-align:center;color:gray;padding:20px;'>Aún no hay datos registrados.</p>"; return; }
+            let cGD = document.getElementById('contenedor-graficos-dinamicos');
+            if(datosActivos.length === 0) { if(cGD) cGD.innerHTML = "<p style='text-align:center;color:gray;padding:20px;'>Aún no hay datos registrados.</p>"; return; }
 
             let g1={p:0,v:0}, g2={v:0,t:0,o:0}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0}; let alertasHTML = "";
             datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; });
 
             unicas.forEach(car => {
-                const regs = datosActivos.filter(d => d.caravana === car).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
+                const regs = datosActivos.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
                 let cat = "", lote = "General"; const uP = regs.find(d => d.accion === 'Perfil Master'); const uC = regs.find(d => d.accion === 'Actualización de Datos');
                 if(uC) { cat = String(uC.valor||"").split('|')[0].replace('Cat:','').trim(); lote = String(uC.detalles||"").split('|')[0].replace('Lote:','').trim(); } else if(uP) { cat = String(uP.detalles||"").split('|')[0].trim(); }
                 cat = cat.toLowerCase(); const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
@@ -782,16 +773,18 @@
                 else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins || 1; html += `<div class="tarjeta-titulo">⚡ Volumen Trabajos</div>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Sanidad', g10.san, t, '#c2410c')}`; }
                 html += `</div>`; htmlGraficos += html;
             }); 
-            if(cG) cG.innerHTML = htmlGraficos;
+            if(cGD) cGD.innerHTML = htmlGraficos;
         }
 
         function verificarLimiteGraficos(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); localStorage.setItem('dash_graphs', JSON.stringify(prefs)); if(baseDeDatosCache.length > 0) procesarDatosDashboard(); } }
-        function cambiarVista(idVista, tabElemento) { ['vista-dashboard', 'vista-manga', 'vista-registro', 'vista-informe', 'vista-config'].forEach(id => {let e=document.getElementById(id); if(e)e.classList.add('oculto');}); let t=document.getElementById(idVista); if(t)t.classList.remove('oculto'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('activo')); if(tabElemento) tabElemento.classList.add('activo'); }
-        function abrirModal(id) { let m=document.getElementById(id); if(m)m.style.display = 'flex'; }
-        function cerrarModal(id) { let m=document.getElementById(id); if(m)m.style.display = 'none'; }
+        function cambiarVista(idVista, tabElemento) { ['vista-dashboard', 'vista-manga', 'vista-registro', 'vista-informe', 'vista-config'].forEach(id => {let el = document.getElementById(id); if(el) el.classList.add('oculto');}); let eT = document.getElementById(idVista); if(eT) eT.classList.remove('oculto'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('activo')); if(tabElemento) tabElemento.classList.add('activo'); }
+        function abrirModal(id) { let m = document.getElementById(id); if(m) m.style.display = 'flex'; }
+        function cerrarModal(id) { let m = document.getElementById(id); if(m) m.style.display = 'none'; }
         
-        function buscarCaravanaBtn() {
-            let iB = document.getElementById('buscador-caravana'); let input = iB ? iB.value.trim() : ""; if(!input) return; 
+        function buscarCaravanaBtn(rpForzado = null) {
+            let iB = document.getElementById('buscador-caravana');
+            let input = rpForzado ? rpForzado : (iB ? iB.value.trim() : ""); if(!input) return; 
+            
             const vinculacion = baseDeDatosCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim() === String(input).trim());
             if(vinculacion) input = vinculacion.caravana;
 
@@ -801,7 +794,7 @@
             const regs = datosActivos.filter(d => String(d.caravana) === String(input)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
             
             let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", comentario="Sin comentarios.", inseminacion="-", nutricion="-", sanidad="-";
-            let pUn = document.getElementById('panel-ultima-nota'); if(pUn) pUn.classList.add('oculto');
+            let pUN = document.getElementById('panel-ultima-nota'); if(pUN) pUN.classList.add('oculto');
             if(regs.length > 0) {
                 const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { const p = String(uP.valor||"").split('|'); raza = p[0]||"-"; edad = p[1]||"-"; padre = p[2]||"-"; madre = p[3]||"-"; cat = String(uP.detalles||"").split('|')[0].trim(); }
                 const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; }
@@ -813,24 +806,24 @@
                 const uSan = regs.find(d => d.accion === 'Sanidad'); if(uSan) sanidad = (uSan.valor||"-") + " | " + (uSan.detalles||"");
                 
                 const ultimaReal = regs.find(d => d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master' && d.accion !== 'Comentario' && !d.accion.includes('Vinculacion'));
-                if(ultimaReal && pUn) { pUn.classList.remove('oculto'); let nTit = document.getElementById('nota-accion-titulo'); if(nTit) nTit.innerText = `${new Date(ultimaReal.fecha).toLocaleDateString()} - ${ultimaReal.accion} (${ultimaReal.valor})`; let nTex = document.getElementById('nota-accion-texto'); if(nTex) nTex.innerText = String(ultimaReal.detalles||"").split('|')[0]; }
+                if(ultimaReal && pUN) { pUN.classList.remove('oculto'); let nT = document.getElementById('nota-accion-titulo'); if(nT) nT.innerText = `${new Date(ultimaReal.fecha).toLocaleDateString()} - ${ultimaReal.accion} (${ultimaReal.valor})`; let nTx = document.getElementById('nota-accion-texto'); if(nTx) nTx.innerText = String(ultimaReal.detalles||"").split('|')[0]; }
             }
             
-            let map = {'val-categoria':cat, 'val-raza':raza, 'val-peso':peso, 'val-dx':dx, 'val-lote':lote, 'val-carimbo':carimbo, 'val-edad':edad, 'val-genealogia':padre + " / " + madre, 'val-comentario':comentario, 'val-inseminacion':inseminacion, 'val-nutricion':nutricion, 'val-sanidad':sanidad};
+            let map = {'val-categoria':cat, 'val-raza':raza, 'val-peso':peso, 'val-dx':dx, 'val-lote':lote, 'val-carimbo':carimbo, 'val-edad':edad, 'val-genealogia':padre+" / "+madre, 'val-comentario':comentario, 'val-inseminacion':inseminacion, 'val-nutricion':nutricion, 'val-sanidad':sanidad};
             for(let k in map) { let el = document.getElementById(k); if(el) el.innerText = map[k]; }
             
             let mapV = {'f-raza':raza!=="-"?raza:"", 'f-edad':edad!=="-"?edad:"", 'f-padre':padre!=="-"?padre:"", 'f-madre':madre!=="-"?madre:"", 'input-carimbo-rapido':carimbo!=="-"?carimbo:"", 'input-lote-rapido':lote!=="-"?lote:"", 'f-comentario-txt':comentario!=="Sin comentarios."?comentario:""};
             for(let k in mapV) { let el = document.getElementById(k); if(el) el.value = mapV[k]; }
             
-            let catSelect = document.getElementById('input-cat-rapida'); if(catSelect){ for(let i=0; i<catSelect.options.length; i++) { if(catSelect.options[i].value === cat) catSelect.selectedIndex = i; } }
+            let catSelect = document.getElementById('input-cat-rapida'); if(catSelect) { for(let i=0; i<catSelect.options.length; i++) { if(catSelect.options[i].value === cat) catSelect.selectedIndex = i; } }
         }
 
         function verHistorial() { 
             if(!caravanaActiva) return; abrirModal('modal-historial'); const datosActivos = obtenerRegistrosActivos();
-            const d = datosActivos.filter(f => String(f.caravana) === String(caravanaActiva) && !f.accion.includes('Vinculacion')).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
+            const d = datosActivos.filter(f => String(f.caravana) === String(caravanaActiva) && !String(f.accion||"").includes('Vinculacion')).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
             let h = "<ul style='list-style:none; padding:0; margin:0;'>"; 
             d.forEach(r => { h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px;"><span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span><br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span></li>`; }); 
-            let cHis = document.getElementById('contenido-historial'); if(cHis) cHis.innerHTML = h + "</ul>"; 
+            let cH = document.getElementById('contenido-historial'); if(cH) cH.innerHTML = h + "</ul>"; 
         }
 
         function cargarListaRegistro() {
@@ -846,11 +839,11 @@
             });
         }
 
-        function filtrarLista(t) { const uL = document.getElementById('ul-registro'); if(!uL) return; const lis = uL.getElementsByTagName('li'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "" : "none"; }
-        function navegarDesdeLista(car) { let bC = document.getElementById('buscador-caravana'); if(bC) bC.value = car; document.querySelectorAll('.nav-item')[1].click(); buscarCaravanaBtn(); }
+        function filtrarLista(t) { let tb = document.getElementById('ul-registro'); if(!tb) return; const lis = tb.getElementsByTagName('li'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "" : "none"; }
+        function navegarDesdeLista(car) { let bC = document.getElementById('buscador-caravana'); if(bC) bC.value = car; let nav = document.querySelectorAll('.nav-item'); if(nav.length > 1) nav[1].click(); buscarCaravanaBtn(); }
         
         function cambiarModoReporte() {
-            let elM = document.getElementById('f-inf-modo'); if(!elM) return; const modo = elM.value;
+            let eM = document.getElementById('f-inf-modo'); if(!eM) return; const modo = eM.value;
             let fI = document.getElementById('filtros-inventario'); let fE = document.getElementById('filtros-eventos');
             let lP = document.getElementById('lbl-prenadas'); let lT = document.getElementById('lbl-total');
             if(modo === 'inventario') {
@@ -875,7 +868,7 @@
             actualizarInformeAvanzado();
         }
 
-        function setFiltroAccion(accion, btnObj) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activa')); btnObj.classList.add('activa'); let ao=document.getElementById('f-inf-accion-oculto'); if(ao) ao.value = accion; actualizarInformeAvanzado(); }
+        function setFiltroAccion(accion, btnObj) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activa')); btnObj.classList.add('activa'); let ao = document.getElementById('f-inf-accion-oculto'); if(ao) ao.value = accion; actualizarInformeAvanzado(); }
 
         function obtenerBadgeAccion(accion) {
             if(accion === 'Sanidad') return `💉 Sanidad`;
@@ -888,9 +881,10 @@
 
         function actualizarInformeAvanzado() {
             let eM = document.getElementById('f-inf-modo'); if(!eM) return; const modo = eM.value; 
-            let fRpE = document.getElementById('f-inf-rp'); const fRp = fRpE ? fRpE.value.trim().toLowerCase() : "";
+            let eRp = document.getElementById('f-inf-rp'); const fRp = eRp ? eRp.value.trim().toLowerCase() : "";
             const datosActivos = obtenerRegistrosActivos(); const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(c => c !== "---"))]; 
-            const tbodyMasivo = document.getElementById('tb-informe-masivo'); const tbodyEventos = document.getElementById('tb-informe-eventos'); const tbodyIndiv = document.getElementById('tb-informe-individual');
+            
+            let tbodyMasivo = document.getElementById('tb-informe-masivo'); let tbodyEventos = document.getElementById('tb-informe-eventos'); let tbodyIndiv = document.getElementById('tb-informe-individual');
             let tm = document.getElementById('tabla-masiva'); if(tm) tm.classList.add('oculto'); 
             let te = document.getElementById('tabla-eventos'); if(te) te.classList.add('oculto'); 
             let ti = document.getElementById('tabla-individual'); if(ti) ti.classList.add('oculto');
@@ -898,7 +892,7 @@
             if(fRp !== "") {
                 rpPrint = fRp; let bD = document.querySelector('.btn-descargar'); if(bD) bD.innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`; 
                 if(ti) ti.classList.remove('oculto');
-                const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === fRp && !d.accion.includes('Vinculacion') && d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master').sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+                const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === fRp && !String(d.accion||"").includes('Vinculacion') && d.accion !== 'Actualización de Datos' && d.accion !== 'Perfil Master').sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
                 let hInd = ""; regs.forEach(r => { hInd+=`<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
                 if(tbodyIndiv) tbodyIndiv.innerHTML = hInd; 
                 let iT = document.getElementById('inf-total'); if(iT) iT.innerText = regs.length; 
@@ -909,14 +903,14 @@
 
             if(modo === 'inventario') {
                 if(tm) tm.classList.remove('oculto');
-                let elL = document.getElementById('f-inf-lote'); const fLote = elL ? elL.value : "ALL"; 
-                let elC = document.getElementById('f-inf-cat'); const fCat = elC ? elC.value : "ALL"; 
-                let elDx = document.getElementById('f-inf-dx'); const fDx = elDx ? elDx.value : "ALL"; 
+                let eL = document.getElementById('f-inf-lote'); const fLote = eL ? eL.value : "ALL"; 
+                let eC = document.getElementById('f-inf-cat'); const fCat = eC ? eC.value : "ALL"; 
+                let eDx = document.getElementById('f-inf-dx'); const fDx = eDx ? eDx.value : "ALL"; 
                 if(tbodyMasivo) tbodyMasivo.innerHTML = ""; let countTotal = 0, countPrenadas = 0; let hMas = "";
                 unicas.forEach(car => {
                     const regs = datosActivos.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); let cat = "-", peso = "-", dx = "-", lote = "-";
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0].trim();
-                    const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0]?v[0].replace('Cat:','').trim():cat; lote = String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; }
+                    const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; }
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
                     const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-";
                     let pasaFiltro = true; if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; if(fCat !== "ALL" && !cat.includes(fCat)) pasaFiltro = false; if(fDx !== "ALL" && !String(dx||"").includes(fDx)) pasaFiltro = false;
@@ -931,7 +925,7 @@
                 let fD = document.getElementById('f-inf-desde'); const fDesde = fD ? fD.value : ""; 
                 let fH = document.getElementById('f-inf-hasta'); const fHasta = fH ? fH.value : ""; 
                 let fK = document.getElementById('f-inf-keyword'); const fKey = fK ? fK.value.trim().toLowerCase() : "";
-                let eventos = datosActivos.filter(d => !d.accion.includes('Vinculacion') && d.accion !== 'Perfil Master' && d.accion !== 'Actualización de Datos' && d.caravana !== "---");
+                let eventos = datosActivos.filter(d => !String(d.accion||"").includes('Vinculacion') && d.accion !== 'Perfil Master' && d.accion !== 'Actualización de Datos' && d.caravana !== "---");
                 if(fAcc !== "ALL") eventos = eventos.filter(d => d.accion === fAcc); if(fDesde) eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00'));
                 if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); if(fKey) eventos = eventos.filter(d => (String(d.valor||"") + String(d.detalles||"")).toLowerCase().includes(fKey));
                 let hEve = "";
@@ -943,15 +937,16 @@
         }
 
         function ejecutarDescargaPDF() {
-            const btn = document.querySelector('.btn-descargar'); if(btn) btn.innerText = "⏳ Generando PDF HD...";
+            const btn = document.querySelector('.btn-descargar'); if(btn) btn.innerText = "⏳ Generando PDF...";
             const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; 
             let eN = document.getElementById('nombre-estancia'); const h_nom = eN ? eN.value || 'TAURUS CONTROL' : 'TAURUS CONTROL'; 
             const h_log = hd.logo || "";
             
-            let htmlContent = `<div style="background-color: #ffffff; padding: 20px; width: 750px; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000000; padding-bottom: 15px; margin-bottom: 20px;"><div><h2 style="margin:0 0 10px 0; font-size:26px; text-transform:uppercase;">${h_nom}</h2>`;
+            // LA CLAVE: ANCHO 700px ORIGINAL DEL CELULAR
+            let htmlContent = `<div style="background-color: #ffffff; padding: 20px; width: 700px; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;"><div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000000; padding-bottom: 15px; margin-bottom: 20px;"><div><h2 style="margin:0 0 10px 0; font-size:24px; text-transform:uppercase;">${h_nom}</h2>`;
             
             if(rpPrint !== "") {
-                const datosActivos = obtenerRegistrosActivos(); const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === String(rpPrint).toLowerCase() && !d.accion.includes('Vinculacion')).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
+                const datosActivos = obtenerRegistrosActivos(); const regs = datosActivos.filter(d => String(d.caravana).toLowerCase() === String(rpPrint).toLowerCase() && !String(d.accion||"").includes('Vinculacion')).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)); 
                 if(regs.length===0){ if(btn) btn.innerHTML = `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}`; return;}
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
                 const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor||"").split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=String(uP.detalles||"").split('|')[0]||"-"; } 
@@ -961,14 +956,14 @@
                 const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "") + " | " + (uSan.detalles || "");
                 const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) ins = (uIns.valor || "") + " | " + (uIns.detalles || "");
 
-                htmlContent += `<p style="margin:0; font-size:14px;">Dossier Clínico Histórico - RP: <strong>${rpPrint.toUpperCase()}</strong></p><p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${h_log ? `<div style="text-align: right;"><img src="${h_log}" style="max-height:100px; max-width: 250px; object-fit: contain;"></div>` : ''}</div>
-                    <h3 style="font-size:16px; margin: 0 0 10px 0;">Resumen del Perfil</h3><table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 12px; table-layout: fixed; word-wrap: break-word;"><tr><td style="border: 1px solid #000000; padding: 8px;"><strong>Categoría:</strong> ${cat}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Lote:</strong> ${lote}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Carimbo:</strong> ${carimbo}</td></tr><tr><td style="border: 1px solid #000000; padding: 8px;"><strong>Raza:</strong> ${raza}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Edad:</strong> ${edad}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Último Peso:</strong> ${peso}</td></tr><tr><td style="border: 1px solid #000000; padding: 8px;"><strong>Dx Actual:</strong> ${dx}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Genealogía:</strong> ${pa} / ${ma}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Régimen:</strong> ${nut}</td></tr><tr><td style="border: 1px solid #000000; padding: 8px;"><strong>Últ. Sanidad:</strong> ${san}</td><td style="border: 1px solid #000000; padding: 8px;" colspan="2"><strong>Últ. Inseminación:</strong> ${ins}</td></tr></table>
-                    <h3 style="font-size:16px; margin: 0 0 10px 0;">Historial Clínico y Procedimientos</h3><table style="width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; word-wrap: break-word;"><thead><tr><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 15%;">Fecha</th><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 85%;">Procedimiento / Notas Completas</th></tr></thead><tbody>`;
+                htmlContent += `<p style="margin:0; font-size:14px;">Dossier Clínico Histórico - RP: <strong>${rpPrint.toUpperCase()}</strong></p><p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${h_log ? `<img src="${h_log}" style="max-height:60px; max-width: 150px;">` : ''}</div>
+                    <h3 style="font-size:16px; margin: 0 0 10px 0;">Resumen del Perfil</h3><table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 11px; table-layout: fixed; word-wrap: break-word;"><tr><td style="border: 1px solid #000000; padding: 6px;"><strong>Categoría:</strong> ${cat}</td><td style="border: 1px solid #000000; padding: 6px;"><strong>Lote:</strong> ${lote}</td><td style="border: 1px solid #000000; padding: 6px;"><strong>Carimbo:</strong> ${carimbo}</td></tr><tr><td style="border: 1px solid #000000; padding: 6px;"><strong>Raza:</strong> ${raza}</td><td style="border: 1px solid #000000; padding: 6px;"><strong>Edad:</strong> ${edad}</td><td style="border: 1px solid #000000; padding: 6px;"><strong>Último Peso:</strong> ${peso}</td></tr><tr><td style="border: 1px solid #000000; padding: 6px;"><strong>Dx Actual:</strong> ${dx}</td><td style="border: 1px solid #000000; padding: 6px;"><strong>Genealogía:</strong> ${pa} / ${ma}</td><td style="border: 1px solid #000000; padding: 6px;"><strong>Régimen:</strong> ${nut}</td></tr><tr><td style="border: 1px solid #000000; padding: 6px;"><strong>Últ. Sanidad:</strong> ${san}</td><td style="border: 1px solid #000000; padding: 6px;" colspan="2"><strong>Últ. Inseminación:</strong> ${ins}</td></tr></table>
+                    <h3 style="font-size:16px; margin: 0 0 10px 0;">Historial Clínico y Procedimientos</h3><table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; word-wrap: break-word;"><thead><tr><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Fecha</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 85%;">Procedimiento / Notas Completas</th></tr></thead><tbody>`;
                 
                 let tbInd = document.getElementById('tb-informe-individual');
                 if(tbInd) {
                     let rows = tbInd.querySelectorAll('tr'); 
-                    rows.forEach(tr => { let tds = tr.querySelectorAll('td'); if(tds.length >= 3) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 8px; overflow: hidden;">${tds[0].innerHTML}</td><td style="border: 1px solid #000000; padding: 8px; overflow: hidden;">${tds[1].innerHTML} - ${tds[2].innerHTML}</td></tr>`; });
+                    rows.forEach(tr => { let tds = tr.querySelectorAll('td'); if(tds.length >= 3) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 6px; overflow: hidden;">${tds[0].innerHTML}</td><td style="border: 1px solid #000000; padding: 6px; overflow: hidden;">${tds[1].innerHTML} - ${tds[2].innerHTML}</td></tr>`; });
                 }
                 htmlContent += `</tbody></table></div>`;
             } else {
@@ -976,29 +971,30 @@
                 const titulo = modo === 'inventario' ? "Reporte Analítico de Inventario" : "Reporte Analítico de Trabajos y Procedimientos";
                 let iT = document.getElementById('inf-total'); let iP = document.getElementById('inf-prenadas');
                 
-                htmlContent += `<p style="margin:0; font-size:14px;">${titulo}</p><p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${h_log ? `<div style="text-align: right;"><img src="${h_log}" style="max-height:100px; max-width: 250px; object-fit: contain;"></div>` : ''}</div>
-                    <table style="width: 50%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;"><tr><td style="border: 1px solid #000000; padding: 8px;"><strong>Resultados Filtrados:</strong> ${iT?iT.innerText:'0'}</td><td style="border: 1px solid #000000; padding: 8px;"><strong>Preñadas (Filtro):</strong> ${iP?iP.innerText:'-'}</td></tr></table>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; word-wrap: break-word;"><thead>`;
+                htmlContent += `<p style="margin:0; font-size:14px;">${titulo}</p><p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${h_log ? `<img src="${h_log}" style="max-height:60px; max-width: 150px;">` : ''}</div>
+                    <table style="width: 50%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;"><tr><td style="border: 1px solid #000000; padding: 6px;"><strong>Resultados Filtrados:</strong> ${iT?iT.innerText:'0'}</td><td style="border: 1px solid #000000; padding: 6px;"><strong>Preñadas (Filtro):</strong> ${iP?iP.innerText:'-'}</td></tr></table>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; word-wrap: break-word;"><thead>`;
                         
                 if(modo === 'inventario') {
-                    htmlContent += `<tr><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 15%;">Caravana</th><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 40%;">Categoría y Lote</th><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 15%;">Último Peso</th><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 30%;">Dx Actual</th></tr></thead><tbody>`;
+                    htmlContent += `<tr><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Caravana</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 40%;">Categoría y Lote</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Último Peso</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 30%;">Dx Actual</th></tr></thead><tbody>`;
                     let tbMas = document.getElementById('tb-informe-masivo');
                     if(tbMas) {
                         let rows = tbMas.querySelectorAll('tr'); 
-                        rows.forEach(tr => { let tds = tr.querySelectorAll('td'); if(tds.length >= 4) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 8px;">${tds[0].innerText}</td><td style="border: 1px solid #000000; padding: 8px;">${tds[1].innerHTML}</td><td style="border: 1px solid #000000; padding: 8px;">${tds[2].innerText}</td><td style="border: 1px solid #000000; padding: 8px;">${tds[3].innerText}</td></tr>`; });
+                        rows.forEach(tr => { let tds = tr.querySelectorAll('td'); if(tds.length >= 4) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 6px;">${tds[0].innerText}</td><td style="border: 1px solid #000000; padding: 6px;">${tds[1].innerHTML}</td><td style="border: 1px solid #000000; padding: 6px;">${tds[2].innerText}</td><td style="border: 1px solid #000000; padding: 6px;">${tds[3].innerText}</td></tr>`; });
                     }
                 } else {
-                    htmlContent += `<tr><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 15%;">Fecha</th><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 15%;">Caravana</th><th style="border: 1px solid #000000; padding: 8px; background-color: #f1f5f9; width: 70%;">Trabajo Realizado y Detalles</th></tr></thead><tbody>`;
+                    htmlContent += `<tr><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Fecha</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 15%;">Caravana</th><th style="border: 1px solid #000000; padding: 6px; background-color: #f1f5f9; width: 70%;">Trabajo Realizado y Detalles</th></tr></thead><tbody>`;
                     let tbEve = document.getElementById('tb-informe-eventos');
                     if(tbEve) {
                         let rows = tbEve.querySelectorAll('tr'); 
-                        rows.forEach(tr => { let tds = tr.querySelectorAll('td'); if(tds.length >= 4) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 8px;">${tds[0].innerText}</td><td style="border: 1px solid #000000; padding: 8px; text-align:center;"><strong>${tds[1].innerText}</strong></td><td style="border: 1px solid #000000; padding: 8px;"><strong>${tds[2].innerText}</strong> - ${tds[3].innerText}</td></tr>`; });
+                        rows.forEach(tr => { let tds = tr.querySelectorAll('td'); if(tds.length >= 4) htmlContent += `<tr><td style="border: 1px solid #000000; padding: 6px;">${tds[0].innerText}</td><td style="border: 1px solid #000000; padding: 6px; text-align:center;"><strong>${tds[1].innerText}</strong></td><td style="border: 1px solid #000000; padding: 6px;"><strong>${tds[2].innerText}</strong> - ${tds[3].innerText}</td></tr>`; });
                     }
                 }
                 htmlContent += `</tbody></table></div>`;
             }
             
-            const opt = { margin: 10, filename: rpPrint !== "" ? `Dossier_${rpPrint.toUpperCase()}.pdf` : 'Reporte_Inventario.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' } };
+            // PDF CELULAR ORIGINAL: MODO AVOID-ALL
+            const opt = { margin: 10, filename: rpPrint !== "" ? `Dossier_${rpPrint.toUpperCase()}.pdf` : 'Reporte_Taurus.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: 'avoid-all', avoid: 'tr' } };
             html2pdf().set(opt).from(htmlContent).toPdf().get('pdf').then(function(pdf) {
                 if (window.AndroidTaurus) { const base64 = pdf.output('datauristring'); window.AndroidTaurus.guardarPDF(base64, opt.filename); } else { pdf.save(opt.filename); }
                 if(btn) btn.innerHTML = rpPrint !== "" ? `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}` : "🖨️ Descargar Informe PDF"; 
