@@ -1235,5 +1235,66 @@
         function cambiarMiContrasena() { if(!navigator.onLine) { alert("Necesitas conexión."); return; } const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) { alert("Mínimo 4 caracteres."); return; } const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { alert("Contraseña actualizada con éxito."); document.getElementById('nueva-clave').value = ''; let cred = lsGet('tc_cred', {}); cred.p = nueva; lsSet('tc_cred', cred); }); }
         function cerrarSesion() { localStorage.clear(); window.location.reload(); }
     </script>
+    <script>
+// ==========================================
+// TECLADO INVISIBLE AUTOMÁTICO (VERSIÓN PC)
+// ==========================================
+let bufferTecladoPC = "";
+let timeoutTecladoPC;
+
+document.addEventListener('keydown', function(event) {
+    // Ignorar teclas del sistema
+    if(event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt') return;
+
+    if (event.key === 'Enter') {
+        if (bufferTecladoPC.length > 2) {
+            event.preventDefault(); 
+            
+            // Limpiamos la basura y dejamos solo el dato
+            let dataLimpia = bufferTecladoPC.replace(/[^a-zA-Z0-9.-]/g, '').trim(); 
+            let esPeso = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
+            
+            if (esPeso) {
+                // Si la PC detecta peso, intenta abrir el modal de peso
+                let inputPeso = document.getElementById('i-peso-val');
+                if (inputPeso) {
+                    abrirModal('modal-peso');
+                    inputPeso.value = dataLimpia;
+                } else {
+                    alert("⚖️ Peso recibido: " + dataLimpia + " Kg.");
+                }
+            } else {
+                // Si la PC detecta caravana, quita la palabra TAG y busca
+                let tagLimpio = dataLimpia.replace(/TAG/gi, '');
+                
+                // Si existe la función de la ficha, la ejecuta
+                if (typeof window.recibirTagNFC === "function") {
+                    window.recibirTagNFC(tagLimpio);
+                } else {
+                    // Método de respaldo por si la PC usa el buscador clásico
+                    let buscador = document.getElementById('buscador-caravana');
+                    if (buscador) {
+                        buscador.value = tagLimpio;
+                        if(typeof buscarCaravanaBtn === "function") buscarCaravanaBtn();
+                    }
+                }
+            }
+        }
+        bufferTecladoPC = "";
+        clearTimeout(timeoutTecladoPC);
+        return;
+    }
+
+    // Atrapamos la ráfaga de teclas
+    if (event.key.length === 1) {
+        bufferTecladoPC += event.key;
+        clearTimeout(timeoutTecladoPC);
+        // Medio segundo de tolerancia para Windows
+        timeoutTecladoPC = setTimeout(() => {
+            bufferTecladoPC = "";
+        }, 500); 
+    }
+});
+</script>
 </body>
 </html>
