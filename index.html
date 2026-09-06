@@ -178,26 +178,34 @@
             <!-- FICHA CLÍNICA -->
             <div id="vista-manga" class="oculto">
                 
-                <!-- NUEVO: PANEL MODO RÁFAGA -->
+                <!-- PANEL MODO RÁFAGA PERSONALIZABLE -->
                 <div class="tarjeta" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid var(--secundario);">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div style="display:flex; align-items:center; gap:10px;">
                             <span style="font-size:24px;">⚡</span>
                             <div>
                                 <strong style="display:block; color:var(--texto);">Modo Ráfaga</strong>
-                                <span style="font-size:11px; color:var(--muted);">Velocidad extrema en manga</span>
+                                <span style="font-size:11px; color:var(--muted);">Automatización completa de manga</span>
                             </div>
                         </div>
                         <button id="btn-toggle-rafaga" class="btn-mini" style="border-color:var(--borde); font-weight:bold;" onclick="toggleRafaga()">APAGADO</button>
                     </div>
                     <div id="opciones-rafaga" class="oculto" style="margin-top:15px; padding-top:15px; border-top:1px solid var(--borde);">
-                        <div class="form-grupo" style="margin-bottom:0;">
-                            <label style="font-size:11px;">Al leer peso de la balanza:</label>
-                            <select id="rafaga-accion" class="form-control" style="padding:8px; font-size:13px; font-weight:bold;">
-                                <option value="peso_solo">Guardar solo Peso</option>
-                                <option value="peso_aftosa">Guardar Peso + Aplicar Aftosa</option>
-                                <option value="peso_ivermectina">Guardar Peso + Ivermectina 1%</option>
+                        <div class="form-grupo" style="margin-bottom:10px;">
+                            <label style="font-size:11px;">Acción combinada con el peso:</label>
+                            <select id="rafaga-accion" class="form-control" style="padding:8px; font-size:13px; font-weight:bold;" onchange="verificarRafagaCustom()">
+                                <option value="solo_peso">⚖️ Solo Registrar Peso</option>
+                                <option value="Vacuna Aftosa">💉 Vacuna Aftosa</option>
+                                <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
+                                <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario (Ivermectina)</option>
+                                <option value="Vitamina ADE">💉 Vitamina ADE / Reconstituyente</option>
+                                <option value="OTRO">✏️ Personalizado (Escribir otro)...</option>
                             </select>
+                            <input type="text" id="rafaga-prod-custom" class="form-control oculto" placeholder="Escriba el producto o tratamiento..." style="margin-top:8px; padding:8px; font-size:13px;">
+                        </div>
+                        <div id="caja-rafaga-detalles" class="form-grupo oculto" style="margin-bottom:0;">
+                            <label style="font-size:11px;">Dosis y Nota / Observación:</label>
+                            <input type="text" id="rafaga-detalles" class="form-control" placeholder="Ej: 5ml - Lote 12 | Subcutánea" style="padding:8px; font-size:13px;">
                         </div>
                     </div>
                 </div>
@@ -224,7 +232,6 @@
                         <div class="dato-min"><span>Carimbo</span><strong id="val-carimbo">-</strong></div>
                         <div class="dato-min"><span>Dx Tacto</span><strong id="val-dx" style="color:var(--exito);">-</strong></div>
                         
-                        <!-- NUEVO: PESO + CÁLCULO G.D.P. -->
                         <div class="dato-min">
                             <span>Peso Actual</span>
                             <strong id="val-peso" style="display:block;">-</strong>
@@ -506,7 +513,7 @@
         <button class="btn-guardar" onclick="prepararGuardado('m-ins', 'Inseminación')">Registrar</button>
     </div></div>
     
-    <div id="modal-nut" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('m-nut')">&times;</span><h3>🌾 Suplemento / Nutrición</h3>
+    <div id="modal-nut" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-nut')">&times;</span><h3>🌾 Suplemento / Nutrición</h3>
         <div class="form-grupo"><label>Alimento o Suplemento Suministrado</label>
             <select class="form-control" id="i-nut-prod" onchange="verificarNutOtro()">
                 <option value="Sal Mineral">Sal Mineral Común</option>
@@ -517,9 +524,9 @@
             </select>
             <input type="text" class="form-control oculto" id="i-nut-prod-otro" placeholder="Escriba el alimento" style="margin-top:10px;">
         </div>
-        <div class="form-grupo"><label>Dosificación (Opcional)</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 0.50gr/kg/día..."></div>
+        <div class="form-grupo"><label>Dosificación (Opcional)</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 2 Kg/día..."></div>
         <div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div>
-        <button class="btn-guardar" onclick="prepararGuardado('m-nut', 'Nutrición')">Registrar Nutrición</button>
+        <button class="btn-guardar" onclick="prepararGuardado('modal-nut', 'Nutrición')">Registrar Nutrición</button>
     </div></div>
 
     <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial de este Animal</h3><div id="contenido-historial"></div></div></div>
@@ -570,7 +577,7 @@
         };
 
         // ==========================================
-        // NUEVO: SISTEMA DE TOAST (MENSAJES RÁPIDOS)
+        // SISTEMA DE TOAST (MENSAJES RÁPIDOS)
         // ==========================================
         function mostrarToast(mensaje) {
             let t = document.createElement('div');
@@ -583,7 +590,7 @@
         }
 
         // ==========================================
-        // NUEVO: CONTROL DEL MODO RÁFAGA
+        // CONTROL DEL MODO RÁFAGA PERSONALIZABLE
         // ==========================================
         let rafagaActiva = false;
         window.toggleRafaga = function() {
@@ -595,11 +602,31 @@
                 btn.style.background = "var(--secundario)";
                 btn.style.color = "white";
                 opciones.classList.remove('oculto');
+                verificarRafagaCustom();
             } else {
                 btn.innerText = "APAGADO";
                 btn.style.background = "transparent";
                 btn.style.color = "var(--texto)";
                 opciones.classList.add('oculto');
+            }
+        };
+
+        window.verificarRafagaCustom = function() {
+            const sel = document.getElementById('rafaga-accion').value;
+            const customInput = document.getElementById('rafaga-prod-custom');
+            const detallesBox = document.getElementById('caja-rafaga-detalles');
+            
+            if(sel === 'solo_peso') {
+                customInput.classList.add('oculto');
+                detallesBox.classList.add('oculto');
+            } else {
+                detallesBox.classList.remove('oculto');
+                if(sel === 'OTRO') {
+                    customInput.classList.remove('oculto');
+                    customInput.focus();
+                } else {
+                    customInput.classList.add('oculto');
+                }
             }
         };
 
@@ -618,17 +645,25 @@
                     if (esPeso) {
                         if (typeof caravanaActiva !== 'undefined' && caravanaActiva && caravanaActiva !== "---") {
                             
-                            // LÓGICA DE MODO RÁFAGA
+                            // LÓGICA DE MODO RÁFAGA AUTOMÁTICO
                             if(rafagaActiva) {
-                                let cfg = document.getElementById('rafaga-accion').value;
+                                let sel = document.getElementById('rafaga-accion').value;
+                                let notas = document.getElementById('rafaga-detalles').value.trim();
+                                
+                                // 1. Guardar Peso
                                 ejecutarAccion('Peso', dataLimpia + " Kg", "Automático (Ráfaga)", null, null);
-                                if(cfg === 'peso_aftosa') ejecutarAccion('Sanidad', 'Vacuna Aftosa', 'Dosis automática (Ráfaga)', null, null);
-                                if(cfg === 'peso_ivermectina') ejecutarAccion('Sanidad', 'Antiparasitario (Ivermectina)', 'Dosis automática (Ráfaga)', null, null);
+                                
+                                // 2. Guardar Tratamiento Sanitario Personalizado si está seleccionado
+                                if(sel !== 'solo_peso') {
+                                    let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
+                                    let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga";
+                                    ejecutarAccion('Sanidad', producto, detCompleto, null, null);
+                                }
                                 
                                 mostrarToast("✅ ¡Guardado!");
-                                buscarCaravanaBtn(); // Actualiza la pantalla para mostrar el GDP
+                                buscarCaravanaBtn(); // Actualiza la ficha y recalcula el GDP
                             } else {
-                                // MODO NORMAL
+                                // MODO NORMAL MANUAL
                                 cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
                                 abrirModal('modal-peso');
                                 document.getElementById('i-peso-val').value = dataLimpia;
@@ -708,7 +743,7 @@
                 const regs = obtenerHistorial(rp); 
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", nutricion="-", sanidad="-", inseminacion="-"; 
                 
-                // NUEVO: CÁLCULO DE G.D.P.
+                // CÁLCULO INTELIGENTE DE G.D.P.
                 let gdpHtml = "";
                 let ultimosPesos = regs.filter(d => d.accion === 'Peso').slice(0, 2);
                 if(ultimosPesos.length === 2) {
@@ -729,7 +764,7 @@
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
                     const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
                     const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nutricion = (uNut.valor || "-") + " | " + (uNut.detalles || "");
-                    const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) sanidad = (uSan.valor || "-") + " | " + (uSan.detalles || "");
+                    const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "-") + " | " + (uSan.detalles || "");
                     const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) inseminacion = (uIns.valor || "-") + " | " + (uIns.detalles || "");
                     
                     let ultComentario = "Sin comentarios.";
@@ -1094,7 +1129,7 @@
 
                 if(uDx) {
                     if(String(uDx.valor||"").includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } }
-                    if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--text-main);">${car}</strong> diagnosticada Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } }
+                    if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--text-main);">${car}</strong> diagnosticada Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } }
                 }
                 if(cat.includes('vaca') || cat.includes('vaquilla')) g2.v++; else if(cat.includes('terne') || cat.includes('desmamante')) g2.t++; else g2.o++;
                 g3[lote] = (g3[lote] || 0) + 1;
