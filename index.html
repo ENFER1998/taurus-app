@@ -576,6 +576,34 @@
             }
         };
 
+        function guardarVinculacionNFC() {
+            const rpFinal = document.getElementById('input-rp-vinculacion').value.trim();
+            
+            // Si el usuario no escribió nada, ponemos el borde en rojo por 2 segundos
+            if(!rpFinal) { 
+                const input = document.getElementById('input-rp-vinculacion'); 
+                input.style.borderColor = "var(--peligro)"; 
+                setTimeout(() => input.style.borderColor = "var(--borde)", 2000); 
+                return; 
+            }
+            
+            caravanaActiva = rpFinal; 
+            
+            // Ejecutamos el guardado en la nube con las variables correctas del móvil
+            ejecutarAccion('Vinculación RFID', tagHuerfano, 'Chip vinculado a ' + rpFinal, null, 'modal-vinculacion');
+            
+            // Cambiamos a la pestaña Manga y mostramos el animal
+            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]); 
+            document.getElementById('buscador-caravana').value = rpFinal; 
+            buscarCaravanaBtn();
+            
+            // MAGIA GANADERA: Si el animal es totalmente nuevo, le abrimos la ventana de "Datos Base" automáticamente
+            const datosActivos = obtenerRegistrosActivos(); 
+            if(datosActivos.filter(d => String(d.caravana) === String(rpFinal)).length <= 1) {
+                setTimeout(() => abrirModal('modal-perfil'), 600);
+            }
+        }
+
         // ==========================================
         // SISTEMA DE TOAST (MENSAJES RÁPIDOS)
         // ==========================================
@@ -959,10 +987,7 @@
                 }
             }).catch(e => { 
                 console.warn("Error sync de fondo", e); 
-                if(esManual) {
-                    badge.innerHTML = '⚠️ Falló';
-                    setTimeout(() => actualizarEstadoRed(), 2000);
-                } 
+                if(esManual) { badge.innerHTML = '⚠️ Falló'; setTimeout(() => actualizarEstadoRed(), 2000); } 
             });
         }
         setInterval(() => sincronizarFondo(false), 30000);
