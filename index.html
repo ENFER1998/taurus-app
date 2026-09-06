@@ -946,42 +946,52 @@
             }); 
         }
 
-        function eliminarOperador() {
-            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; }
-            const selectEl = document.getElementById('op-del-usu-sel');
-            const u = selectEl.value.trim();
-            if(!u) { alert("Seleccione un operador de la lista."); return; }
+function crearOperador() { 
+            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
+            const u = document.getElementById('peon-usu').value.trim(); 
+            const p = document.getElementById('peon-pass').value.trim(); 
+            const rol = document.getElementById('op-rol').value;
+            if(!u || !p) { alert("Completar todos los datos."); return; } 
             
-            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso del operador "${u}"? No podrá volver a ingresar al sistema.`)) {
-                const btn = document.getElementById('btn-eliminar-op');
-                const btnOriginal = btn.innerText;
-                btn.innerText = "⏳ Eliminando...";
-                btn.disabled = true;
+            const btn = document.getElementById('btn-crear-op'); 
+            const btnOriginal = btn.innerText;
+            btn.innerText = "⏳ Creando..."; 
+            btn.disabled = true;
 
-                const fd = new URLSearchParams(); 
-                fd.append('accion', 'eliminar_peon'); 
-                fd.append('maestro', propMaestro); 
-                fd.append('usuario', usuarioActivo); 
-                fd.append('peon_usu', u); 
+            const fd = new URLSearchParams(); 
+            fd.append('accion', 'crear_peon'); 
+            fd.append('maestro', propMaestro); 
+            fd.append('usuario', usuarioActivo); 
+            fd.append('peon_usu', u); 
+            fd.append('peon_pass', p); 
+            fd.append('vencimiento', 'Heredado'); 
+            fd.append('peon_rol', rol);
+
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
                 
-                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
-                    alert(`El operador "${u}" ha sido eliminado con éxito.`); 
-                    
-                    let eliminados = JSON.parse(localStorage.getItem('tc_op_eliminados')) || [];
-                    if(!eliminados.includes(u.toLowerCase())) eliminados.push(u.toLowerCase());
-                    localStorage.setItem('tc_op_eliminados', JSON.stringify(eliminados));
+                // NUEVO: Guardamos el Alta en el historial global para que la PC lo detecte
+                const objEvt = { fecha: new Date().toISOString(), accion: 'Alta Operador', caravana: '---', valor: u, detalles: `Rol: ${rol} | Op: ${usuarioActivo}`, maestro: propMaestro };
+                baseDeDatosCache.unshift(objEvt);
+                localStorage.setItem('tc_db', JSON.stringify(baseDeDatosCache));
+                
+                const fd2 = new URLSearchParams();
+                for(let key in objEvt) fd2.append(key, objEvt[key]);
+                fd2.append('usuario', usuarioActivo);
+                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd2, mode: 'no-cors' });
 
-                    selectEl.value = ''; 
-                    cargarListaOperadores();
-                    
-                    btn.innerText = btnOriginal;
-                    btn.disabled = false;
-                }).catch(() => {
-                    alert("Error al conectar con el servidor.");
-                    btn.innerText = btnOriginal;
-                    btn.disabled = false;
-                });
-            }
+                document.getElementById('peon-usu').value = ''; 
+                document.getElementById('peon-pass').value = ''; 
+                
+                btn.innerText = btnOriginal; 
+                btn.disabled = false;
+                
+                cargarListaOperadores(); // Refresca la lista local al instante
+                alert("Usuario Registrado. Ya está disponible en la red.");
+                setTimeout(() => { sincronizarFondo(false); }, 1500);
+            }).catch(() => {
+                btn.innerText = btnOriginal; 
+                btn.disabled = false;
+            }); 
         }
 
         function cargarListaOperadores() {
@@ -992,6 +1002,9 @@
                 let det = d.detalles || "";
                 if(det.includes('Op:')) { let nombre = det.split('Op:')[1].split('|')[0].trim(); if(nombre) operadores.add(nombre); }
                 if(det.includes('Resp:')) { let nombre = det.split('Resp:')[1].split('|')[0].trim(); if(nombre) operadores.add(nombre); }
+                
+                // NUEVO: Lee el registro de Alta para mostrar a los que todavía no trabajaron
+                if(d.accion === 'Alta Operador' && d.valor) { operadores.add(d.valor.trim()); }
             });
             const sel = document.getElementById('op-del-usu-sel');
             if(sel) {
@@ -1004,6 +1017,7 @@
                 });
                 sel.innerHTML = options;
             }
+        }
         }
 
         function procesarDatosDashboard() {
