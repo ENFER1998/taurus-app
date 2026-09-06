@@ -1237,63 +1237,92 @@
     </script>
    <script>
 // ==========================================
-// LECTOR UNIFICADO INSTANTÁNEO (PC Y CELULAR)
+// 1. LÓGICA DE NAVEGACIÓN SEGURA (Evita el pantallazo oscuro en PC)
+// ==========================================
+function forzarSaltoAFicha() {
+    let tabFichaMobile = document.querySelectorAll('.nav-item')[1];
+    
+    if (tabFichaMobile && typeof cambiarVista === "function") {
+        // Si estamos en el celular, usamos el botón de abajo
+        cambiarVista('vista-manga', tabFichaMobile);
+    } else {
+        // Si estamos en la PC, ocultamos todo y mostramos la Ficha sin tocar botones móviles
+        ['vista-dashboard', 'vista-manga', 'vista-registro', 'vista-informe', 'vista-config'].forEach(id => {
+            let el = document.getElementById(id);
+            if (el) el.classList.add('oculto');
+        });
+        let ficha = document.getElementById('vista-manga');
+        if (ficha) ficha.classList.remove('oculto');
+    }
+}
+
+// ==========================================
+// 2. PUENTE NFC / RFID 
+// ==========================================
+window.recibirTagNFC = function(tagHex) {
+    let dataMinuscula = String(tagHex).trim().toLowerCase();
+    let esRFIDRegistrado = baseDeDatosCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === dataMinuscula);
+    
+    if(esRFIDRegistrado) {
+        forzarSaltoAFicha(); // Salto seguro a la Ficha
+        let buscador = document.getElementById('buscador-caravana');
+        if (buscador) buscador.value = esRFIDRegistrado.caravana;
+        if (typeof buscarCaravanaBtn === "function") buscarCaravanaBtn();
+    } else {
+        tagHuerfano = tagHex;
+        let inputVincular = document.getElementById('input-rp-vinculacion');
+        if (inputVincular) inputVincular.value = '';
+        if (typeof abrirModal === "function") abrirModal('modal-vinculacion');
+        setTimeout(() => { if(inputVincular) inputVincular.focus(); }, 500);
+    }
+};
+
+// ==========================================
+// 3. LECTOR UNIFICADO INSTANTÁNEO (PC Y CELULAR)
 // ==========================================
 let bufferTeclado = "";
 let timeoutTeclado;
 
 document.addEventListener('keydown', function(event) {
-    // Ignorar teclas del sistema
     if(event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'CapsLock') return;
 
-    // ACCIÓN INSTANTÁNEA AL RECIBIR EL "ENTER"
     if (event.key === 'Enter') {
         if (bufferTeclado.length > 2) {
-            event.preventDefault(); // Evita clicks fantasma
+            event.preventDefault(); 
             
             let dataLimpia = bufferTeclado.replace(/[^a-zA-Z0-9.-]/g, '').trim().toUpperCase(); 
             let esPeso = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
             
             if (esPeso) {
-                // LÓGICA DE PESO (0ms de retraso)
                 if (typeof caravanaActiva !== 'undefined' && caravanaActiva && caravanaActiva !== "---") {
-                    // Forzar salto a la pestaña Ficha (Manga) por si estabas en el Panel
-                    cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
-                    // Abrir la ventana de peso e insertar el número de golpe
-                    abrirModal('modal-peso');
-                    document.getElementById('i-peso-val').value = dataLimpia;
+                    forzarSaltoAFicha(); // Salto seguro a la Ficha
+                    if (typeof abrirModal === "function") abrirModal('modal-peso');
+                    let inputPeso = document.getElementById('i-peso-val');
+                    if (inputPeso) inputPeso.value = dataLimpia;
                 } else {
                     alert("⚖️ Peso recibido: " + dataLimpia + " Kg. ¡Debes leer la caravana de un animal primero!");
                 }
             } else {
-                // LÓGICA DE RFID (CARAVANA)
                 let tagLimpio = dataLimpia.replace(/TAG/gi, '');
-                
-                // 1. FORZAR EL SALTO A LA FICHA AL INSTANTE
-                cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
-                
-                // 2. Procesar la caravana directamente sin la pausa de 300ms
+                forzarSaltoAFicha(); // Salto seguro a la Ficha
                 if (typeof window.recibirTagNFC === "function") {
                     window.recibirTagNFC(tagLimpio);
                 }
             }
         }
-        
-        // Vaciamos la memoria al instante
         bufferTeclado = "";
         clearTimeout(timeoutTeclado);
         return;
     }
 
-    // Atrapamos la ráfaga de teclas
     if (event.key.length === 1) {
         bufferTeclado += event.key;
         clearTimeout(timeoutTeclado);
-        // Tolerancia para Windows y Android (500ms)
         timeoutTeclado = setTimeout(() => {
             bufferTeclado = "";
         }, 500); 
     }
+});
 });
 </script>
 </body>
