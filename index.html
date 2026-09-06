@@ -923,14 +923,22 @@
             fd.append('peon_rol', rol);
 
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
+                
+                // Memoria local infalible
+                let creados = JSON.parse(localStorage.getItem('tc_op_creados')) || [];
+                if(!creados.includes(u)) creados.push(u);
+                localStorage.setItem('tc_op_creados', JSON.stringify(creados));
+
+                // Avisamos a toda la base de datos
                 const objEvt = { fecha: new Date().toISOString(), accion: 'Alta Operador', caravana: '---', valor: u, detalles: `Rol: ${rol} | Op: ${usuarioActivo}`, maestro: propMaestro };
                 baseDeDatosCache.unshift(objEvt);
                 localStorage.setItem('tc_db', JSON.stringify(baseDeDatosCache));
                 
-                const fd2 = new URLSearchParams();
-                for(let key in objEvt) fd2.append(key, objEvt[key]);
-                fd2.append('usuario', usuarioActivo);
-                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd2, mode: 'no-cors' });
+                // Cola de subida 100% segura
+                let pendientes = JSON.parse(localStorage.getItem('tc_pendientes')) || [];
+                pendientes.push(objEvt);
+                localStorage.setItem('tc_pendientes', JSON.stringify(pendientes));
+                sincronizarPendientesAuto();
 
                 document.getElementById('peon-usu').value = ''; 
                 document.getElementById('peon-pass').value = ''; 
@@ -939,11 +947,11 @@
                 btn.disabled = false;
                 
                 cargarListaOperadores();
-                alert("Usuario Registrado. Ya está disponible en la red.");
-                setTimeout(() => { sincronizarFondo(false); }, 1500);
+                alert("Usuario Registrado. Ya está disponible en el sistema.");
             }).catch(() => {
                 btn.innerText = btnOriginal; 
                 btn.disabled = false;
+                alert("Error al conectar al servidor.");
             }); 
         }
 
@@ -988,6 +996,7 @@
         function cargarListaOperadores() {
             let operadores = new Set();
             let eliminados = JSON.parse(localStorage.getItem('tc_op_eliminados')) || [];
+            let creados = JSON.parse(localStorage.getItem('tc_op_creados')) || [];
 
             baseDeDatosCache.forEach(d => {
                 let det = d.detalles || "";
@@ -995,6 +1004,8 @@
                 if(det.includes('Resp:')) { let nombre = det.split('Resp:')[1].split('|')[0].trim(); if(nombre) operadores.add(nombre); }
                 if(d.accion === 'Alta Operador' && d.valor) { operadores.add(d.valor.trim()); }
             });
+            
+            creados.forEach(c => operadores.add(c));
             
             const sel = document.getElementById('op-del-usu-sel');
             if(sel) {
