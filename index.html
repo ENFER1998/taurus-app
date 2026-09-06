@@ -538,7 +538,7 @@
             }
         };
 
-        // ==========================================
+     // ==========================================
         // 2. PROCESADOR BLUETOOTH / LECTOR
         // ==========================================
         function procesarTramaBLE(trama) {
@@ -559,45 +559,64 @@
             }
         }
 
-       // ==========================================
-        // 3. TECLADO INVISIBLE (HID) 100% AUTOMÁTICO
+        // ==========================================
+        // LECTOR UNIFICADO INSTANTÁNEO (PC Y CELULAR)
         // ==========================================
         let bufferTeclado = "";
-        let ultimoTiempoTecla = Date.now();
+        let timeoutTeclado;
 
         document.addEventListener('keydown', function(event) {
-            // Ignorar teclas de control del sistema
-            if(event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt') return;
+            // Ignorar teclas del sistema
+            if(event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'CapsLock') return;
 
-            // Calculamos qué tan rápido entró esta tecla respecto a la anterior
-            let tiempoActual = Date.now();
-            let tiempoEntreTeclas = tiempoActual - ultimoTiempoTecla;
-            ultimoTiempoTecla = tiempoActual;
-
-            // Un humano teclea lento (más de 60ms). Un ESP32 lo hace en 10ms.
-            // Si es lento, borramos la memoria oculta porque eres tú escribiendo normal.
-            if (tiempoEntreTeclas > 60) {
-                bufferTeclado = "";
-            }
-
-            // Si el ESP32 manda el "Enter" final de la lectura
+            // ACCIÓN INSTANTÁNEA AL RECIBIR EL "ENTER"
             if (event.key === 'Enter') {
                 if (bufferTeclado.length > 2) {
-                    // Detenemos el Enter nativo para que no presione cosas por accidente
-                    event.preventDefault(); 
+                    event.preventDefault(); // Evita clicks fantasma
                     
-                    // Mandamos el dato atrapado a la función de clasificación
-                    procesarTramaBLE(bufferTeclado); 
+                    let dataLimpia = bufferTeclado.replace(/[^a-zA-Z0-9.-]/g, '').trim().toUpperCase(); 
+                    let esPeso = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
+                    
+                    if (esPeso) {
+                        // LÓGICA DE PESO (0ms de retraso)
+                        if (typeof caravanaActiva !== 'undefined' && caravanaActiva && caravanaActiva !== "---") {
+                            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+                            abrirModal('modal-peso');
+                            document.getElementById('i-peso-val').value = dataLimpia;
+                        } else {
+                            alert("⚖️ Peso recibido: " + dataLimpia + " Kg. ¡Debes leer la caravana de un animal primero!");
+                        }
+                    } else {
+                        // LÓGICA DE RFID (CARAVANA)
+                        let tagLimpio = dataLimpia.replace(/TAG/gi, '');
+                        
+                        // 1. FORZAR EL SALTO A LA FICHA AL INSTANTE
+                        cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+                        
+                        // 2. Procesar la caravana directamente
+                        if (typeof window.recibirTagNFC === "function") {
+                            window.recibirTagNFC(tagLimpio);
+                        }
+                    }
                 }
+                
+                // Vaciamos la memoria al instante
                 bufferTeclado = "";
+                clearTimeout(timeoutTeclado);
                 return;
             }
 
-            // Si es una lectura a velocidad sobrehumana, la vamos guardando
+            // Atrapamos la ráfaga de teclas
             if (event.key.length === 1) {
                 bufferTeclado += event.key;
+                clearTimeout(timeoutTeclado);
+                // Tolerancia para Windows y Android (500ms)
+                timeoutTeclado = setTimeout(() => {
+                    bufferTeclado = "";
+                }, 500); 
             }
         });
+
         // NFC Vía Web (Solo si se usa en Google Chrome en vez de la App nativa)
         async function leerNFC() {
             if ('NDEFReader' in window) {
