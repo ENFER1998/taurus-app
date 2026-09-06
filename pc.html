@@ -56,7 +56,7 @@
         .topbar-title { font-size: 13px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;}
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s;}
         .btn-outline:hover { background: var(--bg-card); color: var(--primary); }
-        .badge { border-radius: 4px; font-weight: bold; border: 1px solid; text-transform: uppercase; }
+        .badge { border-radius: 4px; font-weight: bold; border: 1px solid; text-transform: uppercase; transition: 0.3s;}
         .badge.online { background: rgba(5, 150, 105, 0.1); color: var(--success); border-color: var(--success); }
         .badge.offline { background: rgba(220, 38, 38, 0.1); color: var(--danger); border-color: var(--danger); }
 
@@ -159,7 +159,7 @@
             <div class="topbar-title">Terminal Corporativa de Trazabilidad</div>
             <div class="topbar-right" style="display:flex; gap:10px; align-items:center;">
                 <button class="btn-outline" style="padding: 4px 10px; font-size: 11px;" onclick="sincronizarFondo(true)">🔄 Actualizar Servidor</button>
-                <div id="estado-red" class="badge online" style="padding: 4px 10px; font-size: 11px; margin: 0;">🟢 Conectado</div>
+                <div id="estado-red" class="badge online" style="padding: 4px 10px; font-size: 11px; margin: 0; cursor:default;">🟢 Conectado</div>
             </div>
         </div>
 
@@ -278,9 +278,9 @@
                 </div>
 
                 <div id="filtros-inventario" style="display:none; gap:10px; margin-bottom:15px;">
-                    <select class="form-control" id="f-inf-lote" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Lotes</option><option value="Hacienda General">Hacienda General</option><option value="Preñadas">Preñadas</option></select>
-                    <select class="form-control" id="f-inf-cat" onchange="actualizarInformeAvanzado()"><option value="ALL">Todas las Categorías</option><option value="V:">Vacas</option><option value="T">Terneros</option></select>
-                    <select class="form-control" id="f-inf-dx" onchange="actualizarInformeAvanzado()"><option value="ALL">Cualquier Estado</option><option value="Preñada">Preñadas</option><option value="Vacía">Vacías</option></select>
+                    <select class="form-control" id="f-inf-lote" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Lotes</option><option value="Hacienda General">Hacienda General</option><option value="Lecheras">Lecheras</option><option value="Preñadas">Preñadas</option><option value="Inseminadas">Inseminadas</option></select>
+                    <select class="form-control" id="f-inf-cat" onchange="actualizarInformeAvanzado()"><option value="ALL">Todas las Categorías</option><option value="V:">Vacas / Vaquillas (V)</option><option value="VV:">Vacas Viejas (VV)</option><option value="T">Terneros/as (TH/TM)</option><option value="D">Desmamantes (DH/DM)</option><option value="Toros">Toros</option></select>
+                    <select class="form-control" id="f-inf-dx" onchange="actualizarInformeAvanzado()"><option value="ALL">Cualquier Estado de Preñez</option><option value="Preñada">Solo Preñadas</option><option value="Vacía">Solo Vacías</option></select>
                 </div>
 
                 <input type="text" id="f-inf-rp" class="form-control" style="border-color:var(--success);" placeholder="🔍 Ingrese Nº RP para Dossier Clínico..." onkeyup="actualizarInformeAvanzado()">
@@ -341,7 +341,7 @@
                         </div>
                         <div class="form-grupo"><label>Crear Nuevo Usuario</label><input type="text" id="op-usu" class="form-control" placeholder="Nombre de usuario"></div>
                         <div class="form-grupo"><label>Contraseña de Acceso</label><input type="password" id="op-pass" class="form-control" placeholder="Clave"></div>
-                        <button id="btn-crear-op" class="btn-primary" onclick="crearOperador()">Registrar Usuario</button>
+                        <button id="btn-crear-op" class="btn-primary" style="background:#10b981;" onclick="crearOperador()">Registrar Usuario</button>
                         
                         <hr style="border-color:var(--border); margin:20px 0;">
                         
@@ -448,45 +448,23 @@
             return validos.concat(globalEvents).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
         }
 
-        function cargarListaOperadores() {
-            let operadores = new Set();
-            let eliminados = lsGet('tc_op_eliminados', []);
-            
-            dbCache.forEach(d => {
-                let det = d.detalles || "";
-                if(det.includes('Op:')) {
-                    let nombre = det.split('Op:')[1].split('|')[0].trim();
-                    if(nombre) operadores.add(nombre);
-                }
-                if(det.includes('Resp:')) {
-                    let nombre = det.split('Resp:')[1].split('|')[0].trim();
-                    if(nombre) operadores.add(nombre);
-                }
-            });
-            const sel = document.getElementById('op-del-usu-sel');
-            if(sel) {
-                let options = '<option value="">-- Seleccione un operador --</option>';
-                operadores.forEach(o => {
-                    let oMin = o.toLowerCase();
-                    if(oMin !== usActivo.toLowerCase() && !eliminados.includes(oMin)) {
-                        options += `<option value="${o}">${o}</option>`;
-                    }
-                });
-                sel.innerHTML = options;
-            }
-        }
-
         if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
         function toggleTema() {
             document.body.classList.toggle('tema-claro');
             localStorage.setItem('tc_tema', document.body.classList.contains('tema-claro') ? 'claro' : 'oscuro');
         }
 
-        function setEstadoRed(online) {
+        function setEstadoRed(online, texto = null) {
             const b = document.getElementById('estado-red');
             if(!b) return;
-            if(online) { b.classList.replace('offline','online'); b.innerText = '🟢 Conectado'; } 
-            else { b.classList.replace('online','offline'); b.innerText = '🔴 Red Local'; }
+            
+            if(texto) {
+                b.innerText = texto;
+            } else if(navigator.onLine || online) { 
+                b.classList.replace('offline','online'); b.innerText = '🟢 Conectado'; 
+            } else { 
+                b.classList.replace('online','offline'); b.innerText = '🔴 Red Local'; 
+            }
         }
         window.addEventListener('online', () => setEstadoRed(true)); window.addEventListener('offline', () => setEstadoRed(false));
 
@@ -608,7 +586,7 @@
         function sincronizarFondo(esManual = false) {
             if(!usActivo || !navigator.onLine) { if(esManual) alert("Revise su conexión a Internet."); return; }
             const cred = lsGet('tc_cred', null); if(!cred) return;
-            if(esManual) document.getElementById('estado-red').innerText = '🔄 Actualizando...';
+            if(esManual) setEstadoRed(true, '🔄 Actualizando...');
 
             fetch(`${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(cred.u)}&password=${encodeURIComponent(cred.p)}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' })
             .then(r => r.json()).then(res => {
@@ -619,9 +597,20 @@
                     if(!document.getElementById('v-base').classList.contains('oculto')) cargarListaRegistro(); 
                     if(!document.getElementById('v-reporte').classList.contains('oculto')) actualizarInformeAvanzado();
                     cargarListaOperadores();
-                    setEstadoRed(true); if(esManual) alert("Sincronización completa con el servidor.");
+                    
+                    if(esManual) {
+                        setEstadoRed(true, '✅ ¡Listo!');
+                        setTimeout(() => setEstadoRed(true), 2000);
+                    } else {
+                        setEstadoRed(true);
+                    }
+                } else {
+                    if(esManual) { setEstadoRed(true, '❌ Error'); setTimeout(() => setEstadoRed(true), 2000); }
                 }
-            }).catch(e => { if(esManual) { setEstadoRed(false); alert("Google Sheets tardó en responder. Sigue trabajando, se sincronizará de fondo."); } });
+            }).catch(e => { 
+                console.warn("Error sync de fondo", e); 
+                if(esManual) { setEstadoRed(true, '⚠️ Falló'); setTimeout(() => setEstadoRed(true), 2000); } 
+            });
         }
         setInterval(() => sincronizarFondo(false), 30000);
 
@@ -1073,7 +1062,7 @@
                 else if(g === '7') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Preñez por Lote</h4>`; let lKeys = Object.keys(g7).sort((a,b)=>g7[b].p-g7[a].p).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--success)':i===1?'var(--primary)':'var(--warning)'; html += makeBar(k, g7[k].p, g7[k].t, col); }); html+=`</div>`;} 
                 else if(g === '8') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Eficacia de Toros</h4>`; let lKeys = Object.keys(g8).sort((a,b)=>g8[b].p-g8[a].p).slice(0,3); if(lKeys.length===0) html += `<p style="color:var(--text-muted); font-size:12px;">Sin cruces.</p>`; lKeys.forEach((k, i) => { html += makeBar(k, g8[k].p, g8[k].t, '#be185d'); }); html+=`</div>`;} 
                 else if(g === '9') { let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Promedio de Pesos</h4><div class="grid-2"><div class="kpi-box" style="padding:10px;"><strong style="font-size:20px; color:var(--text-main);">${pv} Kg</strong><span>Vacas</span></div><div class="kpi-box" style="padding:10px;"><strong style="font-size:20px; color:var(--text-main);">${pt} Kg</strong><span>Terneros</span></div></div></div>`; } 
-                else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Volumen Clínico</h4>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Nutrición', g10.nut, t, '#84cc16')}${makeBar('Sanidad', g10.san, t, '#c2410c')}</div>`; } 
+                else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Volumen Clínico</h4>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Nutrición', g10.nut, t, '#84cc16')}${makeBar('Sanidad', g10.san, t, '#c2410c')}`; } 
                 htmlGraficos += html;
             }); document.getElementById('contenedor-graficos').innerHTML = htmlGraficos;
         }
@@ -1109,13 +1098,26 @@
             fd.append('peon_rol', rol);
             
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
-                alert("Usuario Registrado. Puede tardar unos 15 segundos en procesarse en la nube."); 
+                
+                // NUEVO: Guardamos el Alta en el historial global para que el Celular lo detecte
+                const objEvt = { fecha: new Date().toISOString(), accion: 'Alta Operador', caravana: '---', valor: u, detalles: `Rol: ${rol} | Op: ${usActivo}`, maestro: maestroId };
+                dbCache.unshift(objEvt);
+                lsSet('tc_db', dbCache);
+                
+                const fd2 = new URLSearchParams();
+                for(let key in objEvt) fd2.append(key, objEvt[key]);
+                fd2.append('usuario', usActivo);
+                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd2, mode: 'no-cors' });
+
                 document.getElementById('op-usu').value = ''; 
                 document.getElementById('op-pass').value = ''; 
                 
                 btn.innerHTML = btnOriginal;
                 btn.disabled = false;
-                setTimeout(() => { sincronizarFondo(false); }, 2000);
+                
+                cargarListaOperadores(); // Refresca la lista local al instante
+                alert("Usuario Registrado. Ya está disponible en la red.");
+                setTimeout(() => { sincronizarFondo(false); }, 1500);
             }).catch(() => {
                 btn.innerHTML = btnOriginal;
                 btn.disabled = false;
@@ -1128,7 +1130,7 @@
             const u = selectEl.value.trim();
             if(!u) { alert("Seleccione un operador de la lista."); return; }
             
-            if(confirm(`⚠️ ATENCIÓN: ¿Está completamente seguro de eliminar el acceso del operador "${u}"? No podrá volver a ingresar al sistema.`)) {
+            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso del operador "${u}"? No podrá volver a ingresar al sistema.`)) {
                 const btn = document.getElementById('btn-eliminar-op');
                 const btnOriginal = btn.innerHTML;
                 btn.innerHTML = "⏳ Eliminando...";
@@ -1142,12 +1144,13 @@
                 
                 fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
                     alert(`El operador "${u}" ha sido eliminado con éxito.`); 
+                    
                     let eliminados = lsGet('tc_op_eliminados', []);
                     if(!eliminados.includes(u.toLowerCase())) eliminados.push(u.toLowerCase());
                     lsSet('tc_op_eliminados', eliminados);
                     
                     selectEl.value = ''; 
-                    cargarListaOperadores(); // Refrescar la lista visible sin congelar
+                    cargarListaOperadores(); 
                     
                     btn.innerHTML = btnOriginal;
                     btn.disabled = false;
