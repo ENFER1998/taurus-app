@@ -110,6 +110,7 @@
         .btn-cerrar:hover { color: var(--text-main); }
         .btn-guardar { width: 100%; background: var(--success); color: white; padding: 10px; border-radius: 4px; border: none; font-weight: bold; margin-top: 10px; font-size: 14px; cursor: pointer; text-transform: uppercase; transition: 0.2s;}
         .btn-guardar:hover { background: #047857; }
+        .btn-guardar:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .filtros-grid { display: flex; gap: 10px; margin-bottom: 20px;}
         .filtro-sel { flex:1; background: var(--bg-base); color: var(--text-main); border: 1px solid var(--border); padding: 10px; border-radius: 4px; font-size: 13px; outline: none;}
@@ -157,7 +158,6 @@
         <div class="topbar">
             <div class="topbar-title">Terminal Corporativa de Trazabilidad</div>
             <div class="topbar-right" style="display:flex; gap:10px; align-items:center;">
-                <div id="estado-lector" class="badge online" style="padding: 4px 10px; font-size: 11px; margin: 0; background:rgba(37, 99, 235, 0.1); color:var(--primary); border-color:var(--primary);">⌨️ Escáner Listo</div>
                 <button class="btn-outline" style="padding: 4px 10px; font-size: 11px;" onclick="sincronizarFondo(true)">🔄 Actualizar Servidor</button>
                 <div id="estado-red" class="badge online" style="padding: 4px 10px; font-size: 11px; margin: 0;">🟢 Conectado</div>
             </div>
@@ -341,7 +341,7 @@
                         </div>
                         <div class="form-grupo"><label>Crear Nuevo Usuario</label><input type="text" id="op-usu" class="form-control" placeholder="Nombre de usuario"></div>
                         <div class="form-grupo"><label>Contraseña de Acceso</label><input type="password" id="op-pass" class="form-control" placeholder="Clave"></div>
-                        <button class="btn-primary" onclick="crearOperador()">Registrar Usuario</button>
+                        <button id="btn-crear-op" class="btn-primary" onclick="crearOperador()">Registrar Usuario</button>
                         
                         <hr style="border-color:var(--border); margin:20px 0;">
                         
@@ -352,7 +352,7 @@
                             </select>
                             <span style="font-size:11px; color:var(--text-muted); display:block; margin-top:5px;">Se listan los usuarios registrados (solo se permite borrar Operadores).</span>
                         </div>
-                        <button class="btn-primary" style="background:var(--danger);" onclick="eliminarOperador()">Eliminar Operador de la Nube</button>
+                        <button id="btn-eliminar-op" class="btn-primary" style="background:var(--danger);" onclick="eliminarOperador()">Eliminar Operador de la Nube</button>
                     </div>
                 </div>
 
@@ -1094,6 +1094,11 @@
             const rol = document.getElementById('op-rol').value;
             if(!u || !p) { alert("Completar todos los datos."); return; } 
             
+            const btn = document.getElementById('btn-crear-op');
+            const btnOriginal = btn.innerHTML;
+            btn.innerHTML = "⏳ Creando...";
+            btn.disabled = true;
+
             const fd = new URLSearchParams(); 
             fd.append('accion', 'crear_peon'); 
             fd.append('maestro', maestroId); 
@@ -1107,7 +1112,13 @@
                 alert("Usuario Registrado. Puede tardar unos 15 segundos en procesarse en la nube."); 
                 document.getElementById('op-usu').value = ''; 
                 document.getElementById('op-pass').value = ''; 
+                
+                btn.innerHTML = btnOriginal;
+                btn.disabled = false;
                 setTimeout(() => { sincronizarFondo(false); }, 2000);
+            }).catch(() => {
+                btn.innerHTML = btnOriginal;
+                btn.disabled = false;
             }); 
         }
 
@@ -1116,7 +1127,13 @@
             const selectEl = document.getElementById('op-del-usu-sel');
             const u = selectEl.value.trim();
             if(!u) { alert("Seleccione un operador de la lista."); return; }
+            
             if(confirm(`⚠️ ATENCIÓN: ¿Está completamente seguro de eliminar el acceso del operador "${u}"? No podrá volver a ingresar al sistema.`)) {
+                const btn = document.getElementById('btn-eliminar-op');
+                const btnOriginal = btn.innerHTML;
+                btn.innerHTML = "⏳ Eliminando...";
+                btn.disabled = true;
+
                 const fd = new URLSearchParams(); 
                 fd.append('accion', 'eliminar_peon'); 
                 fd.append('maestro', maestroId); 
@@ -1128,7 +1145,16 @@
                     let eliminados = lsGet('tc_op_eliminados', []);
                     if(!eliminados.includes(u.toLowerCase())) eliminados.push(u.toLowerCase());
                     lsSet('tc_op_eliminados', eliminados);
-                    cargarListaOperadores();
+                    
+                    selectEl.value = ''; 
+                    cargarListaOperadores(); // Refrescar la lista visible sin congelar
+                    
+                    btn.innerHTML = btnOriginal;
+                    btn.disabled = false;
+                }).catch(() => {
+                    alert("Hubo un error de conexión.");
+                    btn.innerHTML = btnOriginal;
+                    btn.disabled = false;
                 }); 
             }
         }
