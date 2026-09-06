@@ -157,7 +157,7 @@
         <div class="topbar">
             <div class="topbar-title">Terminal Corporativa de Trazabilidad</div>
             <div class="topbar-right" style="display:flex; gap:10px; align-items:center;">
-                <button id="btn-bluetooth" class="btn-outline" style="padding: 4px 10px; font-size: 11px; border-color:var(--primary); color:var(--primary);" onclick="conectarBluetooth()">🔗 Bluetooth</button>
+                <div id="estado-lector" class="badge online" style="padding: 4px 10px; font-size: 11px; margin: 0; background:rgba(37, 99, 235, 0.1); color:var(--primary); border-color:var(--primary);">⌨️ Escáner Listo</div>
                 <button class="btn-outline" style="padding: 4px 10px; font-size: 11px;" onclick="sincronizarFondo(true)">🔄 Actualizar Servidor</button>
                 <div id="estado-red" class="badge online" style="padding: 4px 10px; font-size: 11px; margin: 0;">🟢 Conectado</div>
             </div>
@@ -381,7 +381,6 @@
                         </div>
                     </div>
                     
-                    <!-- ENLACE DIRECTO WHATSAPP EXTERNO -->
                     <a href="https://wa.me/595976139617" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:block; width:100%; text-align:center; background:#25D366; margin-top:20px; text-decoration:none; padding:12px; box-sizing:border-box;">💬 Soporte Técnico WhatsApp</a>
                 </div>
             </div>
@@ -408,103 +407,8 @@
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 
         let dbCache = []; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
-
-        // ==========================================
-        // MÓDULO BLUETOOTH
-        // ==========================================
-        let bleDevice = null;
-        let bleServer = null;
         let rfidPendiente = "";
 
-        async function conectarBluetooth() {
-            const btn = document.getElementById('btn-bluetooth');
-            if (!navigator.bluetooth) { alert("Tu navegador no soporta Web Bluetooth."); return; }
-
-            try {
-                btn.innerText = "⏳ Buscando...";
-                bleDevice = await navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true,
-                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb', '6e400001-b5a3-f393-e0a9-e50e24dcca9e']
-                });
-
-                bleDevice.addEventListener('gattserverdisconnected', () => {
-                    btn.innerHTML = "🔗 Bluetooth: Inactivo";
-                    btn.style.color = "var(--primary)";
-                    btn.style.borderColor = "var(--primary)";
-                    alert("Dispositivo Bluetooth desconectado.");
-                });
-
-                bleServer = await bleDevice.gatt.connect();
-                let service, characteristic;
-                try {
-                    service = await bleServer.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
-                    characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
-                } catch(e) {
-                    try {
-                        service = await bleServer.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
-                        characteristic = await service.getCharacteristic('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
-                    } catch(err) {
-                        console.log("No es un dispositivo serial genérico.");
-                    }
-                }
-
-                if (characteristic) {
-                    await characteristic.startNotifications();
-                    characteristic.addEventListener('characteristicvaluechanged', (event) => {
-                        let value = new TextDecoder().decode(event.target.value).trim();
-                        if(value) procesarLecturaBluetooth(value);
-                    });
-                }
-
-                btn.innerHTML = "🔗 Bluetooth: Conectado";
-                btn.style.color = "var(--success)";
-                btn.style.borderColor = "var(--success)";
-                
-            } catch (error) {
-                console.error(error);
-                btn.innerHTML = "🔗 Bluetooth";
-            }
-        }
-
-        let bufferBT = "";
-        let timeoutBT;
-        function procesarLecturaBluetooth(texto) {
-            bufferBT += texto;
-            clearTimeout(timeoutBT);
-            
-            timeoutBT = setTimeout(() => {
-                let dataLimpia = bufferBT.replace(/[^a-zA-Z0-9.-]/g, '').trim(); 
-                if(!dataLimpia) return;
-
-                let isWeight = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
-
-                if (isWeight) {
-                    if (!document.getElementById('v-ficha').classList.contains('oculto') && rpActivo) {
-                        abrirModal('m-peso');
-                        document.getElementById('i-peso-val').value = dataLimpia;
-                    } else {
-                        alert("⚖️ Peso recibido: " + dataLimpia + " Kg. Abra la ficha de un animal antes de pesar.");
-                    }
-                } else {
-                    let dataMinuscula = dataLimpia.toLowerCase();
-                    let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === dataMinuscula);
-                    
-                    if(esRFIDRegistrado) {
-                        cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1]);
-                        document.getElementById('buscador-caravana').value = esRFIDRegistrado.caravana;
-                        buscarCaravanaBtn();
-                    } else {
-                        rfidPendiente = dataLimpia;
-                        document.getElementById('lbl-rfid-scaneado').innerText = dataLimpia;
-                        document.getElementById('f-rfid-caravana').value = "";
-                        abrirModal('m-rfid');
-                        setTimeout(() => { document.getElementById('f-rfid-caravana').focus(); }, 500);
-                    }
-                }
-                bufferBT = "";
-            }, 300);
-        }
-        
         function guardarVinculacionRFID() {
             let car = document.getElementById('f-rfid-caravana').value.trim();
             if(!car) { alert("Debe ingresar un número de caravana (RP)."); return; }
@@ -525,9 +429,6 @@
             procesarDatosDashboard();
         }
 
-        // ==========================================
-        // FILTRO GLOBAL Y LISTA OPERADORES
-        // ==========================================
         function obtenerRegistrosActivos() {
             let validos = [];
             const unicas = [...new Set(dbCache.map(d => d.caravana).filter(c => c !== "---" && c != null))];
@@ -549,6 +450,8 @@
 
         function cargarListaOperadores() {
             let operadores = new Set();
+            let eliminados = lsGet('tc_op_eliminados', []);
+            
             dbCache.forEach(d => {
                 let det = d.detalles || "";
                 if(det.includes('Op:')) {
@@ -564,8 +467,8 @@
             if(sel) {
                 let options = '<option value="">-- Seleccione un operador --</option>';
                 operadores.forEach(o => {
-                    // Prevenir que el usuario activo se borre a sí mismo
-                    if(o.toLowerCase() !== usActivo.toLowerCase()) {
+                    let oMin = o.toLowerCase();
+                    if(oMin !== usActivo.toLowerCase() && !eliminados.includes(oMin)) {
                         options += `<option value="${o}">${o}</option>`;
                     }
                 });
@@ -656,20 +559,18 @@
                 document.getElementById('lbl-sidebar-user').innerText = `${u.toUpperCase()} (${displayRol})`;
                 document.getElementById('lbl-perfil-usu').innerText = `${u.toUpperCase()} (Rol: ${displayRol})`;
                 
-                // Ocultar privilegios de administrador si es operador
                 if(displayRol !== 'Propietario') {
                     document.getElementById('panel-crear-peones').style.display = 'none'; 
                     document.getElementById('panel-membrete').style.display = 'none';
                     document.getElementById('panel-licencia').style.display = 'none';
                 }
                 
-                // Cargar panel de licencia
                 const cred = lsGet('tc_cred', {});
                 const lblLic = document.getElementById('lbl-licencia');
                 if(cred.v) {
                     const fVenc = new Date(cred.v);
                     const diffDias = Math.ceil((fVenc - new Date()) / (1000 * 60 * 60 * 24));
-                    if(diffDias < 0) { cerrarSesion(); return; } // Bloqueo si pasó la fecha
+                    if(diffDias < 0) { cerrarSesion(); return; }
                     lblLic.innerText = fVenc.toLocaleDateString() + ` (${diffDias} días restantes)`;
                     lblLic.style.color = diffDias <= 7 ? "var(--danger)" : "var(--success)";
                 } else {
@@ -717,6 +618,7 @@
                     procesarDatosDashboard(); 
                     if(!document.getElementById('v-base').classList.contains('oculto')) cargarListaRegistro(); 
                     if(!document.getElementById('v-reporte').classList.contains('oculto')) actualizarInformeAvanzado();
+                    cargarListaOperadores();
                     setEstadoRed(true); if(esManual) alert("Sincronización completa con el servidor.");
                 }
             }).catch(e => { if(esManual) { setEstadoRed(false); alert("Google Sheets tardó en responder. Sigue trabajando, se sincronizará de fondo."); } });
@@ -898,7 +800,6 @@
             document.getElementById('tabla-eventos').classList.add('oculto'); 
             document.getElementById('tabla-individual').classList.add('oculto');
             
-            // Calculo global de preñadas reales, sin importar el modo
             let tPreGlobal = 0;
             unicas.forEach(car => {
                 const regs = obtenerHistorial(car);
@@ -944,7 +845,7 @@
                     let pasaFiltro = true; 
                     if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; 
                     if(fCat !== "ALL" && !cat.includes(fCat)) pasaFiltro = false; 
-                    if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false;
+                    if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false; 
                     
                     if(pasaFiltro) { 
                         countTotal++; 
@@ -981,7 +882,6 @@
             const h_log = lsGet('tc_hacienda', {}).logo || "";
             const modo = document.getElementById('f-inf-modo').value;
             
-            // LA CLAVE: No forzar anchos en CSS inyectado, usar inline table puro
             let htmlContent = `
             <div style="background-color: #ffffff; padding: 20px; width: 750px; margin: 0 auto; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;">
                 <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #000000; padding-bottom: 15px; margin-bottom: 20px;">
@@ -1132,9 +1032,6 @@
             });
         }
 
-        // ==========================================
-        // DASHBOARD GRÁFICO 
-        // ==========================================
         function procesarDatosDashboard() {
             const datosActivos = obtenerRegistrosActivos();
             
@@ -1210,6 +1107,7 @@
                 alert("Usuario Registrado. Puede tardar unos 15 segundos en procesarse en la nube."); 
                 document.getElementById('op-usu').value = ''; 
                 document.getElementById('op-pass').value = ''; 
+                setTimeout(() => { sincronizarFondo(false); }, 2000);
             }); 
         }
 
@@ -1226,104 +1124,91 @@
                 fd.append('peon_usu', u); 
                 
                 fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
-                    alert(`Orden de eliminación de "${u}" enviada al servidor.`); 
-                    selectEl.value = ''; 
-                });
+                    alert(`El operador "${u}" ha sido eliminado con éxito.`); 
+                    let eliminados = lsGet('tc_op_eliminados', []);
+                    if(!eliminados.includes(u.toLowerCase())) eliminados.push(u.toLowerCase());
+                    lsSet('tc_op_eliminados', eliminados);
+                    cargarListaOperadores();
+                }); 
             }
         }
 
         function cambiarMiContrasena() { if(!navigator.onLine) { alert("Necesitas conexión."); return; } const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) { alert("Mínimo 4 caracteres."); return; } const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { alert("Contraseña actualizada con éxito."); document.getElementById('nueva-clave').value = ''; let cred = lsGet('tc_cred', {}); cred.p = nueva; lsSet('tc_cred', cred); }); }
         function cerrarSesion() { localStorage.clear(); window.location.reload(); }
-    </script>
-   <script>
-// ==========================================
-// 1. LÓGICA DE NAVEGACIÓN SEGURA (Evita el pantallazo oscuro en PC)
-// ==========================================
-function forzarSaltoAFicha() {
-    let tabFichaMobile = document.querySelectorAll('.nav-item')[1];
-    
-    if (tabFichaMobile && typeof cambiarVista === "function") {
-        // Si estamos en el celular, usamos el botón de abajo
-        cambiarVista('vista-manga', tabFichaMobile);
-    } else {
-        // Si estamos en la PC, ocultamos todo y mostramos la Ficha sin tocar botones móviles
-        ['vista-dashboard', 'vista-manga', 'vista-registro', 'vista-informe', 'vista-config'].forEach(id => {
-            let el = document.getElementById(id);
-            if (el) el.classList.add('oculto');
-        });
-        let ficha = document.getElementById('vista-manga');
-        if (ficha) ficha.classList.remove('oculto');
-    }
-}
 
-// ==========================================
-// 2. PUENTE NFC / RFID 
-// ==========================================
-window.recibirTagNFC = function(tagHex) {
-    let dataMinuscula = String(tagHex).trim().toLowerCase();
-    let esRFIDRegistrado = baseDeDatosCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === dataMinuscula);
-    
-    if(esRFIDRegistrado) {
-        forzarSaltoAFicha(); // Salto seguro a la Ficha
-        let buscador = document.getElementById('buscador-caravana');
-        if (buscador) buscador.value = esRFIDRegistrado.caravana;
-        if (typeof buscarCaravanaBtn === "function") buscarCaravanaBtn();
-    } else {
-        tagHuerfano = tagHex;
-        let inputVincular = document.getElementById('input-rp-vinculacion');
-        if (inputVincular) inputVincular.value = '';
-        if (typeof abrirModal === "function") abrirModal('modal-vinculacion');
-        setTimeout(() => { if(inputVincular) inputVincular.focus(); }, 500);
-    }
-};
-
-// ==========================================
-// 3. LECTOR UNIFICADO INSTANTÁNEO (PC Y CELULAR)
-// ==========================================
-let bufferTeclado = "";
-let timeoutTeclado;
-
-document.addEventListener('keydown', function(event) {
-    if(event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'CapsLock') return;
-
-    if (event.key === 'Enter') {
-        if (bufferTeclado.length > 2) {
-            event.preventDefault(); 
-            
-            let dataLimpia = bufferTeclado.replace(/[^a-zA-Z0-9.-]/g, '').trim().toUpperCase(); 
-            let esPeso = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
-            
-            if (esPeso) {
-                if (typeof caravanaActiva !== 'undefined' && caravanaActiva && caravanaActiva !== "---") {
-                    forzarSaltoAFicha(); // Salto seguro a la Ficha
-                    if (typeof abrirModal === "function") abrirModal('modal-peso');
-                    let inputPeso = document.getElementById('i-peso-val');
-                    if (inputPeso) inputPeso.value = dataLimpia;
-                } else {
-                    alert("⚖️ Peso recibido: " + dataLimpia + " Kg. ¡Debes leer la caravana de un animal primero!");
-                }
-            } else {
-                let tagLimpio = dataLimpia.replace(/TAG/gi, '');
-                forzarSaltoAFicha(); // Salto seguro a la Ficha
-                if (typeof window.recibirTagNFC === "function") {
-                    window.recibirTagNFC(tagLimpio);
-                }
+        // ==========================================
+        // LECTOR HID / TECLADO AUTOMÁTICO (PC)
+        // ==========================================
+        function forzarSaltoAFicha() {
+            let tabFichaPC = document.querySelectorAll('.sidebar-nav li')[1];
+            if (typeof cambiarVista === "function" && tabFichaPC) {
+                cambiarVista('v-ficha', tabFichaPC);
             }
         }
-        bufferTeclado = "";
-        clearTimeout(timeoutTeclado);
-        return;
-    }
 
-    if (event.key.length === 1) {
-        bufferTeclado += event.key;
-        clearTimeout(timeoutTeclado);
-        timeoutTeclado = setTimeout(() => {
-            bufferTeclado = "";
-        }, 500); 
-    }
-});
-});
-</script>
+        window.recibirTagNFC = function(tagHex) {
+            let dataMinuscula = String(tagHex).trim().toLowerCase();
+            let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === dataMinuscula);
+            
+            if(esRFIDRegistrado) {
+                forzarSaltoAFicha();
+                let buscador = document.getElementById('buscador-caravana');
+                if (buscador) buscador.value = esRFIDRegistrado.caravana;
+                if (typeof buscarCaravanaBtn === "function") buscarCaravanaBtn();
+            } else {
+                rfidPendiente = tagHex;
+                let inputVincular = document.getElementById('f-rfid-caravana');
+                if (inputVincular) inputVincular.value = '';
+                let lblScaneado = document.getElementById('lbl-rfid-scaneado');
+                if (lblScaneado) lblScaneado.innerText = tagHex;
+                if (typeof abrirModal === "function") abrirModal('m-rfid');
+                setTimeout(() => { if(inputVincular) inputVincular.focus(); }, 500);
+            }
+        };
+
+        let bufferTeclado = "";
+        let timeoutTeclado;
+
+        document.addEventListener('keydown', function(event) {
+            if(event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'CapsLock') return;
+
+            if (event.key === 'Enter') {
+                if (bufferTeclado.length > 2) {
+                    event.preventDefault(); 
+                    
+                    let dataLimpia = bufferTeclado.replace(/[^a-zA-Z0-9.-]/g, '').trim().toUpperCase(); 
+                    let esPeso = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
+                    
+                    if (esPeso) {
+                        if (typeof rpActivo !== 'undefined' && rpActivo && rpActivo !== "---") {
+                            forzarSaltoAFicha();
+                            if (typeof abrirModal === "function") abrirModal('m-peso');
+                            let inputPeso = document.getElementById('i-peso-val');
+                            if (inputPeso) inputPeso.value = dataLimpia;
+                        } else {
+                            alert("⚖️ Peso recibido: " + dataLimpia + " Kg. ¡Debes leer la caravana de un animal primero!");
+                        }
+                    } else {
+                        let tagLimpio = dataLimpia.replace(/TAG/gi, '');
+                        forzarSaltoAFicha();
+                        if (typeof window.recibirTagNFC === "function") {
+                            window.recibirTagNFC(tagLimpio);
+                        }
+                    }
+                }
+                bufferTeclado = "";
+                clearTimeout(timeoutTeclado);
+                return;
+            }
+
+            if (event.key.length === 1) {
+                bufferTeclado += event.key;
+                clearTimeout(timeoutTeclado);
+                timeoutTeclado = setTimeout(() => {
+                    bufferTeclado = "";
+                }, 500); 
+            }
+        });
+    </script>
 </body>
 </html>
