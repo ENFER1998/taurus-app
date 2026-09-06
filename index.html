@@ -70,7 +70,7 @@
         .alerta-item { display: flex; align-items: center; gap: 10px; background: rgba(245,158,11,0.1); padding: 12px; border-radius: 8px; border-left: 4px solid var(--alerta); margin-bottom: 10px; font-size: 14px; cursor: pointer; border: 1px solid rgba(245,158,11,0.3); color: var(--texto);}
         .alerta-item.peligro { background: rgba(239,68,68,0.1); border-left-color: var(--peligro); border-color: rgba(239,68,68,0.3);}
 
-        .buscador-contenedor { display: flex; gap: 10px; margin-bottom: 20px; align-items: stretch;}
+        .buscador-contenedor { display: flex; gap: 10px; margin-bottom: 15px; align-items: stretch;}
         .buscador-input { flex: 1; min-width: 0; padding: 12px; border: 2px solid var(--borde); border-radius: 8px; font-size: 16px; font-weight: bold; background: #0f172a; color: var(--texto); transition: 0.3s;}
         .buscador-btn { flex-shrink: 0; background: var(--secundario); color: white; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold; cursor: pointer;}
 
@@ -177,11 +177,37 @@
 
             <!-- FICHA CLÍNICA -->
             <div id="vista-manga" class="oculto">
+                
+                <!-- NUEVO: PANEL MODO RÁFAGA -->
+                <div class="tarjeta" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid var(--secundario);">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span style="font-size:24px;">⚡</span>
+                            <div>
+                                <strong style="display:block; color:var(--texto);">Modo Ráfaga</strong>
+                                <span style="font-size:11px; color:var(--muted);">Velocidad extrema en manga</span>
+                            </div>
+                        </div>
+                        <button id="btn-toggle-rafaga" class="btn-mini" style="border-color:var(--borde); font-weight:bold;" onclick="toggleRafaga()">APAGADO</button>
+                    </div>
+                    <div id="opciones-rafaga" class="oculto" style="margin-top:15px; padding-top:15px; border-top:1px solid var(--borde);">
+                        <div class="form-grupo" style="margin-bottom:0;">
+                            <label style="font-size:11px;">Al leer peso de la balanza:</label>
+                            <select id="rafaga-accion" class="form-control" style="padding:8px; font-size:13px; font-weight:bold;">
+                                <option value="peso_solo">Guardar solo Peso</option>
+                                <option value="peso_aftosa">Guardar Peso + Aplicar Aftosa</option>
+                                <option value="peso_ivermectina">Guardar Peso + Ivermectina 1%</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="buscador-contenedor">
                     <input type="text" id="buscador-caravana" class="buscador-input" placeholder="Nº Caravana / RP" type="number">
                     <button class="buscador-btn" onclick="buscarCaravanaBtn()">Buscar</button>
                     <button class="buscador-btn" style="background: #8b5cf6;" onclick="leerNFC()">📲 NFC</button>
                 </div>
+                
                 <div id="ficha-animal" class="tarjeta oculto">
                     <div class="perfil-cabecera"><div class="perfil-id" id="val-caravana">---</div></div>
                     <div class="botones-perfil">
@@ -196,8 +222,15 @@
                         <div class="dato-min"><span>Lote / Grupo</span><strong id="val-lote">-</strong></div>
                         <div class="dato-min"><span>Categoría</span><strong id="val-categoria">-</strong></div>
                         <div class="dato-min"><span>Carimbo</span><strong id="val-carimbo">-</strong></div>
-                        <div class="dato-min"><span>Dx Tacto</span><strong id="val-dx" style="color:var(--success);">-</strong></div>
-                        <div class="dato-min"><span>Peso Actual</span><strong id="val-peso">-</strong></div>
+                        <div class="dato-min"><span>Dx Tacto</span><strong id="val-dx" style="color:var(--exito);">-</strong></div>
+                        
+                        <!-- NUEVO: PESO + CÁLCULO G.D.P. -->
+                        <div class="dato-min">
+                            <span>Peso Actual</span>
+                            <strong id="val-peso" style="display:block;">-</strong>
+                            <div id="val-gdp" style="margin-top:2px;"></div>
+                        </div>
+
                         <div class="dato-min" style="border-left: 3px solid #be185d;"><span>Últ. Inseminación</span><strong id="val-inseminacion">-</strong></div>
                         <div class="dato-min" style="border-left: 3px solid #c2410c;"><span>Última Sanidad</span><strong id="val-sanidad">-</strong></div>
                         <div class="dato-min" style="border-left: 3px solid var(--secundario);"><span>Régimen Nutricional</span><strong id="val-nutricion">-</strong></div>
@@ -460,7 +493,7 @@
         <button class="btn-guardar" onclick="prepararGuardado('modal-sanidad', 'Sanidad')">Registrar Sanidad</button>
     </div></div>
     
-    <div id="modal-inseminacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-inseminacion')">&times;</span><h3>🧬 Reproducción</h3>
+    <div id="modal-inseminacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('m-ins')">&times;</span><h3>🧬 Reproducción</h3>
         <div class="form-grupo"><label>Método / Tipo</label>
             <select class="form-control" id="i-ins-quien">
                 <option value="IATF (Inseminación Artificial)">IATF (Inseminación Artificial)</option>
@@ -470,10 +503,10 @@
         </div>
         <div class="form-grupo"><label>Toro / Pajuela (Identificación)</label><input type="text" class="form-control" id="i-ins-toro" placeholder="Ej: Brangus 450"></div>
         <div class="form-grupo"><label>Observaciones</label><textarea class="form-control textarea" id="i-ins-txt" placeholder="Responsable, celo, etc..."></textarea></div>
-        <button class="btn-guardar" onclick="prepararGuardado('modal-inseminacion', 'Inseminación')">Registrar</button>
+        <button class="btn-guardar" onclick="prepararGuardado('m-ins', 'Inseminación')">Registrar</button>
     </div></div>
     
-    <div id="modal-nut" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-nut')">&times;</span><h3>🌾 Suplemento / Nutrición</h3>
+    <div id="modal-nut" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('m-nut')">&times;</span><h3>🌾 Suplemento / Nutrición</h3>
         <div class="form-grupo"><label>Alimento o Suplemento Suministrado</label>
             <select class="form-control" id="i-nut-prod" onchange="verificarNutOtro()">
                 <option value="Sal Mineral">Sal Mineral Común</option>
@@ -484,9 +517,9 @@
             </select>
             <input type="text" class="form-control oculto" id="i-nut-prod-otro" placeholder="Escriba el alimento" style="margin-top:10px;">
         </div>
-        <div class="form-grupo"><label>Dosificación (Opcional)</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 2 Kg/día..."></div>
+        <div class="form-grupo"><label>Dosificación (Opcional)</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 0.50gr/kg/día..."></div>
         <div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div>
-        <button class="btn-guardar" onclick="prepararGuardado('modal-nut', 'Nutrición')">Registrar Nutrición</button>
+        <button class="btn-guardar" onclick="prepararGuardado('m-nut', 'Nutrición')">Registrar Nutrición</button>
     </div></div>
 
     <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial de este Animal</h3><div id="contenido-historial"></div></div></div>
@@ -536,23 +569,39 @@
             }
         };
 
-        function procesarTramaBLE(trama) {
-            let dataLimpia = String(trama).replace(/[^a-zA-Z0-9.-]/g, '').replace(/TAG/gi, '').trim(); 
-            if(!dataLimpia) return;
-
-            let isWeight = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
-
-            if (isWeight) {
-                if (!document.getElementById('vista-manga').classList.contains('oculto') && caravanaActiva) {
-                    abrirModal('modal-peso');
-                    document.getElementById('i-peso-val').value = dataLimpia;
-                } else {
-                    alert("⚖️ Peso recibido: " + dataLimpia + " Kg. Abra la ficha de un animal antes de pesar.");
-                }
-            } else {
-                window.recibirTagNFC(dataLimpia);
-            }
+        // ==========================================
+        // NUEVO: SISTEMA DE TOAST (MENSAJES RÁPIDOS)
+        // ==========================================
+        function mostrarToast(mensaje) {
+            let t = document.createElement('div');
+            t.innerText = mensaje;
+            t.style.position = 'fixed'; t.style.bottom = '80px'; t.style.left = '50%'; t.style.transform = 'translateX(-50%)';
+            t.style.background = 'var(--exito)'; t.style.color = 'white'; t.style.padding = '12px 24px'; t.style.borderRadius = '30px'; 
+            t.style.zIndex = '9999'; t.style.fontWeight = 'bold'; t.style.boxShadow = '0 4px 15px rgba(0,0,0,0.4)'; t.style.fontSize = '16px';
+            document.body.appendChild(t);
+            setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() => t.remove(), 500); }, 2000);
         }
+
+        // ==========================================
+        // NUEVO: CONTROL DEL MODO RÁFAGA
+        // ==========================================
+        let rafagaActiva = false;
+        window.toggleRafaga = function() {
+            rafagaActiva = !rafagaActiva;
+            const btn = document.getElementById('btn-toggle-rafaga');
+            const opciones = document.getElementById('opciones-rafaga');
+            if(rafagaActiva) {
+                btn.innerText = "ENCENDIDO";
+                btn.style.background = "var(--secundario)";
+                btn.style.color = "white";
+                opciones.classList.remove('oculto');
+            } else {
+                btn.innerText = "APAGADO";
+                btn.style.background = "transparent";
+                btn.style.color = "var(--texto)";
+                opciones.classList.add('oculto');
+            }
+        };
 
         let bufferTeclado = "";
         let timeoutTeclado;
@@ -568,9 +617,23 @@
                     
                     if (esPeso) {
                         if (typeof caravanaActiva !== 'undefined' && caravanaActiva && caravanaActiva !== "---") {
-                            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
-                            abrirModal('modal-peso');
-                            document.getElementById('i-peso-val').value = dataLimpia;
+                            
+                            // LÓGICA DE MODO RÁFAGA
+                            if(rafagaActiva) {
+                                let cfg = document.getElementById('rafaga-accion').value;
+                                ejecutarAccion('Peso', dataLimpia + " Kg", "Automático (Ráfaga)", null, null);
+                                if(cfg === 'peso_aftosa') ejecutarAccion('Sanidad', 'Vacuna Aftosa', 'Dosis automática (Ráfaga)', null, null);
+                                if(cfg === 'peso_ivermectina') ejecutarAccion('Sanidad', 'Antiparasitario (Ivermectina)', 'Dosis automática (Ráfaga)', null, null);
+                                
+                                mostrarToast("✅ ¡Guardado!");
+                                buscarCaravanaBtn(); // Actualiza la pantalla para mostrar el GDP
+                            } else {
+                                // MODO NORMAL
+                                cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+                                abrirModal('modal-peso');
+                                document.getElementById('i-peso-val').value = dataLimpia;
+                            }
+
                         } else {
                             alert("⚖️ Peso recibido: " + dataLimpia + " Kg. ¡Debes leer la caravana de un animal primero!");
                         }
@@ -645,6 +708,21 @@
                 const regs = obtenerHistorial(rp); 
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", nutricion="-", sanidad="-", inseminacion="-"; 
                 
+                // NUEVO: CÁLCULO DE G.D.P.
+                let gdpHtml = "";
+                let ultimosPesos = regs.filter(d => d.accion === 'Peso').slice(0, 2);
+                if(ultimosPesos.length === 2) {
+                    let p1 = parseFloat(ultimosPesos[0].valor);
+                    let d1 = new Date(ultimosPesos[0].fecha);
+                    let p2 = parseFloat(ultimosPesos[1].valor);
+                    let d2 = new Date(ultimosPesos[1].fecha);
+                    let dias = Math.max(1, Math.round((d1 - d2) / (1000 * 60 * 60 * 24)));
+                    let gdp = ((p1 - p2) / dias).toFixed(3);
+                    if(gdp > 0) gdpHtml = `<span style="color:var(--exito); font-weight:bold; font-size:12px;">🚀 +${gdp} Kg/día</span>`;
+                    else gdpHtml = `<span style="color:var(--peligro); font-weight:bold; font-size:12px;">⚠️ ${gdp} Kg/día</span>`;
+                }
+                document.getElementById('val-gdp').innerHTML = gdpHtml;
+
                 if(regs.length > 0) {
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor || "").split('|'); raza = p[0] || "-"; edad = p[1] || "-"; padre = p[2] || "-"; madre = p[3] || "-"; cat = String(uP.detalles || "").split('|')[0] || "-"; } 
                     const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor || "").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-"; } 
@@ -815,21 +893,10 @@
                 }
             }).catch(e => { 
                 console.warn("Error sync de fondo", e); 
-                if(esManual) {
-                    badge.innerHTML = '⚠️ Falló';
-                    setTimeout(() => actualizarEstadoRed(), 2000);
-                } 
+                if(esManual) { badge.innerHTML = '⚠️ Falló'; setTimeout(() => actualizarEstadoRed(), 2000); } 
             });
         }
         setInterval(() => sincronizarFondo(false), 30000);
-
-        function guardarVinculacionNFC() {
-            const rpFinal = document.getElementById('input-rp-vinculacion').value.trim();
-            if(!rpFinal) { const input = document.getElementById('input-rp-vinculacion'); input.style.borderColor = "var(--peligro)"; setTimeout(() => input.style.borderColor = "var(--borde)", 2000); return; }
-            caravanaActiva = rpFinal; ejecutarAccion('Vinculacion_RFID', tagHuerfano, 'Chip vinculado a ' + rpFinal, null, 'modal-vinculacion');
-            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]); document.getElementById('buscador-caravana').value = rpFinal; buscarCaravanaBtn();
-            const datosActivos = obtenerRegistrosActivos(); if(datosActivos.filter(d => String(d.caravana) === String(rpFinal)).length <= 1) setTimeout(() => abrirModal('modal-perfil'), 600);
-        }
 
         function ejecutarAccion(tipoAccion, valor, detalles, btnActivo, modalId) {
             const accionObj = { fecha: new Date().toISOString(), accion: tipoAccion, caravana: caravanaActiva, valor: valor, detalles: detalles + ` | Op: ${usuarioActivo}`, maestro: propMaestro };
@@ -923,22 +990,14 @@
             fd.append('peon_rol', rol);
 
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
-                
-                // Memoria local infalible
-                let creados = JSON.parse(localStorage.getItem('tc_op_creados')) || [];
-                if(!creados.includes(u)) creados.push(u);
-                localStorage.setItem('tc_op_creados', JSON.stringify(creados));
-
-                // Avisamos a toda la base de datos
                 const objEvt = { fecha: new Date().toISOString(), accion: 'Alta Operador', caravana: '---', valor: u, detalles: `Rol: ${rol} | Op: ${usuarioActivo}`, maestro: propMaestro };
                 baseDeDatosCache.unshift(objEvt);
                 localStorage.setItem('tc_db', JSON.stringify(baseDeDatosCache));
                 
-                // Cola de subida 100% segura
-                let pendientes = JSON.parse(localStorage.getItem('tc_pendientes')) || [];
-                pendientes.push(objEvt);
-                localStorage.setItem('tc_pendientes', JSON.stringify(pendientes));
-                sincronizarPendientesAuto();
+                const fd2 = new URLSearchParams();
+                for(let key in objEvt) fd2.append(key, objEvt[key]);
+                fd2.append('usuario', usuarioActivo);
+                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd2, mode: 'no-cors' });
 
                 document.getElementById('peon-usu').value = ''; 
                 document.getElementById('peon-pass').value = ''; 
@@ -947,11 +1006,11 @@
                 btn.disabled = false;
                 
                 cargarListaOperadores();
-                alert("Usuario Registrado. Ya está disponible en el sistema.");
+                alert("Usuario Registrado. Ya está disponible en la red.");
+                setTimeout(() => { sincronizarFondo(false); }, 1500);
             }).catch(() => {
                 btn.innerText = btnOriginal; 
                 btn.disabled = false;
-                alert("Error al conectar al servidor.");
             }); 
         }
 
@@ -996,7 +1055,6 @@
         function cargarListaOperadores() {
             let operadores = new Set();
             let eliminados = JSON.parse(localStorage.getItem('tc_op_eliminados')) || [];
-            let creados = JSON.parse(localStorage.getItem('tc_op_creados')) || [];
 
             baseDeDatosCache.forEach(d => {
                 let det = d.detalles || "";
@@ -1004,8 +1062,6 @@
                 if(det.includes('Resp:')) { let nombre = det.split('Resp:')[1].split('|')[0].trim(); if(nombre) operadores.add(nombre); }
                 if(d.accion === 'Alta Operador' && d.valor) { operadores.add(d.valor.trim()); }
             });
-            
-            creados.forEach(c => operadores.add(c));
             
             const sel = document.getElementById('op-del-usu-sel');
             if(sel) {
