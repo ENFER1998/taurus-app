@@ -520,9 +520,6 @@
 
         if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); }); }
 
-        // ==========================================
-        // 1. PUENTE NFC (Desde Android Studio a HTML)
-        // ==========================================
         window.recibirTagNFC = function(tagHex) {
             let dataMinuscula = String(tagHex).trim().toLowerCase();
             let esRFIDRegistrado = baseDeDatosCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === dataMinuscula);
@@ -539,9 +536,6 @@
             }
         };
 
-     // ==========================================
-        // 2. PROCESADOR BLUETOOTH / LECTOR
-        // ==========================================
         function procesarTramaBLE(trama) {
             let dataLimpia = String(trama).replace(/[^a-zA-Z0-9.-]/g, '').replace(/TAG/gi, '').trim(); 
             if(!dataLimpia) return;
@@ -560,26 +554,19 @@
             }
         }
 
-        // ==========================================
-        // LECTOR UNIFICADO INSTANTÁNEO (PC Y CELULAR)
-        // ==========================================
         let bufferTeclado = "";
         let timeoutTeclado;
 
         document.addEventListener('keydown', function(event) {
-            // Ignorar teclas del sistema
             if(event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'CapsLock') return;
 
-            // ACCIÓN INSTANTÁNEA AL RECIBIR EL "ENTER"
             if (event.key === 'Enter') {
                 if (bufferTeclado.length > 2) {
-                    event.preventDefault(); // Evita clicks fantasma
-                    
+                    event.preventDefault(); 
                     let dataLimpia = bufferTeclado.replace(/[^a-zA-Z0-9.-]/g, '').trim().toUpperCase(); 
                     let esPeso = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
                     
                     if (esPeso) {
-                        // LÓGICA DE PESO (0ms de retraso)
                         if (typeof caravanaActiva !== 'undefined' && caravanaActiva && caravanaActiva !== "---") {
                             cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
                             abrirModal('modal-peso');
@@ -588,37 +575,21 @@
                             alert("⚖️ Peso recibido: " + dataLimpia + " Kg. ¡Debes leer la caravana de un animal primero!");
                         }
                     } else {
-                        // LÓGICA DE RFID (CARAVANA)
                         let tagLimpio = dataLimpia.replace(/TAG/gi, '');
-                        
-                        // 1. FORZAR EL SALTO A LA FICHA AL INSTANTE
                         cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
-                        
-                        // 2. Procesar la caravana directamente
-                        if (typeof window.recibirTagNFC === "function") {
-                            window.recibirTagNFC(tagLimpio);
-                        }
+                        if (typeof window.recibirTagNFC === "function") { window.recibirTagNFC(tagLimpio); }
                     }
                 }
-                
-                // Vaciamos la memoria al instante
-                bufferTeclado = "";
-                clearTimeout(timeoutTeclado);
-                return;
+                bufferTeclado = ""; clearTimeout(timeoutTeclado); return;
             }
 
-            // Atrapamos la ráfaga de teclas
             if (event.key.length === 1) {
                 bufferTeclado += event.key;
                 clearTimeout(timeoutTeclado);
-                // Tolerancia para Windows y Android (500ms)
-                timeoutTeclado = setTimeout(() => {
-                    bufferTeclado = "";
-                }, 500); 
+                timeoutTeclado = setTimeout(() => { bufferTeclado = ""; }, 500); 
             }
         });
 
-        // NFC Vía Web (Solo si se usa en Google Chrome en vez de la App nativa)
         async function leerNFC() {
             if ('NDEFReader' in window) {
                 try {
@@ -658,9 +629,6 @@
             return hist.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
         }
 
-        // ==========================================
-        // 4. FUNCIÓN BUSCAR CARAVANA (La que había desaparecido)
-        // ==========================================
         function buscarCaravanaBtn(rpForzado = null) {
             try {
                 let rp = rpForzado ? rpForzado : document.getElementById('buscador-caravana').value.trim(); 
@@ -742,6 +710,7 @@
         window.addEventListener('online', actualizarEstadoRed); window.addEventListener('offline', actualizarEstadoRed);
         function actualizarEstadoRed() {
             const badge = document.getElementById('estado-red'); const banner = document.getElementById('banner-offline');
+            if(!badge) return;
             if(navigator.onLine) { badge.classList.remove('offline'); badge.innerHTML = '🟢 Conectado'; banner.style.display = 'none'; sincronizarPendientesAuto(); } 
             else { badge.classList.add('offline'); badge.innerHTML = '🟠 Sin Internet'; banner.style.display = 'block'; }
         }
@@ -817,9 +786,16 @@
         }
 
         function sincronizarFondo(esManual = false) {
-            if(!usuarioActivo || !navigator.onLine) return; const credStr = localStorage.getItem('tc_cred'); if(!credStr) return; const cred = JSON.parse(credStr);
+            if(!usuarioActivo || !navigator.onLine) {
+                if(esManual) alert("No hay conexión a Internet.");
+                return;
+            }
+            const credStr = localStorage.getItem('tc_cred'); if(!credStr) return; const cred = JSON.parse(credStr);
             const savedUser = cred.u || cred.usu; const savedPass = cred.p || cred.pass;
-            if(esManual) document.getElementById('estado-red').innerText = '🔄 Actualizando...';
+            
+            const badge = document.getElementById('estado-red');
+            if(esManual) badge.innerHTML = '🔄 Actualizando...';
+            
             fetch(`${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(savedUser)}&password=${encodeURIComponent(savedPass)}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' })
             .then(r => r.json()).then(res => {
                 if(!res.error) {
@@ -827,9 +803,23 @@
                     if(caravanaActiva && !document.getElementById('vista-manga').classList.contains('oculto')) { buscarCaravanaBtn(caravanaActiva); }
                     procesarDatosDashboard(); if(!document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); if(!document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
                     cargarListaOperadores();
-                    setEstadoRed(true);
+                    
+                    if(esManual) {
+                        badge.innerHTML = '✅ ¡Listo!';
+                        setTimeout(() => actualizarEstadoRed(), 2000);
+                    } else {
+                        actualizarEstadoRed();
+                    }
+                } else {
+                    if(esManual) { badge.innerHTML = '❌ Error'; setTimeout(() => actualizarEstadoRed(), 2000); }
                 }
-            }).catch(e => { console.warn("Error sync de fondo"); if(esManual) setEstadoRed(false); });
+            }).catch(e => { 
+                console.warn("Error sync de fondo", e); 
+                if(esManual) {
+                    badge.innerHTML = '⚠️ Falló';
+                    setTimeout(() => actualizarEstadoRed(), 2000);
+                } 
+            });
         }
         setInterval(() => sincronizarFondo(false), 30000);
 
@@ -903,7 +893,7 @@
         function cambiarMiContrasena() { 
             if(!navigator.onLine) return; const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) return; 
             const btn = event.target; btn.innerText = "Cambiando..."; 
-            const fd = newSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usuarioActivo); fd.append('nuevo_pass', nueva); 
+            const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usuarioActivo); fd.append('nuevo_pass', nueva); 
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
                 document.getElementById('nueva-clave').value = ''; btn.innerText = "Actualizar Contraseña"; 
                 let cred = JSON.parse(localStorage.getItem('tc_cred')) || {}; cred.p = nueva; cred.pass = nueva; localStorage.setItem('tc_cred', JSON.stringify(cred)); 
@@ -933,43 +923,6 @@
             fd.append('peon_rol', rol);
 
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
-                document.getElementById('peon-usu').value = ''; 
-                document.getElementById('peon-pass').value = ''; 
-                
-                btn.innerText = btnOriginal; 
-                btn.disabled = false;
-                alert("Usuario Registrado. Espere unos segundos a que se procese en la nube.");
-                setTimeout(() => { sincronizarFondo(false); }, 2000);
-            }).catch(() => {
-                btn.innerText = btnOriginal; 
-                btn.disabled = false;
-            }); 
-        }
-
-function crearOperador() { 
-            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
-            const u = document.getElementById('peon-usu').value.trim(); 
-            const p = document.getElementById('peon-pass').value.trim(); 
-            const rol = document.getElementById('op-rol').value;
-            if(!u || !p) { alert("Completar todos los datos."); return; } 
-            
-            const btn = document.getElementById('btn-crear-op'); 
-            const btnOriginal = btn.innerText;
-            btn.innerText = "⏳ Creando..."; 
-            btn.disabled = true;
-
-            const fd = new URLSearchParams(); 
-            fd.append('accion', 'crear_peon'); 
-            fd.append('maestro', propMaestro); 
-            fd.append('usuario', usuarioActivo); 
-            fd.append('peon_usu', u); 
-            fd.append('peon_pass', p); 
-            fd.append('vencimiento', 'Heredado'); 
-            fd.append('peon_rol', rol);
-
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
-                
-                // NUEVO: Guardamos el Alta en el historial global para que la PC lo detecte
                 const objEvt = { fecha: new Date().toISOString(), accion: 'Alta Operador', caravana: '---', valor: u, detalles: `Rol: ${rol} | Op: ${usuarioActivo}`, maestro: propMaestro };
                 baseDeDatosCache.unshift(objEvt);
                 localStorage.setItem('tc_db', JSON.stringify(baseDeDatosCache));
@@ -985,13 +938,51 @@ function crearOperador() {
                 btn.innerText = btnOriginal; 
                 btn.disabled = false;
                 
-                cargarListaOperadores(); // Refresca la lista local al instante
+                cargarListaOperadores();
                 alert("Usuario Registrado. Ya está disponible en la red.");
                 setTimeout(() => { sincronizarFondo(false); }, 1500);
             }).catch(() => {
                 btn.innerText = btnOriginal; 
                 btn.disabled = false;
             }); 
+        }
+
+        function eliminarOperador() {
+            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; }
+            const selectEl = document.getElementById('op-del-usu-sel');
+            const u = selectEl.value.trim();
+            if(!u) { alert("Seleccione un operador de la lista."); return; }
+            
+            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso del operador "${u}"? No podrá volver a ingresar al sistema.`)) {
+                const btn = document.getElementById('btn-eliminar-op');
+                const btnOriginal = btn.innerText;
+                btn.innerText = "⏳ Eliminando...";
+                btn.disabled = true;
+
+                const fd = new URLSearchParams(); 
+                fd.append('accion', 'eliminar_peon'); 
+                fd.append('maestro', propMaestro); 
+                fd.append('usuario', usuarioActivo); 
+                fd.append('peon_usu', u); 
+                
+                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
+                    alert(`El operador "${u}" ha sido eliminado con éxito.`); 
+                    
+                    let eliminados = JSON.parse(localStorage.getItem('tc_op_eliminados')) || [];
+                    if(!eliminados.includes(u.toLowerCase())) eliminados.push(u.toLowerCase());
+                    localStorage.setItem('tc_op_eliminados', JSON.stringify(eliminados));
+
+                    selectEl.value = ''; 
+                    cargarListaOperadores();
+                    
+                    btn.innerText = btnOriginal;
+                    btn.disabled = false;
+                }).catch(() => {
+                    alert("Error al conectar con el servidor.");
+                    btn.innerText = btnOriginal;
+                    btn.disabled = false;
+                });
+            }
         }
 
         function cargarListaOperadores() {
@@ -1002,10 +993,9 @@ function crearOperador() {
                 let det = d.detalles || "";
                 if(det.includes('Op:')) { let nombre = det.split('Op:')[1].split('|')[0].trim(); if(nombre) operadores.add(nombre); }
                 if(det.includes('Resp:')) { let nombre = det.split('Resp:')[1].split('|')[0].trim(); if(nombre) operadores.add(nombre); }
-                
-                // NUEVO: Lee el registro de Alta para mostrar a los que todavía no trabajaron
                 if(d.accion === 'Alta Operador' && d.valor) { operadores.add(d.valor.trim()); }
             });
+            
             const sel = document.getElementById('op-del-usu-sel');
             if(sel) {
                 let options = '<option value="">-- Seleccione un operador --</option>';
@@ -1017,7 +1007,6 @@ function crearOperador() {
                 });
                 sel.innerHTML = options;
             }
-        }
         }
 
         function procesarDatosDashboard() {
