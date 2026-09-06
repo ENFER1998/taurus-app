@@ -744,23 +744,22 @@
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", nutricion="-", sanidad="-", inseminacion="-"; 
                 
                 // ==========================================
-                // NUEVO CÁLCULO INTELIGENTE DE G.D.P. 
+                // CÁLCULO INTELIGENTE DE G.D.P. 
                 // (Ignora pesos tomados el mismo día)
                 // ==========================================
                 let gdpHtml = "";
                 let todosLosPesos = regs.filter(d => d.accion === 'Peso');
-                if(todosLosPesos.length >= 2) {
+                if(todosLosPesos.length >= 1) {
                     let pesoActual = todosLosPesos[0];
                     let p1 = parseFloat(pesoActual.valor);
                     let d1 = new Date(pesoActual.fecha);
-                    d1.setHours(0,0,0,0); // Normalizamos al inicio del día
+                    let f1_str = pesoActual.fecha.split('T')[0] || ""; 
                     
                     let pesoAnterior = null;
-                    // Buscamos el peso anterior que NO sea del mismo día
+                    // Buscar hacia atrás hasta encontrar una fecha distinta a hoy
                     for(let i = 1; i < todosLosPesos.length; i++) {
-                        let dTemp = new Date(todosLosPesos[i].fecha);
-                        dTemp.setHours(0,0,0,0);
-                        if(d1.getTime() !== dTemp.getTime()) {
+                        let fTemp_str = todosLosPesos[i].fecha.split('T')[0] || "";
+                        if(f1_str !== fTemp_str && fTemp_str !== "") {
                             pesoAnterior = todosLosPesos[i];
                             break;
                         }
@@ -769,14 +768,21 @@
                     if(pesoAnterior) {
                         let p2 = parseFloat(pesoAnterior.valor);
                         let d2 = new Date(pesoAnterior.fecha);
-                        d2.setHours(0,0,0,0);
-                        let dias = Math.round((d1 - d2) / (1000 * 60 * 60 * 24));
+                        let diffTime = Math.abs(d1 - d2);
+                        let dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
                         
-                        if(dias > 0) {
+                        if(dias >= 1) {
                             let gdp = ((p1 - p2) / dias).toFixed(3);
                             if(gdp > 0) gdpHtml = `<span style="color:var(--exito); font-weight:bold; font-size:12px;">🚀 +${gdp} Kg/día</span>`;
                             else if(gdp < 0) gdpHtml = `<span style="color:var(--peligro); font-weight:bold; font-size:12px;">⚠️ ${gdp} Kg/día</span>`;
-                            else gdpHtml = `<span style="color:var(--muted); font-weight:bold; font-size:12px;">⚖️ 0.000 Kg/día</span>`;
+                            else gdpHtml = `<span style="color:var(--muted); font-weight:bold; font-size:12px;">⚖️ Mantuvo su peso</span>`;
+                        }
+                    } else {
+                        // Si pesaron varias veces el mismo día, pero no hay de un día anterior
+                        if(todosLosPesos.length > 1) {
+                            gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Se ignoran pesajes del mismo día)</span>`;
+                        } else {
+                            gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Falta un pesaje futuro)</span>`;
                         }
                     }
                 }
