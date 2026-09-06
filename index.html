@@ -513,7 +513,7 @@
         <button class="btn-guardar" onclick="prepararGuardado('m-ins', 'Inseminación')">Registrar</button>
     </div></div>
     
-    <div id="modal-nut" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-nut')">&times;</span><h3>🌾 Suplemento / Nutrición</h3>
+    <div id="modal-nut" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('m-nut')">&times;</span><h3>🌾 Suplemento / Nutrición</h3>
         <div class="form-grupo"><label>Alimento o Suplemento Suministrado</label>
             <select class="form-control" id="i-nut-prod" onchange="verificarNutOtro()">
                 <option value="Sal Mineral">Sal Mineral Común</option>
@@ -524,9 +524,9 @@
             </select>
             <input type="text" class="form-control oculto" id="i-nut-prod-otro" placeholder="Escriba el alimento" style="margin-top:10px;">
         </div>
-        <div class="form-grupo"><label>Dosificación (Opcional)</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 2 Kg/día..."></div>
+        <div class="form-grupo"><label>Dosificación (Opcional)</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 0.50gr/kg/día..."></div>
         <div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div>
-        <button class="btn-guardar" onclick="prepararGuardado('modal-nut', 'Nutrición')">Registrar Nutrición</button>
+        <button class="btn-guardar" onclick="prepararGuardado('m-nut', 'Nutrición')">Registrar Nutrición</button>
     </div></div>
 
     <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial de este Animal</h3><div id="contenido-historial"></div></div></div>
@@ -743,18 +743,42 @@
                 const regs = obtenerHistorial(rp); 
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", nutricion="-", sanidad="-", inseminacion="-"; 
                 
-                // CÁLCULO INTELIGENTE DE G.D.P.
+                // ==========================================
+                // NUEVO CÁLCULO INTELIGENTE DE G.D.P. 
+                // (Ignora pesos tomados el mismo día)
+                // ==========================================
                 let gdpHtml = "";
-                let ultimosPesos = regs.filter(d => d.accion === 'Peso').slice(0, 2);
-                if(ultimosPesos.length === 2) {
-                    let p1 = parseFloat(ultimosPesos[0].valor);
-                    let d1 = new Date(ultimosPesos[0].fecha);
-                    let p2 = parseFloat(ultimosPesos[1].valor);
-                    let d2 = new Date(ultimosPesos[1].fecha);
-                    let dias = Math.max(1, Math.round((d1 - d2) / (1000 * 60 * 60 * 24)));
-                    let gdp = ((p1 - p2) / dias).toFixed(3);
-                    if(gdp > 0) gdpHtml = `<span style="color:var(--exito); font-weight:bold; font-size:12px;">🚀 +${gdp} Kg/día</span>`;
-                    else gdpHtml = `<span style="color:var(--peligro); font-weight:bold; font-size:12px;">⚠️ ${gdp} Kg/día</span>`;
+                let todosLosPesos = regs.filter(d => d.accion === 'Peso');
+                if(todosLosPesos.length >= 2) {
+                    let pesoActual = todosLosPesos[0];
+                    let p1 = parseFloat(pesoActual.valor);
+                    let d1 = new Date(pesoActual.fecha);
+                    d1.setHours(0,0,0,0); // Normalizamos al inicio del día
+                    
+                    let pesoAnterior = null;
+                    // Buscamos el peso anterior que NO sea del mismo día
+                    for(let i = 1; i < todosLosPesos.length; i++) {
+                        let dTemp = new Date(todosLosPesos[i].fecha);
+                        dTemp.setHours(0,0,0,0);
+                        if(d1.getTime() !== dTemp.getTime()) {
+                            pesoAnterior = todosLosPesos[i];
+                            break;
+                        }
+                    }
+
+                    if(pesoAnterior) {
+                        let p2 = parseFloat(pesoAnterior.valor);
+                        let d2 = new Date(pesoAnterior.fecha);
+                        d2.setHours(0,0,0,0);
+                        let dias = Math.round((d1 - d2) / (1000 * 60 * 60 * 24));
+                        
+                        if(dias > 0) {
+                            let gdp = ((p1 - p2) / dias).toFixed(3);
+                            if(gdp > 0) gdpHtml = `<span style="color:var(--exito); font-weight:bold; font-size:12px;">🚀 +${gdp} Kg/día</span>`;
+                            else if(gdp < 0) gdpHtml = `<span style="color:var(--peligro); font-weight:bold; font-size:12px;">⚠️ ${gdp} Kg/día</span>`;
+                            else gdpHtml = `<span style="color:var(--muted); font-weight:bold; font-size:12px;">⚖️ 0.000 Kg/día</span>`;
+                        }
+                    }
                 }
                 document.getElementById('val-gdp').innerHTML = gdpHtml;
 
@@ -764,7 +788,7 @@
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
                     const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
                     const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nutricion = (uNut.valor || "-") + " | " + (uNut.detalles || "");
-                    const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "-") + " | " + (uSan.detalles || "");
+                    const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) sanidad = (uSan.valor || "-") + " | " + (uSan.detalles || "");
                     const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) inseminacion = (uIns.valor || "-") + " | " + (uIns.detalles || "");
                     
                     let ultComentario = "Sin comentarios.";
@@ -799,6 +823,7 @@
                 const elNutricion = document.getElementById('val-nutricion'); if(elNutricion) elNutricion.innerText = nutricion;
                 const elSanidad = document.getElementById('val-sanidad'); if(elSanidad) elSanidad.innerText = sanidad;
                 const elInseminacion = document.getElementById('val-inseminacion'); if(elInseminacion) elInseminacion.innerText = inseminacion;
+                const elNotas = document.getElementById('val-notas'); if(elNotas) elNotas.innerHTML = htmlNotas;
                 const elRaza = document.getElementById('val-raza'); if(elRaza) elRaza.innerText = raza;
                 const elEdad = document.getElementById('val-edad'); if(elEdad) elEdad.innerText = edad;
                 
@@ -928,7 +953,10 @@
                 }
             }).catch(e => { 
                 console.warn("Error sync de fondo", e); 
-                if(esManual) { badge.innerHTML = '⚠️ Falló'; setTimeout(() => actualizarEstadoRed(), 2000); } 
+                if(esManual) {
+                    badge.innerHTML = '⚠️ Falló';
+                    setTimeout(() => actualizarEstadoRed(), 2000);
+                } 
             });
         }
         setInterval(() => sincronizarFondo(false), 30000);
@@ -1129,7 +1157,7 @@
 
                 if(uDx) {
                     if(String(uDx.valor||"").includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } }
-                    if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--text-main);">${car}</strong> diagnosticada Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } }
+                    if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--text-main);">${car}</strong> diagnosticada Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } }
                 }
                 if(cat.includes('vaca') || cat.includes('vaquilla')) g2.v++; else if(cat.includes('terne') || cat.includes('desmamante')) g2.t++; else g2.o++;
                 g3[lote] = (g3[lote] || 0) + 1;
