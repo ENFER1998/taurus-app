@@ -41,7 +41,7 @@
         #pantalla-app { padding-bottom: 80px; width: 100%; }
         .cabecera { background-color: #0f172a; color: var(--texto); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--borde); position: sticky; top: 0; z-index: 100; transition: 0.3s;}
         .cabecera h1 { margin: 0; font-size: 20px; display: flex; align-items: center; gap: 8px;}
-        .badge-estado { font-size: 12px; background: var(--exito); padding: 5px 12px; border-radius: 20px; font-weight: bold; color: white; transition: 0.3s;}
+        .badge-estado { font-size: 12px; background: var(--exito); padding: 5px 12px; border-radius: 20px; font-weight: bold; color: white; transition: 0.3s; cursor: pointer; display: flex; align-items: center; justify-content: center;}
         .badge-estado.offline { background: var(--alerta); color: white; }
         .alerta-offline-banner { background: var(--alerta); color: black; text-align: center; padding: 5px; font-size: 12px; font-weight: bold; display: none;}
         
@@ -127,6 +127,7 @@
         .form-control { width: 100%; padding: 12px; border: 1px solid var(--borde); border-radius: 8px; box-sizing: border-box; font-size: 16px; background: #1e293b; color: var(--texto); transition: 0.3s;}
         .form-control.textarea { resize: vertical; min-height: 80px; }
         .btn-guardar { width: 100%; background: var(--secundario); color: white; padding: 15px; border-radius: 8px; border: none; font-weight: bold; margin-top: 10px; cursor: pointer;}
+        .btn-guardar:disabled { opacity: 0.6; cursor: not-allowed; }
         .cerrar { float: right; font-size: 30px; cursor: pointer; color: var(--muted);}
 
         .encabezado-impresion { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; padding: 15px; background: #1e293b; border-radius: 8px; border: 1px dashed var(--borde); transition: 0.3s; }
@@ -160,7 +161,7 @@
                 <img src="gemini-svg.ico" alt="Taurus" style="width: 26px; height: 26px; border-radius: 6px; margin-right: 8px; object-fit: contain;">
                 Taurus
             </h1>
-            <div id="estado-red" class="badge-estado">🟢 Conectado</div>
+            <div id="estado-red" class="badge-estado" onclick="sincronizarFondo(true)" title="Toca para actualizar">🟢 Conectado</div>
         </header>
 
         <div class="contenedor">
@@ -321,7 +322,7 @@
                     </div>
                     <div class="form-grupo"><label>Usuario del Operador</label><input type="text" id="peon-usu" class="form-control" placeholder="Ej: juan"></div>
                     <div class="form-grupo"><label>Contraseña</label><input type="password" id="peon-pass" class="form-control" placeholder="Clave"></div>
-                    <button class="btn-guardar" style="background:#10b981;" onclick="crearOperador()">Registrar Usuario</button>
+                    <button id="btn-crear-op" class="btn-guardar" style="background:#10b981;" onclick="crearOperador()">Registrar Usuario</button>
                     
                     <hr style="border-color:var(--borde); margin:20px 0;">
                     
@@ -332,7 +333,7 @@
                         </select>
                         <span style="font-size:11px; color:var(--muted); display:block; margin-top:5px;">Se listan los usuarios registrados (solo se permite borrar Operadores).</span>
                     </div>
-                    <button class="btn-guardar" style="background:var(--peligro);" onclick="eliminarOperador()">Eliminar Operador de la Nube</button>
+                    <button id="btn-eliminar-op" class="btn-guardar" style="background:var(--peligro);" onclick="eliminarOperador()">Eliminar Operador de la Nube</button>
                 </div>
 
                 <div class="tarjeta">
@@ -825,9 +826,10 @@
                     fusionarDatos(Array.isArray(res.data) ? res.data : []); localStorage.setItem('tc_hacienda', JSON.stringify({ nombre: res.hacienda, logo: res.logo })); cargarDisenoDesdeDB();
                     if(caravanaActiva && !document.getElementById('vista-manga').classList.contains('oculto')) { buscarCaravanaBtn(caravanaActiva); }
                     procesarDatosDashboard(); if(!document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); if(!document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
+                    cargarListaOperadores();
                     setEstadoRed(true);
                 }
-            }).catch(e => { console.warn("Error sync de fondo"); });
+            }).catch(e => { console.warn("Error sync de fondo"); if(esManual) setEstadoRed(false); });
         }
         setInterval(() => sincronizarFondo(false), 30000);
 
@@ -901,9 +903,9 @@
         function cambiarMiContrasena() { 
             if(!navigator.onLine) return; const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) return; 
             const btn = event.target; btn.innerText = "Cambiando..."; 
-            const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usuarioActivo); fd.append('nuevo_pass', nueva); 
+            const fd = newSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usuarioActivo); fd.append('nuevo_pass', nueva); 
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
-                document.getElementById('nueva-clave').value = ''; btn.innerText = "Actualizar mi Contraseña"; 
+                document.getElementById('nueva-clave').value = ''; btn.innerText = "Actualizar Contraseña"; 
                 let cred = JSON.parse(localStorage.getItem('tc_cred')) || {}; cred.p = nueva; cred.pass = nueva; localStorage.setItem('tc_cred', JSON.stringify(cred)); 
                 alert("Contraseña actualizada con éxito.");
             }); 
@@ -915,7 +917,12 @@
             const p = document.getElementById('peon-pass').value.trim(); 
             const rol = document.getElementById('op-rol').value;
             if(!u || !p) { alert("Completar todos los datos."); return; } 
-            const btn = event.target; btn.innerText = "Creando..."; 
+            
+            const btn = document.getElementById('btn-crear-op'); 
+            const btnOriginal = btn.innerText;
+            btn.innerText = "⏳ Creando..."; 
+            btn.disabled = true;
+
             const fd = new URLSearchParams(); 
             fd.append('accion', 'crear_peon'); 
             fd.append('maestro', propMaestro); 
@@ -924,11 +931,18 @@
             fd.append('peon_pass', p); 
             fd.append('vencimiento', 'Heredado'); 
             fd.append('peon_rol', rol);
+
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
                 document.getElementById('peon-usu').value = ''; 
                 document.getElementById('peon-pass').value = ''; 
-                btn.innerText = "Registrar Usuario"; 
+                
+                btn.innerText = btnOriginal; 
+                btn.disabled = false;
                 alert("Usuario Registrado. Espere unos segundos a que se procese en la nube.");
+                setTimeout(() => { sincronizarFondo(false); }, 2000);
+            }).catch(() => {
+                btn.innerText = btnOriginal; 
+                btn.disabled = false;
             }); 
         }
 
@@ -937,21 +951,43 @@
             const selectEl = document.getElementById('op-del-usu-sel');
             const u = selectEl.value.trim();
             if(!u) { alert("Seleccione un operador de la lista."); return; }
-            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso del operador "${u}"?`)) {
+            
+            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso del operador "${u}"? No podrá volver a ingresar al sistema.`)) {
+                const btn = document.getElementById('btn-eliminar-op');
+                const btnOriginal = btn.innerText;
+                btn.innerText = "⏳ Eliminando...";
+                btn.disabled = true;
+
                 const fd = new URLSearchParams(); 
                 fd.append('accion', 'eliminar_peon'); 
                 fd.append('maestro', propMaestro); 
                 fd.append('usuario', usuarioActivo); 
                 fd.append('peon_usu', u); 
+                
                 fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
-                    alert(`Orden de eliminación de "${u}" enviada al servidor.`); 
+                    alert(`El operador "${u}" ha sido eliminado con éxito.`); 
+                    
+                    let eliminados = JSON.parse(localStorage.getItem('tc_op_eliminados')) || [];
+                    if(!eliminados.includes(u.toLowerCase())) eliminados.push(u.toLowerCase());
+                    localStorage.setItem('tc_op_eliminados', JSON.stringify(eliminados));
+
                     selectEl.value = ''; 
+                    cargarListaOperadores();
+                    
+                    btn.innerText = btnOriginal;
+                    btn.disabled = false;
+                }).catch(() => {
+                    alert("Error al conectar con el servidor.");
+                    btn.innerText = btnOriginal;
+                    btn.disabled = false;
                 });
             }
         }
 
         function cargarListaOperadores() {
             let operadores = new Set();
+            let eliminados = JSON.parse(localStorage.getItem('tc_op_eliminados')) || [];
+
             baseDeDatosCache.forEach(d => {
                 let det = d.detalles || "";
                 if(det.includes('Op:')) { let nombre = det.split('Op:')[1].split('|')[0].trim(); if(nombre) operadores.add(nombre); }
@@ -960,7 +996,12 @@
             const sel = document.getElementById('op-del-usu-sel');
             if(sel) {
                 let options = '<option value="">-- Seleccione un operador --</option>';
-                operadores.forEach(o => { if(o.toLowerCase() !== usuarioActivo.toLowerCase()) { options += `<option value="${o}">${o}</option>`; } });
+                operadores.forEach(o => { 
+                    let oMin = o.toLowerCase();
+                    if(oMin !== usuarioActivo.toLowerCase() && !eliminados.includes(oMin)) { 
+                        options += `<option value="${o}">${o}</option>`; 
+                    } 
+                });
                 sel.innerHTML = options;
             }
         }
