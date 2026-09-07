@@ -456,6 +456,7 @@
         function setEstadoRed(online, texto = null) {
             const b = document.getElementById('estado-red');
             if(!b) return;
+            
             if(texto) {
                 b.innerText = texto;
             } else if(navigator.onLine || online) { 
@@ -480,33 +481,48 @@
 
             try {
                 if(!navigator.onLine) throw new Error("Offline");
+                
                 const url = `${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&t=${Date.now()}`;
                 const response = await fetch(url);
-                if (!response.ok) throw new Error("Error de conexión");
+                
+                if (!response.ok) throw new Error("Error de conexión al servidor.");
                 const res = await response.json();
+                
                 if(res.error) throw new Error(res.mensaje);
-                if(res.vencimiento && new Date() > new Date(res.vencimiento)) throw new Error("Su licencia ha vencido.");
-
-                lsSet('tc_hacienda', { nombre: res.hacienda, logo: res.logo });
-                lsSet('tc_cred', { u: u, p: p, m: res.maestro, r: res.rol, v: res.vencimiento }); 
+                
+                if(res.vencimiento && new Date() > new Date(res.vencimiento)) {
+                    throw new Error("Su licencia ha vencido.");
+                }
+                
                 let dataLimpia = Array.isArray(res.data) ? res.data : [];
-                lsSet('tc_db', dataLimpia);
+                
+                lsSet('tc_cred', { u: u, p: p, m: res.maestro, r: res.rol, v: res.vencimiento }); 
+                lsSet('tc_db', dataLimpia); 
+                lsSet('tc_hacienda', { nombre: res.hacienda, logo: res.logo }); 
                 
                 arrancarSistema(dataLimpia, u, res.maestro, res.rol);
-            } catch(e) {
+                
+            } catch(error) {
+                console.warn("Fallo de red, revisando memoria local...", error);
+                
                 const cred = lsGet('tc_cred', null);
-                if(cred && String(cred.u).toLowerCase() === u.toLowerCase() && cred.p === p) {
-                    if(cred.v && new Date() > new Date(cred.v)) { 
-                        err.innerText = "Licencia local vencida."; err.style.display = 'block'; 
-                    } else { 
-                        arrancarSistema(lsGet('tc_db', []), cred.u, cred.m, cred.r); 
+                if(cred && String(cred.u).toLowerCase() === u.toLowerCase() && cred.p === p) { 
+                    if(cred.v && new Date() > new Date(cred.v)) {
+                        err.innerText = "Licencia local vencida."; 
+                        err.style.display = 'block';
+                    } else {
+                        arrancarSistema(lsGet('tc_db', []), cred.u, cred.m, cred.r);
                     }
-                } else { 
-                    err.innerText = e.message === "Offline" ? "Sin internet y sin sesión guardada." : e.message; 
-                    err.style.display = 'block'; 
+                } else {
+                    let mensajeError = error.message === "Offline" || error.message.includes("Unexpected token") 
+                        ? "Sin Internet y no hay sesión guardada." 
+                        : error.message;
+                    err.innerText = mensajeError; 
+                    err.style.display = 'block';
                 }
-            } finally { 
-                btn.disabled = false; btn.innerText = "Ingresar al Sistema"; 
+            } finally {
+                btn.disabled = false; 
+                btn.innerText = "Ingresar al Sistema";
             }
         }
 
@@ -607,7 +623,7 @@
 
         function sincronizarPendientesAuto() {
             let p = lsGet('tc_pendientes', []); if(p.length === 0) return;
-            const fd = new URLSearchParams(); fd.append('accion', 'sync_offline'); fd.append('maestro', maestroId); fd.append('datos', JSON.stringify(p));
+            const fd = new URLSearchParams(); fd.append('accion', 'sync_offline'); fd.append('maestro', maestroId); fd.append('usuario', usActivo); fd.append('datos', JSON.stringify(p));
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_pendientes', []); sincronizarFondo(false); });
         }
 
@@ -654,6 +670,10 @@
                 const regs = obtenerHistorial(rp); 
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", nutricion="-", sanidad="-", inseminacion="-", htmlNotas=""; 
                 
+                // ==========================================
+                // NUEVO CÁLCULO INTELIGENTE DE G.D.P. PC
+                // (Ignora pesos tomados el mismo día)
+                // ==========================================
                 let gdpHtml = "";
                 let todosLosPesos = regs.filter(d => d.accion === 'Peso');
                 if(todosLosPesos.length >= 1) {
@@ -748,16 +768,22 @@
             dbCache.unshift(obj); buscarCaravanaBtn(rpActivo); procesarDatosDashboard(); 
             if(modalId) cerrarModal(modalId);
             if(navigator.onLine) {
-                const fd = new URLSearchParams(); for(let k in obj) fd.append(k, obj[k]); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { sincronizarFondo(false); });
+                const fd = new URLSearchParams(); for(let k in obj) fd.append(k, obj[k]); fd.append('usuario', usActivo); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { sincronizarFondo(false); });
             } else {
                 let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p);
             }
         }
+
         function prepararGuardado(mId, t) { 
             if(!rpActivo) return; let v = "-", d = ""; const i = document.getElementById(mId).querySelectorAll('.form-control, .textarea'); 
-            if(t === 'Comentario') { d = i[0].value; } else if(t === 'Peso') { v = i[0].value + " Kg"; d = `Cond: ${i[1].value}. Notas: ${i[2].value}`; } else if(t === 'Sanidad') { v = i[0].value; d = `Lote: ${i[1].value}. Notas: ${i[2].value}`; } else if(t === 'Diagnóstico') { v = "Dx: " + i[0].value; d = i[1].value || "-"; } else if(t === 'Inseminación') { v = "Toro: " + i[1].value; d = `Ins: ${i[0].value}. Notas: ${i[2].value}`; } else if(t === 'Nutrición') { v = i[0].value; d = `Ración: ${i[1].value}. Notas: ${i[2].value}`; } 
+            if(t === 'Comentario') { d = i[0].value; } else if(t === 'Peso') { v = i[0].value + " Kg"; d = `Cond: ${i[1].value}. Notas: ${i[2].value}`; } else if(t === 'Sanidad') { let prod = i[0].value; if(prod === 'OTRO') prod = document.getElementById('i-sani-sel-otro').value || 'Tratamiento S/N'; v = prod; d = `Lote/Marca: ${i[1].value}. Notas: ${i[2].value}`; } else if(t === 'Diagnóstico') { v = "Dx: " + i[0].value; d = i[1].value || "-"; } else if(t === 'Inseminación') { v = "Toro: " + i[1].value; d = `Ins: ${i[0].value}. Notas: ${i[2].value}`; } else if(t === 'Nutrición') { let prod = i[0].value; if(prod === 'OTRO') prod = document.getElementById('i-nut-prod-otro').value || 'Suplemento S/N'; v = prod; d = `Ración: ${i[1].value}. Notas: ${i[2].value}`; } 
             ejecutarAccion(t, v, d, mId); i.forEach(el => el.value = ''); 
         }
+
+        function verificarSaniOtro() { const sel = document.getElementById('i-sani-sel'); const input = document.getElementById('i-sani-sel-otro'); if(sel.value === 'OTRO') { input.classList.remove('oculto'); input.focus(); } else { input.classList.add('oculto'); input.value = ''; } }
+        function verificarNutOtro() { const sel = document.getElementById('i-nut-prod'); const input = document.getElementById('i-nut-prod-otro'); if(sel.value === 'OTRO') { input.classList.remove('oculto'); input.focus(); } else { input.classList.add('oculto'); input.value = ''; } }
+
+
         function guardarPerfilCompleto() { 
             if(!rpActivo) return; 
             const fRaza = document.getElementById('f-raza') ? document.getElementById('f-raza').value : "-";
