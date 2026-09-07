@@ -182,6 +182,39 @@
 
         <div id="v-ficha" class="vista oculto">
             <h2 class="titulo-seccion">Expediente Clínico Individual</h2>
+            
+            <!-- PANEL MODO RÁFAGA PC -->
+            <div class="tarjeta" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid var(--primary);">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:24px;">⚡</span>
+                        <div>
+                            <strong style="display:block; color:var(--text-main);">Modo Ráfaga</strong>
+                            <span style="font-size:11px; color:var(--text-muted);">Automatización completa de manga al recibir peso</span>
+                        </div>
+                    </div>
+                    <button id="btn-toggle-rafaga" class="btn-outline" style="padding: 6px 12px; font-size: 12px; font-weight:bold;" onclick="toggleRafaga()">APAGADO</button>
+                </div>
+                <div id="opciones-rafaga" class="oculto" style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border);">
+                    <div class="form-grupo" style="margin-bottom:10px;">
+                        <label style="font-size:11px;">Acción combinada con el peso:</label>
+                        <select id="rafaga-accion" class="form-control" style="padding:8px; font-size:13px; font-weight:bold;" onchange="verificarRafagaCustom()">
+                            <option value="solo_peso">⚖️ Solo Registrar Peso</option>
+                            <option value="Vacuna Aftosa">💉 Vacuna Aftosa</option>
+                            <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
+                            <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario (Ivermectina)</option>
+                            <option value="Vitamina ADE">💉 Vitamina ADE / Reconstituyente</option>
+                            <option value="OTRO">✏️ Personalizado (Escribir otro)...</option>
+                        </select>
+                        <input type="text" id="rafaga-prod-custom" class="form-control oculto" placeholder="Escriba el producto o tratamiento..." style="margin-top:8px; padding:8px; font-size:13px;">
+                    </div>
+                    <div id="caja-rafaga-detalles" class="form-grupo oculto" style="margin-bottom:0;">
+                        <label style="font-size:11px;">Dosis y Nota / Observación:</label>
+                        <input type="text" id="rafaga-detalles" class="form-control" placeholder="Ej: 5ml - Lote 12 | Subcutánea" style="padding:8px; font-size:13px;">
+                    </div>
+                </div>
+            </div>
+
             <div class="search-bar">
                 <input type="text" id="buscador-caravana" class="form-control" style="margin:0; flex:1;" placeholder="Ingrese el Nº de RP a buscar..." autocomplete="off">
                 <button class="btn-primary" style="width:150px; margin:0;" onclick="buscarCaravanaBtn()">Buscar RP</button>
@@ -208,7 +241,13 @@
                                 <div class="dato-box"><span>Categoría</span><strong id="val-categoria">-</strong></div>
                                 <div class="dato-box"><span>Carimbo</span><strong id="val-carimbo">-</strong></div>
                                 <div class="dato-box"><span>Dx Tacto</span><strong id="val-dx" style="color:var(--success);">-</strong></div>
-                                <div class="dato-box"><span>Peso Actual</span><strong id="val-peso">-</strong></div>
+                                
+                                <div class="dato-box">
+                                    <span>Peso Actual</span>
+                                    <strong id="val-peso" style="display:block;">-</strong>
+                                    <div id="val-gdp" style="margin-top:2px;"></div>
+                                </div>
+
                                 <div class="dato-box" style="border-color:#be185d;"><span>Últ. Inseminación</span><strong id="val-inseminacion">-</strong></div>
                                 <div class="dato-box" style="grid-column: 1 / 3; border-color:var(--primary);"><span>Régimen Nutricional Actual</span><strong id="val-nutricion">-</strong></div>
                                 <div class="dato-box" style="border-color:#c2410c;"><span>Última Sanidad</span><strong id="val-sanidad">-</strong></div>
@@ -363,6 +402,16 @@
                             <button class="btn-outline" style="padding: 6px 12px; font-size: 12px;" onclick="toggleTema()">Cambiar Tema</button>
                         </div>
                     </div>
+
+                    <!-- TARJETA DE ESTADO DE SINCRONIZACIÓN EN PC -->
+                    <div class="tarjeta">
+                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px; color:var(--text-main);">📡 Estado de Sincronización</h3>
+                        <div class="dato-box" style="margin-bottom: 15px;">
+                            <span>Registros Pendientes (Sin red)</span>
+                            <strong id="lbl-pendientes" style="color:var(--warning);">0 registros</strong>
+                        </div>
+                        <button class="btn-outline" style="width:100%;" onclick="sincronizarPendientesManual()">Forzar Sincronización</button>
+                    </div>
                     
                     <div class="tarjeta">
                         <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">📊 Analíticas en Dashboard (Máx 3)</h3>
@@ -394,9 +443,9 @@
     <div id="m-clasi" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-clasi')">&times;</span><h3>Clasificación y Ubicación</h3><div class="form-grupo"><label>Categoría Oficial</label><select class="form-control" id="input-cat-rapida"><option value="TH: Ternera Hembra">TH: Ternera Hembra</option><option value="TM: Ternero Macho">TM: Ternero Macho</option><option value="DH: Desmamante Hembra">DH: Desmamante Hembra</option><option value="DM: Desmamante Macho">DM: Desmamante Macho</option><option value="V: Vaca/Vaquilla">V: Vaca/Vaquilla</option><option value="VV: Vaca Vieja">VV: Vaca Vieja</option><option value="Toros">Toros</option></select></div><div class="form-grupo"><label>Lote Asignado</label><input type="text" list="lista-lotes" class="form-control" id="input-lote-rapido"><datalist id="lista-lotes"><option value="Hacienda General"></option><option value="Lecheras"></option><option value="Preñadas"></option><option value="Inseminadas"></option></datalist></div><div class="form-grupo"><label>Carimbo (Año)</label><input type="text" class="form-control" id="input-carimbo-rapido"></div><button class="btn-guardar" onclick="guardarClasificacion()">Actualizar Ubicación</button></div></div>
     <div id="m-dx" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-dx')">&times;</span><h3>Resultado de Tacto</h3><div class="form-grupo"><select class="form-control" id="i-dx-sel"><option>Preñada</option><option>Vacía</option><option>Vacía (Sangre)</option></select></div><div class="form-grupo"><label>Observación del Veterinario</label><textarea class="form-control textarea" id="i-dx-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-dx', 'Diagnóstico')">Registrar Tacto</button></div></div>
     <div id="m-peso" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-peso')">&times;</span><h3>Registro de Peso</h3><div class="form-grupo"><input type="number" class="form-control" id="i-peso-val" placeholder="Peso detectado en Kg"></div><div class="form-grupo"><label>Condición Corporal</label><select class="form-control" id="i-peso-cond"><option>Óptima</option><option>Bajo Peso</option><option>Sobrepeso</option></select></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-peso-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-peso', 'Peso')">Registrar Peso</button></div></div>
-    <div id="m-sani" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-sani')">&times;</span><h3>Control Sanitario</h3><div class="form-grupo"><label>Tipo de Aplicación</label><select class="form-control" id="i-sani-sel"><option>Antiparasitario</option><option>Vacuna Aftosa</option><option>Tratamiento General</option></select></div><div class="form-grupo"><label>Producto Utilizado</label><input type="text" class="form-control" id="i-sani-lote" placeholder="Marca del producto o Número de Lote"></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-sani', 'Sanidad')">Registrar Sanidad</button></div></div>
+    <div id="m-sani" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-sani')">&times;</span><h3>Control Sanitario</h3><div class="form-grupo"><label>Tipo de Aplicación</label><select class="form-control" id="i-sani-sel" onchange="verificarSaniOtro()"><option>Antiparasitario</option><option>Vacuna Aftosa</option><option>Tratamiento General</option><option value="OTRO">✏️ Personalizado...</option></select><input type="text" class="form-control oculto" id="i-sani-sel-otro" placeholder="Escriba el producto" style="margin-top:10px;"></div><div class="form-grupo"><label>Producto Utilizado</label><input type="text" class="form-control" id="i-sani-lote" placeholder="Marca del producto o Número de Lote"></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-sani', 'Sanidad')">Registrar Sanidad</button></div></div>
     <div id="m-ins" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-ins')">&times;</span><h3>Registro de Inseminación</h3><div class="form-grupo"><label>Profesional a Cargo</label><input type="text" class="form-control" id="i-ins-quien" placeholder="Nombre del Inseminador"></div><div class="form-grupo"><label>Genética Utilizada</label><input type="text" class="form-control" id="i-ins-toro" placeholder="Toro o Código de Pajuela"></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-ins-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-ins', 'Inseminación')">Registrar Servicio</button></div></div>
-    <div id="m-nut" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-nut')">&times;</span><h3>Suplemento Nutricional</h3><div class="form-grupo"><label>Alimento Suministrado</label><input type="text" class="form-control" id="i-nut-prod" list="lista-alimentos"><datalist id="lista-alimentos"><option value="FOSFO Plus! 90f (Sal Mineral)"></option><option value="FOSFO Plus! Proteica Ternero"></option><option value="Forraje / Pastura"></option></datalist></div><div class="form-grupo"><label>Dosificación</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 0.50gr/kg/día..."></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-nut', 'Nutrición')">Registrar Nutrición</button></div></div>
+    <div id="m-nut" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-nut')">&times;</span><h3>Suplemento Nutricional</h3><div class="form-grupo"><label>Alimento Suministrado</label><select class="form-control" id="i-nut-prod" onchange="verificarNutOtro()"><option value="FOSFO Plus! 90f (Sal Mineral)">FOSFO Plus! 90f (Sal Mineral)</option><option value="FOSFO Plus! Proteica Ternero">FOSFO Plus! Proteica Ternero</option><option value="Forraje / Pastura">Forraje / Pastura</option><option value="OTRO">✏️ Personalizado...</option></select><input type="text" class="form-control oculto" id="i-nut-prod-otro" placeholder="Escriba el alimento" style="margin-top:10px;"></div><div class="form-grupo"><label>Dosificación</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 0.50gr/kg/día..."></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-nut', 'Nutrición')">Registrar Nutrición</button></div></div>
     <div id="m-traza" class="modal"><div class="modal-body" style="width:700px;"><span class="btn-cerrar" onclick="cerrarModal('m-traza')">&times;</span><h3>Trazabilidad Completa del RP</h3><div style="max-height:450px;overflow-y:auto; margin-top:15px;"><table class="tabla-datos"><thead><tr><th>Fecha</th><th>Acción</th><th>Valor Principal</th><th>Detalles Adicionales</th></tr></thead><tbody id="tb-traza"></tbody></table></div></div></div>
 
     <script>
@@ -521,7 +570,9 @@
                 const dGuardado = lsGet('tc_hacienda', {}); 
                 aplicarDisenoEnPantalla(dGuardado.nombre, dGuardado.logo);
                 
-                setEstadoRed(navigator.onLine); procesarDatosDashboard(); 
+                setEstadoRed(navigator.onLine); 
+                actualizarContadorPendientes();
+                procesarDatosDashboard(); 
                 
                 document.getElementById('f-inf-rango-fecha').value = "30"; 
                 manejarRangoFechas();
@@ -555,6 +606,10 @@
             .then(r => r.json()).then(res => {
                 if(!res.error) {
                     fusionarDatos(Array.isArray(res.data) ? res.data : []);
+                    lsSet('tc_hacienda', { nombre: res.hacienda, logo: res.logo });
+                    const hd = lsGet('tc_hacienda', {});
+                    aplicarDisenoEnPantalla(hd.nombre, hd.logo);
+
                     if(rpActivo && !document.getElementById('v-ficha').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
                     procesarDatosDashboard(); 
                     if(!document.getElementById('v-base').classList.contains('oculto')) cargarListaRegistro(); 
@@ -577,15 +632,19 @@
         }
         setInterval(() => sincronizarFondo(false), 30000);
 
+        function encolarOffline(obj) { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); actualizarContadorPendientes(); }
+        function actualizarContadorPendientes() { let p = lsGet('tc_pendientes', []); let lbl = document.getElementById('lbl-pendientes'); if(lbl) lbl.innerText = `${p.length} registros`; }
         function sincronizarPendientesAuto() {
             let p = lsGet('tc_pendientes', []); if(p.length === 0) return;
-            const fd = new URLSearchParams(); fd.append('accion', 'sync_offline'); fd.append('maestro', maestroId); fd.append('datos', JSON.stringify(p));
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_pendientes', []); sincronizarFondo(false); });
+            const fd = new URLSearchParams(); fd.append('accion', 'sync_offline'); fd.append('maestro', maestroId); fd.append('usuario', usActivo); fd.append('datos', JSON.stringify(p));
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_pendientes', []); actualizarContadorPendientes(); sincronizarFondo(false); });
         }
+        function sincronizarPendientesManual() { if(navigator.onLine && lsGet('tc_pendientes', []).length > 0) sincronizarPendientesAuto(); }
 
         function obtenerRegistrosActivos() {
             let validos = [];
             const unicas = [...new Set(dbCache.map(d => d.caravana).filter(c => c !== "---" && c != null))];
+            
             unicas.forEach(car => {
                 let regs = dbCache.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
                 let lastResetIdx = -1;
@@ -625,6 +684,49 @@
                 const regs = obtenerHistorial(rp); 
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", nutricion="-", sanidad="-", inseminacion="-", htmlNotas=""; 
                 
+                // ==========================================
+                // NUEVO CÁLCULO INTELIGENTE DE G.D.P. PC
+                // (Ignora pesos tomados el mismo día)
+                // ==========================================
+                let gdpHtml = "";
+                let todosLosPesos = regs.filter(d => d.accion === 'Peso');
+                if(todosLosPesos.length >= 1) {
+                    let pesoActual = todosLosPesos[0];
+                    let p1 = parseFloat(pesoActual.valor);
+                    let d1 = new Date(pesoActual.fecha);
+                    let f1_str = pesoActual.fecha.split('T')[0] || ""; 
+                    
+                    let pesoAnterior = null;
+                    for(let i = 1; i < todosLosPesos.length; i++) {
+                        let fTemp_str = todosLosPesos[i].fecha.split('T')[0] || "";
+                        if(f1_str !== fTemp_str && fTemp_str !== "") {
+                            pesoAnterior = todosLosPesos[i];
+                            break;
+                        }
+                    }
+
+                    if(pesoAnterior) {
+                        let p2 = parseFloat(pesoAnterior.valor);
+                        let d2 = new Date(pesoAnterior.fecha);
+                        let diffTime = Math.abs(d1 - d2);
+                        let dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                        
+                        if(dias >= 1) {
+                            let gdp = ((p1 - p2) / dias).toFixed(3);
+                            if(gdp > 0) gdpHtml = `<span style="color:var(--success); font-weight:bold; font-size:12px;">🚀 +${gdp} Kg/día</span>`;
+                            else if(gdp < 0) gdpHtml = `<span style="color:var(--danger); font-weight:bold; font-size:12px;">⚠️ ${gdp} Kg/día</span>`;
+                            else gdpHtml = `<span style="color:var(--text-muted); font-weight:bold; font-size:12px;">⚖️ Mantuvo peso</span>`;
+                        }
+                    } else {
+                        if(todosLosPesos.length > 1) {
+                            gdpHtml = `<span style="color:var(--text-muted); font-size:10px; font-style:italic;">(Ignora mismo día)</span>`;
+                        } else {
+                            gdpHtml = `<span style="color:var(--text-muted); font-size:10px; font-style:italic;">(Falta pesaje futuro)</span>`;
+                        }
+                    }
+                }
+                document.getElementById('val-gdp').innerHTML = gdpHtml;
+
                 if(regs.length > 0) {
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor || "").split('|'); raza = p[0] || "-"; edad = p[1] || "-"; padre = p[2] || "-"; madre = p[3] || "-"; cat = String(uP.detalles || "").split('|')[0] || "-"; } 
                     const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor || "").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-"; } 
@@ -639,7 +741,7 @@
                             let acc = String(r.accion).trim(); let det = String(r.detalles || ""); let notaTexto = "";
                             if (acc === 'Comentario') { notaTexto = det.split('|')[0] || ""; } 
                             else if (det.includes('Notas:')) { let parts = det.split('Notas:'); if (parts.length > 1) { let n = parts[1].split('|')[0].trim(); if(n && n !== "-" && n !== "") notaTexto = `[${acc}] ${n}`; } }
-                            if (notaTexto && notaTexto !== "-" && notaTexto.toLowerCase() !== "sin comentarios.") { htmlNotas += `<div class="nota-item"><span class="f">${new Date(r.fecha).toLocaleDateString()}</span><span class="t">${notaTexto}</span></div>`; }
+                            if (notaTexto && notaTexto !== "-" && notaTexto.toLowerCase() !== "sin comentarios.") { htmlNotas += `<div class="nota-item"><span class="f">${new Date(r.fecha).toLocaleDateString()} - ${acc}</span><span class="t">${notaTexto}</span></div>`; }
                         } catch(e) {}
                     });
                 }
@@ -655,7 +757,7 @@
                 const elNutricion = document.getElementById('val-nutricion'); if(elNutricion) elNutricion.innerText = nutricion;
                 const elSanidad = document.getElementById('val-sanidad'); if(elSanidad) elSanidad.innerText = sanidad;
                 const elInseminacion = document.getElementById('val-inseminacion'); if(elInseminacion) elInseminacion.innerText = inseminacion;
-                const elNotas = document.getElementById('val-notas'); if(elNotas) elNotas.innerHTML = htmlNotas;
+                document.getElementById('val-notas').innerHTML = htmlNotas;
                 const elRaza = document.getElementById('val-raza'); if(elRaza) elRaza.innerText = raza;
                 const elEdad = document.getElementById('val-edad'); if(elEdad) elEdad.innerText = edad;
                 
@@ -679,17 +781,20 @@
             dbCache.unshift(obj); buscarCaravanaBtn(rpActivo); procesarDatosDashboard(); 
             if(modalId) cerrarModal(modalId);
             if(navigator.onLine) {
-                const fd = new URLSearchParams(); for(let k in obj) fd.append(k, obj[k]); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { sincronizarFondo(false); });
+                const fd = new URLSearchParams(); for(let k in obj) fd.append(k, obj[k]); fd.append('usuario', usActivo); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { sincronizarFondo(false); });
             } else {
-                let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p);
+                encolarOffline(obj);
             }
         }
 
         function prepararGuardado(mId, t) { 
             if(!rpActivo) return; let v = "-", d = ""; const i = document.getElementById(mId).querySelectorAll('.form-control, .textarea'); 
-            if(t === 'Comentario') { d = i[0].value; } else if(t === 'Peso') { v = i[0].value + " Kg"; d = `Cond: ${i[1].value}. Notas: ${i[2].value}`; } else if(t === 'Sanidad') { v = i[0].value; d = `Lote: ${i[1].value}. Notas: ${i[2].value}`; } else if(t === 'Diagnóstico') { v = "Dx: " + i[0].value; d = i[1].value || "-"; } else if(t === 'Inseminación') { v = "Toro: " + i[1].value; d = `Ins: ${i[0].value}. Notas: ${i[2].value}`; } else if(t === 'Nutrición') { v = i[0].value; d = `Ración: ${i[1].value}. Notas: ${i[2].value}`; } 
+            if(t === 'Comentario') { d = i[0].value; } else if(t === 'Peso') { v = i[0].value + " Kg"; d = `Cond: ${i[1].value}. Notas: ${i[2].value}`; } else if(t === 'Sanidad') { let prod = i[0].value; if(prod === 'OTRO') prod = document.getElementById('i-sani-sel-otro').value || 'Tratamiento S/N'; v = prod; d = `Lote/Marca: ${i[1].value}. Notas: ${i[2].value}`; } else if(t === 'Diagnóstico') { v = "Dx: " + i[0].value; d = i[1].value || "-"; } else if(t === 'Inseminación') { v = "Toro: " + i[1].value; d = `Ins: ${i[0].value}. Notas: ${i[2].value}`; } else if(t === 'Nutrición') { let prod = i[0].value; if(prod === 'OTRO') prod = document.getElementById('i-nut-prod-otro').value || 'Suplemento S/N'; v = prod; d = `Ración: ${i[1].value}. Notas: ${i[2].value}`; } 
             ejecutarAccion(t, v, d, mId); i.forEach(el => el.value = ''); 
         }
+
+        function verificarSaniOtro() { const sel = document.getElementById('i-sani-sel'); const input = document.getElementById('i-sani-sel-otro'); if(sel.value === 'OTRO') { input.classList.remove('oculto'); input.focus(); } else { input.classList.add('oculto'); input.value = ''; } }
+        function verificarNutOtro() { const sel = document.getElementById('i-nut-prod'); const input = document.getElementById('i-nut-prod-otro'); if(sel.value === 'OTRO') { input.classList.remove('oculto'); input.focus(); } else { input.classList.add('oculto'); input.value = ''; } }
 
         function guardarPerfilCompleto() { 
             if(!rpActivo) return; 
@@ -698,9 +803,9 @@
             const fPadre = document.getElementById('f-padre') ? document.getElementById('f-padre').value : "-";
             const fMadre = document.getElementById('f-madre') ? document.getElementById('f-madre').value : "-";
             const catValor = document.getElementById('val-categoria') ? document.getElementById('val-categoria').innerText : "-";
+            
             ejecutarAccion('Perfil Master', `${fRaza||"-"}|${fEdad||"-"}|${fPadre||"-"}|${fMadre||"-"}`, catValor, 'm-perfil'); 
         }
-
         function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'm-clasi'); }
         function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'm-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
         
@@ -851,7 +956,8 @@
             btn.innerText = "⏳ Generando Archivo PDF...";
             
             const h_nom = document.getElementById('cfg-nom').value || 'TAURUS CONTROL';
-            const h_log = lsGet('tc_hacienda', {}).logo || "";
+            const hd = lsGet('tc_hacienda', {});
+            const h_log = hd.logo || "";
             const modo = document.getElementById('f-inf-modo').value;
             
             let htmlContent = `
@@ -1004,60 +1110,46 @@
             });
         }
 
-        function procesarDatosDashboard() {
-            const datosActivos = obtenerRegistrosActivos();
-            
-            let aliasMap = {}; datosActivos.forEach(d => { if(d.accion === 'Cambio de Caravana') aliasMap[String(d.caravana)] = String(d.valor); });
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && !aliasMap[c]))];
-            
-            document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
-            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos').innerHTML = "<p style='color:var(--text-main);'>Inventario vacío.</p>"; return; }
-            
-            let g1={p:0,v:0}, g2={v:0,t:0,o:0}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}; let alertasHTML = "";
-            
-            datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; });
-            
-            unicas.forEach(car => {
-                const regs = obtenerHistorial(car); let cat = "", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                if(uC) { let v=String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : ""; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
-                cat = cat.toLowerCase(); const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
-                
-                if(uDx) { 
-                    if(String(uDx.valor||"").includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } } 
-                    if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--text-main);">${car}</strong> diagnosticada Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } } 
-                }
-                if(cat.includes('vaca') || cat.includes('vaquilla')) g2.v++; else if(cat.includes('terne') || cat.includes('desmamante')) g2.t++; else g2.o++; g3[lote] = (g3[lote] || 0) + 1;
-                if(uPeso) { if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--text-main);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; else g4.opt++; let pVal = parseFloat(uPeso.valor); if(!isNaN(pVal)) { if(cat.includes('vaca') || cat.includes('vaquilla')) { g9.vw += pVal; g9.vc++; } if(cat.includes('terne') || cat.includes('desmamante')) { g9.tw += pVal; g9.tc++; } } } 
-                if(uSan) g6.con++; else g6.sin++;
-            });
-            
-            const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
-            const prefs = lsGet('tc_prefs', ['1', '3']); let htmlGraficos = ""; const makeBar = (lbl, val, total, col) => { let p = total>0 ? Math.round((val/total)*100) : 0; return `<div class="barra-cat"><div class="barra-head"><span style="color:var(--text-main);">${lbl} (${val})</span><span style="color:var(--text-main);">${p}%</span></div><div class="barra-bg"><div class="barra-fill" style="background:${col}; width:${p}%;"></div></div></div>`; };
-            
-            prefs.forEach(g => {
-                let html = `<div>`;
-                if(g === '1') { let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Tasa de Preñez Dinámica</h4><div style="display:flex; gap:20px; align-items:center;"><div class="torta-container"><div class="torta" style="background: conic-gradient(var(--success) 0% ${pp}%, var(--danger) ${pp}% 100%);"></div><div class="torta-centro">${pp}%</div></div><div class="leyenda-torta"><div><span class="punto" style="background: var(--success);"></span> Preñadas (${g1.p})</div><div><span class="punto" style="background: var(--danger);"></span> Vacías (${g1.v})</div></div></div></div>`; } 
-                else if(g === '2') { let t = g2.v + g2.t + g2.o || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Composición de Hacienda</h4>${makeBar('Vacas/Vaquillas', g2.v, t, 'var(--primary)')}${makeBar('Terneros/as', g2.t, t, 'var(--warning)')}${makeBar('Toros/Otros', g2.o, t, '#8b5cf6')}</div>`; } 
-                else if(g === '3') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Distribución por Lotes</h4>`; let lKeys = Object.keys(g3).sort((a,b)=>g3[b]-g3[a]).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--primary)':i===1?'var(--warning)':'var(--success)'; html += makeBar(k, g3[k], unicas.length, col); }); html+=`</div>`;} 
-                else if(g === '4') { let t = g4.opt + g4.bp + g4.sp || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Condición Corporal</h4>${makeBar('Óptima', g4.opt, t, 'var(--success)')}${makeBar('Bajo Peso', g4.bp, t, 'var(--danger)')}${makeBar('Sobrepeso', g4.sp, t, 'var(--warning)')}</div>`; } 
-                else if(g === '5') { let t = g5.norm + g5.san || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Causas Vientre Vacío</h4>${makeBar('Normal', g5.norm, t, 'var(--warning)')}${makeBar('Sangre/Problema', g5.san, t, 'var(--danger)')}</div>`; } 
-                else if(g === '6') { let t = unicas.length; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Sanidad Global</h4>${makeBar('Con Registro', g6.con, t, 'var(--success)')}${makeBar('Sin Registros', g6.sin, t, '#64748b')}</div>`; } 
-                else if(g === '7') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Preñez por Lote</h4>`; let lKeys = Object.keys(g7).sort((a,b)=>g7[b].p-g7[a].p).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--success)':i===1?'var(--primary)':'var(--warning)'; html += makeBar(k, g7[k].p, g7[k].t, col); }); html+=`</div>`;} 
-                else if(g === '8') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Eficacia de Toros</h4>`; let lKeys = Object.keys(g8).sort((a,b)=>g8[b].p-g8[a].p).slice(0,3); if(lKeys.length===0) html += `<p style="color:var(--text-muted); font-size:12px;">Sin cruces.</p>`; lKeys.forEach((k, i) => { html += makeBar(k, g8[k].p, g8[k].t, '#be185d'); }); html+=`</div>`;} 
-                else if(g === '9') { let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Promedio de Pesos</h4><div class="grid-2"><div class="kpi-box" style="padding:10px;"><strong style="font-size:20px; color:var(--text-main);">${pv} Kg</strong><span>Vacas</span></div><div class="kpi-box" style="padding:10px;"><strong style="font-size:20px; color:var(--text-main);">${pt} Kg</strong><span>Terneros</span></div></div></div>`; } 
-                else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Volumen Clínico</h4>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Nutrición', g10.nut, t, '#84cc16')}${makeBar('Sanidad', g10.san, t, '#c2410c')}`; } 
-                htmlGraficos += html;
-            }); document.getElementById('contenedor-graficos').innerHTML = htmlGraficos;
-        }
-
-        function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.sidebar-nav li').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
-        function abrirModal(id) { document.getElementById(id).style.display = 'flex'; } function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
-        function cargarListaRegistro() { const datosActivos = obtenerRegistrosActivos(); let aliasMap = {}; datosActivos.forEach(d => { if(d.accion === 'Cambio de Caravana') aliasMap[String(d.caravana)] = String(d.valor); }); let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && !aliasMap[c]))]; const ul = document.getElementById('tb-registro'); ul.innerHTML = ""; unicas.forEach(car => { const regs = obtenerHistorial(car); let info = "-", dxText = "-", loteText = "-"; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { let vals = String(c.valor||"").split('|'); info = vals[0] ? vals[0].replace('Cat:','').trim() : info; loteText = (String(c.detalles||"").split('|')[0] ? String(c.detalles||"").split('|')[0].replace('Lote:','').trim() : ""); } else if(p) { info = String(p.detalles||"").split('|')[0] || "-"; } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = d.valor || "-"; ul.innerHTML += `<tr onclick="navegarDesdeLista('${car}')"><td style="color:var(--text-main);"><strong>${car}</strong></td><td style="color:var(--text-main);">${info}</td><td style="color:var(--text-main);">${loteText}</td><td style="color:var(--text-main);">${dxText}</td><td><button class="btn-outline">Abrir Ficha</button></td></tr>`; }); }
-        function filtrarLista(t) { const lis = document.getElementById('tb-registro').getElementsByTagName('tr'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "" : "none"; }
-        function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.sidebar-nav li')[1].click(); buscarCaravanaBtn(); }
-        function verificarLimiteGraficos(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { alert('Solo puede fijar 3 gráficas simultáneas.'); checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); lsSet('tc_prefs', prefs); if(dbCache.length > 0) procesarDatosDashboard(); } }
-        function guardarDisenoServidor() { const n = document.getElementById('cfg-nom').value.trim(); const f = document.getElementById('cfg-logo'); let p = (b64) => { const fd = new URLSearchParams(); fd.append('accion', 'guardar_diseno'); fd.append('maestro', maestroId); fd.append('nombre_hacienda', n); fd.append('logo_hacienda', b64); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_hacienda', {nombre: n, logo: b64}); aplicarDisenoEnPantalla(n, b64); alert("Membrete oficial de PDF actualizado."); }); }; if(f.files && f.files[0]) { const r = new FileReader(); r.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const maxW = 200, maxH = 200; if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); p(canvas.toDataURL('image/png')); }; img.src = e.target.result; }; r.readAsDataURL(f.files[0]); } else { const logoGuardado = lsGet('tc_hacienda', {}).logo || ""; p(logoGuardado); } }
         function aplicarDisenoEnPantalla(nombre, logo) { document.getElementById('cfg-nom').value = nombre || ''; }
+
+        function guardarDisenoServidor() {
+            const n = document.getElementById('cfg-nom').value.trim();
+            const f = document.getElementById('cfg-logo');
+            let p = (b64) => {
+                const fd = new URLSearchParams();
+                fd.append('accion', 'guardar_diseno');
+                fd.append('maestro', maestroId);
+                fd.append('nombre_hacienda', n);
+                fd.append('logo_hacienda', b64);
+                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => {
+                    lsSet('tc_hacienda', { nombre: n, logo: b64 });
+                    aplicarDisenoEnPantalla(n, b64);
+                    alert("Membrete oficial de PDF actualizado.");
+                });
+            };
+            if (f.files && f.files[0]) {
+                const r = new FileReader();
+                r.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width, h = img.height;
+                        const maxW = 500, maxH = 500;
+                        if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } 
+                        else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } }
+                        canvas.width = w; canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        p(canvas.toDataURL('image/png'));
+                    };
+                    img.src = e.target.result;
+                };
+                r.readAsDataURL(f.files[0]);
+            } else {
+                const hd = lsGet('tc_hacienda', {});
+                p(hd.logo || "");
+            }
+        }
 
         function crearOperador() { 
             if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
@@ -1081,6 +1173,7 @@
             fd.append('peon_rol', rol);
             
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
+                
                 const objEvt = { fecha: new Date().toISOString(), accion: 'Alta Operador', caravana: '---', valor: u, detalles: `Rol: ${rol} | Op: ${usActivo}`, maestro: maestroId };
                 dbCache.unshift(objEvt);
                 lsSet('tc_db', dbCache);
@@ -1171,6 +1264,60 @@
         function cerrarSesion() { localStorage.clear(); window.location.reload(); }
 
         // ==========================================
+        // SISTEMA DE TOAST (MENSAJES RÁPIDOS)
+        // ==========================================
+        function mostrarToast(mensaje) {
+            let t = document.createElement('div');
+            t.innerText = mensaje;
+            t.style.position = 'fixed'; t.style.bottom = '30px'; t.style.left = '50%'; t.style.transform = 'translateX(-50%)';
+            t.style.background = 'var(--success)'; t.style.color = 'white'; t.style.padding = '12px 24px'; t.style.borderRadius = '30px'; 
+            t.style.zIndex = '9999'; t.style.fontWeight = 'bold'; t.style.boxShadow = '0 4px 15px rgba(0,0,0,0.4)'; t.style.fontSize = '14px';
+            document.body.appendChild(t);
+            setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() => t.remove(), 500); }, 2000);
+        }
+
+        // ==========================================
+        // CONTROL DEL MODO RÁFAGA PERSONALIZABLE
+        // ==========================================
+        let rafagaActiva = false;
+        window.toggleRafaga = function() {
+            rafagaActiva = !rafagaActiva;
+            const btn = document.getElementById('btn-toggle-rafaga');
+            const opciones = document.getElementById('opciones-rafaga');
+            if(rafagaActiva) {
+                btn.innerText = "ENCENDIDO";
+                btn.style.background = "var(--primary)";
+                btn.style.color = "white";
+                opciones.classList.remove('oculto');
+                verificarRafagaCustom();
+            } else {
+                btn.innerText = "APAGADO";
+                btn.style.background = "transparent";
+                btn.style.color = "var(--text-main)";
+                opciones.classList.add('oculto');
+            }
+        };
+
+        window.verificarRafagaCustom = function() {
+            const sel = document.getElementById('rafaga-accion').value;
+            const customInput = document.getElementById('rafaga-prod-custom');
+            const detallesBox = document.getElementById('caja-rafaga-detalles');
+            
+            if(sel === 'solo_peso') {
+                customInput.classList.add('oculto');
+                detallesBox.classList.add('oculto');
+            } else {
+                detallesBox.classList.remove('oculto');
+                if(sel === 'OTRO') {
+                    customInput.classList.remove('oculto');
+                    customInput.focus();
+                } else {
+                    customInput.classList.add('oculto');
+                }
+            }
+        };
+
+        // ==========================================
         // LECTOR HID / TECLADO AUTOMÁTICO (PC)
         // ==========================================
         function forzarSaltoAFicha() {
@@ -1215,10 +1362,32 @@
                     
                     if (esPeso) {
                         if (typeof rpActivo !== 'undefined' && rpActivo && rpActivo !== "---") {
-                            forzarSaltoAFicha();
-                            if (typeof abrirModal === "function") abrirModal('m-peso');
-                            let inputPeso = document.getElementById('i-peso-val');
-                            if (inputPeso) inputPeso.value = dataLimpia;
+                            
+                            // LÓGICA DE MODO RÁFAGA AUTOMÁTICO
+                            if(rafagaActiva) {
+                                let sel = document.getElementById('rafaga-accion').value;
+                                let notas = document.getElementById('rafaga-detalles').value.trim();
+                                
+                                // 1. Guardar Peso
+                                ejecutarAccion('Peso', dataLimpia + " Kg", "Automático (Ráfaga)", null, null);
+                                
+                                // 2. Guardar Tratamiento Sanitario Personalizado si está seleccionado
+                                if(sel !== 'solo_peso') {
+                                    let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
+                                    let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga";
+                                    ejecutarAccion('Sanidad', producto, detCompleto, null, null);
+                                }
+                                
+                                mostrarToast("✅ ¡Guardado!");
+                                buscarCaravanaBtn(); // Actualiza la ficha y recalcula el GDP
+                            } else {
+                                // MODO NORMAL MANUAL
+                                forzarSaltoAFicha();
+                                if (typeof abrirModal === "function") abrirModal('m-peso');
+                                let inputPeso = document.getElementById('i-peso-val');
+                                if (inputPeso) inputPeso.value = dataLimpia;
+                            }
+
                         } else {
                             alert("⚖️ Peso recibido: " + dataLimpia + " Kg. ¡Debes leer la caravana de un animal primero!");
                         }
