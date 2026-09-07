@@ -188,7 +188,7 @@
             <h2 class="titulo-seccion">🔑 Control de Accesos y Licencias</h2>
             <div class="tarjeta">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <p style="margin:0; color:var(--text-muted); font-size:13px;">Gestión de fechas de corte para clientes activos.</p>
+                    <p style="margin:0; color:var(--text-muted); font-size:13px;">Gestión de fechas de corte y contraseñas para clientes activos.</p>
                     <button class="btn" style="font-size:11px; padding: 8px 15px; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border);" onclick="cargarClientes()">🔄 Sincronizar</button>
                 </div>
                 
@@ -259,7 +259,8 @@
         // ==========================================
         function ingresarAdmin() {
             const pass = document.getElementById('admin-pass').value;
-            if(pass === "master2026") { // <-- CONTRASEÑA DEL ADMIN
+            // CONTRASEÑA MAESTRA PARA INGRESAR AL PANEL
+            if(pass === "master2026") { 
                 document.getElementById('pantalla-login').classList.add('oculto');
                 document.getElementById('sidebar').classList.remove('oculto');
                 document.getElementById('main-content').classList.remove('oculto');
@@ -334,7 +335,7 @@
                 document.getElementById('n-pass').value = '';
                 document.getElementById('n-venc').value = '';
                 document.getElementById('n-hacienda').value = '';
-                clientesCache = []; // Forzar recarga
+                clientesCache = []; // Forzar recarga de tabla
             })
             .catch(() => { 
                 toggleLoading(false); 
@@ -343,7 +344,7 @@
         }
 
         // ==========================================
-        // GESTIÓN DE LICENCIAS
+        // GESTIÓN DE LICENCIAS Y CONTRASEÑAS
         // ==========================================
         function cargarClientes() {
             toggleLoading(true, "Sincronizando clientes desde el Master...");
@@ -380,8 +381,9 @@
                             <input type="date" id="venc-${c.usuario}" class="form-control" style="margin:0; padding:8px; font-weight:bold;" value="${fechaFormato}">
                         </td>
                         <td style="font-size:11px; color:var(--text-muted); font-family:monospace;">${c.idPlanilla || 'Falta ID'}</td>
-                        <td>
-                            <button class="btn btn-warning" onclick="actualizarVencimiento('${c.usuario}')">💾 Actualizar</button>
+                        <td style="display: flex; gap: 8px;">
+                            <button class="btn btn-warning" onclick="actualizarVencimiento('${c.usuario}')">💾 Guardar</button>
+                            <button class="btn" style="padding: 8px 15px; font-size: 11px; background: #64748b;" onclick="cambiarClaveCliente('${c.usuario}')">🔑 Clave</button>
                         </td>
                     </tr>
                 `;
@@ -405,6 +407,33 @@
             }).catch(() => { 
                 toggleLoading(false); 
                 mostrarToast("❌ Error al actualizar", true); 
+            });
+        }
+
+        function cambiarClaveCliente(usu) {
+            const nuevaClave = prompt(`Ingrese la nueva contraseña de acceso para el cliente "${usu.toUpperCase()}":\n(Mínimo 4 caracteres)`);
+            
+            if(nuevaClave === null || nuevaClave.trim() === "") return; // Cancela si está vacío
+            
+            if(nuevaClave.trim().length < 4) {
+                mostrarToast("⚠️ La contraseña debe tener al menos 4 caracteres", true);
+                return;
+            }
+            
+            toggleLoading(true, `Actualizando clave de ${usu}...`);
+            
+            const fd = new URLSearchParams();
+            fd.append('accion', 'cambiar_pass');
+            fd.append('usuario', usu);
+            fd.append('nuevo_pass', nuevaClave.trim());
+
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' })
+            .then(() => {
+                toggleLoading(false);
+                mostrarToast("✅ Contraseña actualizada correctamente");
+            }).catch(() => { 
+                toggleLoading(false); 
+                mostrarToast("❌ Error de red al actualizar la contraseña", true); 
             });
         }
 
