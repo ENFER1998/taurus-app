@@ -56,7 +56,7 @@
         .topbar-title { font-size: 13px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;}
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s;}
         .btn-outline:hover { background: var(--bg-card); color: var(--primary); }
-        .badge { border-radius: 4px; font-weight: bold; border: 1px solid; text-transform: uppercase; transition: 0.3s; cursor: pointer;}
+        .badge { border-radius: 4px; font-weight: bold; border: 1px solid; text-transform: uppercase; transition: 0.3s;}
         .badge.online { background: rgba(5, 150, 105, 0.1); color: var(--success); border-color: var(--success); }
         .badge.offline { background: rgba(220, 38, 38, 0.1); color: var(--danger); border-color: var(--danger); }
 
@@ -183,34 +183,36 @@
         <div id="v-ficha" class="vista oculto">
             <h2 class="titulo-seccion">Expediente Clínico Individual</h2>
             
-            <!-- PANEL MODO RÁFAGA PC -->
-            <div class="tarjeta" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid var(--primary);">
+            <!-- PANEL MODO RÁFAGA PERSONALIZABLE (PC) -->
+            <div class="tarjeta" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid var(--primary); background: var(--bg-card);">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <span style="font-size:24px;">⚡</span>
                         <div>
-                            <strong style="display:block; color:var(--text-main);">Modo Ráfaga</strong>
-                            <span style="font-size:11px; color:var(--text-muted);">Automatización completa de manga al recibir peso</span>
+                            <strong style="display:block; color:var(--text-main); font-size:14px;">Modo Ráfaga (Automático)</strong>
+                            <span style="font-size:11px; color:var(--text-muted);">Automatización al recibir datos del bastón/balanza</span>
                         </div>
                     </div>
-                    <button id="btn-toggle-rafaga" class="btn-outline" style="padding: 6px 12px; font-size: 12px; font-weight:bold;" onclick="toggleRafaga()">APAGADO</button>
+                    <button id="btn-toggle-rafaga" class="btn-outline" style="font-weight:bold; padding: 6px 12px; font-size:12px;" onclick="toggleRafaga()">APAGADO</button>
                 </div>
                 <div id="opciones-rafaga" class="oculto" style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border);">
-                    <div class="form-grupo" style="margin-bottom:10px;">
-                        <label style="font-size:11px;">Acción combinada con el peso:</label>
-                        <select id="rafaga-accion" class="form-control" style="padding:8px; font-size:13px; font-weight:bold;" onchange="verificarRafagaCustom()">
-                            <option value="solo_peso">⚖️ Solo Registrar Peso</option>
-                            <option value="Vacuna Aftosa">💉 Vacuna Aftosa</option>
-                            <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
-                            <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario (Ivermectina)</option>
-                            <option value="Vitamina ADE">💉 Vitamina ADE / Reconstituyente</option>
-                            <option value="OTRO">✏️ Personalizado (Escribir otro)...</option>
-                        </select>
-                        <input type="text" id="rafaga-prod-custom" class="form-control oculto" placeholder="Escriba el producto o tratamiento..." style="margin-top:8px; padding:8px; font-size:13px;">
-                    </div>
-                    <div id="caja-rafaga-detalles" class="form-grupo oculto" style="margin-bottom:0;">
-                        <label style="font-size:11px;">Dosis y Nota / Observación:</label>
-                        <input type="text" id="rafaga-detalles" class="form-control" placeholder="Ej: 5ml - Lote 12 | Subcutánea" style="padding:8px; font-size:13px;">
+                    <div class="grid-2">
+                        <div class="form-grupo">
+                            <label style="font-size:11px; color:var(--text-muted); font-weight:bold; display:block; margin-bottom:5px;">Acción combinada con el peso:</label>
+                            <select id="rafaga-accion" class="form-control" style="padding:8px; font-size:13px; font-weight:bold;" onchange="verificarRafagaCustom()">
+                                <option value="solo_peso">⚖️ Solo Registrar Peso</option>
+                                <option value="Vacuna Aftosa">💉 Vacuna Aftosa</option>
+                                <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
+                                <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario (Ivermectina)</option>
+                                <option value="Vitamina ADE">💉 Vitamina ADE / Reconstituyente</option>
+                                <option value="OTRO">✏️ Personalizado (Escribir otro)...</option>
+                            </select>
+                            <input type="text" id="rafaga-prod-custom" class="form-control oculto" placeholder="Escriba el producto o tratamiento..." style="margin-top:8px; padding:8px; font-size:13px;">
+                        </div>
+                        <div id="caja-rafaga-detalles" class="form-grupo oculto">
+                            <label style="font-size:11px; color:var(--text-muted); font-weight:bold; display:block; margin-bottom:5px;">Dosis y Nota / Observación:</label>
+                            <input type="text" id="rafaga-detalles" class="form-control" placeholder="Ej: 5ml - Lote 12 | Subcutánea" style="padding:8px; font-size:13px;">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -241,13 +243,11 @@
                                 <div class="dato-box"><span>Categoría</span><strong id="val-categoria">-</strong></div>
                                 <div class="dato-box"><span>Carimbo</span><strong id="val-carimbo">-</strong></div>
                                 <div class="dato-box"><span>Dx Tacto</span><strong id="val-dx" style="color:var(--success);">-</strong></div>
-                                
                                 <div class="dato-box">
                                     <span>Peso Actual</span>
-                                    <strong id="val-peso" style="display:block;">-</strong>
-                                    <div id="val-gdp" style="margin-top:2px;"></div>
+                                    <strong id="val-peso">-</strong>
+                                    <div id="val-gdp" style="margin-top:4px;"></div>
                                 </div>
-
                                 <div class="dato-box" style="border-color:#be185d;"><span>Últ. Inseminación</span><strong id="val-inseminacion">-</strong></div>
                                 <div class="dato-box" style="grid-column: 1 / 3; border-color:var(--primary);"><span>Régimen Nutricional Actual</span><strong id="val-nutricion">-</strong></div>
                                 <div class="dato-box" style="border-color:#c2410c;"><span>Última Sanidad</span><strong id="val-sanidad">-</strong></div>
@@ -453,6 +453,62 @@
             localStorage.setItem('tc_tema', document.body.classList.contains('tema-claro') ? 'claro' : 'oscuro');
         }
 
+        // ==========================================
+        // SISTEMA DE TOAST (MENSAJES RÁPIDOS)
+        // ==========================================
+        function mostrarToast(mensaje) {
+            let t = document.createElement('div');
+            t.innerText = mensaje;
+            t.style.position = 'fixed'; t.style.bottom = '30px'; t.style.left = '50%'; t.style.transform = 'translateX(-50%)';
+            t.style.background = 'var(--success)'; t.style.color = 'white'; t.style.padding = '12px 24px'; t.style.borderRadius = '30px'; 
+            t.style.zIndex = '9999'; t.style.fontWeight = 'bold'; t.style.boxShadow = '0 4px 15px rgba(0,0,0,0.4)'; t.style.fontSize = '14px';
+            document.body.appendChild(t);
+            setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() => t.remove(), 500); }, 2000);
+        }
+
+        // ==========================================
+        // CONTROL DEL MODO RÁFAGA PERSONALIZABLE
+        // ==========================================
+        let rafagaActiva = false;
+        window.toggleRafaga = function() {
+            rafagaActiva = !rafagaActiva;
+            const btn = document.getElementById('btn-toggle-rafaga');
+            const opciones = document.getElementById('opciones-rafaga');
+            if(rafagaActiva) {
+                btn.innerText = "ENCENDIDO";
+                btn.style.background = "var(--primary)";
+                btn.style.color = "white";
+                btn.style.borderColor = "var(--primary)";
+                opciones.classList.remove('oculto');
+                verificarRafagaCustom();
+            } else {
+                btn.innerText = "APAGADO";
+                btn.style.background = "transparent";
+                btn.style.color = "var(--text-main)";
+                btn.style.borderColor = "var(--border)";
+                opciones.classList.add('oculto');
+            }
+        };
+
+        window.verificarRafagaCustom = function() {
+            const sel = document.getElementById('rafaga-accion').value;
+            const customInput = document.getElementById('rafaga-prod-custom');
+            const detallesBox = document.getElementById('caja-rafaga-detalles');
+            
+            if(sel === 'solo_peso') {
+                customInput.classList.add('oculto');
+                detallesBox.classList.add('oculto');
+            } else {
+                detallesBox.classList.remove('oculto');
+                if(sel === 'OTRO') {
+                    customInput.classList.remove('oculto');
+                    customInput.focus();
+                } else {
+                    customInput.classList.add('oculto');
+                }
+            }
+        };
+
         function setEstadoRed(online, texto = null) {
             const b = document.getElementById('estado-red');
             if(!b) return;
@@ -618,7 +674,7 @@
 
         function sincronizarPendientesAuto() {
             let p = lsGet('tc_pendientes', []); if(p.length === 0) return;
-            const fd = new URLSearchParams(); fd.append('accion', 'sync_offline'); fd.append('maestro', maestroId); fd.append('usuario', usActivo); fd.append('datos', JSON.stringify(p));
+            const fd = new URLSearchParams(); fd.append('accion', 'sync_offline'); fd.append('maestro', maestroId); fd.append('datos', JSON.stringify(p));
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_pendientes', []); sincronizarFondo(false); });
         }
 
@@ -664,7 +720,9 @@
                 const regs = obtenerHistorial(rp); 
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", nutricion="-", sanidad="-", inseminacion="-", htmlNotas=""; 
                 
-                // NUEVO CÁLCULO INTELIGENTE DE G.D.P. PC
+                // ==========================================
+                // CÁLCULO INTELIGENTE DE G.D.P. 
+                // ==========================================
                 let gdpHtml = "";
                 let todosLosPesos = regs.filter(d => d.accion === 'Peso');
                 if(todosLosPesos.length >= 1) {
@@ -690,20 +748,20 @@
                         
                         if(dias >= 1) {
                             let gdp = ((p1 - p2) / dias).toFixed(3);
-                            if(gdp > 0) gdpHtml = `<span style="color:var(--success); font-weight:bold; font-size:12px;">🚀 +${gdp} Kg/día</span>`;
-                            else if(gdp < 0) gdpHtml = `<span style="color:var(--danger); font-weight:bold; font-size:12px;">⚠️ ${gdp} Kg/día</span>`;
-                            else gdpHtml = `<span style="color:var(--text-muted); font-weight:bold; font-size:12px;">⚖️ Mantuvo peso</span>`;
+                            if(gdp > 0) gdpHtml = `<span style="color:var(--success); font-weight:bold; font-size:11px;">🚀 +${gdp} Kg/día</span>`;
+                            else if(gdp < 0) gdpHtml = `<span style="color:var(--danger); font-weight:bold; font-size:11px;">⚠️ ${gdp} Kg/día</span>`;
+                            else gdpHtml = `<span style="color:var(--text-muted); font-weight:bold; font-size:11px;">⚖️ Mantuvo su peso</span>`;
                         }
                     } else {
                         if(todosLosPesos.length > 1) {
-                            gdpHtml = `<span style="color:var(--text-muted); font-size:10px; font-style:italic;">(Ignora mismo día)</span>`;
+                            gdpHtml = `<span style="color:var(--text-muted); font-size:10px; font-style:italic;">(Pesos del mismo día)</span>`;
                         } else {
-                            gdpHtml = `<span style="color:var(--text-muted); font-size:10px; font-style:italic;">(Falta pesaje futuro)</span>`;
+                            gdpHtml = `<span style="color:var(--text-muted); font-size:10px; font-style:italic;">(Falta peso histórico)</span>`;
                         }
                     }
                 }
                 const elGdp = document.getElementById('val-gdp');
-                if(elGdp) elGdp.innerHTML = gdpHtml;
+                if (elGdp) elGdp.innerHTML = gdpHtml;
 
                 if(regs.length > 0) {
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor || "").split('|'); raza = p[0] || "-"; edad = p[1] || "-"; padre = p[2] || "-"; madre = p[3] || "-"; cat = String(uP.detalles || "").split('|')[0] || "-"; } 
@@ -778,7 +836,6 @@
             const fPadre = document.getElementById('f-padre') ? document.getElementById('f-padre').value : "-";
             const fMadre = document.getElementById('f-madre') ? document.getElementById('f-madre').value : "-";
             const catValor = document.getElementById('val-categoria') ? document.getElementById('val-categoria').innerText : "-";
-            
             ejecutarAccion('Perfil Master', `${fRaza||"-"}|${fEdad||"-"}|${fPadre||"-"}|${fMadre||"-"}`, catValor, 'm-perfil'); 
         }
 
@@ -1085,46 +1142,60 @@
             });
         }
 
-        function aplicarDisenoEnPantalla(nombre, logo) { document.getElementById('cfg-nom').value = nombre || ''; }
-
-        function guardarDisenoServidor() { 
-            const n = document.getElementById('cfg-nom').value.trim(); 
-            const f = document.getElementById('cfg-logo'); 
-            let p = (b64) => { 
-                const fd = new URLSearchParams(); 
-                fd.append('accion', 'guardar_diseno'); 
-                fd.append('maestro', maestroId); 
-                fd.append('nombre_hacienda', n); 
-                fd.append('logo_hacienda', b64); 
-                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
-                    lsSet('tc_hacienda', {nombre: n, logo: b64}); 
-                    aplicarDisenoEnPantalla(n, b64); 
-                    alert("Membrete oficial de PDF actualizado."); 
-                }); 
-            }; 
-            if(f.files && f.files[0]) { 
-                const r = new FileReader(); 
-                r.onload = function(e) { 
-                    const img = new Image(); 
-                    img.onload = function() { 
-                        const canvas = document.createElement('canvas'); 
-                        let w = img.width, h = img.height; 
-                        const maxW = 200, maxH = 200; 
-                        if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } 
-                        else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } 
-                        canvas.width = w; canvas.height = h; 
-                        const ctx = canvas.getContext('2d'); 
-                        ctx.drawImage(img, 0, 0, w, h); 
-                        p(canvas.toDataURL('image/png')); 
-                    }; 
-                    img.src = e.target.result; 
-                }; 
-                r.readAsDataURL(f.files[0]); 
-            } else { 
-                const logoGuardado = lsGet('tc_hacienda', {}).logo || ""; 
-                p(logoGuardado); 
-            } 
+        function procesarDatosDashboard() {
+            const datosActivos = obtenerRegistrosActivos();
+            
+            let aliasMap = {}; datosActivos.forEach(d => { if(d.accion === 'Cambio de Caravana') aliasMap[String(d.caravana)] = String(d.valor); });
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && !aliasMap[c]))];
+            
+            document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
+            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos').innerHTML = "<p style='color:var(--text-main);'>Inventario vacío.</p>"; return; }
+            
+            let g1={p:0,v:0}, g2={v:0,t:0,o:0}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}; let alertasHTML = "";
+            
+            datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; });
+            
+            unicas.forEach(car => {
+                const regs = obtenerHistorial(car); let cat = "", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                if(uC) { let v=String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : ""; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
+                cat = cat.toLowerCase(); const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
+                
+                if(uDx) { 
+                    if(String(uDx.valor||"").includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } } 
+                    if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--text-main);">${car}</strong> diagnosticada Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } } 
+                }
+                if(cat.includes('vaca') || cat.includes('vaquilla')) g2.v++; else if(cat.includes('terne') || cat.includes('desmamante')) g2.t++; else g2.o++; g3[lote] = (g3[lote] || 0) + 1;
+                if(uPeso) { if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--text-main);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; else g4.opt++; let pVal = parseFloat(uPeso.valor); if(!isNaN(pVal)) { if(cat.includes('vaca') || cat.includes('vaquilla')) { g9.vw += pVal; g9.vc++; } if(cat.includes('terne') || cat.includes('desmamante')) { g9.tw += pVal; g9.tc++; } } } 
+                if(uSan) g6.con++; else g6.sin++;
+            });
+            
+            const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
+            const prefs = lsGet('tc_prefs', ['1', '3']); let htmlGraficos = ""; const makeBar = (lbl, val, total, col) => { let p = total>0 ? Math.round((val/total)*100) : 0; return `<div class="barra-cat"><div class="barra-head"><span style="color:var(--text-main);">${lbl} (${val})</span><span style="color:var(--text-main);">${p}%</span></div><div class="barra-bg"><div class="barra-fill" style="background:${col}; width:${p}%;"></div></div></div>`; };
+            
+            prefs.forEach(g => {
+                let html = `<div>`;
+                if(g === '1') { let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Tasa de Preñez Dinámica</h4><div style="display:flex; gap:20px; align-items:center;"><div class="torta-container"><div class="torta" style="background: conic-gradient(var(--success) 0% ${pp}%, var(--danger) ${pp}% 100%);"></div><div class="torta-centro">${pp}%</div></div><div class="leyenda-torta"><div><span class="punto" style="background: var(--success);"></span> Preñadas (${g1.p})</div><div><span class="punto" style="background: var(--danger);"></span> Vacías (${g1.v})</div></div></div></div>`; } 
+                else if(g === '2') { let t = g2.v + g2.t + g2.o || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Composición de Hacienda</h4>${makeBar('Vacas/Vaquillas', g2.v, t, 'var(--primary)')}${makeBar('Terneros/as', g2.t, t, 'var(--warning)')}${makeBar('Toros/Otros', g2.o, t, '#8b5cf6')}</div>`; } 
+                else if(g === '3') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Distribución por Lotes</h4>`; let lKeys = Object.keys(g3).sort((a,b)=>g3[b]-g3[a]).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--primary)':i===1?'var(--warning)':'var(--success)'; html += makeBar(k, g3[k], unicas.length, col); }); html+=`</div>`;} 
+                else if(g === '4') { let t = g4.opt + g4.bp + g4.sp || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Condición Corporal</h4>${makeBar('Óptima', g4.opt, t, 'var(--success)')}${makeBar('Bajo Peso', g4.bp, t, 'var(--danger)')}${makeBar('Sobrepeso', g4.sp, t, 'var(--warning)')}</div>`; } 
+                else if(g === '5') { let t = g5.norm + g5.san || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Causas Vientre Vacío</h4>${makeBar('Normal', g5.norm, t, 'var(--warning)')}${makeBar('Sangre/Problema', g5.san, t, 'var(--danger)')}</div>`; } 
+                else if(g === '6') { let t = unicas.length; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Sanidad Global</h4>${makeBar('Con Registro', g6.con, t, 'var(--success)')}${makeBar('Sin Registros', g6.sin, t, '#64748b')}</div>`; } 
+                else if(g === '7') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Preñez por Lote</h4>`; let lKeys = Object.keys(g7).sort((a,b)=>g7[b].p-g7[a].p).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--success)':i===1?'var(--primary)':'var(--warning)'; html += makeBar(k, g7[k].p, g7[k].t, col); }); html+=`</div>`;} 
+                else if(g === '8') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Eficacia de Toros</h4>`; let lKeys = Object.keys(g8).sort((a,b)=>g8[b].p-g8[a].p).slice(0,3); if(lKeys.length===0) html += `<p style="color:var(--text-muted); font-size:12px;">Sin cruces.</p>`; lKeys.forEach((k, i) => { html += makeBar(k, g8[k].p, g8[k].t, '#be185d'); }); html+=`</div>`;} 
+                else if(g === '9') { let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Promedio de Pesos</h4><div class="grid-2"><div class="kpi-box" style="padding:10px;"><strong style="font-size:20px; color:var(--text-main);">${pv} Kg</strong><span>Vacas</span></div><div class="kpi-box" style="padding:10px;"><strong style="font-size:20px; color:var(--text-main);">${pt} Kg</strong><span>Terneros</span></div></div></div>`; } 
+                else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Volumen Clínico</h4>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Nutrición', g10.nut, t, '#84cc16')}${makeBar('Sanidad', g10.san, t, '#c2410c')}`; } 
+                htmlGraficos += html;
+            }); document.getElementById('contenedor-graficos').innerHTML = htmlGraficos;
         }
+
+        function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.sidebar-nav li').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
+        function abrirModal(id) { document.getElementById(id).style.display = 'flex'; } function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
+        function cargarListaRegistro() { const datosActivos = obtenerRegistrosActivos(); let aliasMap = {}; datosActivos.forEach(d => { if(d.accion === 'Cambio de Caravana') aliasMap[String(d.caravana)] = String(d.valor); }); let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && !aliasMap[c]))]; const ul = document.getElementById('tb-registro'); ul.innerHTML = ""; unicas.forEach(car => { const regs = obtenerHistorial(car); let info = "-", dxText = "-", loteText = "-"; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { let vals = String(c.valor||"").split('|'); info = vals[0] ? vals[0].replace('Cat:','').trim() : info; loteText = (String(c.detalles||"").split('|')[0] ? String(c.detalles||"").split('|')[0].replace('Lote:','').trim() : ""); } else if(p) { info = String(p.detalles||"").split('|')[0] || "-"; } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = d.valor || "-"; ul.innerHTML += `<tr onclick="navegarDesdeLista('${car}')"><td style="color:var(--text-main);"><strong>${car}</strong></td><td style="color:var(--text-main);">${info}</td><td style="color:var(--text-main);">${loteText}</td><td style="color:var(--text-main);">${dxText}</td><td><button class="btn-outline">Abrir Ficha</button></td></tr>`; }); }
+        function filtrarLista(t) { const lis = document.getElementById('tb-registro').getElementsByTagName('tr'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "" : "none"; }
+        function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.sidebar-nav li')[1].click(); buscarCaravanaBtn(); }
+        function verificarLimiteGraficos(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { alert('Solo puede fijar 3 gráficas simultáneas.'); checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); lsSet('tc_prefs', prefs); if(dbCache.length > 0) procesarDatosDashboard(); } }
+        function guardarDisenoServidor() { const n = document.getElementById('cfg-nom').value.trim(); const f = document.getElementById('cfg-logo'); let p = (b64) => { const fd = new URLSearchParams(); fd.append('accion', 'guardar_diseno'); fd.append('maestro', maestroId); fd.append('nombre_hacienda', n); fd.append('logo_hacienda', b64); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_hacienda', {nombre: n, logo: b64}); aplicarDisenoEnPantalla(n, b64); alert("Membrete oficial de PDF actualizado."); }); }; if(f.files && f.files[0]) { const r = new FileReader(); r.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const maxW = 200, maxH = 200; if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); p(canvas.toDataURL('image/png')); }; img.src = e.target.result; }; r.readAsDataURL(f.files[0]); } else { const logoGuardado = lsGet('tc_hacienda', {}).logo || ""; p(logoGuardado); } }
+        function aplicarDisenoEnPantalla(nombre, logo) { document.getElementById('cfg-nom').value = nombre || ''; }
 
         function crearOperador() { 
             if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
@@ -1148,13 +1219,13 @@
             fd.append('peon_rol', rol);
             
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
-                
                 const objEvt = { fecha: new Date().toISOString(), accion: 'Alta Operador', caravana: '---', valor: u, detalles: `Rol: ${rol} | Op: ${usActivo}`, maestro: maestroId };
                 dbCache.unshift(objEvt);
                 lsSet('tc_db', dbCache);
                 
                 const fd2 = new URLSearchParams();
                 for(let key in objEvt) fd2.append(key, objEvt[key]);
+                fd2.append('usuario', usActivo);
                 fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd2, mode: 'no-cors' });
 
                 document.getElementById('op-usu').value = ''; 
@@ -1238,60 +1309,6 @@
         function cerrarSesion() { localStorage.clear(); window.location.reload(); }
 
         // ==========================================
-        // SISTEMA DE TOAST (MENSAJES RÁPIDOS)
-        // ==========================================
-        function mostrarToast(mensaje) {
-            let t = document.createElement('div');
-            t.innerText = mensaje;
-            t.style.position = 'fixed'; t.style.bottom = '30px'; t.style.left = '50%'; t.style.transform = 'translateX(-50%)';
-            t.style.background = 'var(--success)'; t.style.color = 'white'; t.style.padding = '12px 24px'; t.style.borderRadius = '30px'; 
-            t.style.zIndex = '9999'; t.style.fontWeight = 'bold'; t.style.boxShadow = '0 4px 15px rgba(0,0,0,0.4)'; t.style.fontSize = '14px';
-            document.body.appendChild(t);
-            setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() => t.remove(), 500); }, 2000);
-        }
-
-        // ==========================================
-        // CONTROL DEL MODO RÁFAGA PERSONALIZABLE
-        // ==========================================
-        let rafagaActiva = false;
-        window.toggleRafaga = function() {
-            rafagaActiva = !rafagaActiva;
-            const btn = document.getElementById('btn-toggle-rafaga');
-            const opciones = document.getElementById('opciones-rafaga');
-            if(rafagaActiva) {
-                btn.innerText = "ENCENDIDO";
-                btn.style.background = "var(--primary)";
-                btn.style.color = "white";
-                opciones.classList.remove('oculto');
-                verificarRafagaCustom();
-            } else {
-                btn.innerText = "APAGADO";
-                btn.style.background = "transparent";
-                btn.style.color = "var(--text-main)";
-                opciones.classList.add('oculto');
-            }
-        };
-
-        window.verificarRafagaCustom = function() {
-            const sel = document.getElementById('rafaga-accion').value;
-            const customInput = document.getElementById('rafaga-prod-custom');
-            const detallesBox = document.getElementById('caja-rafaga-detalles');
-            
-            if(sel === 'solo_peso') {
-                customInput.classList.add('oculto');
-                detallesBox.classList.add('oculto');
-            } else {
-                detallesBox.classList.remove('oculto');
-                if(sel === 'OTRO') {
-                    customInput.classList.remove('oculto');
-                    customInput.focus();
-                } else {
-                    customInput.classList.add('oculto');
-                }
-            }
-        };
-
-        // ==========================================
         // LECTOR HID / TECLADO AUTOMÁTICO (PC)
         // ==========================================
         function forzarSaltoAFicha() {
@@ -1337,27 +1354,30 @@
                     if (esPeso) {
                         if (typeof rpActivo !== 'undefined' && rpActivo && rpActivo !== "---") {
                             
-                            if(rafagaActiva) {
+                            // LÓGICA DE MODO RÁFAGA AUTOMÁTICO
+                            if(typeof rafagaActiva !== 'undefined' && rafagaActiva) {
                                 let sel = document.getElementById('rafaga-accion').value;
                                 let notas = document.getElementById('rafaga-detalles').value.trim();
                                 
+                                // 1. Guardar Peso
                                 ejecutarAccion('Peso', dataLimpia + " Kg", "Automático (Ráfaga)", null);
                                 
+                                // 2. Guardar Tratamiento Sanitario Personalizado si está seleccionado
                                 if(sel !== 'solo_peso') {
                                     let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
                                     let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga";
                                     ejecutarAccion('Sanidad', producto, detCompleto, null);
                                 }
                                 
-                                mostrarToast("✅ ¡Guardado!");
-                                buscarCaravanaBtn();
+                                if(typeof mostrarToast === 'function') mostrarToast("✅ ¡Guardado!");
+                                
                             } else {
+                                // MODO NORMAL MANUAL
                                 forzarSaltoAFicha();
                                 if (typeof abrirModal === "function") abrirModal('m-peso');
                                 let inputPeso = document.getElementById('i-peso-val');
                                 if (inputPeso) inputPeso.value = dataLimpia;
                             }
-
                         } else {
                             alert("⚖️ Peso recibido: " + dataLimpia + " Kg. ¡Debes leer la caravana de un animal primero!");
                         }
