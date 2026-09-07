@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taurus Control - Master Admin</title>
+    <style>
+        :root { 
+            --bg-base: #0f172a; --bg-panel: #1e293b; --bg-card: #334155; 
+            --border: #475569; --primary: #8b5cf6; --primary-hover: #7c3aed; 
+            --success: #059669; --warning: #d97706; --danger: #dc2626; 
+            --text-main: #f8fafc; --text-muted: #94a3b8; 
+        }
+
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg-base); color: var(--text-main); height: 100vh; display: flex; font-size: 14px; }
+        .oculto { display: none !important; }
+
+        #sidebar { width: 260px; background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        .sidebar-header { padding: 25px 20px; text-align: center; border-bottom: 1px solid var(--border); background: var(--bg-card); }
+        .sidebar-header h2 { margin: 0; font-size: 18px; font-weight: 900; color: var(--primary); text-transform: uppercase; letter-spacing: 2px;}
+        .sidebar-nav { list-style: none; padding: 0; margin: 15px 0; flex: 1; }
+        .sidebar-nav li { padding: 15px 20px; cursor: pointer; font-weight: bold; color: var(--text-muted); transition: 0.2s; border-left: 4px solid transparent; }
+        .sidebar-nav li:hover { background: var(--bg-card); color: var(--text-main); }
+        .sidebar-nav li.activo { background: rgba(139, 92, 246, 0.1); color: var(--primary); border-left-color: var(--primary); }
+
+        #main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 30px; }
+        .titulo-seccion { font-size: 24px; margin: 0 0 25px 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; font-weight: 900; }
+        
+        .tarjeta { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; padding: 25px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .form-control { width: 100%; padding: 12px; margin-bottom: 15px; background: var(--bg-base); border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; font-size: 14px; outline: none; }
+        .form-control:focus { border-color: var(--primary); }
+        .btn { padding: 12px 20px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
+        .btn:hover { background: var(--primary-hover); }
+        .btn-success { background: var(--success); }
+        .btn-warning { background: var(--warning); padding: 8px 15px; font-size: 12px;}
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: var(--bg-card); color: var(--text-muted); text-transform: uppercase; font-size: 11px; }
+        tr:hover td { background: var(--bg-card); }
+        
+        #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.8); display:flex; justify-content:center; align-items:center; z-index:9999; flex-direction:column; }
+        .spinner { border: 4px solid var(--border); border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom:15px;}
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <!-- URL DE TU APPS SCRIPT -->
+    <script>
+        const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzyWvEMlfCCQXGP0-ssUUQ2je4tsFPXd6Yu0C9WwsTa7sgqFkkz3jr0a8CXqrI9ydk/exec";
+        let clientesCache = [];
+    </script>
+
+    <div id="loading-overlay" class="oculto">
+        <div class="spinner"></div>
+        <strong id="loading-text" style="color:white; font-size:16px;">Procesando...</strong>
+    </div>
+
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h2>Taurus Admin</h2>
+            <span style="font-size:11px; color:var(--text-muted);">Panel Maestro (SaaS)</span>
+        </div>
+        <ul class="sidebar-nav">
+            <li class="activo" onclick="cambiarVista('v-nuevo', this)">🚀 Nuevo Cliente</li>
+            <li onclick="cambiarVista('v-licencias', this); cargarClientes();">🔑 Licencias y Usuarios</li>
+            <li onclick="cambiarVista('v-masiva', this); cargarClientesMasiva();">📦 Carga Masiva (Excel/CSV)</li>
+        </ul>
+    </div>
+
+    <div id="main-content">
+        
+        <!-- VISTA: NUEVO CLIENTE -->
+        <div id="v-nuevo" class="vista">
+            <h2 class="titulo-seccion">Alta de Nueva Hacienda (SaaS)</h2>
+            <div class="tarjeta" style="max-width: 600px;">
+                <p style="color:var(--text-muted); margin-top:0;">Al crear un cliente, el sistema generará automáticamente su propia base de datos (Google Sheet) y lo enlazará a este usuario.</p>
+                <label>Usuario Master del Cliente (Login)</label>
+                <input type="text" id="n-usu" class="form-control" placeholder="Ej: estancia_sanjose">
+                
+                <div class="grid-2">
+                    <div>
+                        <label>Contraseña</label>
+                        <input type="text" id="n-pass" class="form-control" placeholder="Clave de acceso">
+                    </div>
+                    <div>
+                        <label>Vencimiento de Licencia</label>
+                        <input type="date" id="n-venc" class="form-control">
+                    </div>
+                </div>
+
+                <label>Nombre Comercial de la Hacienda</label>
+                <input type="text" id="n-hacienda" class="form-control" placeholder="Ej: Estancia San José S.A.">
+                
+                <button class="btn btn-success" style="width:100%; margin-top:10px;" onclick="crearCliente()">Crear Cliente y Base de Datos</button>
+            </div>
+        </div>
+
+        <!-- VISTA: GESTIÓN DE LICENCIAS -->
+        <div id="v-licencias" class="vista oculto">
+            <h2 class="titulo-seccion">Control de Accesos y Licencias</h2>
+            <div class="tarjeta">
+                <button class="btn" style="margin-bottom:15px; font-size:12px;" onclick="cargarClientes()">🔄 Actualizar Lista</button>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Usuario Master</th>
+                            <th>Hacienda</th>
+                            <th>Vencimiento Actual</th>
+                            <th>ID Base de Datos</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tb-clientes">
+                        <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Haz clic en "Actualizar Lista"</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VISTA: CARGA MASIVA -->
+        <div id="v-masiva" class="vista oculto">
+            <h2 class="titulo-seccion">Importación Masiva de Inventario</h2>
+            <div class="grid-2">
+                <div class="tarjeta">
+                    <h3 style="margin-top:0; font-size:16px;">1. Seleccionar Cliente Destino</h3>
+                    <select id="sel-cliente-masiva" class="form-control">
+                        <option value="">-- Elija un cliente --</option>
+                    </select>
+                    
+                    <h3 style="margin-top:20px; font-size:16px;">2. Cargar Archivo CSV</h3>
+                    <p style="font-size:12px; color:var(--text-muted);">El archivo CSV debe tener 3 columnas exactas: <strong>Caravana, Categoría, Lote</strong> (con separador de coma o punto y coma).</p>
+                    <input type="file" id="archivo-csv" class="form-control" accept=".csv" style="padding:8px;">
+                    
+                    <button class="btn btn-success" style="width:100%; margin-top:10px;" onclick="procesarCSV()">Subir Inventario al Sistema</button>
+                </div>
+                
+                <div class="tarjeta">
+                    <h3 style="margin-top:0; font-size:16px; color:var(--warning);">Instrucciones de Formato</h3>
+                    <pre style="background:var(--bg-base); padding:15px; border-radius:6px; font-size:12px; border:1px solid var(--border); overflow-x:auto;">
+Caravana,Categoria,Lote
+1001,Vaca,Hacienda General
+1002,Ternero,Destete
+1003,Toro,Reproductores</pre>
+                    <p style="font-size:12px; color:var(--text-muted); margin-top:15px;">La fecha de carga se registrará como el día de hoy automáticamente.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function cambiarVista(id, btn) {
+            document.querySelectorAll('.vista').forEach(v => v.classList.add('oculto'));
+            document.getElementById(id).classList.remove('oculto');
+            document.querySelectorAll('.sidebar-nav li').forEach(l => l.classList.remove('activo'));
+            btn.classList.add('activo');
+        }
+
+        function toggleLoading(show, text="Procesando...") {
+            document.getElementById('loading-text').innerText = text;
+            document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+        }
+
+        // ==========================================
+        // ALTA DE CLIENTES
+        // ==========================================
+        function crearCliente() {
+            const u = document.getElementById('n-usu').value.trim();
+            const p = document.getElementById('n-pass').value.trim();
+            const v = document.getElementById('n-venc').value;
+            const h = document.getElementById('n-hacienda').value.trim();
+            
+            if(!u || !p || !v || !h) return alert("Complete todos los campos");
+            
+            toggleLoading(true, "Generando base de datos del cliente...");
+            
+            const fd = new URLSearchParams();
+            fd.append('accion', 'crear_cliente_nuevo');
+            fd.append('nuevo_usu', u);
+            fd.append('nuevo_pass', p);
+            fd.append('vencimiento', v);
+            fd.append('nombre_hacienda', h);
+
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' })
+            .then(() => {
+                toggleLoading(false);
+                alert("Cliente y base de datos creados exitosamente en Google Drive.");
+                document.getElementById('n-usu').value = '';
+                document.getElementById('n-pass').value = '';
+                document.getElementById('n-venc').value = '';
+                document.getElementById('n-hacienda').value = '';
+            })
+            .catch(() => { toggleLoading(false); alert("Error de red."); });
+        }
+
+        // ==========================================
+        // GESTIÓN DE LICENCIAS
+        // ==========================================
+        function cargarClientes() {
+            toggleLoading(true, "Obteniendo clientes...");
+            fetch(`${GOOGLE_SHEETS_URL}?accion=listar_clientes&t=${Date.now()}`)
+            .then(res => res.json())
+            .then(res => {
+                toggleLoading(false);
+                if(res.error) return alert("Error al cargar clientes");
+                clientesCache = res.data;
+                renderizarTablaClientes();
+                renderizarSelectMasiva();
+            }).catch(() => { toggleLoading(false); alert("Fallo al conectar con Master."); });
+        }
+
+        function renderizarTablaClientes() {
+            const tb = document.getElementById('tb-clientes');
+            tb.innerHTML = '';
+            if(clientesCache.length === 0) return tb.innerHTML = '<tr><td colspan="5">No hay clientes</td></tr>';
+            
+            clientesCache.forEach(c => {
+                let fechaFormato = c.vencimiento ? new Date(c.vencimiento).toISOString().split('T')[0] : '';
+                tb.innerHTML += `
+                    <tr>
+                        <td><strong>${c.usuario}</strong></td>
+                        <td>${c.hacienda}</td>
+                        <td>
+                            <input type="date" id="venc-${c.usuario}" class="form-control" style="margin:0; padding:6px; background:var(--bg-panel);" value="${fechaFormato}">
+                        </td>
+                        <td style="font-size:10px; color:var(--text-muted);">${c.idPlanilla || 'Sin DB'}</td>
+                        <td>
+                            <button class="btn btn-warning" onclick="actualizarVencimiento('${c.usuario}')">Guardar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function actualizarVencimiento(usu) {
+            const nuevaF = document.getElementById(`venc-${usu}`).value;
+            if(!nuevaF) return alert("Elija una fecha válida");
+            
+            toggleLoading(true, "Actualizando licencia...");
+            const fd = new URLSearchParams();
+            fd.append('accion', 'actualizar_vencimiento');
+            fd.append('target_usu', usu);
+            fd.append('nueva_fecha', nuevaF);
+
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' })
+            .then(() => {
+                toggleLoading(false);
+                alert("Vencimiento actualizado.");
+            }).catch(() => { toggleLoading(false); alert("Error de red."); });
+        }
+
+        // ==========================================
+        // CARGA MASIVA DE INVENTARIO
+        // ==========================================
+        function cargarClientesMasiva() {
+            if(clientesCache.length === 0) cargarClientes();
+            else renderizarSelectMasiva();
+        }
+
+        function renderizarSelectMasiva() {
+            const sel = document.getElementById('sel-cliente-masiva');
+            sel.innerHTML = '<option value="">-- Elija la hacienda destino --</option>';
+            clientesCache.forEach(c => {
+                if(c.idPlanilla) sel.innerHTML += `<option value="${c.idPlanilla}">${c.hacienda} (${c.usuario})</option>`;
+            });
+        }
+
+        function procesarCSV() {
+            const idPlanilla = document.getElementById('sel-cliente-masiva').value;
+            const fileInput = document.getElementById('archivo-csv');
+            
+            if(!idPlanilla) return alert("Seleccione el cliente destino.");
+            if(!fileInput.files.length) return alert("Seleccione un archivo CSV.");
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const rows = text.split('\n');
+                let datosEnJSON = [];
+                const fechaHoy = new Date().toISOString();
+                
+                // Saltar encabezado (i=1)
+                for(let i = 1; i < rows.length; i++) {
+                    let row = rows[i].trim();
+                    if(!row) continue;
+                    
+                    // Separar por coma o punto y coma
+                    let cols = row.split(/,|;/);
+                    if(cols.length >= 3) {
+                        datosEnJSON.push({
+                            fecha: fechaHoy,
+                            caravana: cols[0].trim(),
+                            categoria: cols[1].trim(),
+                            lote: cols[2].trim()
+                        });
+                    }
+                }
+                
+                if(datosEnJSON.length === 0) return alert("No se encontraron datos válidos en el CSV.");
+                
+                if(confirm(`¿Desea cargar ${datosEnJSON.length} animales a esta hacienda?`)) {
+                    enviarCargaMasiva(idPlanilla, datosEnJSON);
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+
+        function enviarCargaMasiva(idPlanilla, dataArray) {
+            toggleLoading(true, "Inyectando datos masivos...");
+            
+            const fd = new URLSearchParams();
+            fd.append('accion', 'carga_masiva');
+            fd.append('id_planilla', idPlanilla);
+            fd.append('datos', JSON.stringify(dataArray));
+
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' })
+            .then(() => {
+                toggleLoading(false);
+                alert("Carga masiva completada con éxito.");
+                document.getElementById('archivo-csv').value = '';
+            }).catch(() => { toggleLoading(false); alert("Error de red durante la carga."); });
+        }
+    </script>
+</body>
+</html>
