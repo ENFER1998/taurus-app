@@ -56,7 +56,7 @@
         .topbar-title { font-size: 13px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;}
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s;}
         .btn-outline:hover { background: var(--bg-card); color: var(--primary); }
-        .badge { border-radius: 4px; font-weight: bold; border: 1px solid; text-transform: uppercase; transition: 0.3s;}
+        .badge { border-radius: 4px; font-weight: bold; border: 1px solid; text-transform: uppercase; transition: 0.3s; cursor: pointer;}
         .badge.online { background: rgba(5, 150, 105, 0.1); color: var(--success); border-color: var(--success); }
         .badge.offline { background: rgba(220, 38, 38, 0.1); color: var(--danger); border-color: var(--danger); }
 
@@ -402,16 +402,6 @@
                             <button class="btn-outline" style="padding: 6px 12px; font-size: 12px;" onclick="toggleTema()">Cambiar Tema</button>
                         </div>
                     </div>
-
-                    <!-- TARJETA DE ESTADO DE SINCRONIZACIÓN EN PC -->
-                    <div class="tarjeta">
-                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px; color:var(--text-main);">📡 Estado de Sincronización</h3>
-                        <div class="dato-box" style="margin-bottom: 15px;">
-                            <span>Registros Pendientes (Sin red)</span>
-                            <strong id="lbl-pendientes" style="color:var(--warning);">0 registros</strong>
-                        </div>
-                        <button class="btn-outline" style="width:100%;" onclick="sincronizarPendientesManual()">Forzar Sincronización</button>
-                    </div>
                     
                     <div class="tarjeta">
                         <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">📊 Analíticas en Dashboard (Máx 3)</h3>
@@ -443,9 +433,9 @@
     <div id="m-clasi" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-clasi')">&times;</span><h3>Clasificación y Ubicación</h3><div class="form-grupo"><label>Categoría Oficial</label><select class="form-control" id="input-cat-rapida"><option value="TH: Ternera Hembra">TH: Ternera Hembra</option><option value="TM: Ternero Macho">TM: Ternero Macho</option><option value="DH: Desmamante Hembra">DH: Desmamante Hembra</option><option value="DM: Desmamante Macho">DM: Desmamante Macho</option><option value="V: Vaca/Vaquilla">V: Vaca/Vaquilla</option><option value="VV: Vaca Vieja">VV: Vaca Vieja</option><option value="Toros">Toros</option></select></div><div class="form-grupo"><label>Lote Asignado</label><input type="text" list="lista-lotes" class="form-control" id="input-lote-rapido"><datalist id="lista-lotes"><option value="Hacienda General"></option><option value="Lecheras"></option><option value="Preñadas"></option><option value="Inseminadas"></option></datalist></div><div class="form-grupo"><label>Carimbo (Año)</label><input type="text" class="form-control" id="input-carimbo-rapido"></div><button class="btn-guardar" onclick="guardarClasificacion()">Actualizar Ubicación</button></div></div>
     <div id="m-dx" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-dx')">&times;</span><h3>Resultado de Tacto</h3><div class="form-grupo"><select class="form-control" id="i-dx-sel"><option>Preñada</option><option>Vacía</option><option>Vacía (Sangre)</option></select></div><div class="form-grupo"><label>Observación del Veterinario</label><textarea class="form-control textarea" id="i-dx-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-dx', 'Diagnóstico')">Registrar Tacto</button></div></div>
     <div id="m-peso" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-peso')">&times;</span><h3>Registro de Peso</h3><div class="form-grupo"><input type="number" class="form-control" id="i-peso-val" placeholder="Peso detectado en Kg"></div><div class="form-grupo"><label>Condición Corporal</label><select class="form-control" id="i-peso-cond"><option>Óptima</option><option>Bajo Peso</option><option>Sobrepeso</option></select></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-peso-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-peso', 'Peso')">Registrar Peso</button></div></div>
-    <div id="m-sani" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-sani')">&times;</span><h3>Control Sanitario</h3><div class="form-grupo"><label>Tipo de Aplicación</label><select class="form-control" id="i-sani-sel" onchange="verificarSaniOtro()"><option>Antiparasitario</option><option>Vacuna Aftosa</option><option>Tratamiento General</option><option value="OTRO">✏️ Personalizado...</option></select><input type="text" class="form-control oculto" id="i-sani-sel-otro" placeholder="Escriba el producto" style="margin-top:10px;"></div><div class="form-grupo"><label>Producto Utilizado</label><input type="text" class="form-control" id="i-sani-lote" placeholder="Marca del producto o Número de Lote"></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-sani', 'Sanidad')">Registrar Sanidad</button></div></div>
+    <div id="m-sani" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-sani')">&times;</span><h3>Control Sanitario</h3><div class="form-grupo"><label>Tipo de Aplicación</label><select class="form-control" id="i-sani-sel"><option>Antiparasitario</option><option>Vacuna Aftosa</option><option>Tratamiento General</option></select></div><div class="form-grupo"><label>Producto Utilizado</label><input type="text" class="form-control" id="i-sani-lote" placeholder="Marca del producto o Número de Lote"></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-sani', 'Sanidad')">Registrar Sanidad</button></div></div>
     <div id="m-ins" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-ins')">&times;</span><h3>Registro de Inseminación</h3><div class="form-grupo"><label>Profesional a Cargo</label><input type="text" class="form-control" id="i-ins-quien" placeholder="Nombre del Inseminador"></div><div class="form-grupo"><label>Genética Utilizada</label><input type="text" class="form-control" id="i-ins-toro" placeholder="Toro o Código de Pajuela"></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-ins-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-ins', 'Inseminación')">Registrar Servicio</button></div></div>
-    <div id="m-nut" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-nut')">&times;</span><h3>Suplemento Nutricional</h3><div class="form-grupo"><label>Alimento Suministrado</label><select class="form-control" id="i-nut-prod" onchange="verificarNutOtro()"><option value="FOSFO Plus! 90f (Sal Mineral)">FOSFO Plus! 90f (Sal Mineral)</option><option value="FOSFO Plus! Proteica Ternero">FOSFO Plus! Proteica Ternero</option><option value="Forraje / Pastura">Forraje / Pastura</option><option value="OTRO">✏️ Personalizado...</option></select><input type="text" class="form-control oculto" id="i-nut-prod-otro" placeholder="Escriba el alimento" style="margin-top:10px;"></div><div class="form-grupo"><label>Dosificación</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 0.50gr/kg/día..."></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-nut', 'Nutrición')">Registrar Nutrición</button></div></div>
+    <div id="m-nut" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-nut')">&times;</span><h3>Suplemento Nutricional</h3><div class="form-grupo"><label>Alimento Suministrado</label><input type="text" class="form-control" id="i-nut-prod" list="lista-alimentos"><datalist id="lista-alimentos"><option value="FOSFO Plus! 90f (Sal Mineral)"></option><option value="FOSFO Plus! Proteica Ternero"></option><option value="Forraje / Pastura"></option></datalist></div><div class="form-grupo"><label>Dosificación</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 0.50gr/kg/día..."></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('m-nut', 'Nutrición')">Registrar Nutrición</button></div></div>
     <div id="m-traza" class="modal"><div class="modal-body" style="width:700px;"><span class="btn-cerrar" onclick="cerrarModal('m-traza')">&times;</span><h3>Trazabilidad Completa del RP</h3><div style="max-height:450px;overflow-y:auto; margin-top:15px;"><table class="tabla-datos"><thead><tr><th>Fecha</th><th>Acción</th><th>Valor Principal</th><th>Detalles Adicionales</th></tr></thead><tbody id="tb-traza"></tbody></table></div></div></div>
 
     <script>
@@ -570,9 +560,7 @@
                 const dGuardado = lsGet('tc_hacienda', {}); 
                 aplicarDisenoEnPantalla(dGuardado.nombre, dGuardado.logo);
                 
-                setEstadoRed(navigator.onLine); 
-                actualizarContadorPendientes();
-                procesarDatosDashboard(); 
+                setEstadoRed(navigator.onLine); procesarDatosDashboard(); 
                 
                 document.getElementById('f-inf-rango-fecha').value = "30"; 
                 manejarRangoFechas();
@@ -606,10 +594,6 @@
             .then(r => r.json()).then(res => {
                 if(!res.error) {
                     fusionarDatos(Array.isArray(res.data) ? res.data : []);
-                    lsSet('tc_hacienda', { nombre: res.hacienda, logo: res.logo });
-                    const hd = lsGet('tc_hacienda', {});
-                    aplicarDisenoEnPantalla(hd.nombre, hd.logo);
-
                     if(rpActivo && !document.getElementById('v-ficha').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
                     procesarDatosDashboard(); 
                     if(!document.getElementById('v-base').classList.contains('oculto')) cargarListaRegistro(); 
@@ -632,19 +616,15 @@
         }
         setInterval(() => sincronizarFondo(false), 30000);
 
-        function encolarOffline(obj) { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); actualizarContadorPendientes(); }
-        function actualizarContadorPendientes() { let p = lsGet('tc_pendientes', []); let lbl = document.getElementById('lbl-pendientes'); if(lbl) lbl.innerText = `${p.length} registros`; }
         function sincronizarPendientesAuto() {
             let p = lsGet('tc_pendientes', []); if(p.length === 0) return;
             const fd = new URLSearchParams(); fd.append('accion', 'sync_offline'); fd.append('maestro', maestroId); fd.append('usuario', usActivo); fd.append('datos', JSON.stringify(p));
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_pendientes', []); actualizarContadorPendientes(); sincronizarFondo(false); });
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_pendientes', []); sincronizarFondo(false); });
         }
-        function sincronizarPendientesManual() { if(navigator.onLine && lsGet('tc_pendientes', []).length > 0) sincronizarPendientesAuto(); }
 
         function obtenerRegistrosActivos() {
             let validos = [];
             const unicas = [...new Set(dbCache.map(d => d.caravana).filter(c => c !== "---" && c != null))];
-            
             unicas.forEach(car => {
                 let regs = dbCache.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
                 let lastResetIdx = -1;
@@ -684,10 +664,7 @@
                 const regs = obtenerHistorial(rp); 
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", nutricion="-", sanidad="-", inseminacion="-", htmlNotas=""; 
                 
-                // ==========================================
                 // NUEVO CÁLCULO INTELIGENTE DE G.D.P. PC
-                // (Ignora pesos tomados el mismo día)
-                // ==========================================
                 let gdpHtml = "";
                 let todosLosPesos = regs.filter(d => d.accion === 'Peso');
                 if(todosLosPesos.length >= 1) {
@@ -725,7 +702,8 @@
                         }
                     }
                 }
-                document.getElementById('val-gdp').innerHTML = gdpHtml;
+                const elGdp = document.getElementById('val-gdp');
+                if(elGdp) elGdp.innerHTML = gdpHtml;
 
                 if(regs.length > 0) {
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor || "").split('|'); raza = p[0] || "-"; edad = p[1] || "-"; padre = p[2] || "-"; madre = p[3] || "-"; cat = String(uP.detalles || "").split('|')[0] || "-"; } 
@@ -741,7 +719,7 @@
                             let acc = String(r.accion).trim(); let det = String(r.detalles || ""); let notaTexto = "";
                             if (acc === 'Comentario') { notaTexto = det.split('|')[0] || ""; } 
                             else if (det.includes('Notas:')) { let parts = det.split('Notas:'); if (parts.length > 1) { let n = parts[1].split('|')[0].trim(); if(n && n !== "-" && n !== "") notaTexto = `[${acc}] ${n}`; } }
-                            if (notaTexto && notaTexto !== "-" && notaTexto.toLowerCase() !== "sin comentarios.") { htmlNotas += `<div class="nota-item"><span class="f">${new Date(r.fecha).toLocaleDateString()} - ${acc}</span><span class="t">${notaTexto}</span></div>`; }
+                            if (notaTexto && notaTexto !== "-" && notaTexto.toLowerCase() !== "sin comentarios.") { htmlNotas += `<div class="nota-item"><span class="f">${new Date(r.fecha).toLocaleDateString()}</span><span class="t">${notaTexto}</span></div>`; }
                         } catch(e) {}
                     });
                 }
@@ -757,7 +735,7 @@
                 const elNutricion = document.getElementById('val-nutricion'); if(elNutricion) elNutricion.innerText = nutricion;
                 const elSanidad = document.getElementById('val-sanidad'); if(elSanidad) elSanidad.innerText = sanidad;
                 const elInseminacion = document.getElementById('val-inseminacion'); if(elInseminacion) elInseminacion.innerText = inseminacion;
-                document.getElementById('val-notas').innerHTML = htmlNotas;
+                const elNotas = document.getElementById('val-notas'); if(elNotas) elNotas.innerHTML = htmlNotas;
                 const elRaza = document.getElementById('val-raza'); if(elRaza) elRaza.innerText = raza;
                 const elEdad = document.getElementById('val-edad'); if(elEdad) elEdad.innerText = edad;
                 
@@ -781,20 +759,17 @@
             dbCache.unshift(obj); buscarCaravanaBtn(rpActivo); procesarDatosDashboard(); 
             if(modalId) cerrarModal(modalId);
             if(navigator.onLine) {
-                const fd = new URLSearchParams(); for(let k in obj) fd.append(k, obj[k]); fd.append('usuario', usActivo); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { sincronizarFondo(false); });
+                const fd = new URLSearchParams(); for(let k in obj) fd.append(k, obj[k]); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { sincronizarFondo(false); });
             } else {
-                encolarOffline(obj);
+                let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p);
             }
         }
 
         function prepararGuardado(mId, t) { 
             if(!rpActivo) return; let v = "-", d = ""; const i = document.getElementById(mId).querySelectorAll('.form-control, .textarea'); 
-            if(t === 'Comentario') { d = i[0].value; } else if(t === 'Peso') { v = i[0].value + " Kg"; d = `Cond: ${i[1].value}. Notas: ${i[2].value}`; } else if(t === 'Sanidad') { let prod = i[0].value; if(prod === 'OTRO') prod = document.getElementById('i-sani-sel-otro').value || 'Tratamiento S/N'; v = prod; d = `Lote/Marca: ${i[1].value}. Notas: ${i[2].value}`; } else if(t === 'Diagnóstico') { v = "Dx: " + i[0].value; d = i[1].value || "-"; } else if(t === 'Inseminación') { v = "Toro: " + i[1].value; d = `Ins: ${i[0].value}. Notas: ${i[2].value}`; } else if(t === 'Nutrición') { let prod = i[0].value; if(prod === 'OTRO') prod = document.getElementById('i-nut-prod-otro').value || 'Suplemento S/N'; v = prod; d = `Ración: ${i[1].value}. Notas: ${i[2].value}`; } 
+            if(t === 'Comentario') { d = i[0].value; } else if(t === 'Peso') { v = i[0].value + " Kg"; d = `Cond: ${i[1].value}. Notas: ${i[2].value}`; } else if(t === 'Sanidad') { v = i[0].value; d = `Lote: ${i[1].value}. Notas: ${i[2].value}`; } else if(t === 'Diagnóstico') { v = "Dx: " + i[0].value; d = i[1].value || "-"; } else if(t === 'Inseminación') { v = "Toro: " + i[1].value; d = `Ins: ${i[0].value}. Notas: ${i[2].value}`; } else if(t === 'Nutrición') { v = i[0].value; d = `Ración: ${i[1].value}. Notas: ${i[2].value}`; } 
             ejecutarAccion(t, v, d, mId); i.forEach(el => el.value = ''); 
         }
-
-        function verificarSaniOtro() { const sel = document.getElementById('i-sani-sel'); const input = document.getElementById('i-sani-sel-otro'); if(sel.value === 'OTRO') { input.classList.remove('oculto'); input.focus(); } else { input.classList.add('oculto'); input.value = ''; } }
-        function verificarNutOtro() { const sel = document.getElementById('i-nut-prod'); const input = document.getElementById('i-nut-prod-otro'); if(sel.value === 'OTRO') { input.classList.remove('oculto'); input.focus(); } else { input.classList.add('oculto'); input.value = ''; } }
 
         function guardarPerfilCompleto() { 
             if(!rpActivo) return; 
@@ -806,6 +781,7 @@
             
             ejecutarAccion('Perfil Master', `${fRaza||"-"}|${fEdad||"-"}|${fPadre||"-"}|${fMadre||"-"}`, catValor, 'm-perfil'); 
         }
+
         function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'm-clasi'); }
         function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'm-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
         
@@ -956,8 +932,7 @@
             btn.innerText = "⏳ Generando Archivo PDF...";
             
             const h_nom = document.getElementById('cfg-nom').value || 'TAURUS CONTROL';
-            const hd = lsGet('tc_hacienda', {});
-            const h_log = hd.logo || "";
+            const h_log = lsGet('tc_hacienda', {}).logo || "";
             const modo = document.getElementById('f-inf-modo').value;
             
             let htmlContent = `
@@ -1112,43 +1087,43 @@
 
         function aplicarDisenoEnPantalla(nombre, logo) { document.getElementById('cfg-nom').value = nombre || ''; }
 
-        function guardarDisenoServidor() {
-            const n = document.getElementById('cfg-nom').value.trim();
-            const f = document.getElementById('cfg-logo');
-            let p = (b64) => {
-                const fd = new URLSearchParams();
-                fd.append('accion', 'guardar_diseno');
-                fd.append('maestro', maestroId);
-                fd.append('nombre_hacienda', n);
-                fd.append('logo_hacienda', b64);
-                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => {
-                    lsSet('tc_hacienda', { nombre: n, logo: b64 });
-                    aplicarDisenoEnPantalla(n, b64);
-                    alert("Membrete oficial de PDF actualizado.");
-                });
-            };
-            if (f.files && f.files[0]) {
-                const r = new FileReader();
-                r.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        let w = img.width, h = img.height;
-                        const maxW = 500, maxH = 500;
+        function guardarDisenoServidor() { 
+            const n = document.getElementById('cfg-nom').value.trim(); 
+            const f = document.getElementById('cfg-logo'); 
+            let p = (b64) => { 
+                const fd = new URLSearchParams(); 
+                fd.append('accion', 'guardar_diseno'); 
+                fd.append('maestro', maestroId); 
+                fd.append('nombre_hacienda', n); 
+                fd.append('logo_hacienda', b64); 
+                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
+                    lsSet('tc_hacienda', {nombre: n, logo: b64}); 
+                    aplicarDisenoEnPantalla(n, b64); 
+                    alert("Membrete oficial de PDF actualizado."); 
+                }); 
+            }; 
+            if(f.files && f.files[0]) { 
+                const r = new FileReader(); 
+                r.onload = function(e) { 
+                    const img = new Image(); 
+                    img.onload = function() { 
+                        const canvas = document.createElement('canvas'); 
+                        let w = img.width, h = img.height; 
+                        const maxW = 200, maxH = 200; 
                         if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } 
-                        else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } }
-                        canvas.width = w; canvas.height = h;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, w, h);
-                        p(canvas.toDataURL('image/png'));
-                    };
-                    img.src = e.target.result;
-                };
-                r.readAsDataURL(f.files[0]);
-            } else {
-                const hd = lsGet('tc_hacienda', {});
-                p(hd.logo || "");
-            }
+                        else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } 
+                        canvas.width = w; canvas.height = h; 
+                        const ctx = canvas.getContext('2d'); 
+                        ctx.drawImage(img, 0, 0, w, h); 
+                        p(canvas.toDataURL('image/png')); 
+                    }; 
+                    img.src = e.target.result; 
+                }; 
+                r.readAsDataURL(f.files[0]); 
+            } else { 
+                const logoGuardado = lsGet('tc_hacienda', {}).logo || ""; 
+                p(logoGuardado); 
+            } 
         }
 
         function crearOperador() { 
@@ -1180,7 +1155,6 @@
                 
                 const fd2 = new URLSearchParams();
                 for(let key in objEvt) fd2.append(key, objEvt[key]);
-                fd2.append('usuario', usActivo);
                 fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd2, mode: 'no-cors' });
 
                 document.getElementById('op-usu').value = ''; 
@@ -1363,25 +1337,21 @@
                     if (esPeso) {
                         if (typeof rpActivo !== 'undefined' && rpActivo && rpActivo !== "---") {
                             
-                            // LÓGICA DE MODO RÁFAGA AUTOMÁTICO
                             if(rafagaActiva) {
                                 let sel = document.getElementById('rafaga-accion').value;
                                 let notas = document.getElementById('rafaga-detalles').value.trim();
                                 
-                                // 1. Guardar Peso
-                                ejecutarAccion('Peso', dataLimpia + " Kg", "Automático (Ráfaga)", null, null);
+                                ejecutarAccion('Peso', dataLimpia + " Kg", "Automático (Ráfaga)", null);
                                 
-                                // 2. Guardar Tratamiento Sanitario Personalizado si está seleccionado
                                 if(sel !== 'solo_peso') {
                                     let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
                                     let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga";
-                                    ejecutarAccion('Sanidad', producto, detCompleto, null, null);
+                                    ejecutarAccion('Sanidad', producto, detCompleto, null);
                                 }
                                 
                                 mostrarToast("✅ ¡Guardado!");
-                                buscarCaravanaBtn(); // Actualiza la ficha y recalcula el GDP
+                                buscarCaravanaBtn();
                             } else {
-                                // MODO NORMAL MANUAL
                                 forzarSaltoAFicha();
                                 if (typeof abrirModal === "function") abrirModal('m-peso');
                                 let inputPeso = document.getElementById('i-peso-val');
