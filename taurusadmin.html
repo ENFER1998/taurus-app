@@ -4,149 +4,249 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Taurus Control - Master Admin</title>
+    
+    <!-- Ícono de la pestaña -->
+    <link rel="icon" href="gemini-svg.ico">
+    <link rel="apple-touch-icon" href="gemini-svg.ico">
+
     <style>
         :root { 
             --bg-base: #0f172a; --bg-panel: #1e293b; --bg-card: #334155; 
             --border: #475569; --primary: #8b5cf6; --primary-hover: #7c3aed; 
-            --success: #059669; --warning: #d97706; --danger: #dc2626; 
+            --success: #10b981; --warning: #f59e0b; --danger: #ef4444; 
             --text-main: #f8fafc; --text-muted: #94a3b8; 
         }
 
-        * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg-base); color: var(--text-main); height: 100vh; display: flex; font-size: 14px; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { margin: 0; background: var(--bg-base); color: var(--text-main); height: 100vh; display: flex; font-size: 14px; overflow: hidden; }
         .oculto { display: none !important; }
 
-        #sidebar { width: 260px; background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-        .sidebar-header { padding: 25px 20px; text-align: center; border-bottom: 1px solid var(--border); background: var(--bg-card); }
-        .sidebar-header h2 { margin: 0; font-size: 18px; font-weight: 900; color: var(--primary); text-transform: uppercase; letter-spacing: 2px;}
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-base); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ================= PANTALLA LOGIN ================= */
+        #pantalla-login { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-base); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+        .login-box { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 40px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        .login-box img { width: 80px; height: 80px; margin-bottom: 15px; border-radius: 16px; object-fit: contain; background: var(--bg-base); padding: 5px; border: 1px solid var(--border);}
+        .login-box h1 { margin: 0 0 5px 0; font-size: 24px; font-weight: 900; letter-spacing: 1px; color: var(--primary);}
+        .login-box p { color: var(--text-muted); font-size: 13px; margin-bottom: 25px; }
+        
+        /* ================= LAYOUT PRINCIPAL ================= */
+        #sidebar { width: 260px; background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 100;}
+        .sidebar-header { padding: 25px 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border); background: var(--bg-card); }
+        .sidebar-header img { width: 40px; height: 40px; border-radius: 8px; }
+        .sidebar-header h2 { margin: 0; font-size: 16px; font-weight: 900; color: var(--text-main); text-transform: uppercase; letter-spacing: 1px;}
+        
         .sidebar-nav { list-style: none; padding: 0; margin: 15px 0; flex: 1; }
-        .sidebar-nav li { padding: 15px 20px; cursor: pointer; font-weight: bold; color: var(--text-muted); transition: 0.2s; border-left: 4px solid transparent; }
+        .sidebar-nav li { padding: 15px 20px; cursor: pointer; font-weight: bold; color: var(--text-muted); transition: 0.2s; border-left: 4px solid transparent; display: flex; align-items: center; gap: 12px; font-size: 13px;}
         .sidebar-nav li:hover { background: var(--bg-card); color: var(--text-main); }
         .sidebar-nav li.activo { background: rgba(139, 92, 246, 0.1); color: var(--primary); border-left-color: var(--primary); }
 
-        #main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 30px; }
-        .titulo-seccion { font-size: 24px; margin: 0 0 25px 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; font-weight: 900; }
-        
-        .tarjeta { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; padding: 25px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .form-control { width: 100%; padding: 12px; margin-bottom: 15px; background: var(--bg-base); border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; font-size: 14px; outline: none; }
-        .form-control:focus { border-color: var(--primary); }
-        .btn { padding: 12px 20px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
-        .btn:hover { background: var(--primary-hover); }
-        .btn-success { background: var(--success); }
-        .btn-warning { background: var(--warning); padding: 8px 15px; font-size: 12px;}
-        
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .sidebar-footer { padding: 20px; text-align: center; border-top: 1px solid var(--border); background: var(--bg-card); font-size: 12px; color: var(--text-muted); line-height: 1.6;}
+        .sidebar-footer strong { color: var(--text-main); font-size: 13px; display: block; margin-bottom: 4px;}
 
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
-        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border); }
-        th { background: var(--bg-card); color: var(--text-muted); text-transform: uppercase; font-size: 11px; }
+        #main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; background: var(--bg-base); }
+        .topbar { background: var(--bg-panel); border-bottom: 1px solid var(--border); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50;}
+        .vista { padding: 30px; max-width: 1200px; margin: 0 auto; width: 100%; }
+        
+        .titulo-seccion { font-size: 24px; margin: 0 0 25px 0; border-bottom: 1px solid var(--border); padding-bottom: 15px; font-weight: 900; color: var(--text-main); display: flex; align-items: center; gap: 10px;}
+        
+        /* ================= COMPONENTES ================= */
+        .tarjeta { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 25px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        
+        .form-grupo { margin-bottom: 15px; text-align: left; }
+        .form-grupo label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase;}
+        .form-control { width: 100%; padding: 12px 15px; background: var(--bg-base); border: 1px solid var(--border); color: var(--text-main); border-radius: 8px; font-size: 14px; outline: none; transition: 0.3s; }
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2); }
+        
+        .btn { padding: 12px 20px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; font-size: 13px; letter-spacing: 1px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;}
+        .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+        .btn-success { background: var(--success); }
+        .btn-success:hover { background: #047857; }
+        .btn-warning { background: var(--warning); padding: 8px 15px; font-size: 11px;}
+        .btn-warning:hover { background: #b45309; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; background: var(--bg-base); border-radius: 8px; overflow: hidden; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: var(--bg-card); color: var(--text-muted); text-transform: uppercase; font-size: 11px; font-weight: bold; letter-spacing: 1px;}
+        tr:last-child td { border-bottom: none; }
         tr:hover td { background: var(--bg-card); }
         
-        #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.8); display:flex; justify-content:center; align-items:center; z-index:9999; flex-direction:column; }
-        .spinner { border: 4px solid var(--border); border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom:15px;}
+        /* ================= SPINNER & TOAST ================= */
+        #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.9); display:flex; justify-content:center; align-items:center; z-index:9999; flex-direction:column; backdrop-filter: blur(5px); }
+        .spinner { border: 4px solid var(--bg-card); border-top: 4px solid var(--primary); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom:20px;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; padding: 12px 24px; border-radius: 30px; z-index: 9999; font-weight: bold; box-shadow: 0 10px 25px rgba(0,0,0,0.3); font-size: 14px; opacity: 0; transition: opacity 0.3s, bottom 0.3s; pointer-events: none; }
+        .toast.mostrar { opacity: 1; bottom: 40px; }
+        .toast.error { background: var(--danger); }
     </style>
 </head>
 <body>
 
-    <!-- URL DE TU APPS SCRIPT -->
+    <!-- URL DEL APPS SCRIPT -->
     <script>
         const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzyWvEMlfCCQXGP0-ssUUQ2je4tsFPXd6Yu0C9WwsTa7sgqFkkz3jr0a8CXqrI9ydk/exec";
         let clientesCache = [];
     </script>
 
+    <!-- PANTALLA DE LOGIN ADMIN -->
+    <div id="pantalla-login">
+        <div class="login-box">
+            <img src="gemini-svg.ico" alt="Logo Taurus">
+            <h1>Taurus Admin</h1>
+            <p>Panel Maestro de Gestión SaaS</p>
+            
+            <div class="form-grupo">
+                <input type="password" id="admin-pass" class="form-control" placeholder="Clave de Acceso Maestro" style="text-align: center; font-size: 16px; letter-spacing: 2px;" autocomplete="off">
+            </div>
+            <button class="btn" style="width: 100%;" onclick="ingresarAdmin()">Acceder al Panel</button>
+            
+            <div style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
+                <span style="color: var(--text-muted); font-size: 12px;">Taurus Control &copy; 2026</span><br>
+                <strong style="color: var(--text-main); font-size: 13px;">Desarrollado por Fernando Rodriguez</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- OVERLAY DE CARGA -->
     <div id="loading-overlay" class="oculto">
         <div class="spinner"></div>
-        <strong id="loading-text" style="color:white; font-size:16px;">Procesando...</strong>
+        <strong id="loading-text" style="color:white; font-size:18px; letter-spacing: 1px;">Procesando...</strong>
     </div>
 
-    <div id="sidebar">
+    <!-- TOAST NOTIFICACIONES -->
+    <div id="toast-msg" class="toast">Mensaje</div>
+
+    <!-- SIDEBAR -->
+    <div id="sidebar" class="oculto">
         <div class="sidebar-header">
-            <h2>Taurus Admin</h2>
-            <span style="font-size:11px; color:var(--text-muted);">Panel Maestro (SaaS)</span>
+            <img src="gemini-svg.ico" alt="Logo">
+            <div>
+                <h2>Taurus Admin</h2>
+                <span style="font-size:11px; color:var(--primary); font-weight: bold;">PANEL MAESTRO SaaS</span>
+            </div>
         </div>
         <ul class="sidebar-nav">
-            <li class="activo" onclick="cambiarVista('v-nuevo', this)">🚀 Nuevo Cliente</li>
-            <li onclick="cambiarVista('v-licencias', this); cargarClientes();">🔑 Licencias y Usuarios</li>
-            <li onclick="cambiarVista('v-masiva', this); cargarClientesMasiva();">📦 Carga Masiva (Excel/CSV)</li>
+            <li class="activo" onclick="cambiarVista('v-nuevo', this)"><span>🚀</span> Alta de Clientes</li>
+            <li onclick="cambiarVista('v-licencias', this); cargarClientes();"><span>🔑</span> Licencias Activas</li>
+            <li onclick="cambiarVista('v-masiva', this); cargarClientesMasiva();"><span>📦</span> Importación Masiva</li>
+            <li onclick="cerrarSesion()" style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px; color: var(--danger);"><span>🚪</span> Cerrar Sesión</li>
         </ul>
+        <div class="sidebar-footer">
+            <strong>Taurus Control &copy; 2026</strong>
+            Desarrollado por<br>Fernando Rodriguez
+        </div>
     </div>
 
-    <div id="main-content">
-        
+    <!-- CONTENIDO PRINCIPAL -->
+    <div id="main-content" class="oculto">
+        <div class="topbar">
+            <strong style="color:var(--text-muted); letter-spacing: 1px; font-size: 12px; text-transform: uppercase;">Terminal de Administración Central</strong>
+            <span style="background: rgba(16, 185, 129, 0.1); color: var(--success); padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; border: 1px solid var(--success);">🟢 Sistema En Línea</span>
+        </div>
+
         <!-- VISTA: NUEVO CLIENTE -->
         <div id="v-nuevo" class="vista">
-            <h2 class="titulo-seccion">Alta de Nueva Hacienda (SaaS)</h2>
-            <div class="tarjeta" style="max-width: 600px;">
-                <p style="color:var(--text-muted); margin-top:0;">Al crear un cliente, el sistema generará automáticamente su propia base de datos (Google Sheet) y lo enlazará a este usuario.</p>
-                <label>Usuario Master del Cliente (Login)</label>
-                <input type="text" id="n-usu" class="form-control" placeholder="Ej: estancia_sanjose">
+            <h2 class="titulo-seccion">🚀 Alta de Nueva Hacienda (SaaS)</h2>
+            <div class="tarjeta" style="max-width: 700px;">
+                <p style="color:var(--text-muted); margin-top:0; margin-bottom: 25px; line-height: 1.6;">Al registrar un cliente nuevo, el sistema generará de forma automática su propia base de datos (Google Sheet) aislada y lo enlazará a estas credenciales.</p>
                 
                 <div class="grid-2">
-                    <div>
-                        <label>Contraseña</label>
-                        <input type="text" id="n-pass" class="form-control" placeholder="Clave de acceso">
+                    <div class="form-grupo">
+                        <label>Usuario Master del Cliente</label>
+                        <input type="text" id="n-usu" class="form-control" placeholder="Ej: estancia_sanjose" autocomplete="off">
                     </div>
-                    <div>
+                    <div class="form-grupo">
+                        <label>Nombre Comercial (Hacienda)</label>
+                        <input type="text" id="n-hacienda" class="form-control" placeholder="Ej: Estancia San José S.A.">
+                    </div>
+                </div>
+                
+                <div class="grid-2">
+                    <div class="form-grupo">
+                        <label>Contraseña de Acceso</label>
+                        <input type="text" id="n-pass" class="form-control" placeholder="Clave segura">
+                    </div>
+                    <div class="form-grupo">
                         <label>Vencimiento de Licencia</label>
                         <input type="date" id="n-venc" class="form-control">
                     </div>
                 </div>
 
-                <label>Nombre Comercial de la Hacienda</label>
-                <input type="text" id="n-hacienda" class="form-control" placeholder="Ej: Estancia San José S.A.">
-                
-                <button class="btn btn-success" style="width:100%; margin-top:10px;" onclick="crearCliente()">Crear Cliente y Base de Datos</button>
+                <button class="btn btn-success" style="width:100%; margin-top:15px; padding: 15px;" onclick="crearCliente()">⚡ Crear Cliente y Desplegar Base de Datos</button>
             </div>
         </div>
 
         <!-- VISTA: GESTIÓN DE LICENCIAS -->
         <div id="v-licencias" class="vista oculto">
-            <h2 class="titulo-seccion">Control de Accesos y Licencias</h2>
+            <h2 class="titulo-seccion">🔑 Control de Accesos y Licencias</h2>
             <div class="tarjeta">
-                <button class="btn" style="margin-bottom:15px; font-size:12px;" onclick="cargarClientes()">🔄 Actualizar Lista</button>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Usuario Master</th>
-                            <th>Hacienda</th>
-                            <th>Vencimiento Actual</th>
-                            <th>ID Base de Datos</th>
-                            <th>Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tb-clientes">
-                        <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Haz clic en "Actualizar Lista"</td></tr>
-                    </tbody>
-                </table>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <p style="margin:0; color:var(--text-muted); font-size:13px;">Gestión de fechas de corte para clientes activos.</p>
+                    <button class="btn" style="font-size:11px; padding: 8px 15px; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border);" onclick="cargarClientes()">🔄 Sincronizar</button>
+                </div>
+                
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Usuario Master</th>
+                                <th>Nombre Hacienda</th>
+                                <th>Vencimiento Actual</th>
+                                <th>ID Base de Datos (Drive)</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb-clientes">
+                            <tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding: 30px;">Haz clic en "Sincronizar" para obtener la lista desde el servidor.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <!-- VISTA: CARGA MASIVA -->
         <div id="v-masiva" class="vista oculto">
-            <h2 class="titulo-seccion">Importación Masiva de Inventario</h2>
+            <h2 class="titulo-seccion">📦 Importación Masiva de Inventario</h2>
             <div class="grid-2">
                 <div class="tarjeta">
-                    <h3 style="margin-top:0; font-size:16px;">1. Seleccionar Cliente Destino</h3>
-                    <select id="sel-cliente-masiva" class="form-control">
-                        <option value="">-- Elija un cliente --</option>
-                    </select>
+                    <h3 style="margin-top:0; font-size:16px; color: var(--primary);">1. Configuración de Destino</h3>
+                    <div class="form-grupo">
+                        <label>Seleccionar Cliente Destino</label>
+                        <select id="sel-cliente-masiva" class="form-control" style="font-weight: bold;">
+                            <option value="">-- Sincronice la lista primero --</option>
+                        </select>
+                    </div>
                     
-                    <h3 style="margin-top:20px; font-size:16px;">2. Cargar Archivo CSV</h3>
-                    <p style="font-size:12px; color:var(--text-muted);">El archivo CSV debe tener 3 columnas exactas: <strong>Caravana, Categoría, Lote</strong> (con separador de coma o punto y coma).</p>
-                    <input type="file" id="archivo-csv" class="form-control" accept=".csv" style="padding:8px;">
+                    <h3 style="margin-top:30px; font-size:16px; color: var(--primary);">2. Cargar Archivo CSV</h3>
+                    <p style="font-size:12px; color:var(--text-muted); line-height: 1.5;">Selecciona el archivo exportado en Excel guardado como <strong>CSV (delimitado por comas)</strong>.</p>
+                    <div class="form-grupo">
+                        <input type="file" id="archivo-csv" class="form-control" accept=".csv" style="padding:10px; background: var(--bg-card);">
+                    </div>
                     
-                    <button class="btn btn-success" style="width:100%; margin-top:10px;" onclick="procesarCSV()">Subir Inventario al Sistema</button>
+                    <button class="btn btn-success" style="width:100%; margin-top:15px; padding: 15px;" onclick="procesarCSV()">📤 Subir Inventario al Sistema</button>
                 </div>
                 
-                <div class="tarjeta">
-                    <h3 style="margin-top:0; font-size:16px; color:var(--warning);">Instrucciones de Formato</h3>
-                    <pre style="background:var(--bg-base); padding:15px; border-radius:6px; font-size:12px; border:1px solid var(--border); overflow-x:auto;">
-Caravana,Categoria,Lote
+                <div class="tarjeta" style="border-color: var(--primary); background: rgba(139, 92, 246, 0.05);">
+                    <h3 style="margin-top:0; font-size:16px; color:var(--primary);">⚠️ Formato Estricto Requerido</h3>
+                    <p style="font-size:13px; color:var(--text-main); line-height: 1.6;">El archivo CSV debe contener exactamente <strong>3 columnas</strong> en el siguiente orden, incluyendo la fila de encabezados:</p>
+                    
+                    <pre style="background:var(--bg-base); padding:20px; border-radius:8px; font-size:13px; border:1px solid var(--border); overflow-x:auto; color: var(--success); font-weight: bold; margin: 15px 0;">Caravana,Categoria,Lote
 1001,Vaca,Hacienda General
 1002,Ternero,Destete
 1003,Toro,Reproductores</pre>
-                    <p style="font-size:12px; color:var(--text-muted); margin-top:15px;">La fecha de carga se registrará como el día de hoy automáticamente.</p>
+                    
+                    <ul style="font-size: 12px; color: var(--text-muted); line-height: 1.8; padding-left: 20px;">
+                        <li>Se admiten separadores de coma (,) o punto y coma (;).</li>
+                        <li>La fecha de ingreso se registrará como el día de hoy automáticamente.</li>
+                        <li>Se inyectarán como <em>Actualización de Datos</em> en el historial de la vaca.</li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -154,6 +254,35 @@ Caravana,Categoria,Lote
     </div>
 
     <script>
+        // ==========================================
+        // SEGURIDAD FRONT-END BÁSICA
+        // ==========================================
+        function ingresarAdmin() {
+            const pass = document.getElementById('admin-pass').value;
+            if(pass === "master2026") { // <-- CONTRASEÑA DEL ADMIN
+                document.getElementById('pantalla-login').classList.add('oculto');
+                document.getElementById('sidebar').classList.remove('oculto');
+                document.getElementById('main-content').classList.remove('oculto');
+                mostrarToast("✅ Sesión Iniciada");
+            } else {
+                mostrarToast("❌ Contraseña Incorrecta", true);
+            }
+        }
+
+        function cerrarSesion() {
+            document.getElementById('admin-pass').value = '';
+            document.getElementById('pantalla-login').classList.remove('oculto');
+            document.getElementById('sidebar').classList.add('oculto');
+            document.getElementById('main-content').classList.add('oculto');
+        }
+
+        document.getElementById('admin-pass').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') ingresarAdmin();
+        });
+
+        // ==========================================
+        // UTILIDADES UI
+        // ==========================================
         function cambiarVista(id, btn) {
             document.querySelectorAll('.vista').forEach(v => v.classList.add('oculto'));
             document.getElementById(id).classList.remove('oculto');
@@ -166,8 +295,16 @@ Caravana,Categoria,Lote
             document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
         }
 
+        function mostrarToast(mensaje, esError = false) {
+            const toast = document.getElementById('toast-msg');
+            toast.innerText = mensaje;
+            if(esError) toast.classList.add('error'); else toast.classList.remove('error');
+            toast.classList.add('mostrar');
+            setTimeout(() => { toast.classList.remove('mostrar'); }, 3000);
+        }
+
         // ==========================================
-        // ALTA DE CLIENTES
+        // ALTA DE CLIENTES SaaS
         // ==========================================
         function crearCliente() {
             const u = document.getElementById('n-usu').value.trim();
@@ -175,9 +312,12 @@ Caravana,Categoria,Lote
             const v = document.getElementById('n-venc').value;
             const h = document.getElementById('n-hacienda').value.trim();
             
-            if(!u || !p || !v || !h) return alert("Complete todos los campos");
+            if(!u || !p || !v || !h) {
+                mostrarToast("⚠️ Complete todos los campos obligatorios", true);
+                return;
+            }
             
-            toggleLoading(true, "Generando base de datos del cliente...");
+            toggleLoading(true, "Generando base de datos en Google Drive...");
             
             const fd = new URLSearchParams();
             fd.append('accion', 'crear_cliente_nuevo');
@@ -189,48 +329,59 @@ Caravana,Categoria,Lote
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' })
             .then(() => {
                 toggleLoading(false);
-                alert("Cliente y base de datos creados exitosamente en Google Drive.");
+                mostrarToast("✅ Cliente desplegado exitosamente");
                 document.getElementById('n-usu').value = '';
                 document.getElementById('n-pass').value = '';
                 document.getElementById('n-venc').value = '';
                 document.getElementById('n-hacienda').value = '';
+                clientesCache = []; // Forzar recarga
             })
-            .catch(() => { toggleLoading(false); alert("Error de red."); });
+            .catch(() => { 
+                toggleLoading(false); 
+                mostrarToast("❌ Error de conexión", true); 
+            });
         }
 
         // ==========================================
         // GESTIÓN DE LICENCIAS
         // ==========================================
         function cargarClientes() {
-            toggleLoading(true, "Obteniendo clientes...");
+            toggleLoading(true, "Sincronizando clientes desde el Master...");
             fetch(`${GOOGLE_SHEETS_URL}?accion=listar_clientes&t=${Date.now()}`)
             .then(res => res.json())
             .then(res => {
                 toggleLoading(false);
-                if(res.error) return alert("Error al cargar clientes");
+                if(res.error) return mostrarToast("❌ Error al leer datos", true);
                 clientesCache = res.data;
                 renderizarTablaClientes();
                 renderizarSelectMasiva();
-            }).catch(() => { toggleLoading(false); alert("Fallo al conectar con Master."); });
+                mostrarToast("✅ Datos sincronizados");
+            }).catch(() => { 
+                toggleLoading(false); 
+                mostrarToast("❌ Falló la conexión al servidor", true); 
+            });
         }
 
         function renderizarTablaClientes() {
             const tb = document.getElementById('tb-clientes');
             tb.innerHTML = '';
-            if(clientesCache.length === 0) return tb.innerHTML = '<tr><td colspan="5">No hay clientes</td></tr>';
+            if(clientesCache.length === 0) {
+                tb.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">No se encontraron clientes registrados.</td></tr>';
+                return;
+            }
             
             clientesCache.forEach(c => {
                 let fechaFormato = c.vencimiento ? new Date(c.vencimiento).toISOString().split('T')[0] : '';
                 tb.innerHTML += `
                     <tr>
-                        <td><strong>${c.usuario}</strong></td>
-                        <td>${c.hacienda}</td>
+                        <td style="color:var(--primary); font-weight:bold;">${c.usuario}</td>
+                        <td style="font-weight:bold;">${c.hacienda}</td>
                         <td>
-                            <input type="date" id="venc-${c.usuario}" class="form-control" style="margin:0; padding:6px; background:var(--bg-panel);" value="${fechaFormato}">
+                            <input type="date" id="venc-${c.usuario}" class="form-control" style="margin:0; padding:8px; font-weight:bold;" value="${fechaFormato}">
                         </td>
-                        <td style="font-size:10px; color:var(--text-muted);">${c.idPlanilla || 'Sin DB'}</td>
+                        <td style="font-size:11px; color:var(--text-muted); font-family:monospace;">${c.idPlanilla || 'Falta ID'}</td>
                         <td>
-                            <button class="btn btn-warning" onclick="actualizarVencimiento('${c.usuario}')">Guardar</button>
+                            <button class="btn btn-warning" onclick="actualizarVencimiento('${c.usuario}')">💾 Actualizar</button>
                         </td>
                     </tr>
                 `;
@@ -239,9 +390,9 @@ Caravana,Categoria,Lote
 
         function actualizarVencimiento(usu) {
             const nuevaF = document.getElementById(`venc-${usu}`).value;
-            if(!nuevaF) return alert("Elija una fecha válida");
+            if(!nuevaF) return mostrarToast("⚠️ Seleccione una fecha", true);
             
-            toggleLoading(true, "Actualizando licencia...");
+            toggleLoading(true, `Actualizando licencia de ${usu}...`);
             const fd = new URLSearchParams();
             fd.append('accion', 'actualizar_vencimiento');
             fd.append('target_usu', usu);
@@ -250,8 +401,11 @@ Caravana,Categoria,Lote
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' })
             .then(() => {
                 toggleLoading(false);
-                alert("Vencimiento actualizado.");
-            }).catch(() => { toggleLoading(false); alert("Error de red."); });
+                mostrarToast("✅ Licencia actualizada");
+            }).catch(() => { 
+                toggleLoading(false); 
+                mostrarToast("❌ Error al actualizar", true); 
+            });
         }
 
         // ==========================================
@@ -266,7 +420,9 @@ Caravana,Categoria,Lote
             const sel = document.getElementById('sel-cliente-masiva');
             sel.innerHTML = '<option value="">-- Elija la hacienda destino --</option>';
             clientesCache.forEach(c => {
-                if(c.idPlanilla) sel.innerHTML += `<option value="${c.idPlanilla}">${c.hacienda} (${c.usuario})</option>`;
+                if(c.idPlanilla) {
+                    sel.innerHTML += `<option value="${c.idPlanilla}">${c.hacienda} (${c.usuario})</option>`;
+                }
             });
         }
 
@@ -274,8 +430,8 @@ Caravana,Categoria,Lote
             const idPlanilla = document.getElementById('sel-cliente-masiva').value;
             const fileInput = document.getElementById('archivo-csv');
             
-            if(!idPlanilla) return alert("Seleccione el cliente destino.");
-            if(!fileInput.files.length) return alert("Seleccione un archivo CSV.");
+            if(!idPlanilla) return mostrarToast("⚠️ Seleccione un cliente destino", true);
+            if(!fileInput.files.length) return mostrarToast("⚠️ Adjunte un archivo CSV", true);
             
             const file = fileInput.files[0];
             const reader = new FileReader();
@@ -291,7 +447,7 @@ Caravana,Categoria,Lote
                     let row = rows[i].trim();
                     if(!row) continue;
                     
-                    // Separar por coma o punto y coma
+                    // Manejar coma o punto y coma
                     let cols = row.split(/,|;/);
                     if(cols.length >= 3) {
                         datosEnJSON.push({
@@ -303,9 +459,12 @@ Caravana,Categoria,Lote
                     }
                 }
                 
-                if(datosEnJSON.length === 0) return alert("No se encontraron datos válidos en el CSV.");
+                if(datosEnJSON.length === 0) {
+                    mostrarToast("❌ Archivo vacío o formato incorrecto", true);
+                    return;
+                }
                 
-                if(confirm(`¿Desea cargar ${datosEnJSON.length} animales a esta hacienda?`)) {
+                if(confirm(`Se prepararon ${datosEnJSON.length} animales para importar.\n¿Proceder con la inyección a la base de datos del cliente?`)) {
                     enviarCargaMasiva(idPlanilla, datosEnJSON);
                 }
             };
@@ -314,7 +473,7 @@ Caravana,Categoria,Lote
         }
 
         function enviarCargaMasiva(idPlanilla, dataArray) {
-            toggleLoading(true, "Inyectando datos masivos...");
+            toggleLoading(true, "Inyectando bloques de datos. Por favor espere...");
             
             const fd = new URLSearchParams();
             fd.append('accion', 'carga_masiva');
@@ -324,9 +483,12 @@ Caravana,Categoria,Lote
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' })
             .then(() => {
                 toggleLoading(false);
-                alert("Carga masiva completada con éxito.");
+                mostrarToast("✅ Importación masiva completada con éxito");
                 document.getElementById('archivo-csv').value = '';
-            }).catch(() => { toggleLoading(false); alert("Error de red durante la carga."); });
+            }).catch(() => { 
+                toggleLoading(false); 
+                mostrarToast("❌ Ocurrió un error en la inyección de datos", true); 
+            });
         }
     </script>
 </body>
