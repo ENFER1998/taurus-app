@@ -56,7 +56,7 @@
         .topbar-title { font-size: 13px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;}
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s;}
         .btn-outline:hover { background: var(--bg-card); color: var(--primary); }
-        .badge { border-radius: 4px; font-weight: bold; border: 1px solid; text-transform: uppercase; transition: 0.3s;}
+        .badge { border-radius: 4px; font-weight: bold; border: 1px solid; text-transform: uppercase; transition: 0.3s; cursor: pointer;}
         .badge.online { background: rgba(5, 150, 105, 0.1); color: var(--success); border-color: var(--success); }
         .badge.offline { background: rgba(220, 38, 38, 0.1); color: var(--danger); border-color: var(--danger); }
 
@@ -182,7 +182,7 @@
 
         <div id="v-ficha" class="vista oculto">
             <h2 class="titulo-seccion">Expediente Clínico Individual</h2>
-            
+
             <!-- PANEL MODO RÁFAGA PC -->
             <div class="tarjeta" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid var(--primary);">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -402,16 +402,6 @@
                             <button class="btn-outline" style="padding: 6px 12px; font-size: 12px;" onclick="toggleTema()">Cambiar Tema</button>
                         </div>
                     </div>
-
-                    <!-- NUEVO: TARJETA DE ESTADO DE SINCRONIZACIÓN EN PC -->
-                    <div class="tarjeta">
-                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px; color:var(--text-main);">📡 Estado de Sincronización</h3>
-                        <div class="dato-box" style="margin-bottom: 15px;">
-                            <span>Registros Pendientes (Sin red)</span>
-                            <strong id="lbl-pendientes" style="color:var(--warning);">0 registros</strong>
-                        </div>
-                        <button class="btn-outline" style="width:100%;" onclick="sincronizarPendientesManual()">Forzar Sincronización</button>
-                    </div>
                     
                     <div class="tarjeta">
                         <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">📊 Analíticas en Dashboard (Máx 3)</h3>
@@ -570,9 +560,7 @@
                 const dGuardado = lsGet('tc_hacienda', {}); 
                 aplicarDisenoEnPantalla(dGuardado.nombre, dGuardado.logo);
                 
-                setEstadoRed(navigator.onLine); 
-                actualizarContadorPendientes();
-                procesarDatosDashboard(); 
+                setEstadoRed(navigator.onLine); procesarDatosDashboard(); 
                 
                 document.getElementById('f-inf-rango-fecha').value = "30"; 
                 manejarRangoFechas();
@@ -603,10 +591,6 @@
             .then(r => r.json()).then(res => {
                 if(!res.error) {
                     fusionarDatos(Array.isArray(res.data) ? res.data : []);
-                    lsSet('tc_hacienda', { nombre: res.hacienda, logo: res.logo });
-                    const hd = lsGet('tc_hacienda', {});
-                    aplicarDisenoEnPantalla(hd.nombre, hd.logo);
-
                     if(rpActivo && !document.getElementById('v-ficha').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
                     procesarDatosDashboard(); 
                     if(!document.getElementById('v-base').classList.contains('oculto')) cargarListaRegistro(); 
@@ -629,14 +613,11 @@
         }
         setInterval(() => sincronizarFondo(false), 30000);
 
-        function encolarOffline(obj) { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); actualizarContadorPendientes(); }
-        function actualizarContadorPendientes() { let p = lsGet('tc_pendientes', []); let lbl = document.getElementById('lbl-pendientes'); if(lbl) lbl.innerText = `${p.length} registros`; }
         function sincronizarPendientesAuto() {
             let p = lsGet('tc_pendientes', []); if(p.length === 0) return;
             const fd = new URLSearchParams(); fd.append('accion', 'sync_offline'); fd.append('maestro', maestroId); fd.append('usuario', usActivo); fd.append('datos', JSON.stringify(p));
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_pendientes', []); actualizarContadorPendientes(); sincronizarFondo(false); });
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_pendientes', []); sincronizarFondo(false); });
         }
-        function sincronizarPendientesManual() { if(navigator.onLine && lsGet('tc_pendientes', []).length > 0) sincronizarPendientesAuto(); }
 
         function obtenerRegistrosActivos() {
             let validos = [];
@@ -733,12 +714,13 @@
                     const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) sanidad = (uSan.valor || "-") + " | " + (uSan.detalles || "");
                     const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) inseminacion = (uIns.valor || "-") + " | " + (uIns.detalles || "");
                     
+                    let ultComentario = "Sin comentarios.";
                     regs.forEach(r => {
                         try {
                             let acc = String(r.accion).trim(); let det = String(r.detalles || ""); let notaTexto = "";
                             if (acc === 'Comentario') { notaTexto = det.split('|')[0] || ""; } 
                             else if (det.includes('Notas:')) { let parts = det.split('Notas:'); if (parts.length > 1) { let n = parts[1].split('|')[0].trim(); if(n && n !== "-" && n !== "") notaTexto = `[${acc}] ${n}`; } }
-                            if (notaTexto && notaTexto !== "-" && notaTexto.toLowerCase() !== "sin comentarios.") { htmlNotas += `<div class="nota-item"><span class="f">${new Date(r.fecha).toLocaleDateString()} - ${acc}</span><span class="t">${notaTexto}</span></div>`; }
+                            if (notaTexto && notaTexto !== "-" && notaTexto.toLowerCase() !== "sin comentarios.") { htmlNotas += `<div class="nota-item"><span class="f">${new Date(r.fecha).toLocaleDateString()}</span><span class="t">${notaTexto}</span></div>`; }
                         } catch(e) {}
                     });
                 }
@@ -754,7 +736,7 @@
                 const elNutricion = document.getElementById('val-nutricion'); if(elNutricion) elNutricion.innerText = nutricion;
                 const elSanidad = document.getElementById('val-sanidad'); if(elSanidad) elSanidad.innerText = sanidad;
                 const elInseminacion = document.getElementById('val-inseminacion'); if(elInseminacion) elInseminacion.innerText = inseminacion;
-                document.getElementById('val-notas').innerHTML = htmlNotas;
+                const elNotas = document.getElementById('val-notas'); if(elNotas) elNotas.innerHTML = htmlNotas;
                 const elRaza = document.getElementById('val-raza'); if(elRaza) elRaza.innerText = raza;
                 const elEdad = document.getElementById('val-edad'); if(elEdad) elEdad.innerText = edad;
                 
@@ -780,16 +762,14 @@
             if(navigator.onLine) {
                 const fd = new URLSearchParams(); for(let k in obj) fd.append(k, obj[k]); fd.append('usuario', usActivo); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { sincronizarFondo(false); });
             } else {
-                encolarOffline(obj);
+                let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p);
             }
         }
-
         function prepararGuardado(mId, t) { 
             if(!rpActivo) return; let v = "-", d = ""; const i = document.getElementById(mId).querySelectorAll('.form-control, .textarea'); 
             if(t === 'Comentario') { d = i[0].value; } else if(t === 'Peso') { v = i[0].value + " Kg"; d = `Cond: ${i[1].value}. Notas: ${i[2].value}`; } else if(t === 'Sanidad') { let prod = i[0].value; if(prod === 'OTRO') prod = document.getElementById('i-sani-sel-otro').value || 'Tratamiento S/N'; v = prod; d = `Lote/Marca: ${i[1].value}. Notas: ${i[2].value}`; } else if(t === 'Diagnóstico') { v = "Dx: " + i[0].value; d = i[1].value || "-"; } else if(t === 'Inseminación') { v = "Toro: " + i[1].value; d = `Ins: ${i[0].value}. Notas: ${i[2].value}`; } else if(t === 'Nutrición') { let prod = i[0].value; if(prod === 'OTRO') prod = document.getElementById('i-nut-prod-otro').value || 'Suplemento S/N'; v = prod; d = `Ración: ${i[1].value}. Notas: ${i[2].value}`; } 
             ejecutarAccion(t, v, d, mId); i.forEach(el => el.value = ''); 
         }
-
         function verificarSaniOtro() { const sel = document.getElementById('i-sani-sel'); const input = document.getElementById('i-sani-sel-otro'); if(sel.value === 'OTRO') { input.classList.remove('oculto'); input.focus(); } else { input.classList.add('oculto'); input.value = ''; } }
         function verificarNutOtro() { const sel = document.getElementById('i-nut-prod'); const input = document.getElementById('i-nut-prod-otro'); if(sel.value === 'OTRO') { input.classList.remove('oculto'); input.focus(); } else { input.classList.add('oculto'); input.value = ''; } }
 
@@ -953,8 +933,7 @@
             btn.innerText = "⏳ Generando Archivo PDF...";
             
             const h_nom = document.getElementById('cfg-nom').value || 'TAURUS CONTROL';
-            const hd = lsGet('tc_hacienda', {});
-            const h_log = hd.logo || "";
+            const h_log = lsGet('tc_hacienda', {}).logo || "";
             const modo = document.getElementById('f-inf-modo').value;
             
             let htmlContent = `
