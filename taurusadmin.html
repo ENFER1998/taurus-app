@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taurus Control - Master Admin</title>
+    <title>Taurus Control - Master Admin PC</title>
     
-    <!-- Ícono de la pestaña -->
     <link rel="icon" href="gemini-svg.ico">
     <link rel="apple-touch-icon" href="gemini-svg.ico">
+
+    <!-- LIBRERÍA SHEETJS PARA LEER CUALQUIER EXCEL -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
         :root { 
@@ -21,7 +23,6 @@
         body { margin: 0; background: var(--bg-base); color: var(--text-main); height: 100vh; display: flex; font-size: 14px; overflow: hidden; }
         .oculto { display: none !important; }
 
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-base); }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
@@ -60,7 +61,7 @@
         
         .form-grupo { margin-bottom: 15px; text-align: left; }
         .form-grupo label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase;}
-        .form-control { width: 100%; padding: 12px 15px; background: var(--bg-base); border: 1px solid var(--border); color: var(--text-main); border-radius: 8px; font-size: 14px; outline: none; transition: 0.3s; }
+        .form-control { width: 100%; padding: 12px 15px; background: var(--bg-base); border: 1px solid var(--border); color: var(--text-main); border-radius: 8px; font-size: 14px; outline: none; transition: 0.3s; box-sizing: border-box; }
         .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2); }
         
         .btn { padding: 12px 20px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; font-size: 13px; letter-spacing: 1px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;}
@@ -70,6 +71,7 @@
         .btn-success:hover { background: #047857; }
         .btn-warning { background: var(--warning); padding: 8px 15px; font-size: 11px;}
         .btn-warning:hover { background: #b45309; }
+        .btn-danger { background: var(--danger); padding: 8px 15px; font-size: 11px;}
 
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; background: var(--bg-base); border-radius: 8px; overflow: hidden; }
         th, td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border); }
@@ -77,7 +79,7 @@
         tr:last-child td { border-bottom: none; }
         tr:hover td { background: var(--bg-card); }
         
-        /* ================= SPINNER & TOAST ================= */
+        /* ================= MODALES Y OVERLAYS ================= */
         #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.9); display:flex; justify-content:center; align-items:center; z-index:9999; flex-direction:column; backdrop-filter: blur(5px); }
         .spinner { border: 4px solid var(--bg-card); border-top: 4px solid var(--primary); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom:20px;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -85,6 +87,9 @@
         .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; padding: 12px 24px; border-radius: 30px; z-index: 9999; font-weight: bold; box-shadow: 0 10px 25px rgba(0,0,0,0.3); font-size: 14px; opacity: 0; transition: opacity 0.3s, bottom 0.3s; pointer-events: none; }
         .toast.mostrar { opacity: 1; bottom: 40px; }
         .toast.error { background: var(--danger); }
+
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+        .modal-body { background: var(--bg-panel); width: 100%; max-width: 450px; border-radius: 12px; padding: 30px; border: 1px solid var(--border); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
@@ -93,6 +98,7 @@
     <script>
         const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzyWvEMlfCCQXGP0-ssUUQ2je4tsFPXd6Yu0C9WwsTa7sgqFkkz3jr0a8CXqrI9ydk/exec";
         let clientesCache = [];
+        let datosArchivoCrudo = [];
     </script>
 
     <!-- PANTALLA DE LOGIN ADMIN -->
@@ -114,14 +120,34 @@
         </div>
     </div>
 
-    <!-- OVERLAY DE CARGA -->
     <div id="loading-overlay" class="oculto">
         <div class="spinner"></div>
         <strong id="loading-text" style="color:white; font-size:18px; letter-spacing: 1px;">Procesando...</strong>
     </div>
 
-    <!-- TOAST NOTIFICACIONES -->
     <div id="toast-msg" class="toast">Mensaje</div>
+
+    <!-- MODAL EDICIÓN CLIENTE -->
+    <div id="modal-editar" class="modal oculto">
+        <div class="modal-body">
+            <h3 style="margin-top:0; color:var(--primary); font-size:20px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">✏️ Editar Información de Cliente</h3>
+            <input type="hidden" id="edit-old-usu">
+            
+            <div class="form-grupo" style="margin-top: 20px;">
+                <label>Nuevo Usuario Master</label>
+                <input type="text" id="edit-new-usu" class="form-control" autocapitalize="none">
+            </div>
+            <div class="form-grupo">
+                <label>Nuevo Nombre Hacienda</label>
+                <input type="text" id="edit-new-hac" class="form-control">
+            </div>
+            
+            <div style="display:flex; gap:15px; margin-top:30px;">
+                <button class="btn" style="flex:1; background:var(--bg-card); color:var(--text-main);" onclick="document.getElementById('modal-editar').classList.add('oculto')">Cancelar</button>
+                <button class="btn btn-success" style="flex:1;" onclick="guardarEdicion()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
 
     <!-- SIDEBAR -->
     <div id="sidebar" class="oculto">
@@ -134,7 +160,7 @@
         </div>
         <ul class="sidebar-nav">
             <li class="activo" onclick="cambiarVista('v-nuevo', this)"><span>🚀</span> Alta de Clientes</li>
-            <li onclick="cambiarVista('v-licencias', this); cargarClientes();"><span>🔑</span> Licencias Activas</li>
+            <li onclick="cambiarVista('v-licencias', this); cargarClientes();"><span>🔑</span> Gestión de Accesos</li>
             <li onclick="cambiarVista('v-masiva', this); cargarClientesMasiva();"><span>📦</span> Importación Masiva</li>
             <li onclick="cerrarSesion()" style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px; color: var(--danger);"><span>🚪</span> Cerrar Sesión</li>
         </ul>
@@ -154,7 +180,7 @@
         <!-- VISTA: NUEVO CLIENTE -->
         <div id="v-nuevo" class="vista">
             <h2 class="titulo-seccion">🚀 Alta de Nueva Hacienda (SaaS)</h2>
-            <div class="tarjeta" style="max-width: 700px;">
+            <div class="tarjeta" style="max-width: 800px;">
                 <p style="color:var(--text-muted); margin-top:0; margin-bottom: 25px; line-height: 1.6;">Al registrar un cliente nuevo, el sistema generará de forma automática su propia base de datos (Google Sheet) aislada y lo enlazará a estas credenciales.</p>
                 
                 <div class="grid-2">
@@ -179,17 +205,17 @@
                     </div>
                 </div>
 
-                <button class="btn btn-success" style="width:100%; margin-top:15px; padding: 15px;" onclick="crearCliente()">⚡ Crear Cliente y Desplegar Base de Datos</button>
+                <button class="btn btn-success" style="margin-top:15px; padding: 15px;" onclick="crearCliente()">⚡ Crear Cliente y Desplegar Base de Datos</button>
             </div>
         </div>
 
         <!-- VISTA: GESTIÓN DE LICENCIAS -->
         <div id="v-licencias" class="vista oculto">
-            <h2 class="titulo-seccion">🔑 Control de Accesos y Licencias</h2>
+            <h2 class="titulo-seccion">🔑 Control y Gestión de Suscripciones</h2>
             <div class="tarjeta">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <p style="margin:0; color:var(--text-muted); font-size:13px;">Gestión de fechas de corte y contraseñas para clientes activos.</p>
-                    <button class="btn" style="font-size:11px; padding: 8px 15px; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border);" onclick="cargarClientes()">🔄 Sincronizar</button>
+                    <p style="margin:0; color:var(--text-muted); font-size:13px;">Gestión de fechas de corte, contraseñas y datos del cliente.</p>
+                    <button class="btn" style="font-size:12px; padding: 10px 20px; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border);" onclick="cargarClientes()">🔄 Sincronizar Base</button>
                 </div>
                 
                 <div style="overflow-x: auto;">
@@ -200,11 +226,11 @@
                                 <th>Nombre Hacienda</th>
                                 <th>Vencimiento Actual</th>
                                 <th>ID Base de Datos (Drive)</th>
-                                <th>Acción</th>
+                                <th>Acciones Administrativas</th>
                             </tr>
                         </thead>
                         <tbody id="tb-clientes">
-                            <tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding: 30px;">Haz clic en "Sincronizar" para obtener la lista desde el servidor.</td></tr>
+                            <tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding: 30px;">Haz clic en "Sincronizar Base" para obtener la lista desde el servidor.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -213,7 +239,7 @@
 
         <!-- VISTA: CARGA MASIVA -->
         <div id="v-masiva" class="vista oculto">
-            <h2 class="titulo-seccion">📦 Importación Masiva de Inventario</h2>
+            <h2 class="titulo-seccion">📦 Importación Universal de Inventario</h2>
             <div class="grid-2">
                 <div class="tarjeta">
                     <h3 style="margin-top:0; font-size:16px; color: var(--primary);">1. Configuración de Destino</h3>
@@ -224,29 +250,34 @@
                         </select>
                     </div>
                     
-                    <h3 style="margin-top:30px; font-size:16px; color: var(--primary);">2. Cargar Archivo CSV</h3>
-                    <p style="font-size:12px; color:var(--text-muted); line-height: 1.5;">Selecciona el archivo exportado en Excel guardado como <strong>CSV (delimitado por comas)</strong>.</p>
+                    <h3 style="margin-top:30px; font-size:16px; color: var(--primary);">2. Cargar Archivo de Inventario</h3>
+                    <p style="font-size:12px; color:var(--text-muted); line-height: 1.5;">Selecciona cualquier archivo <strong>Excel (.xlsx, .xls) o CSV</strong>. El sistema leerá automáticamente los encabezados.</p>
                     <div class="form-grupo">
-                        <input type="file" id="archivo-csv" class="form-control" accept=".csv" style="padding:10px; background: var(--bg-card);">
+                        <input type="file" id="archivo-excel" class="form-control" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style="padding:10px; background: var(--bg-card);">
                     </div>
                     
-                    <button class="btn btn-success" style="width:100%; margin-top:15px; padding: 15px;" onclick="procesarCSV()">📤 Subir Inventario al Sistema</button>
+                    <button class="btn btn-warning" style="width:100%; margin-top:15px; padding: 15px;" onclick="leerArchivoInteligente()">📄 Analizar y Leer Archivo</button>
                 </div>
                 
-                <div class="tarjeta" style="border-color: var(--primary); background: rgba(139, 92, 246, 0.05);">
-                    <h3 style="margin-top:0; font-size:16px; color:var(--primary);">⚠️ Formato Estricto Requerido</h3>
-                    <p style="font-size:13px; color:var(--text-main); line-height: 1.6;">El archivo CSV debe contener exactamente <strong>3 columnas</strong> en el siguiente orden, incluyendo la fila de encabezados:</p>
+                <!-- PANEL DE MAPEO DINÁMICO -->
+                <div id="panel-mapeo" class="tarjeta oculto" style="border-color: var(--success); background: rgba(16, 185, 129, 0.05);">
+                    <h3 style="margin-top:0; color:var(--success); display: flex; align-items: center; gap: 8px;">✅ Archivo Escaneado Correctamente</h3>
+                    <p style="font-size: 13px; color: var(--text-main); margin-bottom: 20px;">Asocia las columnas que encontró el sistema con los datos de Taurus.</p>
                     
-                    <pre style="background:var(--bg-base); padding:20px; border-radius:8px; font-size:13px; border:1px solid var(--border); overflow-x:auto; color: var(--success); font-weight: bold; margin: 15px 0;">Caravana,Categoria,Lote
-1001,Vaca,Hacienda General
-1002,Ternero,Destete
-1003,Toro,Reproductores</pre>
-                    
-                    <ul style="font-size: 12px; color: var(--text-muted); line-height: 1.8; padding-left: 20px;">
-                        <li>Se admiten separadores de coma (,) o punto y coma (;).</li>
-                        <li>La fecha de ingreso se registrará como el día de hoy automáticamente.</li>
-                        <li>Se inyectarán como <em>Actualización de Datos</em> en el historial de la vaca.</li>
-                    </ul>
+                    <div class="form-grupo">
+                        <label>¿Qué columna tiene la CARAVANA (RP)? *</label>
+                        <select id="map-caravana" class="form-control" style="border-color: var(--primary);"></select>
+                    </div>
+                    <div class="form-grupo">
+                        <label>¿Qué columna tiene la CATEGORÍA? (Opcional)</label>
+                        <select id="map-categoria" class="form-control"></select>
+                    </div>
+                    <div class="form-grupo">
+                        <label>¿Qué columna tiene el LOTE? (Opcional)</label>
+                        <select id="map-lote" class="form-control"></select>
+                    </div>
+
+                    <button class="btn btn-success" style="width:100%; margin-top:20px; padding: 15px;" onclick="procesarMapeoEInyectar()">📤 Procesar e Inyectar Datos</button>
                 </div>
             </div>
         </div>
@@ -259,7 +290,6 @@
         // ==========================================
         function ingresarAdmin() {
             const pass = document.getElementById('admin-pass').value;
-            // CONTRASEÑA MAESTRA PARA INGRESAR AL PANEL
             if(pass === "master2026") { 
                 document.getElementById('pantalla-login').classList.add('oculto');
                 document.getElementById('sidebar').classList.remove('oculto');
@@ -335,7 +365,7 @@
                 document.getElementById('n-pass').value = '';
                 document.getElementById('n-venc').value = '';
                 document.getElementById('n-hacienda').value = '';
-                clientesCache = []; // Forzar recarga de tabla
+                clientesCache = []; 
             })
             .catch(() => { 
                 toggleLoading(false); 
@@ -344,7 +374,7 @@
         }
 
         // ==========================================
-        // GESTIÓN DE LICENCIAS Y CONTRASEÑAS
+        // GESTIÓN DE LICENCIAS (EDIT, DELETE, PASS)
         // ==========================================
         function cargarClientes() {
             toggleLoading(true, "Sincronizando clientes desde el Master...");
@@ -382,8 +412,10 @@
                         </td>
                         <td style="font-size:11px; color:var(--text-muted); font-family:monospace;">${c.idPlanilla || 'Falta ID'}</td>
                         <td style="display: flex; gap: 8px;">
-                            <button class="btn btn-warning" onclick="actualizarVencimiento('${c.usuario}')">💾 Guardar</button>
-                            <button class="btn" style="padding: 8px 15px; font-size: 11px; background: #64748b;" onclick="cambiarClaveCliente('${c.usuario}')">🔑 Clave</button>
+                            <button class="btn btn-success" style="padding: 8px 15px; font-size: 11px;" onclick="actualizarVencimiento('${c.usuario}')">💾 Venc</button>
+                            <button class="btn" style="padding: 8px 15px; font-size: 11px; background: #475569;" onclick="cambiarClaveCliente('${c.usuario}')">🔑 Pass</button>
+                            <button class="btn" style="padding: 8px 15px; font-size: 11px; background: #2563eb;" onclick="abrirEdicion('${c.usuario}', '${c.hacienda}')">✏️ Editar</button>
+                            <button class="btn btn-danger" onclick="borrarCliente('${c.usuario}')">🗑️ Borrar</button>
                         </td>
                     </tr>
                 `;
@@ -404,41 +436,48 @@
             .then(() => {
                 toggleLoading(false);
                 mostrarToast("✅ Licencia actualizada");
-            }).catch(() => { 
-                toggleLoading(false); 
-                mostrarToast("❌ Error al actualizar", true); 
-            });
+            }).catch(() => { toggleLoading(false); mostrarToast("❌ Error al actualizar", true); });
         }
 
         function cambiarClaveCliente(usu) {
             const nuevaClave = prompt(`Ingrese la nueva contraseña de acceso para el cliente "${usu.toUpperCase()}":\n(Mínimo 4 caracteres)`);
-            
-            if(nuevaClave === null || nuevaClave.trim() === "") return; // Cancela si está vacío
-            
-            if(nuevaClave.trim().length < 4) {
-                mostrarToast("⚠️ La contraseña debe tener al menos 4 caracteres", true);
-                return;
-            }
+            if(nuevaClave === null || nuevaClave.trim() === "") return; 
+            if(nuevaClave.trim().length < 4) return mostrarToast("⚠️ La contraseña debe tener al menos 4 caracteres", true);
             
             toggleLoading(true, `Actualizando clave de ${usu}...`);
-            
-            const fd = new URLSearchParams();
-            fd.append('accion', 'cambiar_pass');
-            fd.append('usuario', usu);
-            fd.append('nuevo_pass', nuevaClave.trim());
+            const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usu); fd.append('nuevo_pass', nuevaClave.trim());
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { toggleLoading(false); mostrarToast("✅ Contraseña actualizada correctamente"); }).catch(() => { toggleLoading(false); mostrarToast("❌ Error de red", true); });
+        }
 
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' })
-            .then(() => {
-                toggleLoading(false);
-                mostrarToast("✅ Contraseña actualizada correctamente");
-            }).catch(() => { 
-                toggleLoading(false); 
-                mostrarToast("❌ Error de red al actualizar la contraseña", true); 
-            });
+        function borrarCliente(usu) {
+            if(!confirm(`⚠️ ATENCIÓN PELIGRO ⚠️\n\n¿Estás seguro de que deseas ELIMINAR DEFINITIVAMENTE al cliente "${usu}"?\n\nEsto borrará también el acceso a todos los peones/operadores vinculados a su hacienda.`)) return;
+            
+            toggleLoading(true, "Eliminando registros del cliente...");
+            const fd = new URLSearchParams(); fd.append('accion', 'eliminar_cliente'); fd.append('target_usu', usu);
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { toggleLoading(false); mostrarToast("✅ Cliente Eliminado"); cargarClientes(); }).catch(() => { toggleLoading(false); mostrarToast("❌ Error de red", true); });
+        }
+
+        function abrirEdicion(usu, hac) {
+            document.getElementById('edit-old-usu').value = usu;
+            document.getElementById('edit-new-usu').value = usu;
+            document.getElementById('edit-new-hac').value = hac;
+            document.getElementById('modal-editar').classList.remove('oculto');
+        }
+
+        function guardarEdicion() {
+            const oldUsu = document.getElementById('edit-old-usu').value;
+            const newUsu = document.getElementById('edit-new-usu').value.trim();
+            const newHac = document.getElementById('edit-new-hac').value.trim();
+            
+            if(!newUsu || !newHac) return mostrarToast("⚠️ Los campos no pueden estar vacíos", true);
+            
+            toggleLoading(true, "Guardando cambios y actualizando operadores en cascada...");
+            const fd = new URLSearchParams(); fd.append('accion', 'editar_cliente'); fd.append('old_usu', oldUsu); fd.append('new_usu', newUsu); fd.append('new_hac', newHac);
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { toggleLoading(false); document.getElementById('modal-editar').classList.add('oculto'); mostrarToast("✅ Información Editada Correctamente"); cargarClientes(); }).catch(() => { toggleLoading(false); mostrarToast("❌ Error al editar", true); });
         }
 
         // ==========================================
-        // CARGA MASIVA DE INVENTARIO
+        // IMPORTACIÓN INTELIGENTE CON SHEETJS
         // ==========================================
         function cargarClientesMasiva() {
             if(clientesCache.length === 0) cargarClientes();
@@ -449,75 +488,90 @@
             const sel = document.getElementById('sel-cliente-masiva');
             sel.innerHTML = '<option value="">-- Elija la hacienda destino --</option>';
             clientesCache.forEach(c => {
-                if(c.idPlanilla) {
-                    sel.innerHTML += `<option value="${c.idPlanilla}">${c.hacienda} (${c.usuario})</option>`;
-                }
+                if(c.idPlanilla) sel.innerHTML += `<option value="${c.idPlanilla}">${c.hacienda} (${c.usuario})</option>`;
             });
         }
 
-        function procesarCSV() {
+        function leerArchivoInteligente() {
             const idPlanilla = document.getElementById('sel-cliente-masiva').value;
-            const fileInput = document.getElementById('archivo-csv');
+            const fileInput = document.getElementById('archivo-excel');
             
             if(!idPlanilla) return mostrarToast("⚠️ Seleccione un cliente destino", true);
-            if(!fileInput.files.length) return mostrarToast("⚠️ Adjunte un archivo CSV", true);
+            if(!fileInput.files.length) return mostrarToast("⚠️ Adjunte un archivo Excel o CSV", true);
             
+            toggleLoading(true, "Leyendo estructura del documento...");
             const file = fileInput.files[0];
             const reader = new FileReader();
-            
+
             reader.onload = function(e) {
-                const text = e.target.result;
-                const rows = text.split('\n');
-                let datosEnJSON = [];
-                const fechaHoy = new Date().toISOString();
-                
-                // Saltar encabezado (i=1)
-                for(let i = 1; i < rows.length; i++) {
-                    let row = rows[i].trim();
-                    if(!row) continue;
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
                     
-                    // Manejar coma o punto y coma
-                    let cols = row.split(/,|;/);
-                    if(cols.length >= 3) {
-                        datosEnJSON.push({
-                            fecha: fechaHoy,
-                            caravana: cols[0].trim(),
-                            categoria: cols[1].trim(),
-                            lote: cols[2].trim()
-                        });
-                    }
-                }
-                
-                if(datosEnJSON.length === 0) {
-                    mostrarToast("❌ Archivo vacío o formato incorrecto", true);
-                    return;
-                }
-                
-                if(confirm(`Se prepararon ${datosEnJSON.length} animales para importar.\n¿Proceder con la inyección a la base de datos del cliente?`)) {
-                    enviarCargaMasiva(idPlanilla, datosEnJSON);
+                    const jsonCrudo = XLSX.utils.sheet_to_json(worksheet, {defval: ""}); 
+                    
+                    if(jsonCrudo.length === 0) throw new Error("El archivo está vacío o no tiene encabezados reconocibles.");
+
+                    datosArchivoCrudo = jsonCrudo; 
+                    const headers = Object.keys(jsonCrudo[0]);
+                    
+                    llenarSelectMapeo('map-caravana', headers, false);
+                    llenarSelectMapeo('map-categoria', headers, true);
+                    llenarSelectMapeo('map-lote', headers, true);
+
+                    document.getElementById('panel-mapeo').classList.remove('oculto');
+                    toggleLoading(false);
+                    mostrarToast("✅ Archivo escaneado correctamente");
+
+                } catch (err) {
+                    toggleLoading(false);
+                    mostrarToast("❌ Error al leer el archivo. Revisa que tenga encabezados.", true);
+                    console.error(err);
                 }
             };
-            
-            reader.readAsText(file);
+            reader.readAsArrayBuffer(file);
         }
 
-        function enviarCargaMasiva(idPlanilla, dataArray) {
-            toggleLoading(true, "Inyectando bloques de datos. Por favor espere...");
-            
-            const fd = new URLSearchParams();
-            fd.append('accion', 'carga_masiva');
-            fd.append('id_planilla', idPlanilla);
-            fd.append('datos', JSON.stringify(dataArray));
+        function llenarSelectMapeo(idSelect, headers, esOpcional = false) {
+            const sel = document.getElementById(idSelect);
+            sel.innerHTML = esOpcional ? '<option value="">-- Dejar en blanco (Asignar "-") --</option>' : '<option value="">-- Seleccione la columna --</option>';
+            headers.forEach(h => { sel.innerHTML += `<option value="${h}">${h}</option>`; });
+        }
 
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' })
-            .then(() => {
-                toggleLoading(false);
-                mostrarToast("✅ Importación masiva completada con éxito");
-                document.getElementById('archivo-csv').value = '';
-            }).catch(() => { 
-                toggleLoading(false); 
-                mostrarToast("❌ Ocurrió un error en la inyección de datos", true); 
+        function procesarMapeoEInyectar() {
+            const colCaravana = document.getElementById('map-caravana').value;
+            const colCat = document.getElementById('map-categoria').value;
+            const colLote = document.getElementById('map-lote').value;
+            const idPlanilla = document.getElementById('sel-cliente-masiva').value;
+
+            if(!colCaravana) return mostrarToast("⚠️ Debes indicar cuál es la columna de la Caravana", true);
+
+            const fechaHoy = new Date().toISOString();
+            let datosAInyectar = [];
+
+            datosArchivoCrudo.forEach(fila => {
+                let valorCaravana = fila[colCaravana];
+                if(valorCaravana !== undefined && String(valorCaravana).trim() !== "") {
+                    let valCat = colCat && fila[colCat] ? String(fila[colCat]).trim() : "-";
+                    let valLote = colLote && fila[colLote] ? String(fila[colLote]).trim() : "Hacienda General";
+                    datosAInyectar.push({ fecha: fechaHoy, caravana: String(valorCaravana).trim(), categoria: valCat, lote: valLote });
+                }
             });
+
+            if(datosAInyectar.length === 0) return mostrarToast("❌ No se encontraron datos válidos en la columna elegida", true);
+
+            if(confirm(`Se procesaron ${datosAInyectar.length} animales válidos.\n¿Proceder a inyectar en la base de datos del cliente?`)) {
+                document.getElementById('panel-mapeo').classList.add('oculto');
+                enviarCargaMasivaAAppsScript(idPlanilla, datosAInyectar);
+            }
+        }
+
+        function enviarCargaMasivaAAppsScript(idPlanilla, dataArray) {
+            toggleLoading(true, "Inyectando bloques de datos masivos. Por favor espere...");
+            const fd = new URLSearchParams(); fd.append('accion', 'carga_masiva'); fd.append('id_planilla', idPlanilla); fd.append('datos', JSON.stringify(dataArray));
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { toggleLoading(false); mostrarToast("✅ Importación masiva completada con éxito"); document.getElementById('archivo-excel').value = ''; datosArchivoCrudo = []; }).catch(() => { toggleLoading(false); mostrarToast("❌ Ocurrió un error en la inyección de datos", true); });
         }
     </script>
 </body>
