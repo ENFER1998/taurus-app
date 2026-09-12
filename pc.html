@@ -328,10 +328,7 @@
                         <div><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;">REGISTROS LISTADOS</span><strong style="font-size:22px;" id="inf-total">0</strong></div>
                         <div><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;">PREÑADAS CONF.</span><strong style="font-size:22px; color:var(--success);" id="inf-prenadas">0</strong></div>
                     </div>
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn-outline" style="padding:10px 15px; border-color:#0f766e; color:#0f766e;" onclick="generarGuiaSenacsa()">📜 Guía SENACSA</button>
-                        <button id="btn-print-magico" class="btn-primary" style="width:auto; padding:10px 25px; background:var(--primary);" onclick="ejecutarDescargaPDF()">🖨️ Descargar Informe PDF</button>
-                    </div>
+                    <button id="btn-print-magico" class="btn-primary" style="width:auto; padding:10px 25px; background:var(--primary);" onclick="ejecutarDescargaPDF()">🖨️ Descargar Informe PDF</button>
                 </div>
                 
                 <div style="overflow-y:auto; max-height: 50vh;">
@@ -987,100 +984,9 @@
             }
         }
 
-        function generarGuiaSenacsa() {
-            const btn = event.target;
-            const txtOrig = btn.innerText;
-            btn.innerText = "⏳ Emitiendo...";
-
-            const h_nom = document.getElementById('cfg-nom') ? document.getElementById('cfg-nom').value : (lsGet('tc_hacienda', {}).nombre || 'TAURUS CONTROL');
-            const h_log = lsGet('tc_hacienda', {}).logo || "";
-            
-            let htmlFilas = "";
-            let totalCabezas = 0;
-
-            const tbody = document.getElementById('tb-informe-masivo');
-            if (!tbody || document.getElementById('tabla-masiva').classList.contains('oculto')) {
-                alert("⚠️ Por favor, cambia a la vista 'INVENTARIO GENERAL' para emitir la guía de traslado.");
-                btn.innerText = txtOrig;
-                return;
-            }
-
-            const filas = tbody.querySelectorAll('tr');
-            filas.forEach(tr => {
-                let tds = tr.querySelectorAll('td');
-                if(tds.length >= 4) {
-                    totalCabezas++;
-                    let rp = tds[0].innerText.trim();
-                    let catLote = tds[1].innerText.trim().replace(/\n/g, ' - ');
-                    let peso = tds[2].innerText.trim();
-                    htmlFilas += `<tr style="page-break-inside: avoid;"><td style="border: 1px solid #000; padding: 6px; text-align:center; font-weight:bold;">${rp}</td><td style="border: 1px solid #000; padding: 6px;">${catLote}</td><td style="border: 1px solid #000; padding: 6px; text-align:center;">Bovino</td><td style="border: 1px solid #000; padding: 6px; text-align:center;">${peso !== "-" ? peso : ""}</td><td style="border: 1px solid #000; padding: 6px; text-align:center;">Al día</td></tr>`;
-                }
-            });
-
-            if(totalCabezas === 0) {
-                alert("No hay animales filtrados para incluir en la guía.");
-                btn.innerText = txtOrig;
-                return;
-            }
-
-            let htmlContent = `
-            <div style="background-color: #ffffff; padding: 20px; width: 750px; margin: 0 auto; font-family: Arial, sans-serif; color: #000;">
-                <div style="display: flex; justify-content: space-between; border-bottom: 3px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
-                    <div style="width:70%;">
-                        <h1 style="margin:0 0 5px 0; font-size:18px; text-transform:uppercase;">CERTIFICADO OFICIAL DE TRÁNSITO DE ANIMALES</h1>
-                        <h2 style="margin:0 0 10px 0; font-size:14px; color:#333;">MINISTERIO DE AGRICULTURA Y GANADERÍA - SENACSA</h2>
-                        <p style="margin:2px 0; font-size:12px;"><strong>Propietario / Establecimiento:</strong> ${h_nom}</p>
-                        <p style="margin:2px 0; font-size:12px;"><strong>Fecha de Emisión:</strong> ${new Date().toLocaleDateString()}</p>
-                        <p style="margin:2px 0; font-size:12px;"><strong>Total de Cabezas a Mover:</strong> ${totalCabezas}</p>
-                    </div>
-                    ${h_log ? `<div style="width:25%; text-align:right;"><img src="${h_log}" style="max-width:120px; max-height:80px; object-fit:contain;"></div>` : ''}
-                </div>
-
-                <h3 style="font-size:14px; background:#f1f5f9; padding:8px; border:1px solid #000; margin:0 0 10px 0;">DETALLE DE TROPA Y TRAZABILIDAD SANITARIA</h3>
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                    <thead>
-                        <tr>
-                            <th style="border: 1px solid #000; padding: 8px; background-color: #e2e8f0; width: 15%;">Nº RP / CHAPA</th>
-                            <th style="border: 1px solid #000; padding: 8px; background-color: #e2e8f0; width: 45%;">CATEGORÍA / LOTE</th>
-                            <th style="border: 1px solid #000; padding: 8px; background-color: #e2e8f0; width: 15%;">ESPECIE</th>
-                            <th style="border: 1px solid #000; padding: 8px; background-color: #e2e8f0; width: 10%;">PESO</th>
-                            <th style="border: 1px solid #000; padding: 8px; background-color: #e2e8f0; width: 15%;">VACUNACIÓN</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${htmlFilas}
-                    </tbody>
-                </table>
-
-                <div style="display:flex; justify-content:space-between; margin-top:60px; padding:0 30px;">
-                    <div style="text-align:center; width:200px;">
-                        <div style="border-top:1px solid #000; padding-top:5px; font-size:11px; font-weight:bold;">Firma Propietario / Remitente</div>
-                    </div>
-                    <div style="text-align:center; width:200px;">
-                        <div style="border-top:1px solid #000; padding-top:5px; font-size:11px; font-weight:bold;">Sello y Firma SENACSA</div>
-                    </div>
-                </div>
-            </div>`;
-
-            const optSenacsa = { 
-                margin: [15, 10, 15, 10], 
-                filename: `Guia_Traslado_SENACSA_${new Date().getTime()}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 }, 
-                html2canvas: { scale: 2, useCORS: true, letterRendering: true, windowWidth: 800 }, 
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' }
-            };
-
-            html2pdf().set(optSenacsa).from(htmlContent).save().then(() => { 
-                btn.innerText = txtOrig; 
-            }).catch(() => {
-                alert("Error al emitir el documento oficial.");
-                btn.innerText = txtOrig;
-            });
-        }
-
         function ejecutarDescargaPDF() {
             const btn = document.getElementById('btn-print-magico');
+            const textoOriginal = btn.innerText;
             btn.innerText = "⏳ Generando Archivo PDF...";
             
             const h_nom = document.getElementById('cfg-nom').value || 'TAURUS CONTROL';
@@ -1088,415 +994,151 @@
             const modo = document.getElementById('f-inf-modo').value;
             
             let htmlContent = `
-            <div style="background-color: #ffffff; padding: 20px; width: 750px; margin: 0 auto; box-sizing: border-box; font-family: Arial, sans-serif; color: #000000;">
-                <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #000000; padding-bottom: 15px; margin-bottom: 20px;">
-                    <div>
-                        <h2 style="margin:0 0 10px 0; font-size:24px; text-transform:uppercase;">${h_nom}</h2>`;
+            <div style="padding: 10px; font-family: Arial, sans-serif; color: #000; width: 100%; box-sizing: border-box;">
+                <style>
+                    table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 20px; }
+                    th, td { border: 1px solid #cbd5e1; padding: 6px; word-wrap: break-word; font-size: 11px; vertical-align: top; color: #000; }
+                    th { background-color: #f1f5f9; font-weight: bold; text-align: left; }
+                    tr { page-break-inside: avoid !important; }
+                </style>
+                <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
+                    <div style="width: 70%;">
+                        <h2 style="margin: 0 0 5px 0; font-size: 20px; text-transform: uppercase;">${h_nom}</h2>`;
             
             if(rpPrint !== "") {
-                const regs = obtenerHistorial(rpPrint); if(regs.length===0){alert("Sin registros."); btn.innerHTML = `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}`; return;}
+                const regs = obtenerHistorial(rpPrint); if(regs.length===0){alert("Sin registros."); btn.innerText = textoOriginal; return;}
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
                 const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor||"").split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=String(uP.detalles||"").split('|')[0]||"-"; } 
                 const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; lote=String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; } 
-                const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
-                const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
+                const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
                 const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nut = (uNut.valor || "") + " | " + (uNut.detalles || "");
                 const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "") + " | " + (uSan.detalles || "");
                 const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) ins = (uIns.valor || "") + " | " + (uIns.detalles || "");
 
-                htmlContent += `
-                        <p style="margin:0; font-size:14px;">Dossier Clínico Histórico - RP: <strong>${rpPrint.toUpperCase()}</strong></p>
-                        <p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p>
-                    </div>
-                    ${h_log?`<img src="${h_log}" style="max-width:150px; max-height:80px; object-fit:contain;">`:''}
-                </div>
-                
-                <h3 style="font-size:16px; margin: 0 0 10px 0;">Resumen del Perfil</h3>
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; word-wrap: break-word;">
-                    <tr style="page-break-inside: avoid;">
-                        <td style="border: 1px solid #000; padding: 6px;"><strong>Categoría:</strong> ${cat}</td>
-                        <td style="border: 1px solid #000; padding: 6px;"><strong>Lote:</strong> ${lote}</td>
-                        <td style="border: 1px solid #000; padding: 6px;"><strong>Carimbo:</strong> ${carimbo}</td>
-                    </tr>
-                    <tr style="page-break-inside: avoid;">
-                        <td style="border: 1px solid #000; padding: 6px;"><strong>Raza:</strong> ${raza}</td>
-                        <td style="border: 1px solid #000; padding: 6px;"><strong>Edad:</strong> ${edad}</td>
-                        <td style="border: 1px solid #000; padding: 6px;"><strong>Último Peso:</strong> ${peso}</td>
-                    </tr>
-                    <tr style="page-break-inside: avoid;">
-                        <td style="border: 1px solid #000; padding: 6px;"><strong>Dx Actual:</strong> ${dx}</td>
-                        <td style="border: 1px solid #000; padding: 6px;"><strong>Genealogía:</strong> ${pa} / ${ma}</td>
-                        <td style="border: 1px solid #000; padding: 6px;"><strong>Régimen:</strong> ${nut}</td>
-                    </tr>
-                    <tr style="page-break-inside: avoid;">
-                        <td style="border: 1px solid #000; padding: 6px;"><strong>Últ. Sanidad:</strong> ${san}</td>
-                        <td style="border: 1px solid #000; padding: 6px;" colspan="2"><strong>Últ. Inseminación:</strong> ${ins}</td>
-                    </tr>
-                </table>
-                
-                <h3 style="font-size:16px; margin: 20px 0 10px 0;">Trazabilidad Histórica de Sucesos</h3>
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; word-wrap: break-word;">
-                    <thead>
+                htmlContent += `<p style="margin:0; font-size:13px;">Dossier Clínico Histórico - RP: <strong>${rpPrint.toUpperCase()}</strong></p><p style="margin:3px 0 0 0; font-size:12px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${(h_log && h_log.startsWith('data:image')) ? `<div style="width: 25%; text-align: right;"><img src="${h_log}" style="max-width:120px; max-height:60px; object-fit: contain;"></div>` : ''}</div>
+                    <h3 style="font-size:14px; margin: 0 0 10px 0;">Resumen del Perfil</h3>
+                    <table>
                         <tr>
-                            <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 12%;">Fecha</th>
-                            <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 25%;">Procedimiento</th>
-                            <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 25%;">Valor Principal</th>
-                            <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 38%;">Observaciones Adicionales</th>
+                            <td style="width:33.3%;"><strong>Categoría:</strong> ${cat}</td>
+                            <td style="width:33.3%;"><strong>Lote:</strong> ${lote}</td>
+                            <td style="width:33.3%;"><strong>Carimbo:</strong> ${carimbo}</td>
                         </tr>
-                    </thead>
-                    <tbody>`;
-                
-                let rows = document.getElementById('tb-informe-individual').querySelectorAll('tr');
-                rows.forEach(tr => {
-                    htmlContent += `<tr style="page-break-inside: avoid;">`;
-                    tr.querySelectorAll('td').forEach(td => { htmlContent += `<td style="border: 1px solid #000; padding: 6px;">${td.innerHTML}</td>`; });
-                    htmlContent += `</tr>`;
-                });
-                
-                htmlContent += `</tbody></table>`;
+                        <tr>
+                            <td><strong>Raza:</strong> ${raza}</td>
+                            <td><strong>Edad:</strong> ${edad}</td>
+                            <td><strong>Último Peso:</strong> ${peso}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Dx Actual:</strong> ${dx}</td>
+                            <td><strong>Genealogía:</strong> ${pa} / ${ma}</td>
+                            <td><strong>Régimen:</strong> ${nut}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Últ. Sanidad:</strong> ${san}</td>
+                            <td colspan="2"><strong>Últ. Inseminación:</strong> ${ins}</td>
+                        </tr>
+                    </table>
+                    
+                    <h3 style="font-size:14px; margin: 15px 0 10px 0;">Trazabilidad Histórica de Sucesos</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">Fecha</th>
+                                <th style="width: 25%;">Procedimiento</th>
+                                <th style="width: 25%;">Valor Principal</th>
+                                <th style="width: 35%;">Observaciones Adicionales</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                let rows = document.getElementById('tb-informe-individual').querySelectorAll('tr'); 
+                rows.forEach(tr => { htmlContent += `<tr>`; tr.querySelectorAll('td').forEach(td => { htmlContent += `<td>${td.innerHTML}</td>`; }); htmlContent += `</tr>`; });
+                htmlContent += `</tbody></table></div>`;
             } else {
                 const titulo = modo === 'inventario' ? "Reporte Analítico de Inventario General" : "Reporte Analítico de Trabajos y Procedimientos";
-                htmlContent += `
-                        <p style="margin:0; font-size:14px;">${titulo}</p>
-                        <p style="margin:5px 0 0 0; font-size:14px;">Emitido: ${new Date().toLocaleDateString()}</p>
-                    </div>
-                    ${h_log?`<img src="${h_log}" style="max-width:150px; max-height:80px; object-fit:contain;">`:''}
-                </div>
                 
-                <table style="width: 50%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px;">
-                    <tr style="page-break-inside: avoid;">
-                        <td style="border: 1px solid #000; padding: 6px;"><strong>Total Registros Listados:</strong> ${document.getElementById('inf-total').innerText}</td>
-                        <td style="border: 1px solid #000; padding: 6px;"><strong>Total Preñadas Global:</strong> ${document.getElementById('inf-prenadas').innerText}</td>
-                    </tr>
-                </table>
-                
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; word-wrap: break-word;">
-                    <thead>`;
+                htmlContent += `<p style="margin:0; font-size:13px;">${titulo}</p><p style="margin:3px 0 0 0; font-size:12px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${(h_log && h_log.startsWith('data:image')) ? `<div style="width: 25%; text-align: right;"><img src="${h_log}" style="max-width:120px; max-height:60px; object-fit: contain;"></div>` : ''}</div>
+                    
+                    <table style="margin-bottom: 15px; width: 50%;">
+                        <tr>
+                            <td style="width: 50%;"><strong>Total Registros Listados:</strong> ${document.getElementById('inf-total').innerText}</td>
+                            <td style="width: 50%;"><strong>Total Preñadas Global:</strong> ${document.getElementById('inf-prenadas').innerText}</td>
+                        </tr>
+                    </table>
+                    <table><thead>`;
                         
                 if(modo === 'inventario') {
                     htmlContent += `<tr>
-                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 15%;">Caravana</th>
-                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 45%;">Categoría y Ubicación</th>
-                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 15%;">Último Peso</th>
-                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 25%;">Diagnóstico Actual</th>
+                        <th style="width: 15%;">Caravana</th>
+                        <th style="width: 40%;">Categoría y Ubicación</th>
+                        <th style="width: 15%;">Último Peso</th>
+                        <th style="width: 30%;">Diagnóstico Actual</th>
                     </tr></thead><tbody>`;
-                        
-                    let rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr');
-                    rows.forEach(tr => {
-                        htmlContent += `<tr style="page-break-inside: avoid;">`;
-                        let tds = tr.querySelectorAll('td');
-                        if (tds.length >= 4) {
-                            htmlContent += `<td style="border: 1px solid #000; padding: 6px; text-align:center;"><b>${tds[0].innerHTML}</b></td>`;
-                            htmlContent += `<td style="border: 1px solid #000; padding: 6px;">${tds[1].innerHTML}</td>`;
-                            htmlContent += `<td style="border: 1px solid #000; padding: 6px; text-align:center;">${tds[2].innerHTML}</td>`;
-                            htmlContent += `<td style="border: 1px solid #000; padding: 6px; text-align:center;">${tds[3].innerHTML}</td>`;
-                        }
-                        htmlContent += `</tr>`;
+                    let rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr'); 
+                    rows.forEach(tr => { 
+                        htmlContent += `<tr>`; 
+                        let tds = tr.querySelectorAll('td'); 
+                        if (tds.length >= 4) { htmlContent += `<td style="text-align:center;"><b>${tds[0].innerHTML}</b></td><td>${tds[1].innerHTML}</td><td style="text-align:center;">${tds[2].innerHTML}</td><td style="text-align:center;">${tds[3].innerHTML}</td>`; } 
+                        htmlContent += `</tr>`; 
                     });
                 } else {
                     htmlContent += `<tr>
-                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 10%;">Fecha</th>
-                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 12%;">Caravana</th>
-                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 23%;">Trabajo Realizado</th>
-                        <th style="border: 1px solid #000; padding: 6px; background-color: #f1f5f9; width: 55%;">Detalles Extras</th>
+                        <th style="width: 15%;">Fecha</th>
+                        <th style="width: 15%;">Caravana</th>
+                        <th style="width: 25%;">Trabajo Realizado</th>
+                        <th style="width: 45%;">Detalles Extras</th>
                     </tr></thead><tbody>`;
-                    
-                    let rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr');
-                    rows.forEach(tr => {
-                        htmlContent += `<tr style="page-break-inside: avoid;">`;
-                        let tds = tr.querySelectorAll('td');
-                        if(tds.length >= 4) {
-                            htmlContent += `<td style="border: 1px solid #000; padding: 6px; text-align:center;">${tds[0].innerHTML}</td>`;
-                            htmlContent += `<td style="border: 1px solid #000; padding: 6px; text-align:center;"><b>${tds[1].innerText}</b></td>`;
-                            htmlContent += `<td style="border: 1px solid #000; padding: 6px; text-align:center;">${tds[2].innerText}</td>`;
-                            htmlContent += `<td style="border: 1px solid #000; padding: 6px;">${tds[3].innerHTML}</td>`;
-                        }
-                        htmlContent += `</tr>`;
+                    let rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr'); 
+                    rows.forEach(tr => { 
+                        htmlContent += `<tr>`; 
+                        let tds = tr.querySelectorAll('td'); 
+                        if(tds.length >= 4) { htmlContent += `<td style="text-align:center;">${tds[0].innerHTML}</td><td style="text-align:center;"><b>${tds[1].innerText}</b></td><td style="text-align:center;">${tds[2].innerText}</td><td>${tds[3].innerHTML}</td>`; } 
+                        htmlContent += `</tr>`; 
                     });
                 }
                 
-                htmlContent += `</tbody></table>`;
+                htmlContent += `</tbody></table></div>`;
             }
-            
-            htmlContent += `</div>`;
             
             const opt = { 
-                margin: [15, 10, 15, 10], 
+                margin: 10, 
                 filename: rpPrint !== "" ? `Dossier_RP_${rpPrint.toUpperCase()}.pdf` : 'Reporte_General.pdf',
                 image: { type: 'jpeg', quality: 0.98 }, 
-                html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollY: 0, windowWidth: 800 }, 
+                html2canvas: { scale: 2, useCORS: true, letterRendering: true }, 
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', 'h3', 'h2', 'img'] }
+                pagebreak: { mode: ['css', 'legacy'] }
             };
-            
-            html2pdf().set(opt).from(htmlContent).save().then(()=>{ 
-                btn.innerHTML = rpPrint !== "" ? `🖨️ Descargar Dossier de RP: ${rpPrint.toUpperCase()}` : "🖨️ Descargar Informe PDF"; 
-            }).catch(e => {
-                alert("Hubo un error generando el PDF.");
-                btn.innerHTML = "🖨️ Reintentar Descarga";
+
+            html2pdf().set(opt).from(htmlContent).toPdf().get('pdf').then(function(pdf) {
+                if (window.AndroidTaurus) { const base64 = pdf.output('datauristring'); window.AndroidTaurus.guardarPDF(base64, opt.filename); } else { pdf.save(opt.filename); }
+                btn.innerText = textoOriginal;
+            }).catch(e => { 
+                alert("Error al generar el documento.");
+                btn.innerText = textoOriginal; 
             });
         }
 
-        function procesarDatosDashboard() {
-            const datosActivos = obtenerRegistrosActivos();
-            
-            let aliasMap = {}; datosActivos.forEach(d => { if(d.accion === 'Cambio de Caravana') aliasMap[String(d.caravana)] = String(d.valor); });
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && !aliasMap[c]))];
-            
-            document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
-            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos').innerHTML = "<p style='color:var(--text-main);'>Inventario vacío.</p>"; return; }
-            
-            let g1={p:0,v:0}, g2={v:0,t:0,o:0}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}; let alertasHTML = "";
-            
-            datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; });
-            
-            unicas.forEach(car => {
-                const regs = obtenerHistorial(car); let cat = "", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                if(uC) { let v=String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : ""; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
-                cat = cat.toLowerCase(); const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
-                
-                if(uDx) { 
-                    if(String(uDx.valor||"").includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } } 
-                    if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--text-main);">${car}</strong> diagnosticada Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } } 
-                }
-                if(cat.includes('vaca') || cat.includes('vaquilla')) g2.v++; else if(cat.includes('terne') || cat.includes('desmamante')) g2.t++; else g2.o++; g3[lote] = (g3[lote] || 0) + 1;
-                if(uPeso) { if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--text-main);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; else g4.opt++; let pVal = parseFloat(uPeso.valor); if(!isNaN(pVal)) { if(cat.includes('vaca') || cat.includes('vaquilla')) { g9.vw += pVal; g9.vc++; } if(cat.includes('terne') || cat.includes('desmamante')) { g9.tw += pVal; g9.tc++; } } } 
-                if(uSan) g6.con++; else g6.sin++;
-            });
-            
-            const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
-            const prefs = lsGet('tc_prefs', ['1', '3']); let htmlGraficos = ""; const makeBar = (lbl, val, total, col) => { let p = total>0 ? Math.round((val/total)*100) : 0; return `<div class="barra-cat"><div class="barra-head"><span style="color:var(--text-main);">${lbl} (${val})</span><span style="color:var(--text-main);">${p}%</span></div><div class="barra-bg"><div class="barra-fill" style="background:${col}; width:${p}%;"></div></div></div>`; };
-            
-            prefs.forEach(g => {
-                let html = `<div>`;
-                if(g === '1') { let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Tasa de Preñez Dinámica</h4><div style="display:flex; gap:20px; align-items:center;"><div class="torta-container"><div class="torta" style="background: conic-gradient(var(--success) 0% ${pp}%, var(--danger) ${pp}% 100%);"></div><div class="torta-centro">${pp}%</div></div><div class="leyenda-torta"><div><span class="punto" style="background: var(--success);"></span> Preñadas (${g1.p})</div><div><span class="punto" style="background: var(--danger);"></span> Vacías (${g1.v})</div></div></div></div>`; } 
-                else if(g === '2') { let t = g2.v + g2.t + g2.o || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Composición de Hacienda</h4>${makeBar('Vacas/Vaquillas', g2.v, t, 'var(--primary)')}${makeBar('Terneros/as', g2.t, t, 'var(--warning)')}${makeBar('Toros/Otros', g2.o, t, '#8b5cf6')}</div>`; } 
-                else if(g === '3') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Distribución por Lotes</h4>`; let lKeys = Object.keys(g3).sort((a,b)=>g3[b]-g3[a]).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--primary)':i===1?'var(--warning)':'var(--success)'; html += makeBar(k, g3[k], unicas.length, col); }); html+=`</div>`;} 
-                else if(g === '4') { let t = g4.opt + g4.bp + g4.sp || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Condición Corporal</h4>${makeBar('Óptima', g4.opt, t, 'var(--success)')}${makeBar('Bajo Peso', g4.bp, t, 'var(--danger)')}${makeBar('Sobrepeso', g4.sp, t, 'var(--warning)')}</div>`; } 
-                else if(g === '5') { let t = g5.norm + g5.san || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Causas Vientre Vacío</h4>${makeBar('Normal', g5.norm, t, 'var(--warning)')}${makeBar('Sangre/Problema', g5.san, t, 'var(--danger)')}</div>`; } 
-                else if(g === '6') { let t = unicas.length; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Sanidad Global</h4>${makeBar('Con Registro', g6.con, t, 'var(--success)')}${makeBar('Sin Registros', g6.sin, t, '#64748b')}</div>`; } 
-                else if(g === '7') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Preñez por Lote</h4>`; let lKeys = Object.keys(g7).sort((a,b)=>g7[b].p-g7[a].p).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--success)':i===1?'var(--primary)':'var(--warning)'; html += makeBar(k, g7[k].p, g7[k].t, col); }); html+=`</div>`;} 
-                else if(g === '8') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Eficacia de Toros</h4>`; let lKeys = Object.keys(g8).sort((a,b)=>g8[b].p-g8[a].p).slice(0,3); if(lKeys.length===0) html += `<p style="color:var(--text-muted); font-size:12px;">Sin cruces.</p>`; lKeys.forEach((k, i) => { html += makeBar(k, g8[k].p, g8[k].t, '#be185d'); }); html+=`</div>`;} 
-                else if(g === '9') { let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Promedio de Pesos</h4><div class="grid-2"><div class="kpi-box" style="padding:10px;"><strong style="font-size:20px; color:var(--text-main);">${pv} Kg</strong><span>Vacas</span></div><div class="kpi-box" style="padding:10px;"><strong style="font-size:20px; color:var(--text-main);">${pt} Kg</strong><span>Terneros</span></div></div></div>`; } 
-                else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Volumen Clínico</h4>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Nutrición', g10.nut, t, '#84cc16')}${makeBar('Sanidad', g10.san, t, '#c2410c')}`; } 
-                htmlGraficos += html;
-            }); document.getElementById('contenedor-graficos').innerHTML = htmlGraficos;
+        function cargarDisenoDesdeDB() { const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; document.getElementById('nombre-estancia').value = hd.nombre || ''; if (hd.logo && hd.logo !== "sin-logo") { mostrarLogo(hd.logo); } }
+        
+        function cargarLogo(event) { 
+            const file = event.target.files[0]; if(!file) return; const reader = new FileReader(); 
+            reader.onload = function(e) { 
+                const img = new Image(); 
+                img.onload = function() { 
+                    const canvas = document.createElement('canvas'); let w = img.width, h = img.height; 
+                    const maxW = 500, maxH = 500;
+                    if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } 
+                    canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); 
+                    const base64 = canvas.toDataURL('image/png'); mostrarLogo(base64); 
+                }; img.src = e.target.result; 
+            }; reader.readAsDataURL(file); 
         }
-
-        function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.sidebar-nav li').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
-        function abrirModal(id) { document.getElementById(id).style.display = 'flex'; } function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
-        function cargarListaRegistro() { const datosActivos = obtenerRegistrosActivos(); let aliasMap = {}; datosActivos.forEach(d => { if(d.accion === 'Cambio de Caravana') aliasMap[String(d.caravana)] = String(d.valor); }); let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && !aliasMap[c]))]; const ul = document.getElementById('tb-registro'); ul.innerHTML = ""; unicas.forEach(car => { const regs = obtenerHistorial(car); let info = "-", dxText = "-", loteText = "-"; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { let vals = String(c.valor||"").split('|'); info = vals[0] ? vals[0].replace('Cat:','').trim() : info; loteText = (String(c.detalles||"").split('|')[0] ? String(c.detalles||"").split('|')[0].replace('Lote:','').trim() : ""); } else if(p) { info = String(p.detalles||"").split('|')[0] || "-"; } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = d.valor || "-"; ul.innerHTML += `<tr onclick="navegarDesdeLista('${car}')"><td style="color:var(--text-main);"><strong>${car}</strong></td><td style="color:var(--text-main);">${info}</td><td style="color:var(--text-main);">${loteText}</td><td style="color:var(--text-main);">${dxText}</td><td><button class="btn-outline">Abrir Ficha</button></td></tr>`; }); }
-        function filtrarLista(t) { const lis = document.getElementById('tb-registro').getElementsByTagName('tr'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "" : "none"; }
-        function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.sidebar-nav li')[1].click(); buscarCaravanaBtn(); }
-        function verificarLimiteGraficos(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { alert('Solo puede fijar 3 gráficas simultáneas.'); checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); lsSet('tc_prefs', prefs); if(dbCache.length > 0) procesarDatosDashboard(); } }
-        function guardarDisenoServidor() { const n = document.getElementById('cfg-nom').value.trim(); const f = document.getElementById('cfg-logo'); let p = (b64) => { const fd = new URLSearchParams(); fd.append('accion', 'guardar_diseno'); fd.append('maestro', maestroId); fd.append('nombre_hacienda', n); fd.append('logo_hacienda', b64); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_hacienda', {nombre: n, logo: b64}); aplicarDisenoEnPantalla(n, b64); alert("Membrete oficial de PDF actualizado."); }); }; if(f.files && f.files[0]) { const r = new FileReader(); r.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const maxW = 200, maxH = 200; if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); p(canvas.toDataURL('image/png')); }; img.src = e.target.result; }; r.readAsDataURL(f.files[0]); } else { const logoGuardado = lsGet('tc_hacienda', {}).logo || ""; p(logoGuardado); } }
-        function aplicarDisenoEnPantalla(nombre, logo) { document.getElementById('cfg-nom').value = nombre || ''; }
-
-        function crearOperador() { 
-            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
-            const u = document.getElementById('op-usu').value.trim(); 
-            const p = document.getElementById('op-pass').value.trim(); 
-            const rol = document.getElementById('op-rol').value;
-            if(!u || !p) { alert("Completar todos los datos."); return; } 
-            
-            const btn = document.getElementById('btn-crear-op');
-            const btnOriginal = btn.innerHTML;
-            btn.innerHTML = "⏳ Creando...";
-            btn.disabled = true;
-
-            const fd = new URLSearchParams(); 
-            fd.append('accion', 'crear_peon'); 
-            fd.append('maestro', maestroId); 
-            fd.append('usuario', usActivo); 
-            fd.append('peon_usu', u); 
-            fd.append('peon_pass', p); 
-            fd.append('vencimiento', 'Heredado');
-            fd.append('peon_rol', rol);
-            
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
-                const objEvt = { fecha: new Date().toISOString(), accion: 'Alta Operador', caravana: '---', valor: u, detalles: `Rol: ${rol} | Op: ${usActivo}`, maestro: maestroId };
-                dbCache.unshift(objEvt);
-                lsSet('tc_db', dbCache);
-                
-                const fd2 = new URLSearchParams();
-                for(let key in objEvt) fd2.append(key, objEvt[key]);
-                fd2.append('usuario', usActivo);
-                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd2, mode: 'no-cors' });
-
-                document.getElementById('op-usu').value = ''; 
-                document.getElementById('op-pass').value = ''; 
-                
-                btn.innerHTML = btnOriginal;
-                btn.disabled = false;
-                
-                cargarListaOperadores(); 
-                alert("Usuario Registrado. Ya está disponible en la red.");
-                setTimeout(() => { sincronizarFondo(false); }, 1500);
-            }).catch(() => {
-                btn.innerHTML = btnOriginal;
-                btn.disabled = false;
-            }); 
+        
+        function mostrarLogo(base64) { document.getElementById('img-logo').src = base64; document.getElementById('img-logo').style.display = 'block'; document.getElementById('texto-subir-logo').style.display = 'none'; }
+        function guardarDisenoInforme() {
+            const n = document.getElementById('cfg-nom').value.trim() || "Sin Nombre"; const f = document.getElementById('cfg-logo');
+            let p = (b64) => { const fd = new URLSearchParams(); fd.append('accion', 'guardar_diseno'); fd.append('maestro', maestroId); fd.append('nombre_hacienda', n); fd.append('logo_hacienda', b64); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_hacienda', {nombre: n, logo: b64}); aplicarDisenoEnPantalla(n, b64); alert("Membrete oficial de PDF actualizado."); }); };
+            if(f.files && f.files[0]) { const r = new FileReader(); r.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const maxW = 500, maxH = 500; if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); p(canvas.toDataURL('image/png')); }; img.src = e.target.result; }; r.readAsDataURL(f.files[0]); } else { const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; p(hd.logo || ""); }
         }
-
-        function eliminarOperador() {
-            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; }
-            const selectEl = document.getElementById('op-del-usu-sel');
-            const u = selectEl.value.trim();
-            if(!u) { alert("Seleccione un operador de la lista."); return; }
-            
-            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso del operador "${u}"? No podrá volver a ingresar al sistema.`)) {
-                const btn = document.getElementById('btn-eliminar-op');
-                const btnOriginal = btn.innerHTML;
-                btn.innerHTML = "⏳ Eliminando...";
-                btn.disabled = true;
-
-                const fd = new URLSearchParams(); 
-                fd.append('accion', 'eliminar_peon'); 
-                fd.append('maestro', maestroId); 
-                fd.append('usuario', usActivo); 
-                fd.append('peon_usu', u); 
-                
-                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
-                    alert(`El operador "${u}" ha sido eliminado con éxito.`); 
-                    
-                    let eliminados = lsGet('tc_op_eliminados', []);
-                    if(!eliminados.includes(u.toLowerCase())) eliminados.push(u.toLowerCase());
-                    lsSet('tc_op_eliminados', eliminados);
-                    
-                    selectEl.value = ''; 
-                    cargarListaOperadores(); 
-                    
-                    btn.innerHTML = btnOriginal;
-                    btn.disabled = false;
-                }).catch(() => {
-                    alert("Hubo un error de conexión.");
-                    btn.innerHTML = btnOriginal;
-                    btn.disabled = false;
-                }); 
-            }
-        }
-
-        function cargarListaOperadores() {
-            let operadores = new Set();
-            let eliminados = lsGet('tc_op_eliminados', []);
-            
-            dbCache.forEach(d => {
-                let det = d.detalles || "";
-                if(det.includes('Op:')) { let nombre = det.split('Op:')[1].split('|')[0].trim(); if(nombre) operadores.add(nombre); }
-                if(det.includes('Resp:')) { let nombre = det.split('Resp:')[1].split('|')[0].trim(); if(nombre) operadores.add(nombre); }
-                if(d.accion === 'Alta Operador' && d.valor) { operadores.add(d.valor.trim()); }
-            });
-            
-            const sel = document.getElementById('op-del-usu-sel');
-            if(sel) {
-                let options = '<option value="">-- Seleccione un operador --</option>';
-                operadores.forEach(o => { 
-                    let oMin = o.toLowerCase();
-                    if(oMin !== usActivo.toLowerCase() && !eliminados.includes(oMin)) { 
-                        options += `<option value="${o}">${o}</option>`; 
-                    } 
-                });
-                sel.innerHTML = options;
-            }
-        }
-
-        function cambiarMiContrasena() { if(!navigator.onLine) { alert("Necesitas conexión."); return; } const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) { alert("Mínimo 4 caracteres."); return; } const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { alert("Contraseña actualizada con éxito."); document.getElementById('nueva-clave').value = ''; let cred = lsGet('tc_cred', {}); cred.p = nueva; lsSet('tc_cred', cred); }); }
-        function cerrarSesion() { localStorage.clear(); window.location.reload(); }
-
-        // ==========================================
-        // LECTOR HID / TECLADO AUTOMÁTICO (PC)
-        // ==========================================
-        function forzarSaltoAFicha() {
-            let tabFichaPC = document.querySelectorAll('.sidebar-nav li')[1];
-            if (typeof cambiarVista === "function" && tabFichaPC) {
-                cambiarVista('v-ficha', tabFichaPC);
-            }
-        }
-
-        window.recibirTagNFC = function(tagHex) {
-            let dataMinuscula = String(tagHex).trim().toLowerCase();
-            let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === dataMinuscula);
-            
-            if(esRFIDRegistrado) {
-                forzarSaltoAFicha();
-                let buscador = document.getElementById('buscador-caravana');
-                if (buscador) buscador.value = esRFIDRegistrado.caravana;
-                if (typeof buscarCaravanaBtn === "function") buscarCaravanaBtn();
-            } else {
-                rfidPendiente = tagHex;
-                let inputVincular = document.getElementById('f-rfid-caravana');
-                if (inputVincular) inputVincular.value = '';
-                let lblScaneado = document.getElementById('lbl-rfid-scaneado');
-                if (lblScaneado) lblScaneado.innerText = tagHex;
-                if (typeof abrirModal === "function") abrirModal('m-rfid');
-                setTimeout(() => { if(inputVincular) inputVincular.focus(); }, 500);
-            }
-        };
-
-        let bufferTeclado = "";
-        let timeoutTeclado;
-
-        document.addEventListener('keydown', function(event) {
-            if(event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'CapsLock') return;
-
-            if (event.key === 'Enter') {
-                if (bufferTeclado.length > 2) {
-                    event.preventDefault(); 
-                    
-                    let dataLimpia = bufferTeclado.replace(/[^a-zA-Z0-9.-]/g, '').trim().toUpperCase(); 
-                    let esPeso = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
-                    
-                    if (esPeso) {
-                        if (typeof rpActivo !== 'undefined' && rpActivo && rpActivo !== "---") {
-                            
-                            // LÓGICA DE MODO RÁFAGA AUTOMÁTICO
-                            if(typeof rafagaActiva !== 'undefined' && rafagaActiva) {
-                                let sel = document.getElementById('rafaga-accion').value;
-                                let notas = document.getElementById('rafaga-detalles').value.trim();
-                                
-                                // 1. Guardar Peso
-                                ejecutarAccion('Peso', dataLimpia + " Kg", "Automático (Ráfaga)", null);
-                                
-                                // 2. Guardar Tratamiento Sanitario Personalizado si está seleccionado
-                                if(sel !== 'solo_peso') {
-                                    let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
-                                    let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga";
-                                    ejecutarAccion('Sanidad', producto, detCompleto, null);
-                                }
-                                
-                                if(typeof mostrarToast === 'function') mostrarToast("✅ ¡Guardado!");
-                                
-                            } else {
-                                // MODO NORMAL MANUAL
-                                forzarSaltoAFicha();
-                                if (typeof abrirModal === "function") abrirModal('m-peso');
-                                let inputPeso = document.getElementById('i-peso-val');
-                                if (inputPeso) inputPeso.value = dataLimpia;
-                            }
-                        } else {
-                            alert("⚖️ Peso recibido: " + dataLimpia + " Kg. ¡Debes leer la caravana de un animal primero!");
-                        }
-                    } else {
-                        let tagLimpio = dataLimpia.replace(/TAG/gi, '');
-                        forzarSaltoAFicha();
-                        if (typeof window.recibirTagNFC === "function") {
-                            window.recibirTagNFC(tagLimpio);
-                        }
-                    }
-                }
-                bufferTeclado = "";
-                clearTimeout(timeoutTeclado);
-                return;
-            }
-
-            if (event.key.length === 1) {
-                bufferTeclado += event.key;
-                clearTimeout(timeoutTeclado);
-                timeoutTeclado = setTimeout(() => {
-                    bufferTeclado = "";
-                }, 500); 
-            }
-        });
     </script>
 </body>
 </html>
