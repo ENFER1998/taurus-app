@@ -265,13 +265,13 @@
                         <div>
                             <div style="background:var(--bg-base); padding:15px; border:1px solid var(--border); border-radius:4px; height:100%;">
                                 <h4 style="margin-top:0; font-size:12px; color:var(--text-muted); text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">Registrar Suceso Clínico</h4>
-                                <div class="grid-acciones">
+                                <div class="grid-acciones" id="panel-botones-clinicos">
                                     <button type="button" class="btn-outline" style="padding: 6px 12px; font-size: 12px; background:var(--bg-panel);" onclick="abrirModal('m-dx')">🩺 Tacto / Dx</button>
                                     <button type="button" class="btn-outline" style="padding: 6px 12px; font-size: 12px; background:var(--bg-panel);" onclick="abrirModal('m-peso')">⚖️ Pesaje</button>
                                     <button type="button" class="btn-outline" style="padding: 6px 12px; font-size: 12px; background:var(--bg-panel);" onclick="abrirModal('m-sani')">💉 Sanidad</button>
                                     <button type="button" class="btn-outline" style="padding: 6px 12px; font-size: 12px; background:var(--bg-panel);" onclick="abrirModal('m-ins')">🧬 Inseminación</button>
                                     <button type="button" class="btn-outline" style="padding: 6px 12px; font-size: 12px; background:var(--bg-panel);" onclick="abrirModal('m-nut')">🌾 Nutrición</button>
-                                    <button type="button" class="btn-outline" style="padding: 6px 12px; font-size: 12px; background:var(--bg-panel); border-color:var(--danger); color:var(--danger);" onclick="abrirModal('m-baja')">💀 Baja / Muerte</button>
+                                    <button type="button" class="btn-outline" style="padding: 6px 12px; font-size: 12px; background:var(--bg-panel); color:var(--danger); border-color:var(--danger);" onclick="abrirModal('m-baja')">💀 Baja / Muerte</button>
                                     <button type="button" class="btn-outline" style="padding: 6px 12px; font-size: 12px; border-color:var(--danger); color:var(--danger);" onclick="borrarCaravana()">🗑️ Resetear/Borrar</button>
                                 </div>
                                 <button type="button" class="btn-primary" style="margin-top: 15px; background: var(--bg-card); border: 1px solid var(--border); color:var(--text-main);" onclick="verTrazabilidad()">📋 Ver Trazabilidad en Pantalla</button>
@@ -508,6 +508,7 @@
         function setEstadoRed(online, texto = null) {
             const b = document.getElementById('estado-red');
             if(!b) return;
+            
             if(texto) {
                 b.innerText = texto;
             } else if(navigator.onLine || online) { 
@@ -531,8 +532,6 @@
             err.style.display = 'none';
 
             try {
-                if(!navigator.onLine) throw new Error("Offline");
-                
                 const url = `${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&t=${Date.now()}`;
                 const response = await fetch(url);
                 
@@ -553,7 +552,6 @@
                 arrancarSistema(dataLimpia, u, res.maestro, res.rol);
                 
             } catch(error) {
-                console.warn("Fallo de red, revisando memoria local...", error);
                 const cred = lsGet('tc_cred', null);
                 if(cred && String(cred.u).toLowerCase() === u.toLowerCase() && cred.p === p) { 
                     if(cred.v && new Date() > new Date(cred.v)) {
@@ -563,7 +561,7 @@
                         arrancarSistema(lsGet('tc_db', []), cred.u, cred.m, cred.r);
                     }
                 } else {
-                    let mensajeError = error.message === "Offline" || error.message.includes("Unexpected token") 
+                    let mensajeError = error.message.includes("Unexpected token") || error.message.includes("Failed to fetch") 
                         ? "Sin Internet y no hay sesión guardada." 
                         : error.message;
                     err.innerText = mensajeError; 
@@ -638,8 +636,15 @@
                 
             } catch(e) { 
                 console.error("Error al construir la pantalla:", e); 
-                alert("Error técnico detectado: " + e.message + "\nPor favor, contacta a soporte técnico.");
             }
+        }
+
+        function aplicarDisenoEnPantalla(nombre, logo) { 
+            const cfgNom = document.getElementById('cfg-nom');
+            if (cfgNom) cfgNom.value = nombre || ''; 
+            const estNom = document.getElementById('nombre-estancia');
+            if (estNom) estNom.value = nombre || ''; 
+            if (logo && logo !== "sin-logo") mostrarLogo(logo);
         }
 
         function fusionarDatos(nuevos) {
@@ -850,7 +855,6 @@
             
             ejecutarAccion(t, v, d, mId); i.forEach(el => el.value = ''); 
             
-            // Renombrado automático si es baja para liberar número
             if(t === 'Baja') {
                 let tagLiberado = rpActivo;
                 let nuevoTag = tagLiberado + "-BAJA-" + Math.floor(Math.random() * 1000);
@@ -1137,12 +1141,12 @@
             }
             
             const opt = { 
-                margin: [10, 10, 10, 10], 
+                margin: 10, 
                 filename: rpPrint !== "" ? `Dossier_RP_${rpPrint.toUpperCase()}.pdf` : 'Reporte_General.pdf',
                 image: { type: 'jpeg', quality: 0.98 }, 
                 html2canvas: { scale: 2, useCORS: true, letterRendering: true }, 
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', 'td', 'th', 'h3'] }
+                pagebreak: { mode: ['css', 'legacy'] }
             };
 
             html2pdf().set(opt).from(htmlContent).toPdf().get('pdf').then(function(pdf) {
@@ -1171,10 +1175,23 @@
         }
         
         function mostrarLogo(base64) { 
-            let d = document.getElementById('cfg-logo').parentElement;
-            let i = d.querySelector('img');
-            if(!i) { i = document.createElement('img'); i.style.maxWidth = '120px'; i.style.marginTop = '10px'; i.style.display = 'block'; d.appendChild(i); }
-            i.src = base64; 
+            let img = document.getElementById('img-logo');
+            let txt = document.getElementById('texto-subir-logo');
+            if(img) { img.src = base64; img.style.display = 'block'; }
+            if(txt) txt.style.display = 'none';
+            
+            let cfgLogo = document.getElementById('cfg-logo');
+            if(cfgLogo && cfgLogo.parentElement) {
+                let i = cfgLogo.parentElement.querySelector('img');
+                if(!i) { 
+                    i = document.createElement('img'); 
+                    i.style.maxWidth = '120px'; 
+                    i.style.marginTop = '10px'; 
+                    i.style.display = 'block'; 
+                    cfgLogo.parentElement.appendChild(i); 
+                }
+                i.src = base64; 
+            }
         }
         
         function guardarDisenoServidor() {
