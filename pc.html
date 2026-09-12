@@ -328,7 +328,10 @@
                         <div><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;">REGISTROS LISTADOS</span><strong style="font-size:22px;" id="inf-total">0</strong></div>
                         <div><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;">PREÑADAS CONF.</span><strong style="font-size:22px; color:var(--success);" id="inf-prenadas">0</strong></div>
                     </div>
-                    <button id="btn-print-magico" class="btn-primary" style="width:auto; padding:10px 25px; background:var(--primary);" onclick="ejecutarDescargaPDF()">🖨️ Descargar Informe PDF</button>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-outline" style="padding:10px 15px; border-color:#0f766e; color:#0f766e;" onclick="generarGuiaSenacsa()">📜 Guía SENACSA</button>
+                        <button id="btn-print-magico" class="btn-primary" style="width:auto; padding:10px 25px; background:var(--primary);" onclick="ejecutarDescargaPDF()">🖨️ Descargar Informe PDF</button>
+                    </div>
                 </div>
                 
                 <div style="overflow-y:auto; max-height: 50vh;">
@@ -984,6 +987,98 @@
             }
         }
 
+        function generarGuiaSenacsa() {
+            const btn = event.target;
+            const txtOrig = btn.innerText;
+            btn.innerText = "⏳ Emitiendo...";
+
+            const h_nom = document.getElementById('cfg-nom') ? document.getElementById('cfg-nom').value : (lsGet('tc_hacienda', {}).nombre || 'TAURUS CONTROL');
+            const h_log = lsGet('tc_hacienda', {}).logo || "";
+            
+            let htmlFilas = "";
+            let totalCabezas = 0;
+
+            const tbody = document.getElementById('tb-informe-masivo');
+            if (!tbody || document.getElementById('tabla-masiva').classList.contains('oculto')) {
+                alert("⚠️ Por favor, cambia a la vista 'INVENTARIO GENERAL' para emitir la guía de traslado.");
+                btn.innerText = txtOrig;
+                return;
+            }
+
+            const filas = tbody.querySelectorAll('tr');
+            filas.forEach(tr => {
+                let tds = tr.querySelectorAll('td');
+                if(tds.length >= 4) {
+                    totalCabezas++;
+                    let rp = tds[0].innerText.trim();
+                    let catLote = tds[1].innerText.trim().replace(/\n/g, ' - ');
+                    let peso = tds[2].innerText.trim();
+                    htmlFilas += `<tr style="page-break-inside: avoid;"><td style="border: 1px solid #000; padding: 6px; text-align:center; font-weight:bold;">${rp}</td><td style="border: 1px solid #000; padding: 6px;">${catLote}</td><td style="border: 1px solid #000; padding: 6px; text-align:center;">Bovino</td><td style="border: 1px solid #000; padding: 6px; text-align:center;">${peso !== "-" ? peso : ""}</td><td style="border: 1px solid #000; padding: 6px; text-align:center;">Al día</td></tr>`;
+                }
+            });
+
+            if(totalCabezas === 0) {
+                alert("No hay animales filtrados para incluir en la guía.");
+                btn.innerText = txtOrig;
+                return;
+            }
+
+            let htmlContent = `
+            <div style="background-color: #ffffff; padding: 20px; width: 750px; margin: 0 auto; font-family: Arial, sans-serif; color: #000;">
+                <div style="display: flex; justify-content: space-between; border-bottom: 3px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+                    <div style="width:70%;">
+                        <h1 style="margin:0 0 5px 0; font-size:18px; text-transform:uppercase;">CERTIFICADO OFICIAL DE TRÁNSITO DE ANIMALES</h1>
+                        <h2 style="margin:0 0 10px 0; font-size:14px; color:#333;">MINISTERIO DE AGRICULTURA Y GANADERÍA - SENACSA</h2>
+                        <p style="margin:2px 0; font-size:12px;"><strong>Propietario / Establecimiento:</strong> ${h_nom}</p>
+                        <p style="margin:2px 0; font-size:12px;"><strong>Fecha de Emisión:</strong> ${new Date().toLocaleDateString()}</p>
+                        <p style="margin:2px 0; font-size:12px;"><strong>Total de Cabezas a Mover:</strong> ${totalCabezas}</p>
+                    </div>
+                    ${h_log ? `<div style="width:25%; text-align:right;"><img src="${h_log}" style="max-width:120px; max-height:80px; object-fit:contain;"></div>` : ''}
+                </div>
+
+                <h3 style="font-size:14px; background:#f1f5f9; padding:8px; border:1px solid #000; margin:0 0 10px 0;">DETALLE DE TROPA Y TRAZABILIDAD SANITARIA</h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr>
+                            <th style="border: 1px solid #000; padding: 8px; background-color: #e2e8f0; width: 15%;">Nº RP / CHAPA</th>
+                            <th style="border: 1px solid #000; padding: 8px; background-color: #e2e8f0; width: 45%;">CATEGORÍA / LOTE</th>
+                            <th style="border: 1px solid #000; padding: 8px; background-color: #e2e8f0; width: 15%;">ESPECIE</th>
+                            <th style="border: 1px solid #000; padding: 8px; background-color: #e2e8f0; width: 10%;">PESO</th>
+                            <th style="border: 1px solid #000; padding: 8px; background-color: #e2e8f0; width: 15%;">VACUNACIÓN</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${htmlFilas}
+                    </tbody>
+                </table>
+
+                <div style="display:flex; justify-content:space-between; margin-top:60px; padding:0 30px;">
+                    <div style="text-align:center; width:200px;">
+                        <div style="border-top:1px solid #000; padding-top:5px; font-size:11px; font-weight:bold;">Firma Propietario / Remitente</div>
+                    </div>
+                    <div style="text-align:center; width:200px;">
+                        <div style="border-top:1px solid #000; padding-top:5px; font-size:11px; font-weight:bold;">Sello y Firma SENACSA</div>
+                    </div>
+                </div>
+            </div>`;
+
+            const optSenacsa = { 
+                margin: [15, 10, 15, 10], 
+                filename: `Guia_Traslado_SENACSA_${new Date().getTime()}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 }, 
+                html2canvas: { scale: 2, useCORS: true, letterRendering: true, windowWidth: 800 }, 
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' }
+            };
+
+            html2pdf().set(optSenacsa).from(htmlContent).save().then(() => { 
+                btn.innerText = txtOrig; 
+            }).catch(() => {
+                alert("Error al emitir el documento oficial.");
+                btn.innerText = txtOrig;
+            });
+        }
+
         function ejecutarDescargaPDF() {
             const btn = document.getElementById('btn-print-magico');
             btn.innerText = "⏳ Generando Archivo PDF...";
@@ -1126,12 +1221,12 @@
             htmlContent += `</div>`;
             
             const opt = { 
-                margin: 10, 
+                margin: [15, 10, 15, 10], 
                 filename: rpPrint !== "" ? `Dossier_RP_${rpPrint.toUpperCase()}.pdf` : 'Reporte_General.pdf',
                 image: { type: 'jpeg', quality: 0.98 }, 
-                html2canvas: { scale: 2, useCORS: true, letterRendering: true }, 
+                html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollY: 0, windowWidth: 800 }, 
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: 'css', avoid: 'tr' }
+                pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', 'h3', 'h2', 'img'] }
             };
             
             html2pdf().set(opt).from(htmlContent).save().then(()=>{ 
