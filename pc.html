@@ -643,7 +643,6 @@
         function aplicarDisenoEnPantalla(nombre, logo) { 
             const cfgNom = document.getElementById('cfg-nom');
             if (cfgNom) cfgNom.value = nombre || ''; 
-            // Si estuviéramos en la versión móvil tendríamos que actualizar otros IDs aquí
         }
 
         function fusionarDatos(nuevos) {
@@ -1042,14 +1041,12 @@
             const modo = document.getElementById('f-inf-modo').value;
             
             let htmlContent = `
-            <div style="width: 100%; box-sizing: border-box; background: white; font-family: Helvetica, Arial, sans-serif; color: #000; font-size: 11px;">
+            <div style="padding: 0; width: 100%; box-sizing: border-box; background: white; font-family: Helvetica, Arial, sans-serif; color: #000; font-size: 11px;">
                 <style>
-                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; page-break-inside: auto; table-layout: fixed; }
-                    th, td { border: 1px solid #cbd5e1; padding: 6px; word-wrap: break-word; font-size: 10px; vertical-align: middle; color: #000; overflow: hidden; }
+                    table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 20px; }
+                    th, td { border: 1px solid #cbd5e1; padding: 6px; word-wrap: break-word; font-size: 10px; vertical-align: middle; color: #000; }
                     th { background-color: #f1f5f9; font-weight: bold; text-align: center; }
-                    tr { page-break-inside: avoid; page-break-after: auto; }
-                    .text-left { text-align: left; }
-                    .text-center { text-align: center; }
+                    .salto-pagina { page-break-before: always; height: 10px; } /* Forzar corte limpio */
                 </style>
                 <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
                     <div style="width: 70%;">
@@ -1069,43 +1066,44 @@
                     <h3 style="font-size:14px; margin: 0 0 10px 0;">Resumen del Perfil</h3>
                     <table style="table-layout: auto;">
                         <tr>
-                            <td class="text-left"><strong>Categoría:</strong> ${cat}</td>
-                            <td class="text-left"><strong>Lote:</strong> ${lote}</td>
-                            <td class="text-left"><strong>Carimbo:</strong> ${carimbo}</td>
+                            <td style="text-align: left;"><strong>Categoría:</strong> ${cat}</td>
+                            <td style="text-align: left;"><strong>Lote:</strong> ${lote}</td>
+                            <td style="text-align: left;"><strong>Carimbo:</strong> ${carimbo}</td>
                         </tr>
                         <tr>
-                            <td class="text-left"><strong>Raza:</strong> ${raza}</td>
-                            <td class="text-left"><strong>Edad:</strong> ${edad}</td>
-                            <td class="text-left"><strong>Último Peso:</strong> ${peso}</td>
+                            <td style="text-align: left;"><strong>Raza:</strong> ${raza}</td>
+                            <td style="text-align: left;"><strong>Edad:</strong> ${edad}</td>
+                            <td style="text-align: left;"><strong>Último Peso:</strong> ${peso}</td>
                         </tr>
                         <tr>
-                            <td class="text-left"><strong>Dx Actual:</strong> ${dx}</td>
-                            <td class="text-left"><strong>Genealogía:</strong> ${pa} / ${ma}</td>
-                            <td class="text-left"><strong>Régimen:</strong> ${nut}</td>
+                            <td style="text-align: left;"><strong>Dx Actual:</strong> ${dx}</td>
+                            <td style="text-align: left;"><strong>Genealogía:</strong> ${pa} / ${ma}</td>
+                            <td style="text-align: left;"><strong>Régimen:</strong> ${nut}</td>
                         </tr>
                         <tr>
-                            <td class="text-left"><strong>Últ. Sanidad:</strong> ${san}</td>
-                            <td colspan="2" class="text-left"><strong>Últ. Inseminación:</strong> ${ins}</td>
+                            <td style="text-align: left;"><strong>Últ. Sanidad:</strong> ${san}</td>
+                            <td colspan="2" style="text-align: left;"><strong>Últ. Inseminación:</strong> ${ins}</td>
                         </tr>
                     </table>
                     
-                    <h3 style="font-size:14px; margin: 15px 0 10px 0;">Trazabilidad Histórica de Sucesos</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th style="width: 15%;">Fecha</th>
-                                <th style="width: 25%;">Procedimiento</th>
-                                <th style="width: 25%;">Valor Principal</th>
-                                <th style="width: 35%;">Observaciones Adicionales</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
+                    <h3 style="font-size:14px; margin: 15px 0 10px 0;">Trazabilidad Histórica de Sucesos</h3>`;
+                
+                let theadInd = `<thead><tr><th style="width: 15%;">Fecha</th><th style="width: 25%;">Procedimiento</th><th style="width: 25%;">Valor Principal</th><th style="width: 35%;">Observaciones Adicionales</th></tr></thead>`;
+                htmlContent += `<table>${theadInd}<tbody>`;
+                
                 let rows = document.getElementById('tb-informe-individual').querySelectorAll('tr'); 
+                let cRows = 0; let lim = 20; // primera página perfil
+                
                 rows.forEach(tr => { 
+                    if(cRows >= lim) {
+                        htmlContent += `</tbody></table><div class="salto-pagina"></div><table>${theadInd}<tbody>`;
+                        cRows = 0; lim = 38;
+                    }
                     htmlContent += `<tr>`; 
                     let tds = tr.querySelectorAll('td');
-                    if (tds.length >= 4) { htmlContent += `<td class="text-center">${tds[0].innerText}</td><td class="text-center">${tds[1].innerText}</td><td class="text-center"><b>${tds[2].innerText}</b></td><td class="text-left">${tds[3].innerHTML}</td>`; }
+                    if (tds.length >= 4) { htmlContent += `<td style="text-align:center;">${tds[0].innerText}</td><td style="text-align:center;">${tds[1].innerText}</td><td style="text-align:center;"><b>${tds[2].innerText}</b></td><td style="text-align:left;">${tds[3].innerHTML}</td>`; }
                     htmlContent += `</tr>`; 
+                    cRows++;
                 });
                 htmlContent += `</tbody></table></div>`;
             } else {
@@ -1118,49 +1116,48 @@
                             <td style="border:none; text-align:left; padding:0;"><strong>Total Registros Listados:</strong> ${document.getElementById('inf-total').innerText}</td>
                             <td style="border:none; text-align:right; padding:0;"><strong>Total Preñadas Global:</strong> ${document.getElementById('inf-prenadas').innerText}</td>
                         </tr>
-                    </table>
-                    <table><thead>`;
+                    </table>`;
                         
+                let thead = '';
                 if(modo === 'inventario') {
-                    htmlContent += `<tr>
-                        <th style="width: 15%;">Caravana</th>
-                        <th style="width: 35%;">Categoría y Ubicación</th>
-                        <th style="width: 20%;">Último Peso</th>
-                        <th style="width: 30%;">Diagnóstico Actual</th>
-                    </tr></thead><tbody>`;
-                    let rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr'); 
-                    rows.forEach(tr => { 
-                        htmlContent += `<tr>`; 
-                        let tds = tr.querySelectorAll('td'); 
-                        if (tds.length >= 4) { htmlContent += `<td class="text-center"><b>${tds[0].innerText}</b></td><td class="text-left">${tds[1].innerHTML}</td><td class="text-center">${tds[2].innerText}</td><td class="text-center">${tds[3].innerText}</td>`; } 
-                        htmlContent += `</tr>`; 
-                    });
+                    thead = `<thead><tr><th style="width: 15%;">Caravana</th><th style="width: 40%;">Categoría y Ubicación</th><th style="width: 15%;">Último Peso</th><th style="width: 30%;">Diagnóstico Actual</th></tr></thead>`;
                 } else {
-                    htmlContent += `<tr>
-                        <th style="width: 15%;">Fecha</th>
-                        <th style="width: 15%;">Caravana</th>
-                        <th style="width: 30%;">Trabajo Realizado</th>
-                        <th style="width: 40%;">Detalles Extras</th>
-                    </tr></thead><tbody>`;
-                    let rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr'); 
-                    rows.forEach(tr => { 
-                        htmlContent += `<tr>`; 
-                        let tds = tr.querySelectorAll('td'); 
-                        if(tds.length >= 4) { htmlContent += `<td class="text-center">${tds[0].innerText}</td><td class="text-center"><b>${tds[1].innerText}</b></td><td class="text-center">${tds[2].innerText}</td><td class="text-left">${tds[3].innerHTML}</td>`; } 
-                        htmlContent += `</tr>`; 
-                    });
+                    thead = `<thead><tr><th style="width: 15%;">Fecha</th><th style="width: 15%;">Caravana</th><th style="width: 30%;">Trabajo Realizado</th><th style="width: 40%;">Detalles Extras</th></tr></thead>`;
                 }
+                htmlContent += `<table>${thead}<tbody>`;
+
+                let rows = modo === 'inventario' ? document.getElementById('tb-informe-masivo').querySelectorAll('tr') : document.getElementById('tb-informe-eventos').querySelectorAll('tr'); 
+                let cRows = 0; let lim = 25; // 1ra página con el encabezado
+
+                rows.forEach(tr => { 
+                    if(cRows >= lim) {
+                        htmlContent += `</tbody></table><div class="salto-pagina"></div><table>${thead}<tbody>`;
+                        cRows = 0; lim = 38; // Siguientes páginas
+                    }
+
+                    htmlContent += `<tr>`; 
+                    let tds = tr.querySelectorAll('td'); 
+                    if (tds.length >= 4) { 
+                        if(modo === 'inventario') {
+                            htmlContent += `<td style="text-align:center;"><b>${tds[0].innerText}</b></td><td style="text-align:left;">${tds[1].innerHTML}</td><td style="text-align:center;">${tds[2].innerText}</td><td style="text-align:center;">${tds[3].innerText}</td>`;
+                        } else {
+                            htmlContent += `<td style="text-align:center;">${tds[0].innerText}</td><td style="text-align:center;"><b>${tds[1].innerText}</b></td><td style="text-align:center;">${tds[2].innerText}</td><td style="text-align:left;">${tds[3].innerHTML}</td>`;
+                        }
+                    } 
+                    htmlContent += `</tr>`; 
+                    cRows++;
+                });
                 
                 htmlContent += `</tbody></table></div>`;
             }
             
             const opt = { 
-                margin: [10, 10, 15, 10], 
+                margin: [10, 10, 10, 10], 
                 filename: rpPrint !== "" ? `Dossier_RP_${rpPrint.toUpperCase()}.pdf` : 'Reporte_General.pdf',
                 image: { type: 'jpeg', quality: 1 }, 
                 html2canvas: { scale: 2, useCORS: true, letterRendering: true }, 
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: 'css', avoid: 'tr' }
+                pagebreak: { mode: 'css' }
             };
 
             html2pdf().set(opt).from(htmlContent).save().then(()=>{ 
