@@ -9,6 +9,10 @@
     <meta name="theme-color" content="#0f172a">
     <link rel="icon" href="gemini-svg.ico">
     <link rel="apple-touch-icon" href="gemini-svg.ico">
+
+    <!-- LIBRERIAS PROFESIONALES PARA PDF PERFECTO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     
     <style>
         :root { --primario: #0f172a; --secundario: #3b82f6; --exito: #10b981; --alerta: #f59e0b; --peligro: #ef4444; --borde: #334155; --texto: #f8fafc; --muted: #94a3b8; }
@@ -125,46 +129,9 @@
         .logo-upload span { font-size: 11px; color: var(--muted); padding: 5px; }
         .input-estancia { flex: 1; background: transparent; border: none; border-bottom: 2px solid var(--borde); color: var(--texto); font-size: 24px; font-weight: 900; outline: none; padding: 5px; font-family: inherit;}
         .input-estancia:focus { border-bottom-color: var(--secundario); }
-
-        /* ========================================================
-           MAGIA DE IMPRESIÓN NATIVA ESTILO LUIS TRANSPORTES
-           ======================================================== */
-        @media screen {
-            .print-area { display: none !important; }
-        }
-        @media print {
-            /* Con margin 0 eliminamos el header del navegador (Fecha y Link Github) */
-            @page { margin: 0; size: A4 portrait; }
-            
-            body { background: white !important; margin: 0; padding: 0; }
-            body * { visibility: hidden; }
-            
-            .print-area.active-print, .print-area.active-print * { visibility: visible; }
-            .print-area.active-print { 
-                position: absolute; left: 0; top: 0; width: 100%; 
-                display: block !important; padding: 15mm; 
-                background: white; color: black; font-family: Arial, sans-serif;
-            }
-            
-            #pantalla-login, #pantalla-app, .modal, .nav-inferior, .cabecera { display: none !important; }
-            
-            /* Reglas estrictas para que la tabla no se corte */
-            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-            th, td { border: 1px solid #000; padding: 6px; font-size: 10px; color: black; text-align: left; }
-            th { background-color: #f1f5f9 !important; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            
-            /* Esto le dice al navegador que jamás corte una fila por la mitad */
-            tr { page-break-inside: avoid !important; page-break-after: auto; }
-            thead { display: table-header-group; }
-            tfoot { display: table-footer-group; }
-            h2, h3, p { page-break-after: avoid !important; margin-top: 0; }
-        }
     </style>
 </head>
 <body>
-
-    <!-- CONTENEDOR OCULTO PARA EL PDF NATIVO -->
-    <div id="area-impresion-pdf" class="print-area"></div>
 
     <div id="pantalla-login">
         <div class="login-contenedor">
@@ -299,7 +266,7 @@
 
             <div id="vista-informe" class="oculto">
                 <div class="tarjeta">
-                    <button class="btn-descargar no-print" onclick="ejecutarDescargaPDF()">🖨️ Crear Informe PDF</button>
+                    <button class="btn-descargar no-print" onclick="ejecutarDescargaPDF()">🖨️ Descargar Informe PDF</button>
 
                     <div class="encabezado-impresion" id="panel-membrete-reporte">
                         <div class="logo-upload no-print-border" onclick="document.getElementById('input-logo').click()">
@@ -1350,12 +1317,12 @@
         function setFiltroAccion(accion, btnObj) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activa')); btnObj.classList.add('activa'); document.getElementById('f-inf-accion-oculto').value = accion; actualizarInformeAvanzado(); }
 
         function obtenerBadgeAccion(accion) {
-            if(accion === 'Sanidad') return `💉 Sanidad`; 
-            if(accion === 'Peso') return `⚖️ Peso`; 
-            if(accion === 'Diagnóstico') return `🩺 Tacto`; 
-            if(accion === 'Inseminación') return `🧬 Reproducción`; 
-            if(accion === 'Nutrición') return `🌾 Nutrición`; 
-            if(accion === 'Baja') return `💀 Baja / Muerte`;
+            if(accion === 'Sanidad') return `Sanidad`; 
+            if(accion === 'Peso') return `Peso`; 
+            if(accion === 'Diagnóstico') return `Tacto`; 
+            if(accion === 'Inseminación') return `Reproducción`; 
+            if(accion === 'Nutrición') return `Nutrición`; 
+            if(accion === 'Baja') return `Baja / Muerte`;
             return `${accion}`;
         }
 
@@ -1379,13 +1346,13 @@
             document.getElementById('inf-prenadas').innerText = tPreGlobal;
             
             if(fRp !== "") {
-                rpPrint = fRp; document.querySelector('.btn-descargar').innerHTML = `🖨️ Imprimir / Guardar Dossier RP: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
+                rpPrint = fRp; document.querySelector('.btn-descargar').innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
                 const regs = obtenerHistorial(fRp);
                 let hInd = ""; regs.forEach(r => { if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') hInd+=`<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
                 tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.filter(r => !r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master').length; document.getElementById('inf-prenadas').innerText = "-"; return;
             }
 
-            rpPrint = ""; document.querySelector('.btn-descargar').innerHTML = `🖨️ Imprimir / Guardar Reporte PDF`;
+            rpPrint = ""; document.querySelector('.btn-descargar').innerHTML = `🖨️ Descargar Informe PDF`;
 
             if(modo === 'inventario') {
                 document.getElementById('tabla-masiva').classList.remove('oculto');
@@ -1412,133 +1379,223 @@
             }
         }
 
-        // ==========================================
-        // SISTEMA DE IMPRESIÓN NATIVO (SIN LIBRERÍAS)
-        // ==========================================
-        function ejecutarDescargaPDF() {
-            const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; 
-            const h_nom = hd.nombre || 'TAURUS CONTROL'; 
-            const h_log = hd.logo || "";
-            const modo = document.getElementById('f-inf-modo').value;
-            
-            let htmlContent = `
-                <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
-                    <div style="width: 75%;">
-                        <h2 style="margin: 0 0 5px 0; font-size: 20px; text-transform: uppercase;">${h_nom}</h2>`;
-            
-            if(rpPrint !== "") {
-                const regs = obtenerHistorial(rpPrint);
-                if(regs.length === 0) { alert("Sin registros."); return; }
-                
-                let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
-                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor||"").split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=String(uP.detalles||"").split('|')[0]||"-"; } 
-                const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; lote=String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; } 
-                const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
-                const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nut = (uNut.valor || "") + " | " + (uNut.detalles || "");
-                const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "") + " | " + (uSan.detalles || "");
-                const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) ins = (uIns.valor || "") + " | " + (uIns.detalles || "");
+        // ========================================================
+        // NUEVA GENERACIÓN DE PDF PROFESIONAL (ESTILO NATIVO/PERFECTO)
+        // ========================================================
+        
+        function cleanPDFText(text) {
+            if (!text) return '';
+            let str = String(text);
+            str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️|✏️|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️|🚪/g, '');
+            str = str.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+            return str.trim();
+        }
 
-                htmlContent += `<p style="margin:0; font-size:13px;">Dossier Clínico Histórico - RP: <strong>${rpPrint.toUpperCase()}</strong></p><p style="margin:3px 0 0 0; font-size:12px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${(h_log && h_log.startsWith('data:image')) ? `<div style="width: 20%; text-align: right;"><img src="${h_log}" style="max-width:120px; max-height:60px; object-fit: contain;"></div>` : ''}</div>
-                    <h3 style="font-size:14px; margin: 0 0 10px 0;">Resumen del Perfil</h3>
-                    <table>
-                        <tr>
-                            <td><strong>Categoría:</strong> ${cat}</td>
-                            <td><strong>Lote:</strong> ${lote}</td>
-                            <td><strong>Carimbo:</strong> ${carimbo}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Raza:</strong> ${raza}</td>
-                            <td><strong>Edad:</strong> ${edad}</td>
-                            <td><strong>Último Peso:</strong> ${peso}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Dx Actual:</strong> ${dx}</td>
-                            <td><strong>Genealogía:</strong> ${pa} / ${ma}</td>
-                            <td><strong>Régimen:</strong> ${nut}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Últ. Sanidad:</strong> ${san}</td>
-                            <td colspan="2"><strong>Últ. Inseminación:</strong> ${ins}</td>
-                        </tr>
-                    </table>
-                    
-                    <h3 style="font-size:14px; margin: 15px 0 10px 0;">Trazabilidad Histórica de Sucesos</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th style="width: 15%;">Fecha</th>
-                                <th style="width: 25%;">Procedimiento</th>
-                                <th style="width: 25%;">Valor Principal</th>
-                                <th style="width: 35%;">Observaciones Adicionales</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
-                
-                let rows = document.getElementById('tb-informe-individual').querySelectorAll('tr'); 
-                rows.forEach(tr => { 
-                    htmlContent += `<tr>`; 
-                    let tds = tr.querySelectorAll('td');
-                    if (tds.length >= 4) { htmlContent += `<td style="text-align:center;">${tds[0].innerText}</td><td style="text-align:center;">${tds[1].innerText}</td><td style="text-align:center;"><b>${tds[2].innerText}</b></td><td>${tds[3].innerHTML}</td>`; }
-                    htmlContent += `</tr>`; 
-                });
-                htmlContent += `</tbody></table>`;
-            } else {
-                const titulo = modo === 'inventario' ? "Reporte Analítico de Inventario General" : "Reporte Analítico de Trabajos y Procedimientos";
-                
-                htmlContent += `<p style="margin:0; font-size:13px;">${titulo}</p><p style="margin:3px 0 0 0; font-size:12px;">Emitido: ${new Date().toLocaleDateString()}</p></div>${(h_log && h_log.startsWith('data:image')) ? `<div style="width: 20%; text-align: right;"><img src="${h_log}" style="max-width:120px; max-height:60px; object-fit: contain;"></div>` : ''}</div>
-                    
-                    <table style="margin-bottom: 15px; border:none;">
-                        <tr>
-                            <td style="border:none; text-align:left; padding:0; font-size:12px;"><strong>Total Registros Listados:</strong> ${document.getElementById('inf-total').innerText}</td>
-                            <td style="border:none; text-align:right; padding:0; font-size:12px;"><strong>Total Preñadas Global:</strong> ${document.getElementById('inf-prenadas').innerText}</td>
-                        </tr>
-                    </table>
-                    <table>`;
-                        
-                if(modo === 'inventario') {
-                    htmlContent += `<thead><tr>
-                        <th style="width: 15%;">Caravana</th>
-                        <th style="width: 40%;">Categoría y Ubicación</th>
-                        <th style="width: 15%;">Último Peso</th>
-                        <th style="width: 30%;">Diagnóstico Actual</th>
-                    </tr></thead><tbody>`;
-                    let rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr'); 
-                    rows.forEach(tr => { 
-                        htmlContent += `<tr>`; 
-                        let tds = tr.querySelectorAll('td'); 
-                        if (tds.length >= 4) { htmlContent += `<td style="text-align:center; font-size:14px;"><b>${tds[0].innerText}</b></td><td>${tds[1].innerHTML}</td><td style="text-align:center;">${tds[2].innerText}</td><td style="text-align:center;">${tds[3].innerText}</td>`; } 
-                        htmlContent += `</tr>`; 
-                    });
-                } else {
-                    htmlContent += `<thead><tr>
-                        <th style="width: 15%;">Fecha</th>
-                        <th style="width: 15%;">Caravana</th>
-                        <th style="width: 25%;">Trabajo Realizado</th>
-                        <th style="width: 45%;">Detalles Extras</th>
-                    </tr></thead><tbody>`;
-                    let rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr'); 
-                    rows.forEach(tr => { 
-                        htmlContent += `<tr>`; 
-                        let tds = tr.querySelectorAll('td'); 
-                        if(tds.length >= 4) { htmlContent += `<td style="text-align:center;">${tds[0].innerText}</td><td style="text-align:center; font-size:14px;"><b>${tds[1].innerText}</b></td><td style="text-align:center;">${tds[2].innerText}</td><td>${tds[3].innerHTML}</td>`; } 
-                        htmlContent += `</tr>`; 
-                    });
-                }
-                htmlContent += `</tbody></table>`;
-            }
-            
-            // Insertar todo el HTML en el contenedor oculto y llamar a la impresión nativa
-            const areaPrint = document.getElementById('area-impresion-pdf');
-            areaPrint.innerHTML = htmlContent;
-            
-            // Añadir clase para visibilizar solo en impresión
-            areaPrint.classList.add('active-print');
-            
+        function ejecutarDescargaPDF() {
+            const btn = document.querySelector('.btn-descargar'); 
+            const textoOriginal = btn.innerText;
+            btn.innerText = "⏳ Generando Archivo PDF...";
+
             setTimeout(() => {
-                window.print();
-                // Limpiar después de imprimir
-                areaPrint.classList.remove('active-print');
-            }, 500);
+                try {
+                    const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; 
+                    const h_nom = hd.nombre || 'TAURUS CONTROL'; 
+                    const h_log = hd.logo || "";
+                    const modo = document.getElementById('f-inf-modo').value;
+                    
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF('p', 'mm', 'a4');
+                    
+                    const addMembrete = (tituloReporte) => {
+                        doc.setFontSize(20);
+                        doc.setFont("helvetica", "bold");
+                        doc.text(cleanPDFText(h_nom).toUpperCase(), 14, 20);
+                        
+                        doc.setFontSize(11);
+                        doc.setFont("helvetica", "normal");
+                        doc.text(cleanPDFText(tituloReporte), 14, 27);
+                        
+                        doc.setFontSize(9);
+                        doc.text(`Emitido: ${new Date().toLocaleDateString()}`, 14, 32);
+                        
+                        if (h_log && h_log.startsWith('data:image')) {
+                            try { 
+                                let imgProps = doc.getImageProperties(h_log);
+                                let ratio = imgProps.width / imgProps.height;
+                                let targetHeight = 16;
+                                let targetWidth = targetHeight * ratio;
+                                if(targetWidth > 40) { targetWidth = 40; targetHeight = targetWidth / ratio; }
+                                doc.addImage(h_log, 'PNG', 196 - targetWidth, 15, targetWidth, targetHeight, '', 'FAST'); 
+                            } catch(e) {}
+                        }
+                        
+                        doc.setLineWidth(0.5);
+                        doc.line(14, 35, 196, 35);
+                    };
+
+                    if (rpPrint !== "") {
+                        const regs = obtenerHistorial(rpPrint);
+                        if (regs.length === 0) {
+                            alert("Sin registros para este RP.");
+                            btn.innerText = textoOriginal;
+                            return;
+                        }
+
+                        let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
+                        const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor||"").split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=String(uP.detalles||"").split('|')[0]||"-"; } 
+                        const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; lote=String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; } 
+                        const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
+                        const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
+                        const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nut = (uNut.valor || "") + " | " + (uNut.detalles || "");
+                        const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "") + " | " + (uSan.detalles || "");
+                        const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) ins = (uIns.valor || "") + " | " + (uIns.detalles || "");
+
+                        addMembrete(`Dossier Clínico Histórico - RP: ${rpPrint.toUpperCase()}`);
+
+                        doc.setFontSize(12);
+                        doc.setFont("helvetica", "bold");
+                        doc.text("Resumen del Perfil", 14, 43);
+
+                        doc.autoTable({
+                            startY: 46,
+                            theme: 'grid',
+                            styles: { fontSize: 9, cellPadding: 3, textColor: 20 },
+                            headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold' },
+                            body: [
+                                [`Categoría: ${cleanPDFText(cat)}`, `Lote: ${cleanPDFText(lote)}`, `Carimbo: ${cleanPDFText(carimbo)}`],
+                                [`Raza: ${cleanPDFText(raza)}`, `Edad: ${cleanPDFText(edad)}`, `Último Peso: ${cleanPDFText(peso)}`],
+                                [`Dx Actual: ${cleanPDFText(dx)}`, `Genealogía: ${cleanPDFText(pa)} / ${cleanPDFText(ma)}`, `Régimen: ${cleanPDFText(nut)}`],
+                                [`Últ. Sanidad: ${cleanPDFText(san)}`, { content: `Últ. Inseminación: ${cleanPDFText(ins)}`, colSpan: 2 }]
+                            ]
+                        });
+
+                        doc.setFontSize(12);
+                        doc.setFont("helvetica", "bold");
+                        doc.text("Trazabilidad Histórica de Sucesos", 14, doc.lastAutoTable.finalY + 10);
+
+                        const tableData = [];
+                        const rows = document.getElementById('tb-informe-individual').querySelectorAll('tr');
+                        rows.forEach(tr => {
+                            const tds = tr.querySelectorAll('td');
+                            if (tds.length >= 4) {
+                                tableData.push([
+                                    cleanPDFText(tds[0].innerText),
+                                    cleanPDFText(tds[1].innerText),
+                                    cleanPDFText(tds[2].innerText),
+                                    cleanPDFText(tds[3].innerText).replace(/\n/g, ' ')
+                                ]);
+                            }
+                        });
+
+                        doc.autoTable({
+                            startY: doc.lastAutoTable.finalY + 13,
+                            theme: 'grid',
+                            head: [['Fecha', 'Procedimiento', 'Valor Principal', 'Observaciones Adicionales']],
+                            body: tableData,
+                            styles: { fontSize: 8, cellPadding: 3 },
+                            headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' },
+                            columnStyles: {
+                                0: { cellWidth: 25, halign: 'center' },
+                                1: { cellWidth: 40 },
+                                2: { cellWidth: 40, fontStyle: 'bold' },
+                                3: { cellWidth: 'auto' }
+                            }
+                        });
+
+                        let filename = `Dossier_RP_${rpPrint.toUpperCase()}.pdf`;
+                        if (window.AndroidTaurus) { 
+                            const pdfBase64 = doc.output('datauristring'); 
+                            window.AndroidTaurus.guardarPDF(pdfBase64, filename); 
+                        } else { 
+                            doc.save(filename); 
+                        }
+
+                    } else {
+                        const isInventario = (modo === 'inventario');
+                        const titulo = isInventario ? "Reporte Analítico de Inventario General" : "Reporte Analítico de Trabajos y Procedimientos";
+                        
+                        addMembrete(titulo);
+
+                        const totalReg = document.getElementById('inf-total').innerText;
+                        const totalPre = document.getElementById('inf-prenadas').innerText;
+
+                        doc.setFontSize(10);
+                        doc.setFont("helvetica", "normal");
+                        doc.text(`Total Registros Listados: ${cleanPDFText(totalReg)}`, 14, 43);
+                        doc.text(`Total Preñadas Global: ${cleanPDFText(totalPre)}`, 130, 43);
+
+                        const tableData = [];
+                        let headRows = [];
+                        let colStyles = {};
+
+                        if (isInventario) {
+                            headRows = [['Caravana', 'Categoría y Ubicación', 'Último Peso', 'Diagnóstico Actual']];
+                            colStyles = {
+                                0: { cellWidth: 30, halign: 'center', fontStyle: 'bold' },
+                                1: { cellWidth: 80 },
+                                2: { cellWidth: 30, halign: 'center' },
+                                3: { cellWidth: 40, halign: 'center' }
+                            };
+                            const rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr');
+                            rows.forEach(tr => {
+                                const tds = tr.querySelectorAll('td');
+                                if (tds.length >= 4) {
+                                    tableData.push([
+                                        cleanPDFText(tds[0].innerText),
+                                        cleanPDFText(tds[1].innerText).replace(/\n/g, ' - '),
+                                        cleanPDFText(tds[2].innerText),
+                                        cleanPDFText(tds[3].innerText)
+                                    ]);
+                                }
+                            });
+                        } else {
+                            headRows = [['Fecha', 'Caravana', 'Trabajo Realizado', 'Detalles Extras']];
+                            colStyles = {
+                                0: { cellWidth: 25, halign: 'center' },
+                                1: { cellWidth: 30, halign: 'center', fontStyle: 'bold' },
+                                2: { cellWidth: 40 },
+                                3: { cellWidth: 'auto' }
+                            };
+                            const rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr');
+                            rows.forEach(tr => {
+                                const tds = tr.querySelectorAll('td');
+                                if (tds.length >= 4) {
+                                    tableData.push([
+                                        cleanPDFText(tds[0].innerText),
+                                        cleanPDFText(tds[1].innerText),
+                                        cleanPDFText(tds[2].innerText),
+                                        cleanPDFText(tds[3].innerText).replace(/\n/g, ' ')
+                                    ]);
+                                }
+                            });
+                        }
+
+                        doc.autoTable({
+                            startY: 48,
+                            theme: 'grid',
+                            head: headRows,
+                            body: tableData,
+                            styles: { fontSize: 8, cellPadding: 3 },
+                            headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' },
+                            columnStyles: colStyles
+                        });
+
+                        let filename = 'Reporte_General.pdf';
+                        if (window.AndroidTaurus) { 
+                            const pdfBase64 = doc.output('datauristring'); 
+                            window.AndroidTaurus.guardarPDF(pdfBase64, filename); 
+                        } else { 
+                            doc.save(filename); 
+                        }
+                    }
+                    
+                    btn.innerText = textoOriginal;
+                } catch (error) {
+                    console.error(error);
+                    alert("Error al generar el PDF: " + error.message);
+                    btn.innerText = textoOriginal;
+                }
+            }, 100);
         }
 
         function cargarDisenoDesdeDB() { const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; document.getElementById('nombre-estancia').value = hd.nombre || ''; if (hd.logo && hd.logo !== "sin-logo") { mostrarLogo(hd.logo); } }
