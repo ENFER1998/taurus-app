@@ -9,8 +9,6 @@
     <meta name="theme-color" content="#0f172a">
     <link rel="icon" href="gemini-svg.ico">
     <link rel="apple-touch-icon" href="gemini-svg.ico">
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
         :root { --primario: #0f172a; --secundario: #3b82f6; --exito: #10b981; --alerta: #f59e0b; --peligro: #ef4444; --borde: #334155; --texto: #f8fafc; --muted: #94a3b8; }
@@ -127,9 +125,37 @@
         .logo-upload span { font-size: 11px; color: var(--muted); padding: 5px; }
         .input-estancia { flex: 1; background: transparent; border: none; border-bottom: 2px solid var(--borde); color: var(--texto); font-size: 24px; font-weight: 900; outline: none; padding: 5px; font-family: inherit;}
         .input-estancia:focus { border-bottom-color: var(--secundario); }
+
+        /* MAGIA PURA PARA EL PDF PERFECTO */
+        @media screen {
+            #area-impresion-pdf { display: none !important; }
+        }
+        @media print {
+            body { background: white !important; margin: 0; padding: 0; }
+            body * { visibility: hidden; }
+            #area-impresion-pdf, #area-impresion-pdf * { visibility: visible; }
+            #area-impresion-pdf { 
+                position: absolute; left: 0; top: 0; width: 100%; 
+                display: block !important; padding: 15px; 
+                background: white; color: black; font-family: Arial, sans-serif;
+            }
+            #pantalla-login, #pantalla-app, .modal, .nav-inferior, .cabecera { display: none !important; }
+            
+            /* Reglas estrictas para tablas */
+            #area-impresion-pdf table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            #area-impresion-pdf th, #area-impresion-pdf td { border: 1px solid #000; padding: 6px; font-size: 12px; color: black; text-align: left; }
+            #area-impresion-pdf th { background-color: #f1f5f9 !important; font-weight: bold; -webkit-print-color-adjust: exact; }
+            
+            /* Clave para no cortar filas por la mitad */
+            #area-impresion-pdf tr { page-break-inside: avoid !important; }
+            #area-impresion-pdf h2, #area-impresion-pdf h3 { page-break-after: avoid !important; }
+        }
     </style>
 </head>
 <body>
+
+    <!-- CONTENEDOR OCULTO PARA EL PDF NATIVO PERFECTO -->
+    <div id="area-impresion-pdf"></div>
 
     <div id="pantalla-login">
         <div class="login-contenedor">
@@ -1344,13 +1370,13 @@
             document.getElementById('inf-prenadas').innerText = tPreGlobal;
             
             if(fRp !== "") {
-                rpPrint = fRp; document.querySelector('.btn-descargar').innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
+                rpPrint = fRp; document.querySelector('.btn-descargar').innerHTML = `🖨️ Imprimir / Guardar Dossier RP: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
                 const regs = obtenerHistorial(fRp);
                 let hInd = ""; regs.forEach(r => { if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') hInd+=`<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:12px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
                 tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.filter(r => !r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master').length; document.getElementById('inf-prenadas').innerText = "-"; return;
             }
 
-            rpPrint = ""; document.querySelector('.btn-descargar').innerHTML = `🖨️ Descargar Informe PDF`;
+            rpPrint = ""; document.querySelector('.btn-descargar').innerHTML = `🖨️ Imprimir / Guardar Reporte PDF`;
 
             if(modo === 'inventario') {
                 document.getElementById('tabla-masiva').classList.remove('oculto');
@@ -1380,7 +1406,7 @@
         function ejecutarDescargaPDF() {
             const btn = document.querySelector('.btn-descargar'); 
             const textoOriginal = btn.innerText;
-            btn.innerText = "⏳ Generando PDF...";
+            btn.innerText = "⏳ Preparando Archivo...";
             
             const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; 
             const h_nom = hd.nombre || 'TAURUS CONTROL'; 
@@ -1388,22 +1414,12 @@
             const modo = document.getElementById('f-inf-modo').value;
             
             let htmlContent = `
-            <div style="width: 800px; padding: 15px; margin: 0 auto; background: white; font-family: Arial, sans-serif; color: #000; box-sizing: border-box;">
-                <style>
-                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                    th, td { border: 1px solid #cbd5e1; padding: 8px; font-size: 11px; vertical-align: middle; color: #000; }
-                    th { background-color: #f1f5f9; font-weight: bold; text-align: center; }
-                    tr { page-break-inside: avoid !important; }
-                    h2, h3, p { page-break-after: avoid !important; margin-top: 0; }
-                    .text-left { text-align: left; }
-                    .text-center { text-align: center; }
-                </style>
                 <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
                     <div style="width: 75%;">
                         <h2 style="margin: 0 0 5px 0; font-size: 20px; text-transform: uppercase;">${h_nom}</h2>`;
             
             if(rpPrint !== "") {
-                const regs = obtenerHistorial(rpPrint); if(regs.length===0){alert("Sin registros."); btn.innerText = textoOriginal; return;}
+                const regs = obtenerHistorial(rpPrint);
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
                 const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor||"").split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=String(uP.detalles||"").split('|')[0]||"-"; } 
                 const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; lote=String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; } 
@@ -1416,23 +1432,23 @@
                     <h3 style="font-size:14px; margin: 0 0 10px 0;">Resumen del Perfil</h3>
                     <table>
                         <tr>
-                            <td class="text-left"><strong>Categoría:</strong> ${cat}</td>
-                            <td class="text-left"><strong>Lote:</strong> ${lote}</td>
-                            <td class="text-left"><strong>Carimbo:</strong> ${carimbo}</td>
+                            <td><strong>Categoría:</strong> ${cat}</td>
+                            <td><strong>Lote:</strong> ${lote}</td>
+                            <td><strong>Carimbo:</strong> ${carimbo}</td>
                         </tr>
                         <tr>
-                            <td class="text-left"><strong>Raza:</strong> ${raza}</td>
-                            <td class="text-left"><strong>Edad:</strong> ${edad}</td>
-                            <td class="text-left"><strong>Último Peso:</strong> ${peso}</td>
+                            <td><strong>Raza:</strong> ${raza}</td>
+                            <td><strong>Edad:</strong> ${edad}</td>
+                            <td><strong>Último Peso:</strong> ${peso}</td>
                         </tr>
                         <tr>
-                            <td class="text-left"><strong>Dx Actual:</strong> ${dx}</td>
-                            <td class="text-left"><strong>Genealogía:</strong> ${pa} / ${ma}</td>
-                            <td class="text-left"><strong>Régimen:</strong> ${nut}</td>
+                            <td><strong>Dx Actual:</strong> ${dx}</td>
+                            <td><strong>Genealogía:</strong> ${pa} / ${ma}</td>
+                            <td><strong>Régimen:</strong> ${nut}</td>
                         </tr>
                         <tr>
-                            <td class="text-left"><strong>Últ. Sanidad:</strong> ${san}</td>
-                            <td colspan="2" class="text-left"><strong>Últ. Inseminación:</strong> ${ins}</td>
+                            <td><strong>Últ. Sanidad:</strong> ${san}</td>
+                            <td colspan="2"><strong>Últ. Inseminación:</strong> ${ins}</td>
                         </tr>
                     </table>
                     
@@ -1452,10 +1468,10 @@
                 rows.forEach(tr => { 
                     htmlContent += `<tr>`; 
                     let tds = tr.querySelectorAll('td');
-                    if (tds.length >= 4) { htmlContent += `<td class="text-center">${tds[0].innerText}</td><td class="text-center">${tds[1].innerText}</td><td class="text-center"><b>${tds[2].innerText}</b></td><td class="text-left">${tds[3].innerHTML}</td>`; }
+                    if (tds.length >= 4) { htmlContent += `<td style="text-align:center;">${tds[0].innerText}</td><td style="text-align:center;">${tds[1].innerText}</td><td style="text-align:center;"><b>${tds[2].innerText}</b></td><td>${tds[3].innerHTML}</td>`; }
                     htmlContent += `</tr>`; 
                 });
-                htmlContent += `</tbody></table></div>`;
+                htmlContent += `</tbody></table>`;
             } else {
                 const titulo = modo === 'inventario' ? "Reporte Analítico de Inventario General" : "Reporte Analítico de Trabajos y Procedimientos";
                 
@@ -1480,7 +1496,7 @@
                     rows.forEach(tr => { 
                         htmlContent += `<tr>`; 
                         let tds = tr.querySelectorAll('td'); 
-                        if (tds.length >= 4) { htmlContent += `<td class="text-center"><b>${tds[0].innerText}</b></td><td class="text-left">${tds[1].innerHTML}</td><td class="text-center">${tds[2].innerText}</td><td class="text-center">${tds[3].innerText}</td>`; } 
+                        if (tds.length >= 4) { htmlContent += `<td style="text-align:center; font-size:14px;"><b>${tds[0].innerText}</b></td><td>${tds[1].innerHTML}</td><td style="text-align:center;">${tds[2].innerText}</td><td style="text-align:center;">${tds[3].innerText}</td>`; } 
                         htmlContent += `</tr>`; 
                     });
                 } else {
@@ -1494,34 +1510,20 @@
                     rows.forEach(tr => { 
                         htmlContent += `<tr>`; 
                         let tds = tr.querySelectorAll('td'); 
-                        if(tds.length >= 4) { htmlContent += `<td class="text-center">${tds[0].innerText}</td><td class="text-center"><b>${tds[1].innerText}</b></td><td class="text-center">${tds[2].innerText}</td><td class="text-left">${tds[3].innerHTML}</td>`; } 
+                        if(tds.length >= 4) { htmlContent += `<td style="text-align:center;">${tds[0].innerText}</td><td style="text-align:center; font-size:14px;"><b>${tds[1].innerText}</b></td><td style="text-align:center;">${tds[2].innerText}</td><td>${tds[3].innerHTML}</td>`; } 
                         htmlContent += `</tr>`; 
                     });
                 }
-                htmlContent += `</tbody></table></div>`;
+                htmlContent += `</tbody></table>`;
             }
             
-            const opt = { 
-                margin: [10, 10, 10, 10], 
-                filename: rpPrint !== "" ? `Dossier_RP_${rpPrint.toUpperCase()}.pdf` : 'Reporte_General.pdf',
-                image: { type: 'jpeg', quality: 1 }, 
-                html2canvas: { scale: 2, useCORS: true, letterRendering: true, windowWidth: 800, scrollY: 0 }, 
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', 'td', 'th', 'h3', 'h2', 'p'] }
-            };
-
-            html2pdf().set(opt).from(htmlContent).toPdf().get('pdf').then(function(pdf) {
-                if (window.AndroidTaurus) { 
-                    const base64 = pdf.output('datauristring'); 
-                    window.AndroidTaurus.guardarPDF(base64, opt.filename); 
-                } else { 
-                    pdf.save(opt.filename); 
-                }
+            const areaPrint = document.getElementById('area-impresion-pdf');
+            areaPrint.innerHTML = htmlContent;
+            
+            setTimeout(() => {
+                window.print();
                 btn.innerText = textoOriginal;
-            }).catch(e => { 
-                alert("Error al generar el documento.");
-                btn.innerText = textoOriginal; 
-            });
+            }, 500);
         }
 
         function cargarDisenoDesdeDB() { const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; document.getElementById('nombre-estancia').value = hd.nombre || ''; if (hd.logo && hd.logo !== "sin-logo") { mostrarLogo(hd.logo); } }
