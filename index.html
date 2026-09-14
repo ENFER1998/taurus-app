@@ -126,36 +126,45 @@
         .input-estancia { flex: 1; background: transparent; border: none; border-bottom: 2px solid var(--borde); color: var(--texto); font-size: 24px; font-weight: 900; outline: none; padding: 5px; font-family: inherit;}
         .input-estancia:focus { border-bottom-color: var(--secundario); }
 
-        /* MAGIA PURA PARA EL PDF PERFECTO */
+        /* ========================================================
+           MAGIA DE IMPRESIÓN NATIVA ESTILO LUIS TRANSPORTES
+           ======================================================== */
         @media screen {
-            #area-impresion-pdf { display: none !important; }
+            .print-area { display: none !important; }
         }
         @media print {
+            /* Con margin 0 eliminamos el header del navegador (Fecha y Link Github) */
+            @page { margin: 0; size: A4 portrait; }
+            
             body { background: white !important; margin: 0; padding: 0; }
             body * { visibility: hidden; }
-            #area-impresion-pdf, #area-impresion-pdf * { visibility: visible; }
-            #area-impresion-pdf { 
+            
+            .print-area.active-print, .print-area.active-print * { visibility: visible; }
+            .print-area.active-print { 
                 position: absolute; left: 0; top: 0; width: 100%; 
-                display: block !important; padding: 15px; 
+                display: block !important; padding: 15mm; 
                 background: white; color: black; font-family: Arial, sans-serif;
             }
+            
             #pantalla-login, #pantalla-app, .modal, .nav-inferior, .cabecera { display: none !important; }
             
-            /* Reglas estrictas para tablas */
-            #area-impresion-pdf table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-            #area-impresion-pdf th, #area-impresion-pdf td { border: 1px solid #000; padding: 6px; font-size: 12px; color: black; text-align: left; }
-            #area-impresion-pdf th { background-color: #f1f5f9 !important; font-weight: bold; -webkit-print-color-adjust: exact; }
+            /* Reglas estrictas para que la tabla no se corte */
+            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            th, td { border: 1px solid #000; padding: 6px; font-size: 10px; color: black; text-align: left; }
+            th { background-color: #f1f5f9 !important; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             
-            /* Clave para no cortar filas por la mitad */
-            #area-impresion-pdf tr { page-break-inside: avoid !important; }
-            #area-impresion-pdf h2, #area-impresion-pdf h3 { page-break-after: avoid !important; }
+            /* Esto le dice al navegador que jamás corte una fila por la mitad */
+            tr { page-break-inside: avoid !important; page-break-after: auto; }
+            thead { display: table-header-group; }
+            tfoot { display: table-footer-group; }
+            h2, h3, p { page-break-after: avoid !important; margin-top: 0; }
         }
     </style>
 </head>
 <body>
 
-    <!-- CONTENEDOR OCULTO PARA EL PDF NATIVO PERFECTO -->
-    <div id="area-impresion-pdf"></div>
+    <!-- CONTENEDOR OCULTO PARA EL PDF NATIVO -->
+    <div id="area-impresion-pdf" class="print-area"></div>
 
     <div id="pantalla-login">
         <div class="login-contenedor">
@@ -290,7 +299,7 @@
 
             <div id="vista-informe" class="oculto">
                 <div class="tarjeta">
-                    <button class="btn-descargar no-print" onclick="ejecutarDescargaPDF()">🖨️ Descargar Informe PDF</button>
+                    <button class="btn-descargar no-print" onclick="ejecutarDescargaPDF()">🖨️ Crear Informe PDF</button>
 
                     <div class="encabezado-impresion" id="panel-membrete-reporte">
                         <div class="logo-upload no-print-border" onclick="document.getElementById('input-logo').click()">
@@ -1403,11 +1412,10 @@
             }
         }
 
+        // ==========================================
+        // SISTEMA DE IMPRESIÓN NATIVO (SIN LIBRERÍAS)
+        // ==========================================
         function ejecutarDescargaPDF() {
-            const btn = document.querySelector('.btn-descargar'); 
-            const textoOriginal = btn.innerText;
-            btn.innerText = "⏳ Preparando Archivo...";
-            
             const hd = JSON.parse(localStorage.getItem('tc_hacienda')) || {}; 
             const h_nom = hd.nombre || 'TAURUS CONTROL'; 
             const h_log = hd.logo || "";
@@ -1420,6 +1428,8 @@
             
             if(rpPrint !== "") {
                 const regs = obtenerHistorial(rpPrint);
+                if(regs.length === 0) { alert("Sin registros."); return; }
+                
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
                 const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor||"").split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=String(uP.detalles||"").split('|')[0]||"-"; } 
                 const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; lote=String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; } 
@@ -1517,12 +1527,17 @@
                 htmlContent += `</tbody></table>`;
             }
             
+            // Insertar todo el HTML en el contenedor oculto y llamar a la impresión nativa
             const areaPrint = document.getElementById('area-impresion-pdf');
             areaPrint.innerHTML = htmlContent;
             
+            // Añadir clase para visibilizar solo en impresión
+            areaPrint.classList.add('active-print');
+            
             setTimeout(() => {
                 window.print();
-                btn.innerText = textoOriginal;
+                // Limpiar después de imprimir
+                areaPrint.classList.remove('active-print');
             }, 500);
         }
 
