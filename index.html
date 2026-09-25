@@ -472,6 +472,15 @@
         let dbCache = []; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
         let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
 
+        // AUTO-LOGIN INSTANTÁNEO
+        window.onload = function() {
+            const cred = lsGet('tc_cred', null);
+            if(cred && cred.u && cred.p) {
+                const db = lsGet('tc_db', []);
+                arrancarSistema(db, cred.u, cred.m, cred.r, cred.n, cred.h);
+            }
+        };
+
         if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
         function toggleTema() {
             document.body.classList.toggle('tema-claro');
@@ -578,7 +587,15 @@
                 let displayRol = isPropietario ? 'Propietario' : 'Operador';
                 
                 if (window.AndroidTaurus && window.AndroidTaurus.identificarUsuarioPush) { window.AndroidTaurus.identificarUsuarioPush(displayRol, maestroId); }
-                if (window.OneSignalDeferred) { OneSignalDeferred.push(function(OneSignal) { OneSignal.User.addTags({ rol: displayRol, estancia_id: m }); }); }
+                
+                if (window.OneSignalDeferred) { 
+                    OneSignalDeferred.push(async function(OneSignal) { 
+                        OneSignal.User.addTags({ rol: displayRol, estancia_id: m }); 
+                        if (isPropietario) {
+                            await OneSignal.Slidedown.promptPush();
+                        }
+                    }); 
+                }
                 
                 document.getElementById('usuario-activo-lbl').value = `${usHacienda.toUpperCase()} - ${usNombre} (${displayRol})`;
                 
@@ -643,6 +660,7 @@
                 if(tabSeleccionado) { cambiarVista(vistaInicial, tabSeleccionado); } else { cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
                 
                 sincronizarPendientesAuto(); cargarListaOperadores();
+                setTimeout(() => sincronizarFondo(false), 2000);
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
 
@@ -826,12 +844,9 @@
         }
 
         function mostrarCarimboCalculado() {
-            const fechaVal = document.getElementById('f-nacimiento').value;
-            const lbl = document.getElementById('lbl-auto-carimbo');
+            const fechaVal = document.getElementById('f-nacimiento').value; const lbl = document.getElementById('lbl-auto-carimbo');
             if(!fechaVal) { lbl.innerText = ""; return; }
-            
-            const partes = fechaVal.split('-'); 
-            let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
+            const partes = fechaVal.split('-'); let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
             if (mes >= 7) anio += 1;
             let carimboCalculado = anio % 10;
             lbl.innerText = "🎯 Carimbo Oficial SENACSA calculado: " + carimboCalculado;
@@ -848,19 +863,16 @@
             ejecutarAccion('Perfil Master', `${fRaza||"-"}|${fNacimiento||"-"}|${fPadre||"-"}|${fMadre||"-"}`, catValor, 'modal-perfil'); 
             
             if (fNacimiento && fNacimiento !== "-") {
-                const partes = fNacimiento.split('-'); 
-                let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
+                const partes = fNacimiento.split('-'); let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
                 if (mes >= 7) anio += 1;
-                let carimboCalculado = anio % 10;
-                let loteActual = document.getElementById('val-lote').innerText || "-";
-                let catActual = document.getElementById('val-categoria').innerText || "-";
+                let carimboCalculado = anio % 10; let loteActual = document.getElementById('val-lote').innerText || "-"; let catActual = document.getElementById('val-categoria').innerText || "-";
                 ejecutarAccion('Actualización de Datos', `Cat: ${catActual} | Carimbo: ${carimboCalculado}`, `Lote: ${loteActual}`, null);
             }
         }
 
         function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'modal-clasificacion'); }
         function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'modal-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
-        function borrarCaravana() { if(!rpActivo) return; if(confirm(`¿ELIMINAR todo el historial de la caravana ${rpActivo}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null); cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); } }
+        function borrarCaravana() { if(!rpActivo) return; if(confirm(`¿ELIMINAR todo el historial de la caravana ${rpActivo}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null); alert("Historial eliminado. El número quedó libre."); cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); } }
         function verHistorial() { abrirModal('modal-historial'); let h = "<ul style='list-style:none; padding:0; margin:0;'>"; obtenerHistorial(rpActivo).forEach(r => { if(!r.accion.includes('Vinculacion')) { h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px;"><span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span><br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span></li>`; }}); document.getElementById('contenido-historial').innerHTML = h + "</ul>"; }
 
         function cambiarModoReporte() {
