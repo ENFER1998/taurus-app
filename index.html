@@ -131,7 +131,7 @@
         <div class="login-contenedor">
             <div class="logo-icono"><img src="gemini-svg.ico" alt="Logo Taurus"></div>
             <div class="titulo-login">Taurus Control</div>
-            <input type="text" id="usuario" class="form-control-login" placeholder="Usuario" autocomplete="off">
+            <input type="text" id="usuario" class="form-control-login" placeholder="Usuario de Acceso" autocomplete="off">
             <input type="password" id="password" class="form-control-login" placeholder="Contraseña">
             <div id="error-login" class="error-msj"></div>
             <button id="btn-ingreso" class="btn-ingresar" onclick="procesarIngreso()">Iniciar Sesión</button>
@@ -318,12 +318,12 @@
                 <div class="tarjeta" id="panel-membrete">
                     <div class="tarjeta-titulo">🖨️ Membrete Documentos PDF</div>
                     <div class="form-grupo"><label>Nombre Empresa</label><input type="text" id="cfg-nom" class="form-control" placeholder="Taurus Control"></div>
+                    <div class="form-grupo"><label>Logo Oficial (PNG)</label><input type="file" id="cfg-logo" class="form-control" style="padding:6px;" accept="image/*"></div>
                     <button class="btn-guardar" onclick="guardarDisenoServidor()">Guardar Diseño</button>
                 </div>
 
                 <div class="tarjeta" id="panel-crear-peones">
                     <div class="tarjeta-titulo">👷 Control de Operadores</div>
-                    
                     <div class="form-grupo"><label>Nombre y Apellido</label><input type="text" id="op-nombre" class="form-control" autocomplete="off" placeholder="Ej: Juan Ramírez"></div>
                     <div class="form-grupo"><label>Usuario de Acceso</label><input type="text" id="op-usu" class="form-control" autocomplete="off" placeholder="Ej: jramirez"></div>
                     <div class="form-grupo"><label>Contraseña</label><input type="password" id="op-pass" class="form-control" autocomplete="new-password"></div>
@@ -339,10 +339,10 @@
                     <div class="form-grupo" id="caja-permisos">
                         <label style="font-size:12px; color:var(--muted); margin-bottom:8px; display:block;">Permisos de Menú Inferior:</label>
                         <div style="display:flex; flex-direction:column; gap:10px; background:var(--primario); padding:12px; border:1px solid var(--borde); border-radius:8px;">
-                            <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="vista-dashboard" checked> 📊 Panel de Control</label>
-                            <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="vista-manga" checked> 🐄 Ficha Clínica (Manga)</label>
-                            <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="vista-registro" checked> 📋 Base de Datos</label>
-                            <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="vista-informe"> 📄 Reportes PDF</label>
+                            <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="dash" checked> 📊 Panel de Control</label>
+                            <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="ficha" checked> 🐄 Ficha Clínica (Manga)</label>
+                            <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="base" checked> 📋 Base de Datos</label>
+                            <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="reporte"> 📄 Reportes PDF</label>
                         </div>
                     </div>
                     <button id="btn-crear-op" class="btn-guardar" style="background:var(--exito);" onclick="crearOperador()">Registrar Usuario</button>
@@ -359,10 +359,10 @@
                         <div class="form-grupo">
                             <label style="font-size:12px; color:var(--muted); margin-bottom:8px; display:block;">Nuevos Permisos:</label>
                             <div style="display:flex; flex-direction:column; gap:10px; background:var(--primario); padding:12px; border:1px solid var(--borde); border-radius:8px;">
-                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="vista-dashboard"> 📊 Panel de Control</label>
-                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="vista-manga"> 🐄 Ficha Clínica (Manga)</label>
-                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="vista-registro"> 📋 Base de Datos</label>
-                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="vista-informe"> 📄 Reportes PDF</label>
+                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="dash"> 📊 Panel de Control</label>
+                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="ficha"> 🐄 Ficha Clínica (Manga)</label>
+                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="base"> 📋 Base de Datos</label>
+                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="reporte"> 📄 Reportes PDF</label>
                             </div>
                         </div>
                         <button id="btn-editar-op" class="btn-guardar" style="background:var(--secundario);" onclick="guardarEdicionOperador()">Actualizar Permisos</button>
@@ -595,23 +595,31 @@
                     document.getElementById('panel-membrete').style.display = 'none';
                     document.getElementById('panel-licencia').style.display = 'none';
                     
-                    let perms = usRol.includes('|') ? usRol.split('|')[1] : "vista-dashboard,vista-manga,vista-registro,vista-informe";
+                    let perms = usRol.includes('|') ? usRol.split('|')[1] : "dash,ficha,base,reporte";
                     let foundFirst = false;
                     
                     document.querySelectorAll('.nav-item').forEach(li => {
                         let target = li.getAttribute('onclick');
                         if(target && target.includes('cambiarVista')) {
                             let viewId = target.match(/'([^']+)'/)[1];
-                            if (viewId !== 'vista-config' && !perms.includes(viewId)) {
+                            let esConfig = viewId.includes('config');
+                            let isAllowed = false;
+                            
+                            if(viewId.includes('dash') && perms.includes('dash')) isAllowed = true;
+                            if((viewId.includes('ficha') || viewId.includes('manga')) && perms.includes('ficha')) isAllowed = true;
+                            if((viewId.includes('base') || viewId.includes('registro')) && perms.includes('base')) isAllowed = true;
+                            if((viewId.includes('reporte') || viewId.includes('informe')) && perms.includes('reporte')) isAllowed = true;
+                            
+                            if (!esConfig && !isAllowed) {
                                 li.style.display = 'none'; 
                             } else {
                                 li.style.display = 'flex';
-                                if (!foundFirst && viewId !== 'vista-config') { vistaInicial = viewId; tabSeleccionado = li; foundFirst = true; }
+                                if (!foundFirst && !esConfig) { vistaInicial = viewId; tabSeleccionado = li; foundFirst = true; }
                             }
                         }
                     });
 
-                    if(!perms.includes('vista-dashboard')) { let pAn = document.getElementById('panel-analiticas'); if(pAn) pAn.style.display = 'none'; }
+                    if(!perms.includes('dash')) { let pAn = document.getElementById('panel-analiticas'); if(pAn) pAn.style.display = 'none'; }
                 }
                 
                 const cred = lsGet('tc_cred', {});
@@ -749,7 +757,9 @@
                         } catch(e) {}
                     });
                     document.getElementById('val-comentario').innerText = ultComentario;
-                } else { document.getElementById('val-comentario').innerText = "Sin comentarios."; }
+                } else {
+                    document.getElementById('val-comentario').innerText = "Sin comentarios.";
+                }
                 
                 const elCat = document.getElementById('val-categoria'); if(elCat) elCat.innerText = cat;
                 const elPeso = document.getElementById('val-peso'); if(elPeso) elPeso.innerText = peso;
@@ -765,7 +775,10 @@
                 const elEdad = document.getElementById('val-edad'); if(elEdad) elEdad.innerText = edad;
                 const fRaza = document.getElementById('f-raza'); if(fRaza) fRaza.value = raza !== "-" ? raza : ""; 
                 const fNacimiento = document.getElementById('f-nacimiento'); 
-                if(fNacimiento) { fNacimiento.value = edad !== "-" ? edad : ""; mostrarCarimboCalculado(); } 
+                if(fNacimiento) { 
+                    fNacimiento.value = edad !== "-" ? edad : ""; 
+                    mostrarCarimboCalculado(); 
+                } 
                 const fPadre = document.getElementById('f-padre'); if(fPadre) fPadre.value = padre !== "-" ? padre : ""; 
                 const fMadre = document.getElementById('f-madre'); if(fMadre) fMadre.value = madre !== "-" ? madre : ""; 
                 const inputCarimbo = document.getElementById('input-carimbo-rapido'); if(inputCarimbo) inputCarimbo.value = carimbo !== "-" ? carimbo : ""; 
@@ -813,9 +826,12 @@
         }
 
         function mostrarCarimboCalculado() {
-            const fechaVal = document.getElementById('f-nacimiento').value; const lbl = document.getElementById('lbl-auto-carimbo');
+            const fechaVal = document.getElementById('f-nacimiento').value;
+            const lbl = document.getElementById('lbl-auto-carimbo');
             if(!fechaVal) { lbl.innerText = ""; return; }
-            const partes = fechaVal.split('-'); let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
+            
+            const partes = fechaVal.split('-'); 
+            let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
             if (mes >= 7) anio += 1;
             let carimboCalculado = anio % 10;
             lbl.innerText = "🎯 Carimbo Oficial SENACSA calculado: " + carimboCalculado;
@@ -832,9 +848,12 @@
             ejecutarAccion('Perfil Master', `${fRaza||"-"}|${fNacimiento||"-"}|${fPadre||"-"}|${fMadre||"-"}`, catValor, 'modal-perfil'); 
             
             if (fNacimiento && fNacimiento !== "-") {
-                const partes = fNacimiento.split('-'); let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
+                const partes = fNacimiento.split('-'); 
+                let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
                 if (mes >= 7) anio += 1;
-                let carimboCalculado = anio % 10; let loteActual = document.getElementById('val-lote').innerText || "-"; let catActual = document.getElementById('val-categoria').innerText || "-";
+                let carimboCalculado = anio % 10;
+                let loteActual = document.getElementById('val-lote').innerText || "-";
+                let catActual = document.getElementById('val-categoria').innerText || "-";
                 ejecutarAccion('Actualización de Datos', `Cat: ${catActual} | Carimbo: ${carimboCalculado}`, `Lote: ${loteActual}`, null);
             }
         }
@@ -1136,24 +1155,20 @@
             }
         }
 
-        // ==========================================
-        // EDICIÓN DE PERMISOS DE OPERADOR
-        // ==========================================
         function cargarPermisosEdicion() {
             let u = document.getElementById('op-edit-usu-sel').value;
             let caja = document.getElementById('caja-edit-permisos');
             if(!u) { caja.classList.add('oculto'); return; }
             caja.classList.remove('oculto');
             
-            // Buscar el último registro de creación o edición de este usuario para adivinar sus permisos actuales
             let ev = dbCache.find(d => (d.accion === 'Alta Operador' || d.accion === 'Edición Operador') && d.valor === u);
-            let perms = "vista-dashboard,vista-manga,vista-registro,vista-informe"; 
+            let perms = "dash,ficha,base,reporte"; 
             if(ev && ev.detalles) {
                 let rMatch = ev.detalles.match(/Rol: ([^|]+)/);
                 if(rMatch) {
                     let rolFull = rMatch[1].trim();
                     if(rolFull.includes('|')) perms = rolFull.split('|')[1];
-                    else if(rolFull === 'Propietario') perms = "vista-dashboard,vista-manga,vista-registro,vista-informe";
+                    else if(rolFull === 'Propietario') perms = "dash,ficha,base,reporte";
                     else perms = rolFull; 
                 }
             }
@@ -1245,38 +1260,21 @@
             }
         }
 
-        function cargarListaOperadores() {
-            let operadoresMap = new Map(); // Mapa para unificar mayúsculas y minúsculas (Ej: jramirez y JRamirez)
-            let dadosDeBaja = new Set(); 
-            let eliminados = lsGet('tc_op_eliminados', []);
-            
-            dbCache.forEach(d => {
-                let det = d.detalles || "";
-                if(d.accion === 'Baja Operador' && d.valor) dadosDeBaja.add(d.valor.trim().toLowerCase());
-                
-                if(d.accion === 'Alta Operador' && d.valor) { 
-                    let uName = d.valor.trim();
-                    if(!operadoresMap.has(uName.toLowerCase())) operadoresMap.set(uName.toLowerCase(), uName);
+        async function cargarListaOperadores() {
+            if (!usRol.includes('Propietario') && !usRol.includes('Dueño')) return;
+            try {
+                let response = await fetch(`${GOOGLE_SHEETS_URL}?accion=listar_operadores&maestro=${encodeURIComponent(maestroId)}`);
+                let result = await response.json();
+                if(!result.error) {
+                    let ops = result.data || [];
+                    const selDel = document.getElementById('op-del-usu-sel');
+                    const selEdit = document.getElementById('op-edit-usu-sel');
+                    let options = '<option value="">-- Seleccione un operador --</option>';
+                    ops.forEach(o => { options += `<option value="${o}">${o}</option>`; });
+                    if(selDel) selDel.innerHTML = options;
+                    if(selEdit) selEdit.innerHTML = options;
                 }
-                if(det.includes('Op:')) { 
-                    let nombre = det.split('Op:')[1].split('|')[0].trim(); 
-                    if(nombre && !operadoresMap.has(nombre.toLowerCase())) operadoresMap.set(nombre.toLowerCase(), nombre); 
-                }
-            });
-            
-            const selDel = document.getElementById('op-del-usu-sel');
-            const selEdit = document.getElementById('op-edit-usu-sel');
-            
-            if(selDel) {
-                let options = '<option value="">-- Seleccione un operador --</option>';
-                operadoresMap.forEach((originalCase, lowerCase) => { 
-                    if(lowerCase !== usActivo.toLowerCase() && !eliminados.includes(lowerCase) && !dadosDeBaja.has(lowerCase)) { 
-                        options += `<option value="${originalCase}">${originalCase}</option>`; 
-                    } 
-                });
-                selDel.innerHTML = options;
-                if(selEdit) selEdit.innerHTML = options;
-            }
+            } catch(e) { console.error("Error al cargar operadores", e); }
         }
 
         function cambiarMiContrasena() { if(!navigator.onLine) { alert("Necesitas conexión."); return; } const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) { alert("Mínimo 4 caracteres."); return; } const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { alert("Contraseña actualizada con éxito."); document.getElementById('nueva-clave').value = ''; let cred = lsGet('tc_cred', {}); cred.p = nueva; lsSet('tc_cred', cred); }); }
