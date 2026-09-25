@@ -717,11 +717,19 @@
                         let target = li.getAttribute('onclick');
                         if(target && target.includes('cambiarVista')) {
                             let viewId = target.match(/'([^']+)'/)[1];
-                            if (viewId !== 'v-config' && !perms.includes(viewId)) {
+                            let esConfig = viewId.includes('config');
+                            let isAllowed = false;
+                            
+                            if(viewId === 'v-dash' && perms.includes('v-dash')) isAllowed = true;
+                            if(viewId === 'v-ficha' && perms.includes('v-ficha')) isAllowed = true;
+                            if(viewId === 'v-base' && perms.includes('v-base')) isAllowed = true;
+                            if(viewId === 'v-reporte' && perms.includes('v-reporte')) isAllowed = true;
+                            
+                            if (!esConfig && !isAllowed) {
                                 li.style.display = 'none'; 
                             } else {
                                 li.style.display = 'flex';
-                                if (!foundFirst && viewId !== 'v-config') { vistaInicial = viewId; tabSeleccionado = li; foundFirst = true; }
+                                if (!foundFirst && !esConfig) { vistaInicial = viewId; tabSeleccionado = li; foundFirst = true; }
                             }
                         }
                     });
@@ -855,10 +863,11 @@
                     const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) sanidad = (uSan.valor || "-") + " | " + (uSan.detalles || "");
                     const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) inseminacion = (uIns.valor || "-") + " | " + (uIns.detalles || "");
                     
+                    let ultComentario = "Sin comentarios.";
                     regs.forEach(r => {
                         try {
                             let acc = String(r.accion).trim(); let det = String(r.detalles || ""); let notaTexto = "";
-                            if (acc === 'Comentario') { notaTexto = det.split('|')[0] || ""; } 
+                            if (acc === 'Comentario') { notaTexto = det.split('|')[0] || ""; if(ultComentario === "Sin comentarios.") ultComentario = notaTexto; } 
                             else if (det.includes('Notas:')) { let parts = det.split('Notas:'); if (parts.length > 1) { let n = parts[1].split('|')[0].trim(); if(n && n !== "-" && n !== "") notaTexto = `[${acc}] ${n}`; } }
                             if (notaTexto && notaTexto !== "-" && notaTexto.toLowerCase() !== "sin comentarios.") { htmlNotas += `<div class="nota-item"><span class="f">${new Date(r.fecha).toLocaleDateString()}</span><span class="t">${notaTexto}</span></div>`; }
                         } catch(e) {}
@@ -1252,16 +1261,12 @@
             }
         }
 
-        // ==========================================
-        // EDICIÓN DE PERMISOS DE OPERADOR
-        // ==========================================
         function cargarPermisosEdicion() {
             let u = document.getElementById('op-edit-usu-sel').value;
             let caja = document.getElementById('caja-edit-permisos');
             if(!u) { caja.classList.add('oculto'); return; }
             caja.classList.remove('oculto');
             
-            // Buscar el último registro de creación o edición de este usuario para adivinar sus permisos actuales
             let ev = dbCache.find(d => (d.accion === 'Alta Operador' || d.accion === 'Edición Operador') && d.valor === u);
             let perms = "v-dash,v-ficha,v-base,v-reporte"; 
             if(ev && ev.detalles) {
@@ -1361,38 +1366,21 @@
             }
         }
 
-        function cargarListaOperadores() {
-            let operadoresMap = new Map(); // Mapa para unificar mayúsculas y minúsculas (Ej: jramirez y JRamirez)
-            let dadosDeBaja = new Set(); 
-            let eliminados = lsGet('tc_op_eliminados', []);
-            
-            dbCache.forEach(d => {
-                let det = d.detalles || "";
-                if(d.accion === 'Baja Operador' && d.valor) dadosDeBaja.add(d.valor.trim().toLowerCase());
-                
-                if(d.accion === 'Alta Operador' && d.valor) { 
-                    let uName = d.valor.trim();
-                    if(!operadoresMap.has(uName.toLowerCase())) operadoresMap.set(uName.toLowerCase(), uName);
+        async function cargarListaOperadores() {
+            if (!usRol.includes('Propietario') && !usRol.includes('Dueño')) return;
+            try {
+                let response = await fetch(`${GOOGLE_SHEETS_URL}?accion=listar_operadores&maestro=${encodeURIComponent(maestroId)}`);
+                let result = await response.json();
+                if(!result.error) {
+                    let ops = result.data || [];
+                    const selDel = document.getElementById('op-del-usu-sel');
+                    const selEdit = document.getElementById('op-edit-usu-sel');
+                    let options = '<option value="">-- Seleccione un operador --</option>';
+                    ops.forEach(o => { options += `<option value="${o}">${o}</option>`; });
+                    if(selDel) selDel.innerHTML = options;
+                    if(selEdit) selEdit.innerHTML = options;
                 }
-                if(det.includes('Op:')) { 
-                    let nombre = det.split('Op:')[1].split('|')[0].trim(); 
-                    if(nombre && !operadoresMap.has(nombre.toLowerCase())) operadoresMap.set(nombre.toLowerCase(), nombre); 
-                }
-            });
-            
-            const selDel = document.getElementById('op-del-usu-sel');
-            const selEdit = document.getElementById('op-edit-usu-sel');
-            
-            if(selDel) {
-                let options = '<option value="">-- Seleccione un operador --</option>';
-                operadoresMap.forEach((originalCase, lowerCase) => { 
-                    if(lowerCase !== usActivo.toLowerCase() && !eliminados.includes(lowerCase) && !dadosDeBaja.has(lowerCase)) { 
-                        options += `<option value="${originalCase}">${originalCase}</option>`; 
-                    } 
-                });
-                selDel.innerHTML = options;
-                if(selEdit) selEdit.innerHTML = options;
-            }
+            } catch(e) { console.error("Error al cargar operadores", e); }
         }
 
         function cambiarMiContrasena() { if(!navigator.onLine) { alert("Necesitas conexión."); return; } const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) { alert("Mínimo 4 caracteres."); return; } const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { alert("Contraseña actualizada con éxito."); document.getElementById('nueva-clave').value = ''; let cred = lsGet('tc_cred', {}); cred.p = nueva; lsSet('tc_cred', cred); }); }
