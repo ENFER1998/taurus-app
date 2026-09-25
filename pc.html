@@ -136,7 +136,7 @@
             <img src="gemini-svg.ico" alt="Logo Taurus">
             <h1 style="margin-bottom: 25px;">Taurus Control</h1>
             
-            <input type="text" id="usuario" class="form-control" placeholder="Usuario" autocomplete="off">
+            <input type="text" id="usuario" class="form-control" placeholder="Usuario de Acceso" autocomplete="off">
             <input type="password" id="password" class="form-control" placeholder="Contraseña">
             <div id="error-login" class="error-msg"></div>
             <button type="button" id="btn-ingreso" class="btn-primary" onclick="procesarIngreso()">Ingresar al Sistema</button>
@@ -169,7 +169,7 @@
 
     <div id="main-content" class="oculto">
         <div class="topbar">
-            <div class="topbar-title">Terminal Corporativa de Trazabilidad</div>
+            <div class="topbar-title" id="topbar-estancia">TERMINAL CORPORATIVA DE TRAZABILIDAD</div>
             <div class="topbar-right" style="display:flex; gap:10px; align-items:center;">
                 <div id="estado-red" class="badge online" style="padding: 6px 12px; font-size: 11px; margin: 0; cursor:pointer;" onclick="sincronizarFondo(true)" title="Haz clic para actualizar">🟢 Conectado</div>
             </div>
@@ -427,6 +427,22 @@
                     <!-- NUEVO PANEL DE CREACIÓN DE PEONES CON PERMISOS GRANULARES -->
                     <div class="tarjeta" id="panel-crear-peones">
                         <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">👷 Control de Operadores</h3>
+                        
+                        <div class="form-grupo">
+                            <label>Nombre y Apellido</label>
+                            <input type="text" id="op-nombre" class="form-control" placeholder="Ej: Juan Ramírez" autocomplete="off">
+                        </div>
+                        
+                        <div class="form-grupo">
+                            <label>Usuario de Acceso</label>
+                            <input type="text" id="op-usu" class="form-control" placeholder="Nombre corto (ej: jramirez)" autocomplete="off">
+                        </div>
+
+                        <div class="form-grupo">
+                            <label>Contraseña de Acceso</label>
+                            <input type="password" id="op-pass" class="form-control" placeholder="Clave" autocomplete="new-password">
+                        </div>
+
                         <div class="form-grupo">
                             <label>Rol del Nuevo Usuario</label>
                             <select id="op-rol" class="form-control" onchange="togglePermisos()">
@@ -444,9 +460,6 @@
                                 <label style="display:flex; gap:10px; cursor:pointer; font-size:13px;"><input type="checkbox" class="chk-permiso" value="v-reporte"> 📄 Reportes PDF</label>
                             </div>
                         </div>
-
-                        <div class="form-grupo"><label>Crear Nuevo Usuario</label><input type="text" id="op-usu" class="form-control" placeholder="Nombre de usuario" autocomplete="off"></div>
-                        <div class="form-grupo"><label>Contraseña de Acceso</label><input type="password" id="op-pass" class="form-control" placeholder="Clave" autocomplete="new-password"></div>
                         <button type="button" id="btn-crear-op" class="btn-primary" style="background:#10b981;" onclick="crearOperador()">Registrar Usuario</button>
                         
                         <hr style="border-color:var(--border); margin:20px 0;">
@@ -549,7 +562,7 @@
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 
         let dbCache = []; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
-        let rfidPendiente = "";
+        let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
 
         if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
         function toggleTema() {
@@ -567,9 +580,6 @@
             setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() => t.remove(), 500); }, 2000);
         }
 
-        // ==========================================
-        // PERMISOS DE USUARIO
-        // ==========================================
         function togglePermisos() {
             const rol = document.getElementById('op-rol').value;
             document.getElementById('caja-permisos').style.display = (rol === 'Propietario') ? 'none' : 'block';
@@ -581,20 +591,13 @@
             const btn = document.getElementById('btn-toggle-rafaga');
             const opciones = document.getElementById('opciones-rafaga');
             if(rafagaActiva) {
-                btn.innerText = "ENCENDIDO";
-                btn.style.background = "var(--primary)";
-                btn.style.color = "white";
-                btn.style.borderColor = "var(--primary)";
-                opciones.classList.remove('oculto');
-                verificarRafagaCustom();
-                notificarPropietario(`🟢 El operador ${usActivo} ha ACTIVADO el Modo Ráfaga masivo.`);
+                btn.innerText = "ENCENDIDO"; btn.style.background = "var(--primary)"; btn.style.color = "white"; btn.style.borderColor = "var(--primary)";
+                opciones.classList.remove('oculto'); verificarRafagaCustom();
+                notificarPropietario(`🟢 ${usNombre} ha ACTIVADO el Modo Ráfaga masivo.`);
             } else {
-                btn.innerText = "APAGADO";
-                btn.style.background = "transparent";
-                btn.style.color = "var(--text-main)";
-                btn.style.borderColor = "var(--border)";
+                btn.innerText = "APAGADO"; btn.style.background = "transparent"; btn.style.color = "var(--text-main)"; btn.style.borderColor = "var(--border)";
                 opciones.classList.add('oculto');
-                notificarPropietario(`🔴 El operador ${usActivo} apagó el Modo Ráfaga.`);
+                notificarPropietario(`🔴 ${usNombre} apagó el Modo Ráfaga.`);
             }
         };
 
@@ -602,19 +605,8 @@
             const sel = document.getElementById('rafaga-accion').value;
             const customInput = document.getElementById('rafaga-prod-custom');
             const detallesBox = document.getElementById('caja-rafaga-detalles');
-            
-            if(sel === 'solo_peso') {
-                customInput.classList.add('oculto');
-                detallesBox.classList.add('oculto');
-            } else {
-                detallesBox.classList.remove('oculto');
-                if(sel === 'OTRO') {
-                    customInput.classList.remove('oculto');
-                    customInput.focus();
-                } else {
-                    customInput.classList.add('oculto');
-                }
-            }
+            if(sel === 'solo_peso') { customInput.classList.add('oculto'); detallesBox.classList.add('oculto'); } 
+            else { detallesBox.classList.remove('oculto'); if(sel === 'OTRO') { customInput.classList.remove('oculto'); customInput.focus(); } else { customInput.classList.add('oculto'); } }
         };
 
         function setEstadoRed(online, texto = null) {
@@ -645,26 +637,21 @@
                 if(res.vencimiento && new Date() > new Date(res.vencimiento)) { throw new Error("Su licencia ha vencido."); }
                 
                 let dataLimpia = Array.isArray(res.data) ? res.data : [];
-                lsSet('tc_cred', { u: u, p: p, m: res.maestro, r: res.rol, v: res.vencimiento }); 
+                lsSet('tc_cred', { u: u, p: p, m: res.maestro, r: res.rol, v: res.vencimiento, n: res.nombre_completo, h: res.hacienda }); 
                 lsSet('tc_db', dataLimpia); 
                 lsSet('tc_hacienda', { nombre: res.hacienda, logo: res.logo }); 
                 
-                arrancarSistema(dataLimpia, u, res.maestro, res.rol);
+                arrancarSistema(dataLimpia, u, res.maestro, res.rol, res.nombre_completo, res.hacienda);
             } catch(error) {
                 const cred = lsGet('tc_cred', null);
                 if(cred && String(cred.u).toLowerCase() === u.toLowerCase() && cred.p === p) { 
-                    if(cred.v && new Date() > new Date(cred.v)) {
-                        err.innerText = "Licencia local vencida."; err.style.display = 'block';
-                    } else {
-                        arrancarSistema(lsGet('tc_db', []), cred.u, cred.m, cred.r);
-                    }
+                    if(cred.v && new Date() > new Date(cred.v)) { err.innerText = "Licencia local vencida."; err.style.display = 'block'; } 
+                    else { arrancarSistema(lsGet('tc_db', []), cred.u, cred.m, cred.r, cred.n, cred.h); }
                 } else {
                     let mensajeError = error.message === "Offline" || error.message.includes("Unexpected token") ? "Sin Internet y no hay sesión guardada." : error.message;
                     err.innerText = mensajeError; err.style.display = 'block';
                 }
-            } finally {
-                btn.disabled = false; btn.innerText = "Ingresar al Sistema";
-            }
+            } finally { btn.disabled = false; btn.innerText = "Ingresar al Sistema"; }
         }
 
         function notificarPropietario(mensaje) {
@@ -673,11 +660,11 @@
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' });
         }
 
-        function arrancarSistema(datos, u, m, r) {
+        function arrancarSistema(datos, u, m, r, nombreCompleto, hacienda) {
             try {
                 let dbValida = Array.isArray(datos) ? datos.filter(d => d && d.fecha) : [];
                 dbCache = dbValida.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); 
-                usActivo = u; maestroId = m; usRol = r; 
+                usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
                 
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
                 let displayRol = isPropietario ? 'Propietario' : 'Operador';
@@ -685,15 +672,15 @@
                 if (window.AndroidTaurus && window.AndroidTaurus.identificarUsuarioPush) { window.AndroidTaurus.identificarUsuarioPush(displayRol, maestroId); }
                 if (window.OneSignalDeferred) { OneSignalDeferred.push(function(OneSignal) { OneSignal.User.addTags({ rol: displayRol, estancia_id: m }); }); }
                 
-                document.getElementById('lbl-sidebar-user').innerText = `${u.toUpperCase()} (${displayRol})`;
-                document.getElementById('lbl-perfil-usu').innerText = `${u.toUpperCase()} (Rol: ${displayRol})`;
+                // Actualizar interfaz con el Nombre Real y la Estancia
+                document.getElementById('topbar-estancia').innerText = `ESTANCIA: ${usHacienda.toUpperCase()} | Operador: ${usNombre}`;
+                document.getElementById('lbl-sidebar-user').innerText = `${usNombre.toUpperCase()} (${displayRol})`;
+                document.getElementById('lbl-perfil-usu').innerText = `${usNombre.toUpperCase()} (Rol: ${displayRol})`;
                 
-                // SISTEMA DE PERMISOS GRANULARES
                 document.querySelectorAll('.vista').forEach(e => e.classList.add('oculto'));
                 document.querySelectorAll('.sidebar-nav li').forEach(e => e.classList.remove('activo'));
 
-                let tabSeleccionado = null;
-                let vistaInicial = 'v-dash';
+                let tabSeleccionado = null; let vistaInicial = 'v-dash';
 
                 if (isPropietario) {
                     document.querySelectorAll('.sidebar-nav li').forEach(li => li.style.display = 'flex');
@@ -711,30 +698,21 @@
                         if(target && target.includes('cambiarVista')) {
                             let viewId = target.match(/'([^']+)'/)[1];
                             if (viewId !== 'v-config' && !perms.includes(viewId)) {
-                                li.style.display = 'none'; // Ocultar permiso denegado
+                                li.style.display = 'none'; 
                             } else {
                                 li.style.display = 'flex';
-                                if (!foundFirst && viewId !== 'v-config') {
-                                    vistaInicial = viewId;
-                                    tabSeleccionado = li;
-                                    foundFirst = true;
-                                }
+                                if (!foundFirst && viewId !== 'v-config') { vistaInicial = viewId; tabSeleccionado = li; foundFirst = true; }
                             }
                         }
                     });
 
-                    // Ocultar gráficas si no tiene permiso de ver Dashboard
-                    if(!perms.includes('v-dash')) {
-                        let pAn = document.getElementById('panel-analiticas');
-                        if(pAn) pAn.style.display = 'none';
-                    }
+                    if(!perms.includes('v-dash')) { let pAn = document.getElementById('panel-analiticas'); if(pAn) pAn.style.display = 'none'; }
                 }
                 
                 const cred = lsGet('tc_cred', {});
                 const lblLic = document.getElementById('lbl-licencia');
                 if(cred.v) {
-                    const fVenc = new Date(cred.v);
-                    const diffDias = Math.ceil((fVenc - new Date()) / (1000 * 60 * 60 * 24));
+                    const fVenc = new Date(cred.v); const diffDias = Math.ceil((fVenc - new Date()) / (1000 * 60 * 60 * 24));
                     if(diffDias < 0) { cerrarSesion(); return; }
                     lblLic.innerText = fVenc.toLocaleDateString() + ` (${diffDias} días restantes)`;
                     lblLic.style.color = diffDias <= 7 ? "var(--danger)" : "var(--success)";
@@ -750,11 +728,8 @@
                 document.getElementById('sidebar').classList.remove('oculto'); 
                 document.getElementById('main-content').classList.remove('oculto');
                 
-                if(tabSeleccionado) { cambiarVista(vistaInicial, tabSeleccionado); } 
-                else { cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4]); }
-                
-                sincronizarPendientesAuto();
-                cargarListaOperadores();
+                if(tabSeleccionado) { cambiarVista(vistaInicial, tabSeleccionado); } else { cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4]); }
+                sincronizarPendientesAuto(); cargarListaOperadores();
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
 
@@ -783,9 +758,7 @@
                     if(!document.getElementById('v-reporte').classList.contains('oculto')) actualizarInformeAvanzado();
                     cargarListaOperadores();
                     if(esManual) { setEstadoRed(true, '✅ ¡Listo!'); setTimeout(() => setEstadoRed(true), 2000); } else { setEstadoRed(true); }
-                } else {
-                    if(esManual) { setEstadoRed(true, '❌ Error'); setTimeout(() => setEstadoRed(true), 2000); }
-                }
+                } else { if(esManual) { setEstadoRed(true, '❌ Error'); setTimeout(() => setEstadoRed(true), 2000); } }
             }).catch(e => { if(esManual) { setEstadoRed(true, '⚠️ Falló'); setTimeout(() => setEstadoRed(true), 2000); } });
         }
         setInterval(() => sincronizarFondo(false), 30000);
@@ -797,8 +770,7 @@
         }
 
         function obtenerRegistrosActivos() {
-            let validos = [];
-            const unicas = [...new Set(dbCache.map(d => d.caravana).filter(c => c !== "---" && c != null))];
+            let validos = []; const unicas = [...new Set(dbCache.map(d => d.caravana).filter(c => c !== "---" && c != null))];
             unicas.forEach(car => {
                 let regs = dbCache.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
                 let lastResetIdx = -1;
@@ -811,8 +783,7 @@
         }
 
         function obtenerHistorial(caravana) {
-            const datosActivos = obtenerRegistrosActivos();
-            let hist = []; let buscadas = [String(caravana)]; let i = 0;
+            const datosActivos = obtenerRegistrosActivos(); let hist = []; let buscadas = [String(caravana)]; let i = 0;
             while(i < buscadas.length) {
                 let c = buscadas[i]; hist.push(...datosActivos.filter(d => String(d.caravana) === c));
                 datosActivos.filter(d => d.accion === 'Cambio de Caravana' && String(d.valor) === c).forEach(o => { if(!buscadas.includes(String(o.caravana))) buscadas.push(String(o.caravana)); }); i++;
@@ -873,7 +844,6 @@
                         } catch(e) {}
                     });
                 }
-                
                 if(htmlNotas === "") htmlNotas = "<span style='font-size:13px; color:var(--text-muted); font-style:italic;'>Sin anotaciones extra.</span>";
                 
                 const elCat = document.getElementById('val-categoria'); if(elCat) elCat.innerText = cat;
@@ -891,10 +861,7 @@
                 const elEdad = document.getElementById('val-edad'); if(elEdad) elEdad.innerText = edad;
                 const fRaza = document.getElementById('f-raza'); if(fRaza) fRaza.value = raza !== "-" ? raza : ""; 
                 const fNacimiento = document.getElementById('f-nacimiento'); 
-                if(fNacimiento) { 
-                    fNacimiento.value = edad !== "-" ? edad : ""; 
-                    mostrarCarimboCalculado(); 
-                } 
+                if(fNacimiento) { fNacimiento.value = edad !== "-" ? edad : ""; mostrarCarimboCalculado(); } 
                 const fPadre = document.getElementById('f-padre'); if(fPadre) fPadre.value = padre !== "-" ? padre : ""; 
                 const fMadre = document.getElementById('f-madre'); if(fMadre) fMadre.value = madre !== "-" ? madre : ""; 
                 const inputCarimbo = document.getElementById('input-carimbo-rapido'); if(inputCarimbo) inputCarimbo.value = carimbo !== "-" ? carimbo : ""; 
@@ -907,13 +874,13 @@
         }
 
         function ejecutarAccion(tipo, val, det, modalId) {
-            const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: rpActivo, valor: val, detalles: det + ` | Op: ${usActivo}`, maestro: maestroId };
+            // AHORA USA usNombre EN LUGAR DE usActivo PARA EL REGISTRO
+            const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: rpActivo, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
             dbCache.unshift(obj); buscarCaravanaBtn(rpActivo); procesarDatosDashboard(); 
             if(modalId) cerrarModal(modalId);
             
-            // Notificar acción individual manual
             if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana') {
-                notificarPropietario(`🔔 ${usActivo} registró [${tipo}] al RP ${rpActivo}`);
+                notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
             }
 
             if(navigator.onLine) { const fd = new URLSearchParams(); for(let k in obj) fd.append(k, obj[k]); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { sincronizarFondo(false); }); } 
@@ -942,16 +909,10 @@
             i.forEach(el => el.value = ''); 
         }
 
-        // ==========================================
-        // AUTO-CARIMBO TOTALMENTE INVISIBLE (SENACSA)
-        // ==========================================
         function mostrarCarimboCalculado() {
-            const fechaVal = document.getElementById('f-nacimiento').value;
-            const lbl = document.getElementById('lbl-auto-carimbo');
+            const fechaVal = document.getElementById('f-nacimiento').value; const lbl = document.getElementById('lbl-auto-carimbo');
             if(!fechaVal) { lbl.innerText = ""; return; }
-            
-            const partes = fechaVal.split('-'); 
-            let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
+            const partes = fechaVal.split('-'); let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
             if (mes >= 7) anio += 1;
             let carimboCalculado = anio % 10;
             lbl.innerText = "🎯 Carimbo Oficial SENACSA calculado: " + carimboCalculado;
@@ -968,12 +929,9 @@
             ejecutarAccion('Perfil Master', `${fRaza||"-"}|${fNacimiento||"-"}|${fPadre||"-"}|${fMadre||"-"}`, catValor, 'm-perfil'); 
             
             if (fNacimiento && fNacimiento !== "-") {
-                const partes = fNacimiento.split('-'); 
-                let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
+                const partes = fNacimiento.split('-'); let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
                 if (mes >= 7) anio += 1;
-                let carimboCalculado = anio % 10;
-                let loteActual = document.getElementById('val-lote').innerText || "-";
-                let catActual = document.getElementById('val-categoria').innerText || "-";
+                let carimboCalculado = anio % 10; let loteActual = document.getElementById('val-lote').innerText || "-"; let catActual = document.getElementById('val-categoria').innerText || "-";
                 ejecutarAccion('Actualización de Datos', `Cat: ${catActual} | Carimbo: ${carimboCalculado}`, `Lote: ${loteActual}`, null);
             }
         }
@@ -1205,13 +1163,14 @@
         
         function guardarDisenoServidor() { const n = document.getElementById('cfg-nom').value.trim(); const f = document.getElementById('cfg-logo'); let p = (b64) => { const fd = new URLSearchParams(); fd.append('accion', 'guardar_diseno'); fd.append('maestro', maestroId); fd.append('nombre_hacienda', n); fd.append('logo_hacienda', b64); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_hacienda', {nombre: n, logo: b64}); aplicarDisenoEnPantalla(n, b64); alert("Membrete oficial de PDF actualizado."); }); }; if(f.files && f.files[0]) { const r = new FileReader(); r.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const maxW = 200, maxH = 200; if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); p(canvas.toDataURL('image/png')); }; img.src = e.target.result; }; r.readAsDataURL(f.files[0]); } else { const logoGuardado = lsGet('tc_hacienda', {}).logo || ""; p(logoGuardado); } }
         
-        function crearOperador() { 
+        async function crearOperador() { 
             if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
+            const n = document.getElementById('op-nombre').value.trim();
             const u = document.getElementById('op-usu').value.trim(); 
             const p = document.getElementById('op-pass').value.trim(); 
             const rolSel = document.getElementById('op-rol').value;
             
-            if(!u || !p) { alert("Completar todos los datos."); return; } 
+            if(!n || !u || !p) { alert("Debe completar Nombre, Usuario y Contraseña."); return; } 
             
             let rolFinal = rolSel;
             if (rolSel === 'Operador') {
@@ -1222,20 +1181,34 @@
             
             const btn = document.getElementById('btn-crear-op');
             const btnOriginal = btn.innerHTML;
-            btn.innerHTML = "⏳ Creando...";
+            btn.innerHTML = "⏳ Verificando Disponibilidad...";
             btn.disabled = true;
 
-            const fd = new URLSearchParams(); 
-            fd.append('accion', 'crear_peon'); 
-            fd.append('maestro', maestroId); 
-            fd.append('usuario', usActivo); 
-            fd.append('peon_usu', u); 
-            fd.append('peon_pass', p); 
-            fd.append('vencimiento', 'Heredado');
-            fd.append('peon_rol', rolFinal); // ENVIAMOS LOS PERMISOS AL SERVIDOR
-            
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
-                const objEvt = { fecha: new Date().toISOString(), accion: 'Alta Operador', caravana: '---', valor: u, detalles: `Rol: ${rolFinal} | Op: ${usActivo}`, maestro: maestroId };
+            try {
+                // Validación Antichoque: verificar si el usuario de acceso ya existe en toda la base de datos
+                let checkFetch = await fetch(`${GOOGLE_SHEETS_URL}?accion=verificar_usuario&usuario=${encodeURIComponent(u)}`);
+                let checkResult = await checkFetch.json();
+                if(checkResult.existe) {
+                    alert(`⚠️ El usuario de acceso "${u}" ya está siendo utilizado por otra persona. Por favor, elija uno diferente (ej: ${u}2026, ${u}_apellido, etc).`);
+                    btn.innerHTML = btnOriginal;
+                    btn.disabled = false;
+                    return;
+                }
+
+                btn.innerHTML = "⏳ Registrando...";
+                const fd = new URLSearchParams(); 
+                fd.append('accion', 'crear_peon'); 
+                fd.append('maestro', maestroId); 
+                fd.append('usuario', usActivo); 
+                fd.append('peon_usu', u); 
+                fd.append('peon_pass', p); 
+                fd.append('peon_nombre', n); // SE ENVÍA EL NOMBRE REAL
+                fd.append('vencimiento', 'Heredado');
+                fd.append('peon_rol', rolFinal); 
+                
+                await fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' });
+                
+                const objEvt = { fecha: new Date().toISOString(), accion: 'Alta Operador', caravana: '---', valor: u, detalles: `Nombre: ${n} | Rol: ${rolFinal} | Op: ${usNombre}`, maestro: maestroId };
                 dbCache.unshift(objEvt);
                 lsSet('tc_db', dbCache);
                 
@@ -1244,6 +1217,7 @@
                 fd2.append('usuario', usActivo);
                 fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd2, mode: 'no-cors' });
 
+                document.getElementById('op-nombre').value = ''; 
                 document.getElementById('op-usu').value = ''; 
                 document.getElementById('op-pass').value = ''; 
                 
@@ -1251,12 +1225,13 @@
                 btn.disabled = false;
                 
                 cargarListaOperadores(); 
-                alert("Usuario Registrado. Ya está disponible en la red con sus permisos asignados.");
+                alert("Usuario Registrado Exitosamente. Ya está disponible en la red.");
                 setTimeout(() => { sincronizarFondo(false); }, 1500);
-            }).catch(() => {
+            } catch(e) {
+                alert("Hubo un error de conexión al verificar el usuario.");
                 btn.innerHTML = btnOriginal;
                 btn.disabled = false;
-            }); 
+            }
         }
 
         function eliminarOperador() {
@@ -1280,8 +1255,7 @@
                 fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
                     alert(`El operador "${u}" ha sido eliminado con éxito.`); 
                     
-                    // CREAMOS EVENTO DE "BAJA OPERADOR" PARA SINCRONIZAR A TODOS LOS DISPOSITIVOS
-                    const objEvt = { fecha: new Date().toISOString(), accion: 'Baja Operador', caravana: '---', valor: u, detalles: `Eliminado por: ${usActivo}`, maestro: maestroId };
+                    const objEvt = { fecha: new Date().toISOString(), accion: 'Baja Operador', caravana: '---', valor: u, detalles: `Eliminado por: ${usNombre}`, maestro: maestroId };
                     dbCache.unshift(objEvt);
                     lsSet('tc_db', dbCache);
                     
@@ -1326,7 +1300,6 @@
                 let options = '<option value="">-- Seleccione un operador --</option>';
                 operadores.forEach(o => { 
                     let oMin = o.toLowerCase();
-                    // Solo listamos operadores que no estén en la lista de Bajas globales ni en la local
                     if(oMin !== usActivo.toLowerCase() && !eliminados.includes(oMin) && !dadosDeBaja.has(oMin)) { 
                         options += `<option value="${o}">${o}</option>`; 
                     } 
