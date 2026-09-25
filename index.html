@@ -11,6 +11,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     
+    <!-- INTEGRACIÓN ONESIGNAL -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60",
+        });
+      });
+    </script>
+
     <style>
         :root { --primario: #0f172a; --secundario: #3b82f6; --exito: #10b981; --alerta: #f59e0b; --peligro: #ef4444; --borde: #334155; --texto: #f8fafc; --muted: #94a3b8; }
         body.tema-claro { --primario: #f8fafc; --borde: #cbd5e1; --texto: #0f172a; --muted: #64748b; background: #f1f5f9; color: var(--texto); }
@@ -19,10 +30,6 @@
         body.tema-claro .btn-mini { background: #f1f5f9; color: var(--texto); border-color: var(--borde); }
         body.tema-claro .kpi-label, body.tema-claro .nav-item { color: var(--muted); }
         body.tema-claro .nav-item.activo { color: var(--secundario); }
-        body.tema-claro .encabezado-impresion, body.tema-claro .check-opcion { background: #ffffff; border-color: var(--borde); color: var(--texto); }
-        body.tema-claro .logo-upload { background: #f1f5f9; border-color: var(--borde); }
-        body.tema-claro .input-estancia { color: var(--texto); border-bottom-color: var(--borde); }
-        body.tema-claro .input-estancia:focus { border-bottom-color: var(--secundario); }
         
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; color: var(--texto); background: #1e293b; min-height: 100vh; transition: background 0.3s, color 0.3s; -webkit-tap-highlight-color: transparent; }
@@ -79,7 +86,6 @@
         .botones-perfil { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 20px;}
         .btn-mini { background: #1e293b; border: 1px solid var(--borde); padding: 8px 15px; border-radius: 8px; font-size: 13px; font-weight: bold; color: var(--texto);}
         
-        .panel-notas { background: rgba(245, 158, 11, 0.1); border-left: 5px solid var(--alerta); padding: 15px; border-radius: 8px; margin-bottom: 15px; color: var(--texto); }
         .panel-comentario { background: rgba(59, 130, 246, 0.1); border-left: 5px solid var(--secundario); padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; color: var(--texto);}
         
         .grid-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 10px; }
@@ -142,7 +148,7 @@
         <div class="contenedor">
             
             <!-- DASHBOARD -->
-            <div id="vista-dashboard">
+            <div id="vista-dashboard" class="vista oculto">
                 <div class="grid-kpis">
                     <div class="kpi-caja"><div class="kpi-valor" id="dash-cabezas">0</div><div class="kpi-label">Cabezas Únicas</div></div>
                     <div class="kpi-caja" style="border-color: var(--peligro);"><div class="kpi-valor" id="dash-bajas" style="color: var(--peligro);">0</div><div class="kpi-label" style="color: var(--peligro);">Mortalidad / Bajas</div></div>
@@ -153,7 +159,7 @@
             </div>
 
             <!-- FICHA CLÍNICA (MANGA) -->
-            <div id="vista-manga" class="oculto">
+            <div id="vista-manga" class="vista oculto">
                 <div class="tarjeta" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid var(--secundario);">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div style="display:flex; align-items:center; gap:10px;">
@@ -247,7 +253,7 @@
             </div>
 
             <!-- BASE DE DATOS -->
-            <div id="vista-registro" class="oculto">
+            <div id="vista-registro" class="vista oculto">
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">📋 Inventario Activo</div>
                     <div class="buscador-contenedor"><input type="text" id="buscador-lista" class="buscador-input" placeholder="Buscar RP o lote..." onkeyup="filtrarLista(this.value)"></div>
@@ -256,7 +262,7 @@
             </div>
 
             <!-- REPORTES -->
-            <div id="vista-informe" class="oculto">
+            <div id="vista-informe" class="vista oculto">
                 <div class="tarjeta">
                     <select class="filtro-sel" id="f-inf-modo" onchange="cambiarModoReporte()" style="width:100%; margin-bottom:15px; border-color: var(--secundario); font-weight: bold; background-color: var(--secundario); color: white;">
                         <option value="eventos">📋 TRATAMIENTOS (Historial)</option>
@@ -300,7 +306,7 @@
             </div>
 
             <!-- AJUSTES -->
-            <div id="vista-config" class="oculto">
+            <div id="vista-config" class="vista oculto">
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">👤 Mi Perfil</div>
                     <div class="form-grupo"><label>Sesión iniciada como:</label><input type="text" id="usuario-activo-lbl" class="form-control" readonly style="font-weight:bold; color:var(--exito);"></div>
@@ -317,6 +323,11 @@
 
                 <div class="tarjeta" id="panel-crear-peones">
                     <div class="tarjeta-titulo">👷 Control de Operadores</div>
+                    
+                    <div class="form-grupo"><label>Nombre y Apellido</label><input type="text" id="op-nombre" class="form-control" autocomplete="off" placeholder="Ej: Juan Ramírez"></div>
+                    <div class="form-grupo"><label>Usuario de Acceso</label><input type="text" id="op-usu" class="form-control" autocomplete="off" placeholder="Ej: jramirez"></div>
+                    <div class="form-grupo"><label>Contraseña</label><input type="password" id="op-pass" class="form-control" autocomplete="new-password"></div>
+                    
                     <div class="form-grupo">
                         <label>Rol del Nuevo Usuario</label>
                         <select id="op-rol" class="form-control" onchange="togglePermisos()">
@@ -334,18 +345,36 @@
                             <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="vista-informe"> 📄 Reportes PDF</label>
                         </div>
                     </div>
-
-                    <div class="form-grupo"><label>Usuario Operador</label><input type="text" id="op-usu" class="form-control" autocomplete="off"></div>
-                    <div class="form-grupo"><label>Contraseña</label><input type="password" id="op-pass" class="form-control" autocomplete="new-password"></div>
                     <button id="btn-crear-op" class="btn-guardar" style="background:var(--exito);" onclick="crearOperador()">Registrar Usuario</button>
                     
                     <hr style="border-color:var(--borde); margin:20px 0;">
                     
+                    <div class="tarjeta-titulo" style="font-size: 15px;">✏️ Editar Permisos</div>
                     <div class="form-grupo">
-                        <label>Eliminar Operador</label>
+                        <select id="op-edit-usu-sel" class="form-control" onchange="cargarPermisosEdicion()">
+                            <option value="">-- Seleccione un operador --</option>
+                        </select>
+                    </div>
+                    <div id="caja-edit-permisos" class="oculto">
+                        <div class="form-grupo">
+                            <label style="font-size:12px; color:var(--muted); margin-bottom:8px; display:block;">Nuevos Permisos:</label>
+                            <div style="display:flex; flex-direction:column; gap:10px; background:var(--primario); padding:12px; border:1px solid var(--borde); border-radius:8px;">
+                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="vista-dashboard"> 📊 Panel de Control</label>
+                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="vista-manga"> 🐄 Ficha Clínica (Manga)</label>
+                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="vista-registro"> 📋 Base de Datos</label>
+                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="vista-informe"> 📄 Reportes PDF</label>
+                            </div>
+                        </div>
+                        <button id="btn-editar-op" class="btn-guardar" style="background:var(--secundario);" onclick="guardarEdicionOperador()">Actualizar Permisos</button>
+                    </div>
+
+                    <hr style="border-color:var(--borde); margin:20px 0;">
+                    
+                    <div class="form-grupo">
+                        <label>Eliminar Operador Permanentemente</label>
                         <select id="op-del-usu-sel" class="form-control"><option value="">-- Seleccione --</option></select>
                     </div>
-                    <button id="btn-eliminar-op" class="btn-guardar" style="background:var(--peligro);" onclick="eliminarOperador()">Eliminar Operador Permanentemente</button>
+                    <button id="btn-eliminar-op" class="btn-guardar" style="background:var(--peligro);" onclick="eliminarOperador()">Eliminar Operador</button>
                 </div>
 
                 <div class="tarjeta">
@@ -356,7 +385,7 @@
                     </div>
                 </div>
                 
-                <div class="tarjeta">
+                <div class="tarjeta" id="panel-analiticas">
                     <div class="tarjeta-titulo">📊 Analíticas Dashboard (Máx 3)</div>
                     <div style="display:flex; flex-direction:column; gap:12px; font-size:14px;">
                         <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="1" onchange="verificarLimiteGraficos(this)"> 1. Tasa de Preñez</label>
@@ -441,7 +470,7 @@
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 
         let dbCache = []; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
-        let rfidPendiente = "";
+        let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
 
         if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
         function toggleTema() {
@@ -459,9 +488,6 @@
             setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() => t.remove(), 500); }, 2000);
         }
 
-        // ==========================================
-        // PERMISOS DE USUARIO
-        // ==========================================
         function togglePermisos() {
             const rol = document.getElementById('op-rol').value;
             document.getElementById('caja-permisos').style.display = (rol === 'Propietario') ? 'none' : 'block';
@@ -473,16 +499,13 @@
             const btn = document.getElementById('btn-toggle-rafaga');
             const opciones = document.getElementById('opciones-rafaga');
             if(rafagaActiva) {
-                btn.innerText = "ENCENDIDO";
-                btn.style.background = "var(--secundario)";
-                btn.style.color = "white";
-                opciones.classList.remove('oculto');
-                verificarRafagaCustom();
+                btn.innerText = "ENCENDIDO"; btn.style.background = "var(--secundario)"; btn.style.color = "white";
+                opciones.classList.remove('oculto'); verificarRafagaCustom();
+                notificarPropietario(`🟢 ${usNombre} ha ACTIVADO el Modo Ráfaga masivo.`);
             } else {
-                btn.innerText = "APAGADO";
-                btn.style.background = "transparent";
-                btn.style.color = "var(--texto)";
+                btn.innerText = "APAGADO"; btn.style.background = "transparent"; btn.style.color = "var(--texto)";
                 opciones.classList.add('oculto');
+                notificarPropietario(`🔴 ${usNombre} apagó el Modo Ráfaga.`);
             }
         };
 
@@ -490,19 +513,8 @@
             const sel = document.getElementById('rafaga-accion').value;
             const customInput = document.getElementById('rafaga-prod-custom');
             const detallesBox = document.getElementById('caja-rafaga-detalles');
-            
-            if(sel === 'solo_peso') {
-                customInput.classList.add('oculto');
-                detallesBox.classList.add('oculto');
-            } else {
-                detallesBox.classList.remove('oculto');
-                if(sel === 'OTRO') {
-                    customInput.classList.remove('oculto');
-                    customInput.focus();
-                } else {
-                    customInput.classList.add('oculto');
-                }
-            }
+            if(sel === 'solo_peso') { customInput.classList.add('oculto'); detallesBox.classList.add('oculto'); } 
+            else { detallesBox.classList.remove('oculto'); if(sel === 'OTRO') { customInput.classList.remove('oculto'); customInput.focus(); } else { customInput.classList.add('oculto'); } }
         };
 
         function setEstadoRed(online, texto = null) {
@@ -533,50 +545,47 @@
                 if(res.vencimiento && new Date() > new Date(res.vencimiento)) { throw new Error("Su licencia ha vencido."); }
                 
                 let dataLimpia = Array.isArray(res.data) ? res.data : [];
-                lsSet('tc_cred', { u: u, p: p, m: res.maestro, r: res.rol, v: res.vencimiento }); 
+                lsSet('tc_cred', { u: u, p: p, m: res.maestro, r: res.rol, v: res.vencimiento, n: res.nombre_completo, h: res.hacienda }); 
                 lsSet('tc_db', dataLimpia); 
                 lsSet('tc_hacienda', { nombre: res.hacienda, logo: res.logo }); 
                 
-                arrancarSistema(dataLimpia, u, res.maestro, res.rol);
+                arrancarSistema(dataLimpia, u, res.maestro, res.rol, res.nombre_completo, res.hacienda);
             } catch(error) {
                 const cred = lsGet('tc_cred', null);
                 if(cred && String(cred.u).toLowerCase() === u.toLowerCase() && cred.p === p) { 
-                    if(cred.v && new Date() > new Date(cred.v)) {
-                        err.innerText = "Licencia local vencida."; err.style.display = 'block';
-                    } else {
-                        arrancarSistema(lsGet('tc_db', []), cred.u, cred.m, cred.r);
-                    }
+                    if(cred.v && new Date() > new Date(cred.v)) { err.innerText = "Licencia local vencida."; err.style.display = 'block'; } 
+                    else { arrancarSistema(lsGet('tc_db', []), cred.u, cred.m, cred.r, cred.n, cred.h); }
                 } else {
                     let mensajeError = error.message === "Offline" || error.message.includes("Unexpected token") ? "Sin Internet y sin sesión guardada." : error.message;
                     err.innerText = mensajeError; err.style.display = 'block';
                 }
-            } finally {
-                btn.disabled = false; btn.innerText = "Iniciar Sesión";
-            }
+            } finally { btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
         }
 
-        function arrancarSistema(datos, u, m, r) {
+        function notificarPropietario(mensaje) {
+            if(usRol.includes('Propietario') || usRol.includes('Dueño') || !navigator.onLine) return;
+            const fd = new URLSearchParams(); fd.append('accion', 'notificar_accion'); fd.append('maestro', maestroId); fd.append('mensaje', mensaje);
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' });
+        }
+
+        function arrancarSistema(datos, u, m, r, nombreCompleto, hacienda) {
             try {
                 let dbValida = Array.isArray(datos) ? datos.filter(d => d && d.fecha) : [];
                 dbCache = dbValida.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); 
-                usActivo = u; maestroId = m; usRol = r; 
+                usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
                 
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
                 let displayRol = isPropietario ? 'Propietario' : 'Operador';
                 
-                // NOTIFICACIONES ONESIGNAL EN ANDROID
-                if (window.AndroidTaurus && window.AndroidTaurus.identificarUsuarioPush) {
-                    window.AndroidTaurus.identificarUsuarioPush(displayRol, maestroId);
-                }
+                if (window.AndroidTaurus && window.AndroidTaurus.identificarUsuarioPush) { window.AndroidTaurus.identificarUsuarioPush(displayRol, maestroId); }
+                if (window.OneSignalDeferred) { OneSignalDeferred.push(function(OneSignal) { OneSignal.User.addTags({ rol: displayRol, estancia_id: m }); }); }
                 
-                document.getElementById('usuario-activo-lbl').value = `${u.toUpperCase()} (${displayRol})`;
+                document.getElementById('usuario-activo-lbl').value = `${usHacienda.toUpperCase()} - ${usNombre} (${displayRol})`;
                 
-                // SISTEMA DE PERMISOS GRANULARES
                 document.querySelectorAll('.vista').forEach(e => e.classList.add('oculto'));
                 document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('activo'));
 
-                let tabSeleccionado = null;
-                let vistaInicial = 'vista-dashboard';
+                let tabSeleccionado = null; let vistaInicial = 'vista-dashboard';
 
                 if (isPropietario) {
                     document.querySelectorAll('.nav-item').forEach(li => li.style.display = 'flex');
@@ -594,24 +603,21 @@
                         if(target && target.includes('cambiarVista')) {
                             let viewId = target.match(/'([^']+)'/)[1];
                             if (viewId !== 'vista-config' && !perms.includes(viewId)) {
-                                li.style.display = 'none'; // Ocultar permiso denegado
+                                li.style.display = 'none'; 
                             } else {
                                 li.style.display = 'flex';
-                                if (!foundFirst && viewId !== 'vista-config') {
-                                    vistaInicial = viewId;
-                                    tabSeleccionado = li;
-                                    foundFirst = true;
-                                }
+                                if (!foundFirst && viewId !== 'vista-config') { vistaInicial = viewId; tabSeleccionado = li; foundFirst = true; }
                             }
                         }
                     });
+
+                    if(!perms.includes('vista-dashboard')) { let pAn = document.getElementById('panel-analiticas'); if(pAn) pAn.style.display = 'none'; }
                 }
                 
                 const cred = lsGet('tc_cred', {});
                 const lblLic = document.getElementById('lbl-licencia');
                 if(cred.v) {
-                    const fVenc = new Date(cred.v);
-                    const diffDias = Math.ceil((fVenc - new Date()) / (1000 * 60 * 60 * 24));
+                    const fVenc = new Date(cred.v); const diffDias = Math.ceil((fVenc - new Date()) / (1000 * 60 * 60 * 24));
                     if(diffDias < 0) { cerrarSesion(); return; }
                     lblLic.value = fVenc.toLocaleDateString() + ` (${diffDias} días restantes)`;
                     lblLic.style.color = diffDias <= 7 ? "var(--peligro)" : "var(--texto)";
@@ -626,11 +632,9 @@
                 document.getElementById('pantalla-login').classList.add('oculto'); 
                 document.getElementById('pantalla-app').classList.remove('oculto'); 
                 
-                if(tabSeleccionado) { cambiarVista(vistaInicial, tabSeleccionado); } 
-                else { cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
+                if(tabSeleccionado) { cambiarVista(vistaInicial, tabSeleccionado); } else { cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
                 
-                sincronizarPendientesAuto();
-                cargarListaOperadores();
+                sincronizarPendientesAuto(); cargarListaOperadores();
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
 
@@ -659,9 +663,7 @@
                     if(!document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
                     cargarListaOperadores();
                     if(esManual) { setEstadoRed(true, '✅ ¡Listo!'); setTimeout(() => setEstadoRed(true), 2000); } else { setEstadoRed(true); }
-                } else {
-                    if(esManual) { setEstadoRed(true, '❌ Error'); setTimeout(() => setEstadoRed(true), 2000); }
-                }
+                } else { if(esManual) { setEstadoRed(true, '❌ Error'); setTimeout(() => setEstadoRed(true), 2000); } }
             }).catch(e => { if(esManual) { setEstadoRed(true, '⚠️ Falló'); setTimeout(() => setEstadoRed(true), 2000); } });
         }
         setInterval(() => sincronizarFondo(false), 30000);
@@ -673,8 +675,7 @@
         }
 
         function obtenerRegistrosActivos() {
-            let validos = [];
-            const unicas = [...new Set(dbCache.map(d => d.caravana).filter(c => c !== "---" && c != null))];
+            let validos = []; const unicas = [...new Set(dbCache.map(d => d.caravana).filter(c => c !== "---" && c != null))];
             unicas.forEach(car => {
                 let regs = dbCache.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
                 let lastResetIdx = -1;
@@ -687,8 +688,7 @@
         }
 
         function obtenerHistorial(caravana) {
-            const datosActivos = obtenerRegistrosActivos();
-            let hist = []; let buscadas = [String(caravana)]; let i = 0;
+            const datosActivos = obtenerRegistrosActivos(); let hist = []; let buscadas = [String(caravana)]; let i = 0;
             while(i < buscadas.length) {
                 let c = buscadas[i]; hist.push(...datosActivos.filter(d => String(d.caravana) === c));
                 datosActivos.filter(d => d.accion === 'Cambio de Caravana' && String(d.valor) === c).forEach(o => { if(!buscadas.includes(String(o.caravana))) buscadas.push(String(o.caravana)); }); i++;
@@ -749,9 +749,7 @@
                         } catch(e) {}
                     });
                     document.getElementById('val-comentario').innerText = ultComentario;
-                } else {
-                    document.getElementById('val-comentario').innerText = "Sin comentarios.";
-                }
+                } else { document.getElementById('val-comentario').innerText = "Sin comentarios."; }
                 
                 const elCat = document.getElementById('val-categoria'); if(elCat) elCat.innerText = cat;
                 const elPeso = document.getElementById('val-peso'); if(elPeso) elPeso.innerText = peso;
@@ -767,10 +765,7 @@
                 const elEdad = document.getElementById('val-edad'); if(elEdad) elEdad.innerText = edad;
                 const fRaza = document.getElementById('f-raza'); if(fRaza) fRaza.value = raza !== "-" ? raza : ""; 
                 const fNacimiento = document.getElementById('f-nacimiento'); 
-                if(fNacimiento) { 
-                    fNacimiento.value = edad !== "-" ? edad : ""; 
-                    mostrarCarimboCalculado(); 
-                } 
+                if(fNacimiento) { fNacimiento.value = edad !== "-" ? edad : ""; mostrarCarimboCalculado(); } 
                 const fPadre = document.getElementById('f-padre'); if(fPadre) fPadre.value = padre !== "-" ? padre : ""; 
                 const fMadre = document.getElementById('f-madre'); if(fMadre) fMadre.value = madre !== "-" ? madre : ""; 
                 const inputCarimbo = document.getElementById('input-carimbo-rapido'); if(inputCarimbo) inputCarimbo.value = carimbo !== "-" ? carimbo : ""; 
@@ -783,9 +778,14 @@
         }
 
         function ejecutarAccion(tipo, val, det, modalId) {
-            const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: rpActivo, valor: val, detalles: det + ` | Op: ${usActivo}`, maestro: maestroId };
+            const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: rpActivo, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
             dbCache.unshift(obj); buscarCaravanaBtn(rpActivo); procesarDatosDashboard(); 
             if(modalId) cerrarModal(modalId);
+            
+            if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador') {
+                notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
+            }
+
             if(navigator.onLine) { const fd = new URLSearchParams(); for(let k in obj) fd.append(k, obj[k]); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { sincronizarFondo(false); }); } 
             else { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); }
         }
@@ -812,16 +812,10 @@
             i.forEach(el => el.value = ''); 
         }
 
-        // ==========================================
-        // AUTO-CARIMBO TOTALMENTE INVISIBLE (SENACSA)
-        // ==========================================
         function mostrarCarimboCalculado() {
-            const fechaVal = document.getElementById('f-nacimiento').value;
-            const lbl = document.getElementById('lbl-auto-carimbo');
+            const fechaVal = document.getElementById('f-nacimiento').value; const lbl = document.getElementById('lbl-auto-carimbo');
             if(!fechaVal) { lbl.innerText = ""; return; }
-            
-            const partes = fechaVal.split('-'); 
-            let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
+            const partes = fechaVal.split('-'); let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
             if (mes >= 7) anio += 1;
             let carimboCalculado = anio % 10;
             lbl.innerText = "🎯 Carimbo Oficial SENACSA calculado: " + carimboCalculado;
@@ -838,12 +832,9 @@
             ejecutarAccion('Perfil Master', `${fRaza||"-"}|${fNacimiento||"-"}|${fPadre||"-"}|${fMadre||"-"}`, catValor, 'modal-perfil'); 
             
             if (fNacimiento && fNacimiento !== "-") {
-                const partes = fNacimiento.split('-'); 
-                let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
+                const partes = fNacimiento.split('-'); let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
                 if (mes >= 7) anio += 1;
-                let carimboCalculado = anio % 10;
-                let loteActual = document.getElementById('val-lote').innerText || "-";
-                let catActual = document.getElementById('val-categoria').innerText || "-";
+                let carimboCalculado = anio % 10; let loteActual = document.getElementById('val-lote').innerText || "-"; let catActual = document.getElementById('val-categoria').innerText || "-";
                 ejecutarAccion('Actualización de Datos', `Cat: ${catActual} | Carimbo: ${carimboCalculado}`, `Lote: ${loteActual}`, null);
             }
         }
@@ -1075,13 +1066,14 @@
         
         function guardarDisenoServidor() { const n = document.getElementById('cfg-nom').value.trim(); const f = document.getElementById('cfg-logo'); let p = (b64) => { const fd = new URLSearchParams(); fd.append('accion', 'guardar_diseno'); fd.append('maestro', maestroId); fd.append('nombre_hacienda', n); fd.append('logo_hacienda', b64); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_hacienda', {nombre: n, logo: b64}); aplicarDisenoEnPantalla(n, b64); alert("Membrete oficial de PDF actualizado."); }); }; if(f.files && f.files[0]) { const r = new FileReader(); r.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const maxW = 200, maxH = 200; if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); p(canvas.toDataURL('image/png')); }; img.src = e.target.result; }; r.readAsDataURL(f.files[0]); } else { const logoGuardado = lsGet('tc_hacienda', {}).logo || ""; p(logoGuardado); } }
         
-        function crearOperador() { 
+        async function crearOperador() { 
             if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
+            const n = document.getElementById('op-nombre').value.trim();
             const u = document.getElementById('op-usu').value.trim(); 
             const p = document.getElementById('op-pass').value.trim(); 
             const rolSel = document.getElementById('op-rol').value;
             
-            if(!u || !p) { alert("Completar todos los datos."); return; } 
+            if(!n || !u || !p) { alert("Completar Nombre, Usuario y Contraseña."); return; } 
             
             let rolFinal = rolSel;
             if (rolSel === 'Operador') {
@@ -1092,20 +1084,33 @@
             
             const btn = document.getElementById('btn-crear-op');
             const btnOriginal = btn.innerHTML;
-            btn.innerHTML = "⏳ Creando...";
+            btn.innerHTML = "⏳ Verificando Disponibilidad...";
             btn.disabled = true;
 
-            const fd = new URLSearchParams(); 
-            fd.append('accion', 'crear_peon'); 
-            fd.append('maestro', maestroId); 
-            fd.append('usuario', usActivo); 
-            fd.append('peon_usu', u); 
-            fd.append('peon_pass', p); 
-            fd.append('vencimiento', 'Heredado');
-            fd.append('peon_rol', rolFinal); 
-            
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
-                const objEvt = { fecha: new Date().toISOString(), accion: 'Alta Operador', caravana: '---', valor: u, detalles: `Rol: ${rolFinal} | Op: ${usActivo}`, maestro: maestroId };
+            try {
+                let checkFetch = await fetch(`${GOOGLE_SHEETS_URL}?accion=verificar_usuario&usuario=${encodeURIComponent(u)}`);
+                let checkResult = await checkFetch.json();
+                if(checkResult.existe) {
+                    alert(`⚠️ El usuario de acceso "${u}" ya existe en el sistema global. Por favor, elija uno diferente (ej: ${u}_1, ${u}_apellido, etc).`);
+                    btn.innerHTML = btnOriginal;
+                    btn.disabled = false;
+                    return;
+                }
+
+                btn.innerHTML = "⏳ Registrando...";
+                const fd = new URLSearchParams(); 
+                fd.append('accion', 'crear_peon'); 
+                fd.append('maestro', maestroId); 
+                fd.append('usuario', usActivo); 
+                fd.append('peon_usu', u); 
+                fd.append('peon_pass', p); 
+                fd.append('peon_nombre', n); 
+                fd.append('vencimiento', 'Heredado');
+                fd.append('peon_rol', rolFinal); 
+                
+                await fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' });
+                
+                const objEvt = { fecha: new Date().toISOString(), accion: 'Alta Operador', caravana: '---', valor: u, detalles: `Nombre: ${n} | Rol: ${rolFinal} | Op: ${usNombre}`, maestro: maestroId };
                 dbCache.unshift(objEvt);
                 lsSet('tc_db', dbCache);
                 
@@ -1114,6 +1119,7 @@
                 fd2.append('usuario', usActivo);
                 fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd2, mode: 'no-cors' });
 
+                document.getElementById('op-nombre').value = ''; 
                 document.getElementById('op-usu').value = ''; 
                 document.getElementById('op-pass').value = ''; 
                 
@@ -1121,9 +1127,79 @@
                 btn.disabled = false;
                 
                 cargarListaOperadores(); 
-                alert("Usuario Registrado.");
+                alert("Usuario Registrado Exitosamente.");
                 setTimeout(() => { sincronizarFondo(false); }, 1500);
-            }).catch(() => { btn.innerHTML = btnOriginal; btn.disabled = false; }); 
+            } catch(e) {
+                alert("Hubo un error de conexión al verificar el usuario.");
+                btn.innerHTML = btnOriginal;
+                btn.disabled = false;
+            }
+        }
+
+        // ==========================================
+        // EDICIÓN DE PERMISOS DE OPERADOR
+        // ==========================================
+        function cargarPermisosEdicion() {
+            let u = document.getElementById('op-edit-usu-sel').value;
+            let caja = document.getElementById('caja-edit-permisos');
+            if(!u) { caja.classList.add('oculto'); return; }
+            caja.classList.remove('oculto');
+            
+            // Buscar el último registro de creación o edición de este usuario para adivinar sus permisos actuales
+            let ev = dbCache.find(d => (d.accion === 'Alta Operador' || d.accion === 'Edición Operador') && d.valor === u);
+            let perms = "vista-dashboard,vista-manga,vista-registro,vista-informe"; 
+            if(ev && ev.detalles) {
+                let rMatch = ev.detalles.match(/Rol: ([^|]+)/);
+                if(rMatch) {
+                    let rolFull = rMatch[1].trim();
+                    if(rolFull.includes('|')) perms = rolFull.split('|')[1];
+                    else if(rolFull === 'Propietario') perms = "vista-dashboard,vista-manga,vista-registro,vista-informe";
+                    else perms = rolFull; 
+                }
+            }
+            document.querySelectorAll('.chk-edit-permiso').forEach(chk => { chk.checked = perms.includes(chk.value); });
+        }
+
+        function guardarEdicionOperador() {
+            if(!navigator.onLine) { alert("Necesitas conexión."); return; }
+            let u = document.getElementById('op-edit-usu-sel').value;
+            if(!u) return;
+
+            let permisos = Array.from(document.querySelectorAll('.chk-edit-permiso:checked')).map(c => c.value).join(',');
+            if(!permisos) { alert("Seleccione al menos un permiso."); return; }
+            let rolFinal = 'Operador|' + permisos;
+
+            const btn = document.getElementById('btn-editar-op');
+            const btnOriginal = btn.innerHTML;
+            btn.innerHTML = "⏳ Actualizando...";
+            btn.disabled = true;
+
+            const fd = new URLSearchParams();
+            fd.append('accion', 'editar_peon');
+            fd.append('maestro', maestroId);
+            fd.append('peon_usu', u);
+            fd.append('peon_rol', rolFinal);
+
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => {
+                const objEvt = { fecha: new Date().toISOString(), accion: 'Edición Operador', caravana: '---', valor: u, detalles: `Rol: ${rolFinal} | Modificado por: ${usNombre}`, maestro: maestroId };
+                dbCache.unshift(objEvt);
+                lsSet('tc_db', dbCache);
+
+                const fd2 = new URLSearchParams();
+                for(let key in objEvt) fd2.append(key, objEvt[key]);
+                fd2.append('usuario', usActivo);
+                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd2, mode: 'no-cors' });
+
+                alert("Permisos actualizados con éxito.");
+                document.getElementById('op-edit-usu-sel').value = "";
+                document.getElementById('caja-edit-permisos').classList.add('oculto');
+                btn.innerHTML = btnOriginal;
+                btn.disabled = false;
+            }).catch(() => {
+                alert("Error de red.");
+                btn.innerHTML = btnOriginal;
+                btn.disabled = false;
+            });
         }
 
         function eliminarOperador() {
@@ -1147,7 +1223,7 @@
                 fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
                     alert(`El operador "${u}" ha sido eliminado con éxito.`); 
                     
-                    const objEvt = { fecha: new Date().toISOString(), accion: 'Baja Operador', caravana: '---', valor: u, detalles: `Eliminado por: ${usActivo}`, maestro: maestroId };
+                    const objEvt = { fecha: new Date().toISOString(), accion: 'Baja Operador', caravana: '---', valor: u, detalles: `Eliminado por: ${usNombre}`, maestro: maestroId };
                     dbCache.unshift(objEvt);
                     lsSet('tc_db', dbCache);
                     
@@ -1170,24 +1246,36 @@
         }
 
         function cargarListaOperadores() {
-            let operadores = new Set(); let dadosDeBaja = new Set(); let eliminados = lsGet('tc_op_eliminados', []);
+            let operadoresMap = new Map(); // Mapa para unificar mayúsculas y minúsculas (Ej: jramirez y JRamirez)
+            let dadosDeBaja = new Set(); 
+            let eliminados = lsGet('tc_op_eliminados', []);
             
             dbCache.forEach(d => {
                 let det = d.detalles || "";
                 if(d.accion === 'Baja Operador' && d.valor) dadosDeBaja.add(d.valor.trim().toLowerCase());
-                if(det.includes('Op:')) { let nombre = det.split('Op:')[1].split('|')[0].trim(); if(nombre) operadores.add(nombre); }
-                if(det.includes('Resp:')) { let nombre = det.split('Resp:')[1].split('|')[0].trim(); if(nombre) operadores.add(nombre); }
-                if(d.accion === 'Alta Operador' && d.valor) { operadores.add(d.valor.trim()); }
+                
+                if(d.accion === 'Alta Operador' && d.valor) { 
+                    let uName = d.valor.trim();
+                    if(!operadoresMap.has(uName.toLowerCase())) operadoresMap.set(uName.toLowerCase(), uName);
+                }
+                if(det.includes('Op:')) { 
+                    let nombre = det.split('Op:')[1].split('|')[0].trim(); 
+                    if(nombre && !operadoresMap.has(nombre.toLowerCase())) operadoresMap.set(nombre.toLowerCase(), nombre); 
+                }
             });
             
-            const sel = document.getElementById('op-del-usu-sel');
-            if(sel) {
+            const selDel = document.getElementById('op-del-usu-sel');
+            const selEdit = document.getElementById('op-edit-usu-sel');
+            
+            if(selDel) {
                 let options = '<option value="">-- Seleccione un operador --</option>';
-                operadores.forEach(o => { 
-                    let oMin = o.toLowerCase();
-                    if(oMin !== usActivo.toLowerCase() && !eliminados.includes(oMin) && !dadosDeBaja.has(oMin)) { options += `<option value="${o}">${o}</option>`; } 
+                operadoresMap.forEach((originalCase, lowerCase) => { 
+                    if(lowerCase !== usActivo.toLowerCase() && !eliminados.includes(lowerCase) && !dadosDeBaja.has(lowerCase)) { 
+                        options += `<option value="${originalCase}">${originalCase}</option>`; 
+                    } 
                 });
-                sel.innerHTML = options;
+                selDel.innerHTML = options;
+                if(selEdit) selEdit.innerHTML = options;
             }
         }
 
