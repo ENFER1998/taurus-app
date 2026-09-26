@@ -56,6 +56,10 @@
         #pantalla-mantenimiento .spinner { border: 4px solid var(--borde); border-top: 4px solid var(--peligro); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-top:30px;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        /* MODAL POP-UP AVISO GLOBAL */
+        #modal-alerta-global { z-index: 99999; }
+        #modal-alerta-global .modal-body { text-align: center; border: 2px solid var(--alerta); }
+
         #pantalla-app { padding-bottom: 80px; width: 100%; }
         .cabecera { background-color: #0f172a; color: var(--texto); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--borde); position: sticky; top: 0; z-index: 100;}
         .cabecera h1 { margin: 0; font-size: 20px; display: flex; align-items: center; gap: 8px;}
@@ -160,10 +164,10 @@
     </div>
 
     <!-- MODAL POP-UP AVISO GLOBAL -->
-    <div id="modal-alerta-global" class="modal" style="z-index: 99999;">
-        <div class="modal-body" style="text-align: center; border: 2px solid var(--alerta);">
-            <h3 style="color:var(--alerta); margin-top:0; border-bottom: none; font-size:22px;">⚠️ Aviso Importante</h3>
-            <p id="txt-alerta-global" style="font-size:16px; line-height: 1.5; color:var(--texto); margin-bottom: 25px; font-weight:bold;"></p>
+    <div id="modal-alerta-global" class="modal">
+        <div class="modal-body">
+            <h3 style="color:var(--alerta); margin-top:0; border-bottom: none; font-size:22px; text-align:center;">⚠️ Aviso Importante</h3>
+            <p id="txt-alerta-global" style="font-size:16px; line-height: 1.5; color:var(--texto); margin-bottom: 25px; font-weight:bold; text-align:center;"></p>
             <button class="btn-guardar" style="background:var(--alerta);" onclick="cerrarPopUpAlerta()">Entendido / Cerrar</button>
         </div>
     </div>
@@ -195,7 +199,7 @@
                     <div class="kpi-caja" style="border-color: var(--peligro);"><div class="kpi-valor" id="dash-bajas" style="color: var(--peligro);">0</div><div class="kpi-label" style="color: var(--peligro);">Mortalidad / Bajas</div></div>
                     <div class="kpi-caja"><div class="kpi-valor" id="dash-acciones">0</div><div class="kpi-label">Registros Procesados</div></div>
                 </div>
-                <div class="tarjeta" id="contenedor-alertas" style="display:none;"><div class="tarjeta-titulo" style="color:var(--alerta);">⚠️ Alertas Clínicas</div><div id="lista-alertas"></div></div>
+                <div class="tarjeta" id="contenedor-alertas" style="display:none;"><div class="tarjeta-titulo" style="color:var(--alerta);">⚠️ Alertas (Deslizar)</div><div id="lista-alertas"></div></div>
                 <div id="contenedor-graficos-dinamicos"></div>
             </div>
 
@@ -305,14 +309,14 @@
                 </div>
             </div>
 
-            <!-- REPORTES Y PDF -->
+            <!-- REPORTES -->
             <div id="vista-informe" class="vista oculto">
                 
                 <!-- VISTA PREVIA DEL MEMBRETE -->
                 <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid var(--borde);">
                     <img id="preview-logo-reporte" src="gemini-svg.png" style="width:50px; height:50px; object-fit:contain; border-radius:8px; background:white; padding:2px;">
                     <div>
-                        <span style="font-size:11px; color:var(--muted); font-weight:bold; text-transform:uppercase;">Membrete de Documentos PDF</span>
+                        <span style="font-size:11px; color:var(--muted); font-weight:bold; text-transform:uppercase;">Membrete PDF</span>
                         <strong id="preview-nombre-reporte" style="display:block; font-size:16px; color:var(--texto);">Hacienda</strong>
                     </div>
                 </div>
@@ -377,7 +381,7 @@
                         <img id="preview-logo-config" src="gemini-svg.png" style="width:60px; height:60px; object-fit:contain; border-radius:8px; border:1px solid var(--borde); background:white; padding:2px;">
                         <div style="flex:1;">
                             <label style="font-size:12px; font-weight:bold; color:var(--muted); margin-bottom:5px; display:block;">Nombre Empresa / Hacienda</label>
-                            <input type="text" id="cfg-nom" class="form-control" placeholder="Taurus Control">
+                            <input type="text" id="cfg-nom" class="form-control" placeholder="Taurus Control" style="margin-bottom:0;">
                         </div>
                     </div>
                     
@@ -485,9 +489,9 @@
     <div id="modal-comentario" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-comentario')">&times;</span><h3>Anotación General</h3><div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-comentario', 'Comentario')">Guardar Nota</button></div></div>
     <div id="modal-rfid" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-rfid')">&times;</span><h3>Vincular Bastón RFID</h3><p style="font-size:12px; color:var(--muted); margin-bottom:15px;">Chip <strong id="lbl-rfid-scaneado" style="color:var(--secundario);"></strong> no asignado.</p><div class="form-grupo"><input type="text" class="form-control" id="f-rfid-caravana" placeholder="Ingrese RP (Ej: 1234)" style="text-align: center; font-size: 20px; font-weight: bold;"></div><button class="btn-guardar" onclick="guardarVinculacionRFID()">Vincular y Abrir Ficha</button></div></div>
     
-    <div id="modal-perfil" class="modal">
+    <div id="m-perfil" class="modal">
         <div class="modal-body">
-            <span class="cerrar" onclick="cerrarModal('modal-perfil')">&times;</span>
+            <span class="cerrar" onclick="cerrarModal('m-perfil')">&times;</span>
             <h3>Datos Base del Animal</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div class="form-grupo"><label>Raza</label><input type="text" class="form-control" id="f-raza"></div>
@@ -575,9 +579,12 @@
                 document.getElementById('txt-alerta-global').innerText = msg;
                 document.getElementById('txt-banner-alerta').innerText = msg;
                 
+                // Mostrar Pop-up en pantalla completa solo si no se ha mostrado
                 if (!mostradas.includes(id)) {
                     document.getElementById('modal-alerta-global').style.display = 'flex';
                 }
+                
+                // Anclar el banner naranja en el Dashboard
                 banner.classList.remove('oculto');
             } else {
                 banner.classList.add('oculto');
@@ -657,10 +664,12 @@
                 if (!response.ok) throw new Error("Error de conexión al servidor.");
                 const res = await response.json();
                 
+                // CORTINA DE HIERRO
                 if(res.mantenimiento) { throw new Error(res.mensaje); }
                 if(res.error) throw new Error(res.mensaje);
                 if(res.vencimiento && new Date() > new Date(res.vencimiento)) { throw new Error("Su licencia ha vencido."); }
                 
+                // PROCESAR ALERTA GLOBAL DE MANTENIMIENTO
                 procesarAlertaServidor(res.alerta_global, res.alerta_id);
 
                 let dataLimpia = Array.isArray(res.data) ? res.data : [];
@@ -824,6 +833,7 @@
                     if(pantMant) pantMant.classList.add('oculto');
                 }
                 
+                // ACTUALIZAR AVISO AL SINCRONIZAR
                 procesarAlertaServidor(res.alerta_global, res.alerta_id);
 
                 if(!res.error) {
@@ -1027,7 +1037,7 @@
             const fMadre = document.getElementById('f-madre') ? document.getElementById('f-madre').value : "-";
             const catValor = document.getElementById('val-categoria') ? document.getElementById('val-categoria').innerText : "-";
             
-            ejecutarAccion('Perfil Master', `${fRaza||"-"}|${fNacimiento||"-"}|${fPadre||"-"}|${fMadre||"-"}`, catValor, 'modal-perfil'); 
+            ejecutarAccion('Perfil Master', `${fRaza||"-"}|${fNacimiento||"-"}|${fPadre||"-"}|${fMadre||"-"}`, catValor, 'm-perfil'); 
             
             if (fNacimiento && fNacimiento !== "-") {
                 const partes = fNacimiento.split('-'); let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
@@ -1037,8 +1047,8 @@
             }
         }
 
-        function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'modal-clasificacion'); }
-        function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'modal-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
+        function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'm-clasi'); }
+        function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'm-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
         function borrarCaravana() { if(!rpActivo) return; if(confirm(`¿ELIMINAR todo el historial de la caravana ${rpActivo}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null); alert("Historial eliminado. El número quedó libre."); cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); } }
         function verHistorial() { abrirModal('modal-historial'); let h = "<ul style='list-style:none; padding:0; margin:0;'>"; obtenerHistorial(rpActivo).forEach(r => { if(!r.accion.includes('Vinculacion')) { h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px;"><span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span><br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span></li>`; }}); document.getElementById('contenido-historial').innerHTML = h + "</ul>"; }
 
@@ -1080,7 +1090,7 @@
             document.getElementById('inf-prenadas').innerText = tPreGlobal;
 
             if(fRp !== "") {
-                rpPrint = fRp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
+                rpPrint = fRp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Dossier: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
                 const regs = obtenerHistorial(fRp); let hInd = ""; 
                 regs.forEach(r => { if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') hInd+=`<tr><td>${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${obtenerBadgeAccion(r.accion)}</strong></td><td>${r.valor}</td><td style="font-size:11px; color:var(--muted);">${r.detalles}</td></tr>`; });
                 tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.filter(r => !r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master').length; document.getElementById('inf-prenadas').innerText = "-"; 
