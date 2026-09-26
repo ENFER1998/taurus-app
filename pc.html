@@ -5,12 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Taurus Control - Terminal PC</title>
     
+    <!-- Íconos para la aplicación web -->
     <link rel="apple-touch-icon" href="gemini-svg.png">
     <link rel="icon" type="image/png" href="gemini-svg.png">
     
+    <!-- LIBRERIAS PROFESIONALES PARA PDF PERFECTO -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     
+    <!-- INTEGRACIÓN ONESIGNAL -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -154,7 +157,7 @@
         </div>
     </div>
 
-    <!-- CORTINA DE HIERRO: MANTENIMIENTO -->
+    <!-- CORTINA DE HIERRO -->
     <div id="pantalla-mantenimiento" class="oculto">
         <span style="font-size:70px; margin-bottom:20px;">🚧</span>
         <h1 style="color:var(--danger); margin:0 0 10px 0; font-size:32px;">SISTEMA EN MANTENIMIENTO</h1>
@@ -955,13 +958,28 @@
                 procesarAlertaServidor(res.alerta_global, res.alerta_id);
 
                 if(!res.error) {
-                    let totalPrevio = dbCache.length;
-                    fusionarDatos(Array.isArray(res.data) ? res.data : []);
-                    let nuevosRegistros = dbCache.length - totalPrevio;
+                    let datosServidor = Array.isArray(res.data) ? res.data : [];
                     
-                    // DISPARAR NOTIFICACIÓN NATIVA SI HAY DATOS NUEVOS
-                    if (!esManual && nuevosRegistros > 0) {
-                        lanzarNotificacionEscritorio("Taurus Sincronizado", `Se han registrado ${nuevosRegistros} nuevas acciones en la estancia.`);
+                    // EXTRAER ACCIONES NUEVAS Y FORMATEAR LA NOTIFICACIÓN DE ESCRITORIO
+                    let mapCache = new Set(dbCache.map(d => d.fecha + '_' + d.caravana + '_' + d.accion));
+                    let nuevosRegistros = datosServidor.filter(d => d && d.fecha && !mapCache.has(d.fecha + '_' + d.caravana + '_' + d.accion));
+                    
+                    fusionarDatos(datosServidor);
+                    
+                    if (!esManual && nuevosRegistros.length > 0) {
+                        if (nuevosRegistros.length <= 3) {
+                            nuevosRegistros.forEach(n => {
+                                let op = n.usuario || "Un operador";
+                                if (n.detalles && n.detalles.includes("Op: ")) {
+                                    op = n.detalles.split("Op: ")[1].trim();
+                                }
+                                if(op.toLowerCase() !== usNombre.toLowerCase()) {
+                                    lanzarNotificacionEscritorio("Alerta Taurus", `${op} registró [${n.accion}] al RP ${n.caravana}`);
+                                }
+                            });
+                        } else {
+                            lanzarNotificacionEscritorio("Alerta Taurus", `Se registraron ${nuevosRegistros.length} nuevas acciones en el campo.`);
+                        }
                     }
 
                     if(rpActivo && !document.getElementById('v-ficha').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
@@ -1353,7 +1371,7 @@
             document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
             let elBajas = document.getElementById('dash-bajas'); if(elBajas) elBajas.innerText = cantBajas;
 
-            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos').innerHTML = "<p style='color:var(--text-main); text-align:center; padding:20px;'>Inventario vacío.</p>"; return; }
+            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos-dinamicos').innerHTML = "<p style='color:var(--text-main); text-align:center; padding:20px;'>Inventario vacío.</p>"; return; }
             
             let g1={p:0,v:0}, g2={v:0,t:0,o:0}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}, g11={}; let alertasHTML = "";
             datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; if(r.accion === 'Baja') { let causa = String(r.valor).trim(); g11[causa] = (g11[causa] || 0) + 1; } });
@@ -1386,7 +1404,7 @@
                 else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Volumen Clínico</h4>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Nutrición', g10.nut, t, '#84cc16')}${makeBar('Sanidad', g10.san, t, '#c2410c')}`; } 
                 else if(g === '11') { let t = cantBajas || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Causas de Baja / Mortalidad</h4>`; let lKeys = Object.keys(g11).sort((a,b)=>g11[b]-g11[a]).slice(0,4); if(lKeys.length === 0) html += `<p style="color:var(--text-muted); font-size:12px;">Sin registros de bajas.</p>`; lKeys.forEach((k, i) => { let col = i===0?'var(--danger)':i===1?'var(--warning)':'#be185d'; html += makeBar(k, g11[k], t, col); }); html+=`</div>`; }
                 htmlGraficos += html;
-            }); document.getElementById('contenedor-graficos').innerHTML = htmlGraficos;
+            }); document.getElementById('contenedor-graficos-dinamicos').innerHTML = htmlGraficos;
         }
 
         function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.sidebar-nav li').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
