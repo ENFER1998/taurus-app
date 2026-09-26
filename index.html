@@ -574,11 +574,28 @@
             } finally { btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
         }
 
-        function notificarPropietario(mensaje) {
-            if(usRol.includes('Propietario') || usRol.includes('Dueño') || !navigator.onLine) return;
-            const fd = new URLSearchParams(); fd.append('accion', 'notificar_accion'); fd.append('maestro', maestroId); fd.append('mensaje', mensaje);
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' });
-        }
+    function notificarPropietario(mensaje) {
+    alert("Paso 1: La función de notificación se activó correctamente.");
+
+    // Hemos comentado esta línea temporalmente para que PUEDAS probarlo siendo Propietario/Dueño
+    // if(usRol.includes('Propietario') || usRol.includes('Dueño') || !navigator.onLine) return;
+
+    alert("Paso 2: Enviando la orden a Google Sheets...");
+
+    const fd = new URLSearchParams(); 
+    fd.append('accion', 'notificar_accion'); 
+    fd.append('maestro', maestroId); // Asegúrate de que esta variable 'maestroId' tenga valor
+    fd.append('mensaje', mensaje);
+    
+    fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' })
+    .then(() => {
+        alert("Paso 3: ¡Orden enviada a Google Sheets con éxito!");
+    })
+    .catch((error) => {
+        alert("ERROR: La app no pudo comunicarse con Google Sheets. Revisa tu GOOGLE_SHEETS_URL.");
+        console.error(error);
+    });
+}
 
         function arrancarSistema(datos, u, m, r, nombreCompleto, hacienda) {
             try {
