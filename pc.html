@@ -13,7 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     
-    <!-- INTEGRACIÓN ONESIGNAL -->
+    <!-- INTEGRACIÓN ONESIGNAL (Mantenida por si abren desde Chrome normal) -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -1251,7 +1251,7 @@
                     const regs = obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
                     const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
-                    if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; }
+                    if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles||"split('|')[0]") ? String(uC.detalles||"split('|')[0]").replace('Lote:','').trim() : "-"; }
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-";
                     
                     let pasaFiltro = true; 
@@ -1260,7 +1260,7 @@
                     if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false; 
                     if(fCarimbo !== "ALL" && carimbo !== fCarimbo) pasaFiltro = false; 
                     
-                    if(pasaFiltro) { countTotal++; tbodyMasivo.innerHTML += `<tr><td style="color:var(--text-main);"><strong>${car}</strong><br><span style="font-size:11px; color:var(--text-muted);">Cb: ${carimbo}</span></td><td style="color:var(--text-main);">${cat}<br><span style="font-size:11px; color:var(--text-muted);">${lote}</span></td><td style="color:var(--text-main);">${peso}</td><td style="color:var(--text-main);">${dx}</td></tr>`; }
+                    if(pasaFiltro) { countTotal++; tbodyMasivo.innerHTML += `<tr><td><strong>${car}</strong><br><span style="font-size:11px; color:var(--text-muted);">Cb: ${carimbo}</span></td><td>${cat}<br><span style="font-size:11px; color:var(--text-muted);">${lote}</span></td><td>${peso}</td><td>${dx}</td></tr>`; }
                 });
                 document.getElementById('inf-total').innerText = countTotal; 
             } else {
@@ -1270,7 +1270,7 @@
                 if(fAcc !== "ALL") eventos = eventos.filter(d => d.accion === fAcc); if(fDesde) eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00'));
                 if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); if(fKey) eventos = eventos.filter(d => (String(d.valor) + String(d.detalles)).toLowerCase().includes(fKey));
                 tbodyEventos.innerHTML = "";
-                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { tbodyEventos.innerHTML += `<tr><td style="color:var(--text-main);">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:var(--text-main);"><strong>${r.caravana}</strong></td><td style="color:var(--text-main);">${obtenerBadgeAccion(r.accion)}</td><td style="color:var(--text-main);"><strong>${r.valor}</strong><br><span style="color:var(--text-muted);">${r.detalles}</span></td></tr>`; });
+                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { tbodyEventos.innerHTML += `<tr><td style="white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${r.caravana}</strong></td><td>${obtenerBadgeAccion(r.accion)}</td><td><strong>${r.valor}</strong><br><span style="color:var(--text-muted);">${r.detalles}</span></td></tr>`; });
                 document.getElementById('inf-total').innerText = eventos.length; 
             }
         }
@@ -1371,7 +1371,7 @@
             document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
             let elBajas = document.getElementById('dash-bajas'); if(elBajas) elBajas.innerText = cantBajas;
 
-            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos-dinamicos').innerHTML = "<p style='color:var(--text-main); text-align:center; padding:20px;'>Inventario vacío.</p>"; return; }
+            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos').innerHTML = "<p style='color:var(--text-main);'>Inventario vacío.</p>"; return; }
             
             let g1={p:0,v:0}, g2={v:0,t:0,o:0}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}, g11={}; let alertasHTML = "";
             datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; if(r.accion === 'Baja') { let causa = String(r.valor).trim(); g11[causa] = (g11[causa] || 0) + 1; } });
@@ -1404,7 +1404,7 @@
                 else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Volumen Clínico</h4>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Nutrición', g10.nut, t, '#84cc16')}${makeBar('Sanidad', g10.san, t, '#c2410c')}`; } 
                 else if(g === '11') { let t = cantBajas || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Causas de Baja / Mortalidad</h4>`; let lKeys = Object.keys(g11).sort((a,b)=>g11[b]-g11[a]).slice(0,4); if(lKeys.length === 0) html += `<p style="color:var(--text-muted); font-size:12px;">Sin registros de bajas.</p>`; lKeys.forEach((k, i) => { let col = i===0?'var(--danger)':i===1?'var(--warning)':'#be185d'; html += makeBar(k, g11[k], t, col); }); html+=`</div>`; }
                 htmlGraficos += html;
-            }); document.getElementById('contenedor-graficos-dinamicos').innerHTML = htmlGraficos;
+            }); document.getElementById('contenedor-graficos').innerHTML = htmlGraficos;
         }
 
         function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.sidebar-nav li').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
