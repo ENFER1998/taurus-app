@@ -5,15 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Taurus Control - Terminal PC</title>
     
-    <!-- Íconos para la aplicación web -->
     <link rel="apple-touch-icon" href="gemini-svg.png">
     <link rel="icon" type="image/png" href="gemini-svg.png">
     
-    <!-- LIBRERIAS PROFESIONALES PARA PDF PERFECTO -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     
-    <!-- INTEGRACIÓN ONESIGNAL (Mantenida por si abren desde Chrome normal) -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -157,7 +154,7 @@
         </div>
     </div>
 
-    <!-- CORTINA DE HIERRO -->
+    <!-- CORTINA DE HIERRO: MANTENIMIENTO -->
     <div id="pantalla-mantenimiento" class="oculto">
         <span style="font-size:70px; margin-bottom:20px;">🚧</span>
         <h1 style="color:var(--danger); margin:0 0 10px 0; font-size:32px;">SISTEMA EN MANTENIMIENTO</h1>
@@ -700,7 +697,6 @@
                 
                 if (!mostradas.includes(id)) {
                     document.getElementById('modal-alerta-global').style.display = 'flex';
-                    // Disparar Notificación de Escritorio si la app está en segundo plano
                     lanzarNotificacionEscritorio("Mantenimiento / Aviso Importante", msg);
                 }
                 banner.classList.remove('oculto');
@@ -791,9 +787,7 @@
                 if(res.error) throw new Error(res.mensaje);
                 if(res.vencimiento && new Date() > new Date(res.vencimiento)) { throw new Error("Su licencia ha vencido."); }
                 
-                // Pedimos permisos para notificaciones en escritorio
                 solicitarPermisoNotificaciones();
-                
                 procesarAlertaServidor(res.alerta_global, res.alerta_id);
 
                 let dataLimpia = Array.isArray(res.data) ? res.data : [];
@@ -1248,7 +1242,7 @@
                     if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false; 
                     if(fCarimbo !== "ALL" && carimbo !== fCarimbo) pasaFiltro = false; 
                     
-                    if(pasaFiltro) { countTotal++; tbodyMasivo.innerHTML += `<tr><td><strong>${car}</strong><br><span style="font-size:11px; color:var(--text-muted);">Cb: ${carimbo}</span></td><td>${cat}<br><span style="font-size:11px; color:var(--text-muted);">${lote}</span></td><td>${peso}</td><td>${dx}</td></tr>`; }
+                    if(pasaFiltro) { countTotal++; tbodyMasivo.innerHTML += `<tr><td style="color:var(--text-main);"><strong>${car}</strong><br><span style="font-size:11px; color:var(--text-muted);">Cb: ${carimbo}</span></td><td style="color:var(--text-main);">${cat}<br><span style="font-size:11px; color:var(--text-muted);">${lote}</span></td><td style="color:var(--text-main);">${peso}</td><td style="color:var(--text-main);">${dx}</td></tr>`; }
                 });
                 document.getElementById('inf-total').innerText = countTotal; 
             } else {
@@ -1258,7 +1252,7 @@
                 if(fAcc !== "ALL") eventos = eventos.filter(d => d.accion === fAcc); if(fDesde) eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00'));
                 if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); if(fKey) eventos = eventos.filter(d => (String(d.valor) + String(d.detalles)).toLowerCase().includes(fKey));
                 tbodyEventos.innerHTML = "";
-                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { tbodyEventos.innerHTML += `<tr><td>${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${r.caravana}</strong></td><td>${obtenerBadgeAccion(r.accion)}</td><td><strong>${r.valor}</strong><br><span style="color:var(--text-muted);">${r.detalles}</span></td></tr>`; });
+                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { tbodyEventos.innerHTML += `<tr><td style="color:var(--text-main);">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:var(--text-main);"><strong>${r.caravana}</strong></td><td style="color:var(--text-main);">${obtenerBadgeAccion(r.accion)}</td><td style="color:var(--text-main);"><strong>${r.valor}</strong><br><span style="color:var(--text-muted);">${r.detalles}</span></td></tr>`; });
                 document.getElementById('inf-total').innerText = eventos.length; 
             }
         }
@@ -1316,7 +1310,7 @@
                         doc.autoTable({ startY: doc.lastAutoTable.finalY + 13, theme: 'grid', head: [['Fecha', 'Procedimiento', 'Valor Principal', 'Observaciones Adicionales']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 40 }, 2: { cellWidth: 40, fontStyle: 'bold' }, 3: { cellWidth: 'auto' } } });
                         
                         let filename = `Dossier_RP_${rpPrint.toUpperCase()}.pdf`;
-                        if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
+                        doc.save(filename);
 
                     } else {
                         const isInventario = (modo === 'inventario');
@@ -1340,7 +1334,7 @@
                         doc.autoTable({ startY: 48, theme: 'grid', head: headRows, body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: colStyles });
                         
                         let filename = 'Reporte_General.pdf';
-                        if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
+                        doc.save(filename);
                     }
                     btn.innerText = textoOriginal;
                 } catch (error) { console.error(error); alert("Error al generar el PDF: " + error.message); btn.innerText = textoOriginal; }
@@ -1359,7 +1353,7 @@
             document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
             let elBajas = document.getElementById('dash-bajas'); if(elBajas) elBajas.innerText = cantBajas;
 
-            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos-dinamicos').innerHTML = "<p style='color:var(--muted); text-align:center; padding:20px;'>Inventario vacío.</p>"; return; }
+            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos').innerHTML = "<p style='color:var(--text-main); text-align:center; padding:20px;'>Inventario vacío.</p>"; return; }
             
             let g1={p:0,v:0}, g2={v:0,t:0,o:0}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}, g11={}; let alertasHTML = "";
             datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; if(r.accion === 'Baja') { let causa = String(r.valor).trim(); g11[causa] = (g11[causa] || 0) + 1; } });
@@ -1369,37 +1363,37 @@
                 if(uC) { let v=String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : ""; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
                 cat = cat.toLowerCase(); const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
                 
-                if(uDx) { if(String(uDx.valor||"").includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } } if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--texto);">${car}</strong> diagnosticada Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } } }
+                if(uDx) { if(String(uDx.valor||"").includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } } if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--text-main);">${car}</strong> diagnosticada Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } } }
                 if(cat.includes('vaca') || cat.includes('vaquilla')) g2.v++; else if(cat.includes('terne') || cat.includes('desmamante')) g2.t++; else g2.o++; g3[lote] = (g3[lote] || 0) + 1;
-                if(uPeso) { if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--texto);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; else g4.opt++; let pVal = parseFloat(uPeso.valor); if(!isNaN(pVal)) { if(cat.includes('vaca') || cat.includes('vaquilla')) { g9.vw += pVal; g9.vc++; } if(cat.includes('terne') || cat.includes('desmamante')) { g9.tw += pVal; g9.tc++; } } } 
+                if(uPeso) { if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--text-main);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; else g4.opt++; let pVal = parseFloat(uPeso.valor); if(!isNaN(pVal)) { if(cat.includes('vaca') || cat.includes('vaquilla')) { g9.vw += pVal; g9.vc++; } if(cat.includes('terne') || cat.includes('desmamante')) { g9.tw += pVal; g9.tc++; } } } 
                 if(uSan) g6.con++; else g6.sin++;
             });
             
             const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
-            const prefs = lsGet('tc_prefs', ['1', '3']); let htmlGraficos = ""; const makeBar = (lbl, val, total, col) => { let p = total>0 ? Math.round((val/total)*100) : 0; return `<div class="barra-categoria"><div class="barra-header"><span style="color:var(--texto);">${lbl} (${val})</span><span style="color:var(--texto);">${p}%</span></div><div class="barra-fondo"><div class="barra-relleno" style="background:${col}; width:${p}%;"></div></div></div>`; };
+            const prefs = lsGet('tc_prefs', ['1', '3']); let htmlGraficos = ""; const makeBar = (lbl, val, total, col) => { let p = total>0 ? Math.round((val/total)*100) : 0; return `<div class="barra-cat"><div class="barra-head"><span style="color:var(--text-main);">${lbl} (${val})</span><span style="color:var(--text-main);">${p}%</span></div><div class="barra-bg"><div class="barra-fill" style="background:${col}; width:${p}%;"></div></div></div>`; };
             
             prefs.forEach(g => {
-                let html = `<div class="tarjeta">`;
-                if(g === '1') { let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; html += `<div class="tarjeta-titulo">Tasa de Preñez Dinámica</div><div class="grafico-flex"><div class="torta-container"><div class="torta" style="background: conic-gradient(var(--exito) 0% ${pp}%, var(--peligro) ${pp}% 100%);"></div><div class="torta-centro">${pp}%</div></div><div class="leyenda-torta"><div><span class="punto" style="background: var(--exito);"></span> Preñadas (${g1.p})</div><div><span class="punto" style="background: var(--peligro);"></span> Vacías (${g1.v})</div></div></div></div>`; } 
-                else if(g === '2') { let t = g2.v + g2.t + g2.o || 1; html += `<div class="tarjeta-titulo">Composición de Hacienda</div>${makeBar('Vacas/Vaquillas', g2.v, t, 'var(--secundario)')}${makeBar('Terneros/as', g2.t, t, 'var(--alerta)')}${makeBar('Toros/Otros', g2.o, t, '#8b5cf6')}</div>`; } 
-                else if(g === '3') { html += `<div class="tarjeta-titulo">Distribución por Lotes</div>`; let lKeys = Object.keys(g3).sort((a,b)=>g3[b]-g3[a]).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--secundario)':i===1?'var(--alerta)':'var(--exito)'; html += makeBar(k, g3[k], unicas.length, col); }); html+=`</div>`;} 
-                else if(g === '4') { let t = g4.opt + g4.bp + g4.sp || 1; html += `<div class="tarjeta-titulo">Condición Corporal</div>${makeBar('Óptima', g4.opt, t, 'var(--exito)')}${makeBar('Bajo Peso', g4.bp, t, 'var(--peligro)')}${makeBar('Sobrepeso', g4.sp, t, 'var(--alerta)')}</div>`; } 
-                else if(g === '5') { let t = g5.norm + g5.san || 1; html += `<div class="tarjeta-titulo">Causas Vientre Vacío</div>${makeBar('Normal', g5.norm, t, 'var(--alerta)')}${makeBar('Sangre/Problema', g5.san, t, 'var(--peligro)')}</div>`; } 
-                else if(g === '6') { let t = unicas.length; html += `<div class="tarjeta-titulo">Sanidad Global</div>${makeBar('Con Registro', g6.con, t, 'var(--exito)')}${makeBar('Sin Registros', g6.sin, t, '#64748b')}</div>`; } 
-                else if(g === '7') { html += `<div class="tarjeta-titulo">Preñez por Lote</div>`; let lKeys = Object.keys(g7).sort((a,b)=>g7[b].p-g7[a].p).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--exito)':i===1?'var(--secundario)':'var(--alerta)'; html += makeBar(k, g7[k].p, g7[k].t, col); }); html+=`</div>`;} 
-                else if(g === '8') { html += `<div class="tarjeta-titulo">Eficacia de Toros</div>`; let lKeys = Object.keys(g8).sort((a,b)=>g8[b].p-g8[a].p).slice(0,3); if(lKeys.length===0) html += `<p style="color:var(--muted); font-size:12px;">Sin cruces.</p>`; lKeys.forEach((k, i) => { html += makeBar(k, g8[k].p, g8[k].t, '#be185d'); }); html+=`</div>`;} 
-                else if(g === '9') { let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; html += `<div class="tarjeta-titulo">Promedio de Pesos</div><div class="grid-kpis"><div class="kpi-caja"><strong style="font-size:20px; color:var(--secundario); display:block;">${pv} Kg</strong><span style="font-size:11px; color:var(--muted); font-weight:bold; text-transform:uppercase;">Vacas</span></div><div class="kpi-caja"><strong style="font-size:20px; color:var(--secundario); display:block;">${pt} Kg</strong><span style="font-size:11px; color:var(--muted); font-weight:bold; text-transform:uppercase;">Terneros</span></div></div></div>`; } 
-                else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1; html += `<div class="tarjeta-titulo">Volumen Clínico</div>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Nutrición', g10.nut, t, '#84cc16')}${makeBar('Sanidad', g10.san, t, '#c2410c')}</div>`; } 
-                else if(g === '11') { let t = cantBajas || 1; html += `<div class="tarjeta-titulo">Causas de Baja / Mortalidad</div>`; let lKeys = Object.keys(g11).sort((a,b)=>g11[b]-g11[a]).slice(0,4); if(lKeys.length === 0) html += `<p style="color:var(--muted); font-size:12px;">Sin registros de bajas.</p>`; lKeys.forEach((k, i) => { let col = i===0?'var(--peligro)':i===1?'var(--alerta)':'#be185d'; html += makeBar(k, g11[k], t, col); }); html+=`</div>`; }
+                let html = `<div>`;
+                if(g === '1') { let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Tasa de Preñez Dinámica</h4><div style="display:flex; gap:20px; align-items:center;"><div class="torta-container"><div class="torta" style="background: conic-gradient(var(--success) 0% ${pp}%, var(--danger) ${pp}% 100%);"></div><div class="torta-centro">${pp}%</div></div><div class="leyenda-torta"><div><span class="punto" style="background: var(--success);"></span> Preñadas (${g1.p})</div><div><span class="punto" style="background: var(--danger);"></span> Vacías (${g1.v})</div></div></div></div>`; } 
+                else if(g === '2') { let t = g2.v + g2.t + g2.o || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Composición de Hacienda</h4>${makeBar('Vacas/Vaquillas', g2.v, t, 'var(--primary)')}${makeBar('Terneros/as', g2.t, t, 'var(--warning)')}${makeBar('Toros/Otros', g2.o, t, '#8b5cf6')}</div>`; } 
+                else if(g === '3') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Distribución por Lotes</h4>`; let lKeys = Object.keys(g3).sort((a,b)=>g3[b]-g3[a]).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--primary)':i===1?'var(--warning)':'var(--success)'; html += makeBar(k, g3[k], unicas.length, col); }); html+=`</div>`;} 
+                else if(g === '4') { let t = g4.opt + g4.bp + g4.sp || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Condición Corporal</h4>${makeBar('Óptima', g4.opt, t, 'var(--success)')}${makeBar('Bajo Peso', g4.bp, t, 'var(--danger)')}${makeBar('Sobrepeso', g4.sp, t, 'var(--warning)')}</div>`; } 
+                else if(g === '5') { let t = g5.norm + g5.san || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Causas Vientre Vacío</h4>${makeBar('Normal', g5.norm, t, 'var(--warning)')}${makeBar('Sangre/Problema', g5.san, t, 'var(--danger)')}</div>`; } 
+                else if(g === '6') { let t = unicas.length; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Sanidad Global</h4>${makeBar('Con Registro', g6.con, t, 'var(--success)')}${makeBar('Sin Registros', g6.sin, t, '#64748b')}</div>`; } 
+                else if(g === '7') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Preñez por Lote</h4>`; let lKeys = Object.keys(g7).sort((a,b)=>g7[b].p-g7[a].p).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--success)':i===1?'var(--primary)':'var(--warning)'; html += makeBar(k, g7[k].p, g7[k].t, col); }); html+=`</div>`;} 
+                else if(g === '8') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Eficacia de Toros</h4>`; let lKeys = Object.keys(g8).sort((a,b)=>g8[b].p-g8[a].p).slice(0,3); if(lKeys.length===0) html += `<p style="color:var(--text-muted); font-size:12px;">Sin cruces.</p>`; lKeys.forEach((k, i) => { html += makeBar(k, g8[k].p, g8[k].t, '#be185d'); }); html+=`</div>`;} 
+                else if(g === '9') { let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Promedio de Pesos</h4><div class="grid-2"><div class="kpi-box" style="padding:10px;"><strong style="font-size:20px; color:var(--text-main);">${pv} Kg</strong><span>Vacas</span></div><div class="kpi-box" style="padding:10px;"><strong style="font-size:20px; color:var(--text-main);">${pt} Kg</strong><span>Terneros</span></div></div></div>`; } 
+                else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Volumen Clínico</h4>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Nutrición', g10.nut, t, '#84cc16')}${makeBar('Sanidad', g10.san, t, '#c2410c')}`; } 
+                else if(g === '11') { let t = cantBajas || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Causas de Baja / Mortalidad</h4>`; let lKeys = Object.keys(g11).sort((a,b)=>g11[b]-g11[a]).slice(0,4); if(lKeys.length === 0) html += `<p style="color:var(--text-muted); font-size:12px;">Sin registros de bajas.</p>`; lKeys.forEach((k, i) => { let col = i===0?'var(--danger)':i===1?'var(--warning)':'#be185d'; html += makeBar(k, g11[k], t, col); }); html+=`</div>`; }
                 htmlGraficos += html;
-            }); document.getElementById('contenedor-graficos-dinamicos').innerHTML = htmlGraficos;
+            }); document.getElementById('contenedor-graficos').innerHTML = htmlGraficos;
         }
 
-        function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
+        function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.sidebar-nav li').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
         function abrirModal(id) { document.getElementById(id).style.display = 'flex'; } function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
-        function cargarListaRegistro() { const datosActivos = obtenerRegistrosActivos(); let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja')); const ul = document.getElementById('tb-registro'); ul.innerHTML = ""; vivas.forEach(car => { const regs = obtenerHistorial(car); let info = "-", dxText = "-", loteText = "-"; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { let vals = String(c.valor||"").split('|'); info = vals[0] ? vals[0].replace('Cat:','').trim() : info; loteText = (String(c.detalles||"").split('|')[0] ? String(c.detalles||"").split('|')[0].replace('Lote:','').trim() : ""); } else if(p) { info = String(p.detalles||"").split('|')[0] || "-"; } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = d.valor || "-"; ul.innerHTML += `<li onclick="navegarDesdeLista('${car}')"><div style="display:flex; flex-direction:column; gap:4px;"><strong style="font-size:18px; color:var(--texto);">${car}</strong><span style="font-size:12px; color:var(--muted);">${info} | ${loteText} | ${dxText}</span></div><span style="font-size:20px; color:var(--texto);">›</span></li>`; }); }
-        function filtrarLista(t) { const lis = document.getElementById('tb-registro').getElementsByTagName('li'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "flex" : "none"; }
-        function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); buscarCaravanaBtn(); }
+        function cargarListaRegistro() { const datosActivos = obtenerRegistrosActivos(); let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja')); const ul = document.getElementById('tb-registro'); ul.innerHTML = ""; vivas.forEach(car => { const regs = obtenerHistorial(car); let info = "-", dxText = "-", loteText = "-"; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { let vals = String(c.valor||"").split('|'); info = vals[0] ? vals[0].replace('Cat:','').trim() : info; loteText = (String(c.detalles||"").split('|')[0] ? String(c.detalles||"").split('|')[0].replace('Lote:','').trim() : ""); } else if(p) { info = String(p.detalles||"").split('|')[0] || "-"; } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = d.valor || "-"; ul.innerHTML += `<tr onclick="navegarDesdeLista('${car}')"><td style="color:var(--text-main);"><strong>${car}</strong></td><td style="color:var(--text-main);">${info}</td><td style="color:var(--text-main);">${loteText}</td><td style="color:var(--text-main);">${dxText}</td><td><button class="btn-outline">Abrir Ficha</button></td></tr>`; }); }
+        function filtrarLista(t) { const lis = document.getElementById('tb-registro').getElementsByTagName('tr'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "" : "none"; }
+        function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.sidebar-nav li')[1].click(); buscarCaravanaBtn(); }
         
         function guardarDisenoServidor() { const n = document.getElementById('cfg-nom').value.trim(); const f = document.getElementById('cfg-logo'); let p = (b64) => { const fd = new URLSearchParams(); fd.append('accion', 'guardar_diseno'); fd.append('maestro', maestroId); fd.append('nombre_hacienda', n); fd.append('logo_hacienda', b64); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_hacienda', {nombre: n, logo: b64}); aplicarDisenoEnPantalla(n, b64); alert("Membrete oficial de PDF actualizado."); }); }; if(f.files && f.files[0]) { const r = new FileReader(); r.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const maxW = 200, maxH = 200; if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); p(canvas.toDataURL('image/png')); }; img.src = e.target.result; }; r.readAsDataURL(f.files[0]); } else { const logoGuardado = lsGet('tc_hacienda', {}).logo || ""; p(logoGuardado); } }
         
@@ -1592,12 +1586,12 @@
         function cerrarSesion() { localStorage.clear(); window.location.reload(); }
 
         // ==========================================
-        // LECTOR HID / TECLADO AUTOMÁTICO (APP MÓVIL)
+        // LECTOR HID / TECLADO AUTOMÁTICO (PC)
         // ==========================================
         function forzarSaltoAFicha() {
-            let tabFicha = document.querySelectorAll('.nav-item')[1];
-            if (typeof cambiarVista === "function" && tabFicha && tabFicha.style.display !== 'none') {
-                cambiarVista('vista-manga', tabFicha);
+            let tabFichaPC = document.querySelectorAll('.sidebar-nav li')[1];
+            if (typeof cambiarVista === "function" && tabFichaPC && tabFichaPC.style.display !== 'none') {
+                cambiarVista('v-ficha', tabFichaPC);
             }
         }
 
@@ -1616,7 +1610,7 @@
                 if (inputVincular) inputVincular.value = '';
                 let lblScaneado = document.getElementById('lbl-rfid-scaneado');
                 if (lblScaneado) lblScaneado.innerText = tagHex;
-                if (typeof abrirModal === "function") abrirModal('modal-rfid');
+                if (typeof abrirModal === "function") abrirModal('m-rfid');
                 setTimeout(() => { if(inputVincular) inputVincular.focus(); }, 500);
             }
         };
@@ -1630,11 +1624,13 @@
             if (event.key === 'Enter') {
                 if (bufferTeclado.length > 2) {
                     event.preventDefault(); 
+                    
                     let dataLimpia = bufferTeclado.replace(/[^a-zA-Z0-9.-]/g, '').trim().toUpperCase(); 
                     let esPeso = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
                     
                     if (esPeso) {
                         if (typeof rpActivo !== 'undefined' && rpActivo && rpActivo !== "---") {
+                            
                             if(typeof rafagaActiva !== 'undefined' && rafagaActiva) {
                                 let sel = document.getElementById('rafaga-accion').value;
                                 let notas = document.getElementById('rafaga-detalles').value.trim();
@@ -1648,10 +1644,12 @@
                                     if (recordatorioRafaga !== "0") { detCompleto += ` | [RECORDATORIO:${recordatorioRafaga}]`; }
                                     ejecutarAccion('Sanidad', producto, detCompleto, null);
                                 }
+                                
                                 if(typeof mostrarToast === 'function') mostrarToast("✅ ¡Guardado!");
+                                
                             } else {
                                 forzarSaltoAFicha();
-                                if (typeof abrirModal === "function") abrirModal('modal-peso');
+                                if (typeof abrirModal === "function") abrirModal('m-peso');
                                 let inputPeso = document.getElementById('i-peso-val');
                                 if (inputPeso) inputPeso.value = dataLimpia;
                             }
@@ -1661,7 +1659,9 @@
                     } else {
                         let tagLimpio = dataLimpia.replace(/TAG/gi, '');
                         forzarSaltoAFicha();
-                        if (typeof window.recibirTagNFC === "function") { window.recibirTagNFC(tagLimpio); }
+                        if (typeof window.recibirTagNFC === "function") {
+                            window.recibirTagNFC(tagLimpio);
+                        }
                     }
                 }
                 bufferTeclado = "";
