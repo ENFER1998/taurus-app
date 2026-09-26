@@ -51,7 +51,7 @@
         .btn-ingresar:disabled { background: var(--muted); }
         .error-msj { color: var(--peligro); font-size: 14px; margin-bottom: 10px; display: none; font-weight: bold; }
 
-        /* PANTALLA DE MANTENIMIENTO GLOBAL */
+        /* CORTINA DE HIERRO GLOBAL */
         #pantalla-mantenimiento { position:fixed; top:0; left:0; width:100%; height:100%; background:var(--primario); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; text-align:center; }
         #pantalla-mantenimiento .spinner { border: 4px solid var(--borde); border-top: 4px solid var(--peligro); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-top:30px;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -159,6 +159,15 @@
         <p style="color:var(--secundario); font-size:12px; margin-top:15px; font-weight:bold;">Verificando conexión automáticamente...</p>
     </div>
 
+    <!-- MODAL POP-UP AVISO GLOBAL -->
+    <div id="modal-alerta-global" class="modal" style="z-index: 99999;">
+        <div class="modal-body" style="text-align: center; border: 2px solid var(--alerta);">
+            <h3 style="color:var(--alerta); margin-top:0; border-bottom: none; font-size:22px;">⚠️ Aviso Importante</h3>
+            <p id="txt-alerta-global" style="font-size:16px; line-height: 1.5; color:var(--texto); margin-bottom: 25px; font-weight:bold;"></p>
+            <button class="btn-guardar" style="background:var(--alerta);" onclick="cerrarPopUpAlerta()">Entendido / Cerrar</button>
+        </div>
+    </div>
+
     <div id="pantalla-app" class="oculto">
         <header class="cabecera">
             <h1><img src="gemini-svg.png" alt="Taurus" style="width: 26px; height: 26px; border-radius: 6px; object-fit: contain;"> Taurus</h1>
@@ -169,12 +178,24 @@
             
             <!-- DASHBOARD -->
             <div id="vista-dashboard" class="vista oculto">
+                
+                <!-- BANNER PERSISTENTE ALERTA GLOBAL -->
+                <div id="banner-alerta-global" class="tarjeta oculto" style="border-color: var(--alerta); background: rgba(245, 158, 11, 0.1);">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div style="flex:1;">
+                            <strong style="color:var(--alerta); display:flex; align-items:center; gap:5px; margin-bottom:5px; font-size:15px;">⚠️ Mensaje de Administración</strong>
+                            <span id="txt-banner-alerta" style="font-size:13px; color:var(--texto); line-height: 1.4;"></span>
+                        </div>
+                        <button class="btn-mini" style="background:var(--alerta); color:white; border:none; padding: 6px 12px; margin-left:10px;" onclick="marcarAlertaLeida()">Ocultar</button>
+                    </div>
+                </div>
+
                 <div class="grid-kpis">
                     <div class="kpi-caja"><div class="kpi-valor" id="dash-cabezas">0</div><div class="kpi-label">Cabezas Únicas</div></div>
                     <div class="kpi-caja" style="border-color: var(--peligro);"><div class="kpi-valor" id="dash-bajas" style="color: var(--peligro);">0</div><div class="kpi-label" style="color: var(--peligro);">Mortalidad / Bajas</div></div>
                     <div class="kpi-caja"><div class="kpi-valor" id="dash-acciones">0</div><div class="kpi-label">Registros Procesados</div></div>
                 </div>
-                <div class="tarjeta" id="contenedor-alertas" style="display:none;"><div class="tarjeta-titulo" style="color:var(--alerta);">⚠️ Alertas (Deslizar)</div><div id="lista-alertas"></div></div>
+                <div class="tarjeta" id="contenedor-alertas" style="display:none;"><div class="tarjeta-titulo" style="color:var(--alerta);">⚠️ Alertas Clínicas</div><div id="lista-alertas"></div></div>
                 <div id="contenedor-graficos-dinamicos"></div>
             </div>
 
@@ -494,8 +515,8 @@
 
         let dbCache = []; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
         let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
+        let alertaGlobalIdActual = "";
 
-        // AUTO-LOGIN INSTANTÁNEO
         window.onload = function() {
             const cred = lsGet('tc_cred', null);
             if(cred && cred.u && cred.p) {
@@ -518,6 +539,42 @@
             t.style.zIndex = '9999'; t.style.fontWeight = 'bold'; t.style.boxShadow = '0 4px 15px rgba(0,0,0,0.4)'; t.style.fontSize = '14px';
             document.body.appendChild(t);
             setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() => t.remove(), 500); }, 2000);
+        }
+
+        // ==========================================
+        // PROCESADOR DE AVISOS Y POP-UPS (NUEVO)
+        // ==========================================
+        function procesarAlertaServidor(msg, id) {
+            const banner = document.getElementById('banner-alerta-global');
+            if (!msg || !id) { banner.classList.add('oculto'); return; }
+            
+            let leidas = lsGet('tc_alertas_leidas', []);
+            if (!leidas.includes(id)) {
+                alertaGlobalIdActual = id;
+                document.getElementById('txt-alerta-global').innerText = msg;
+                document.getElementById('txt-banner-alerta').innerText = msg;
+                
+                // Mostrar Pop-up encima de todo
+                document.getElementById('modal-alerta-global').style.display = 'flex';
+                // Anclar en el Dashboard
+                banner.classList.remove('oculto');
+            } else {
+                banner.classList.add('oculto');
+            }
+        }
+
+        function cerrarPopUpAlerta() {
+            document.getElementById('modal-alerta-global').style.display = 'none';
+        }
+
+        window.marcarAlertaLeida = function() {
+            if (alertaGlobalIdActual) {
+                let leidas = lsGet('tc_alertas_leidas', []);
+                leidas.push(alertaGlobalIdActual);
+                lsSet('tc_alertas_leidas', leidas);
+            }
+            document.getElementById('modal-alerta-global').style.display = 'none';
+            document.getElementById('banner-alerta-global').classList.add('oculto');
         }
 
         function togglePermisos() {
@@ -572,13 +629,15 @@
                 if (!response.ok) throw new Error("Error de conexión al servidor.");
                 const res = await response.json();
                 
-                // CORTINA DE HIERRO: BLOQUEO POR MANTENIMIENTO
+                // CORTINA DE HIERRO
                 if(res.mantenimiento) { throw new Error(res.mensaje); }
                 if(res.error) throw new Error(res.mensaje);
                 if(res.vencimiento && new Date() > new Date(res.vencimiento)) { throw new Error("Su licencia ha vencido."); }
                 
+                // PROCESAR ALERTA GLOBAL DE MANTENIMIENTO
+                procesarAlertaServidor(res.alerta_global, res.alerta_id);
+
                 let dataLimpia = Array.isArray(res.data) ? res.data : [];
-                // GUARDAR TAMBIÉN LOS FEATURES EN CREDENCIALES
                 lsSet('tc_cred', { u: u, p: p, m: res.maestro, r: res.rol, v: res.vencimiento, n: res.nombre_completo, h: res.hacienda, f: res.features }); 
                 lsSet('tc_db', dataLimpia); 
                 lsSet('tc_hacienda', { nombre: res.hacienda, logo: res.logo }); 
@@ -596,7 +655,6 @@
             } finally { btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
         }
 
-        // FUNCIÓN NOTIFICACIÓN COMPLETAMENTE LIMPIA SIN ALERTS DE PRUEBA
         function notificarPropietario(mensaje) {
             if(usRol.includes('Propietario') || usRol.includes('Dueño') || !navigator.onLine) return;
             const fd = new URLSearchParams(); 
@@ -620,9 +678,7 @@
                 if (window.OneSignalDeferred) { 
                     OneSignalDeferred.push(async function(OneSignal) { 
                         OneSignal.User.addTags({ rol: displayRol, estancia_id: m }); 
-                        if (isPropietario) {
-                            await OneSignal.Slidedown.promptPush();
-                        }
+                        if (isPropietario) { await OneSignal.Slidedown.promptPush(); }
                     }); 
                 }
                 
@@ -656,9 +712,7 @@
                             if((viewId.includes('base') || viewId.includes('registro')) && perms.includes('base')) isAllowed = true;
                             if((viewId.includes('reporte') || viewId.includes('informe')) && perms.includes('reporte')) isAllowed = true;
                             
-                            if (!esConfig && !isAllowed) {
-                                li.style.display = 'none'; 
-                            } else {
+                            if (!esConfig && !isAllowed) { li.style.display = 'none'; } else {
                                 li.style.display = 'flex';
                                 if (!foundFirst && !esConfig) { vistaInicial = viewId; tabSeleccionado = li; foundFirst = true; }
                             }
@@ -677,7 +731,6 @@
                     lblLic.style.color = diffDias <= 7 ? "var(--peligro)" : "var(--texto)";
                 } else { lblLic.value = "Licencia Perpetua / Sin Límite"; }
                 
-                // MÓDULOS PREMIUM (FEATURE TOGGLES)
                 const featuresActivos = cred.f || "";
                 if(!featuresActivos.includes('rafaga')) {
                     let bloqueRafaga = document.getElementById('tarjeta-rafaga');
@@ -719,24 +772,27 @@
             fetch(`${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(cred.u)}&password=${encodeURIComponent(cred.p)}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' })
             .then(r => r.json()).then(res => {
                 
-                // CORTINA DE HIERRO DEL KILL SWITCH
                 const pantMant = document.getElementById('pantalla-mantenimiento');
                 if(res.mantenimiento) {
                     if(pantMant) pantMant.classList.remove('oculto');
-                    return; // Aborta la sincronización para proteger la BD
+                    return; 
                 } else {
                     if(pantMant) pantMant.classList.add('oculto');
                 }
+                
+                // ACTUALIZAR AVISO AL SINCRONIZAR
+                procesarAlertaServidor(res.alerta_global, res.alerta_id);
 
                 if(!res.error) {
                     fusionarDatos(Array.isArray(res.data) ? res.data : []);
-                    if(rpActivo && document.getElementById('vista-manga') && !document.getElementById('vista-manga').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
+                    if(rpActivo && !document.getElementById('vista-manga') && !document.getElementById('v-ficha').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
                     procesarDatosDashboard(); 
                     if(document.getElementById('vista-registro') && !document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); 
-                    if(document.getElementById('vista-informe') && !document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
-                    cargarListaOperadores();
+                    if(document.getElementById('v-base') && !document.getElementById('v-base').classList.contains('oculto')) cargarListaRegistro(); 
                     if(esManual) { setEstadoRed(true, '✅ ¡Listo!'); setTimeout(() => setEstadoRed(true), 2000); } else { setEstadoRed(true); }
-                } else { if(esManual) { setEstadoRed(true, '❌ Error'); setTimeout(() => setEstadoRed(true), 2000); } }
+                } else { 
+                    if(esManual) { setEstadoRed(true, '❌ Error'); setTimeout(() => setEstadoRed(true), 2000); } 
+                }
             }).catch(e => { if(esManual) { setEstadoRed(true, '⚠️ Falló'); setTimeout(() => setEstadoRed(true), 2000); } });
         }
         setInterval(() => sincronizarFondo(false), 30000);
@@ -748,7 +804,7 @@
         }
 
         // =========================================================================
-        // MOTOR DE HISTORIAL (EVENT SOURCING) - MIGRACIÓN TOTAL PARA BAJAS/RENOMBRAR
+        // MOTOR DE HISTORIAL (EVENT SOURCING)
         // =========================================================================
         function procesarEventos() {
             let dbAsc = [...dbCache].sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
@@ -761,17 +817,16 @@
                 if(!historiaPorRP[rp]) historiaPorRP[rp] = [];
                 
                 if(evt.accion === 'Borrar_Caravana') {
-                    historiaPorRP[rp] = []; // Limpia historial por completo
+                    historiaPorRP[rp] = []; 
                 } else if(evt.accion === 'Cambio de Caravana') {
                     let nuevoRP = String(evt.valor);
                     if(!historiaPorRP[nuevoRP]) historiaPorRP[nuevoRP] = [];
                     
-                    // Transfiere todos los datos históricos y los asocia a la nueva etiqueta
                     let eventosTraspasados = historiaPorRP[rp].map(e => ({...e, caravana: nuevoRP}));
                     historiaPorRP[nuevoRP] = historiaPorRP[nuevoRP].concat(eventosTraspasados);
                     
-                    historiaPorRP[nuevoRP].push({...evt, caravana: nuevoRP}); // Agrega el registro de cambio
-                    historiaPorRP[rp] = []; // LA CARAVANA VIEJA QUEDA 100% LIMPIA Y LIBERADA
+                    historiaPorRP[nuevoRP].push({...evt, caravana: nuevoRP}); 
+                    historiaPorRP[rp] = []; 
                 } else {
                     historiaPorRP[rp].push(evt);
                 }
@@ -782,9 +837,7 @@
         function obtenerRegistrosActivos() {
             let historia = procesarEventos();
             let validos = [];
-            for(let rp in historia) {
-                validos = validos.concat(historia[rp]);
-            }
+            for(let rp in historia) { validos = validos.concat(historia[rp]); }
             const globalEvents = dbCache.filter(d => d.caravana === "---" || !d.caravana);
             return validos.concat(globalEvents).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
         }
@@ -867,10 +920,7 @@
                 const elEdad = document.getElementById('val-edad'); if(elEdad) elEdad.innerText = edad;
                 const fRaza = document.getElementById('f-raza'); if(fRaza) fRaza.value = raza !== "-" ? raza : ""; 
                 const fNacimiento = document.getElementById('f-nacimiento'); 
-                if(fNacimiento) { 
-                    fNacimiento.value = edad !== "-" ? edad : ""; 
-                    mostrarCarimboCalculado(); 
-                } 
+                if(fNacimiento) { fNacimiento.value = edad !== "-" ? edad : ""; mostrarCarimboCalculado(); } 
                 const fPadre = document.getElementById('f-padre'); if(fPadre) fPadre.value = padre !== "-" ? padre : ""; 
                 const fMadre = document.getElementById('f-madre'); if(fMadre) fMadre.value = madre !== "-" ? madre : ""; 
                 const inputCarimbo = document.getElementById('input-carimbo-rapido'); if(inputCarimbo) inputCarimbo.value = carimbo !== "-" ? carimbo : ""; 
