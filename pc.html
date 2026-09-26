@@ -13,7 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     
-    <!-- INTEGRACIÓN ONESIGNAL (Mantenida por si abren desde Chrome normal) -->
+    <!-- INTEGRACIÓN ONESIGNAL -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -645,6 +645,16 @@
         let alertaGlobalIdActual = "";
         let notificadoMantenimiento = false;
 
+        // Auto-inicio de sesión para recargas en PC
+        window.onload = function() {
+            solicitarPermisoNotificaciones();
+            const cred = lsGet('tc_cred', null);
+            if(cred && cred.u && cred.p) {
+                const db = lsGet('tc_db', []);
+                arrancarSistema(db, cred.u, cred.m, cred.r, cred.n, cred.h);
+            }
+        };
+
         if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
         function toggleTema() {
             document.body.classList.toggle('tema-claro');
@@ -965,7 +975,10 @@
                     return; 
                 } else {
                     if(pantMant) pantMant.classList.add('oculto');
-                    window.notificadoMantenimiento = false;
+                    if (window.notificadoMantenimiento) {
+                        lanzarNotificacionEscritorio("✅ Servicio Restaurado", "El mantenimiento ha finalizado. El sistema vuelve a estar operativo.");
+                        window.notificadoMantenimiento = false;
+                    }
                 }
                 
                 procesarAlertaServidor(res.alerta_global, res.alerta_id);
@@ -986,6 +999,7 @@
                                 if (n.detalles && n.detalles.includes("Op: ")) {
                                     op = n.detalles.split("Op: ")[1].trim();
                                 }
+                                // Filtro Anti-Spam: Solo notifica si lo guardó otra persona
                                 if(op.toLowerCase() !== usNombre.toLowerCase()) {
                                     lanzarNotificacionEscritorio("Alerta Taurus", `${op} registró [${n.accion}] al RP ${n.caravana}`);
                                 }
