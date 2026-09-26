@@ -643,6 +643,7 @@
         let dbCache = []; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
         let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
         let alertaGlobalIdActual = "";
+        let notificadoMantenimiento = false;
 
         if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
         function toggleTema() {
@@ -700,7 +701,7 @@
                 
                 if (!mostradas.includes(id)) {
                     document.getElementById('modal-alerta-global').style.display = 'flex';
-                    lanzarNotificacionEscritorio("Mantenimiento / Aviso Importante", msg);
+                    lanzarNotificacionEscritorio("Aviso Importante", msg);
                 }
                 banner.classList.remove('oculto');
             } else {
@@ -715,8 +716,15 @@
                     mostradas.push(alertaGlobalIdActual);
                     lsSet('tc_alertas_mostradas', mostradas);
                 }
+                
+                let leidas = lsGet('tc_alertas_leidas', []);
+                if (!leidas.includes(alertaGlobalIdActual)) {
+                    leidas.push(alertaGlobalIdActual);
+                    lsSet('tc_alertas_leidas', leidas);
+                }
             }
             document.getElementById('modal-alerta-global').style.display = 'none';
+            document.getElementById('banner-alerta-global').classList.add('oculto');
         }
 
         window.marcarAlertaLeida = function() {
@@ -950,9 +958,14 @@
                 const pantMant = document.getElementById('pantalla-mantenimiento');
                 if(res.mantenimiento) {
                     if(pantMant) pantMant.classList.remove('oculto');
+                    if(!window.notificadoMantenimiento) {
+                        lanzarNotificacionEscritorio("🚧 Sistema en Mantenimiento", res.mensaje || "El sistema ha sido bloqueado temporalmente por actualización.");
+                        window.notificadoMantenimiento = true;
+                    }
                     return; 
                 } else {
                     if(pantMant) pantMant.classList.add('oculto');
+                    window.notificadoMantenimiento = false;
                 }
                 
                 procesarAlertaServidor(res.alerta_global, res.alerta_id);
@@ -1601,7 +1614,25 @@
         }
 
         function cambiarMiContrasena() { if(!navigator.onLine) { alert("Necesitas conexión."); return; } const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) { alert("Mínimo 4 caracteres."); return; } const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { alert("Contraseña actualizada con éxito."); document.getElementById('nueva-clave').value = ''; let cred = lsGet('tc_cred', {}); cred.p = nueva; lsSet('tc_cred', cred); }); }
-        function cerrarSesion() { localStorage.clear(); window.location.reload(); }
+        
+        function cerrarSesion() { 
+            // 1. Rescatar preferencias que no queremos borrar en la PC
+            let leidas = localStorage.getItem('tc_alertas_leidas');
+            let mostradas = localStorage.getItem('tc_alertas_mostradas');
+            let prefs = localStorage.getItem('tc_prefs');
+            let tema = localStorage.getItem('tc_tema');
+            
+            // 2. Limpiar la sesión del usuario
+            localStorage.clear(); 
+            
+            // 3. Restaurar las preferencias
+            if(leidas) localStorage.setItem('tc_alertas_leidas', leidas);
+            if(mostradas) localStorage.setItem('tc_alertas_mostradas', mostradas);
+            if(prefs) localStorage.setItem('tc_prefs', prefs);
+            if(tema) localStorage.setItem('tc_tema', tema);
+            
+            window.location.reload(); 
+        }
 
         // ==========================================
         // LECTOR HID / TECLADO AUTOMÁTICO (PC)
