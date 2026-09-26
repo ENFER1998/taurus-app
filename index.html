@@ -81,7 +81,7 @@
         .buscador-contenedor { display: flex; gap: 10px; margin-bottom: 15px; align-items: stretch;}
         .buscador-input { flex: 1; min-width: 0; padding: 12px; border: 2px solid var(--borde); border-radius: 8px; font-size: 16px; font-weight: bold; background: #0f172a; color: var(--texto); outline: none;}
         .buscador-input:focus { border-color: var(--secundario); }
-        .buscador-btn { flex-shrink: 0; background: var(--secundario); color: white; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold;}
+        .buscador-btn { flex-shrink: 0; background: var(--secundario); color: white; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold; cursor: pointer;}
 
         .perfil-cabecera { text-align: center; margin-bottom: 20px;}
         .perfil-id { font-size: 40px; font-weight: 900; letter-spacing: 2px; line-height: 1; color: var(--texto);}
@@ -258,8 +258,11 @@
             <div id="vista-registro" class="vista oculto">
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">📋 Inventario Activo</div>
-                    <div class="buscador-contenedor"><input type="text" id="buscador-lista" class="buscador-input" placeholder="Buscar RP o lote..." onkeyup="filtrarLista(this.value)"></div>
-                    <ul class="lista-animales" id="ul-registro"></ul>
+                    <div class="buscador-contenedor">
+                        <input type="text" id="buscador-lista" class="buscador-input" placeholder="Buscar RP o lote..." onkeyup="if(event.key === 'Enter') filtrarLista(this.value)">
+                        <button class="buscador-btn" onclick="filtrarLista(document.getElementById('buscador-lista').value)">Buscar</button>
+                    </div>
+                    <ul class="lista-animales" id="tb-registro"></ul>
                 </div>
             </div>
 
@@ -573,28 +576,15 @@
             } finally { btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
         }
 
-    function notificarPropietario(mensaje) {
-    alert("Paso 1: La función de notificación se activó correctamente.");
-
-    // Hemos comentado esta línea temporalmente para que PUEDAS probarlo siendo Propietario/Dueño
-    // if(usRol.includes('Propietario') || usRol.includes('Dueño') || !navigator.onLine) return;
-
-    alert("Paso 2: Enviando la orden a Google Sheets...");
-
-    const fd = new URLSearchParams(); 
-    fd.append('accion', 'notificar_accion'); 
-    fd.append('maestro', maestroId); // Asegúrate de que esta variable 'maestroId' tenga valor
-    fd.append('mensaje', mensaje);
-    
-    fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' })
-    .then(() => {
-        alert("Paso 3: ¡Orden enviada a Google Sheets con éxito!");
-    })
-    .catch((error) => {
-        alert("ERROR: La app no pudo comunicarse con Google Sheets. Revisa tu GOOGLE_SHEETS_URL.");
-        console.error(error);
-    });
-}
+        // FUNCIÓN NOTIFICACIÓN COMPLETAMENTE LIMPIA SIN ALERTS DE PRUEBA
+        function notificarPropietario(mensaje) {
+            if(usRol.includes('Propietario') || usRol.includes('Dueño') || !navigator.onLine) return;
+            const fd = new URLSearchParams(); 
+            fd.append('accion', 'notificar_accion'); 
+            fd.append('maestro', maestroId); 
+            fd.append('mensaje', mensaje);
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).catch(e => console.error(e));
+        }
 
         function arrancarSistema(datos, u, m, r, nombreCompleto, hacienda) {
             try {
@@ -719,27 +709,54 @@
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_pendientes', []); sincronizarFondo(false); });
         }
 
-        function obtenerRegistrosActivos() {
-            let validos = []; const unicas = [...new Set(dbCache.map(d => d.caravana).filter(c => c !== "---" && c != null))];
-            unicas.forEach(car => {
-                let regs = dbCache.filter(d => String(d.caravana) === String(car)).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
-                let lastResetIdx = -1;
-                for(let i=regs.length-1; i>=0; i--){ if(regs[i].accion === 'Borrar_Caravana') { lastResetIdx = i; break; } }
-                if(lastResetIdx !== -1) { regs = regs.slice(lastResetIdx + 1); }
-                validos = validos.concat(regs);
+        // =========================================================================
+        // MOTOR DE HISTORIAL (EVENT SOURCING) - MIGRACIÓN TOTAL PARA BAJAS/RENOMBRAR
+        // =========================================================================
+        function procesarEventos() {
+            let dbAsc = [...dbCache].sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+            let historiaPorRP = {};
+            
+            dbAsc.forEach(evt => {
+                let rp = String(evt.caravana);
+                if(rp === "---" || !rp) return;
+                
+                if(!historiaPorRP[rp]) historiaPorRP[rp] = [];
+                
+                if(evt.accion === 'Borrar_Caravana') {
+                    historiaPorRP[rp] = []; // Limpia historial por completo
+                } else if(evt.accion === 'Cambio de Caravana') {
+                    let nuevoRP = String(evt.valor);
+                    if(!historiaPorRP[nuevoRP]) historiaPorRP[nuevoRP] = [];
+                    
+                    // Transfiere todos los datos históricos y los asocia a la nueva etiqueta
+                    let eventosTraspasados = historiaPorRP[rp].map(e => ({...e, caravana: nuevoRP}));
+                    historiaPorRP[nuevoRP] = historiaPorRP[nuevoRP].concat(eventosTraspasados);
+                    
+                    historiaPorRP[nuevoRP].push({...evt, caravana: nuevoRP}); // Agrega el registro de cambio
+                    historiaPorRP[rp] = []; // LA CARAVANA VIEJA QUEDA 100% LIMPIA Y LIBERADA
+                } else {
+                    historiaPorRP[rp].push(evt);
+                }
             });
+            return historiaPorRP;
+        }
+
+        function obtenerRegistrosActivos() {
+            let historia = procesarEventos();
+            let validos = [];
+            for(let rp in historia) {
+                validos = validos.concat(historia[rp]);
+            }
             const globalEvents = dbCache.filter(d => d.caravana === "---" || !d.caravana);
             return validos.concat(globalEvents).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
         }
 
         function obtenerHistorial(caravana) {
-            const datosActivos = obtenerRegistrosActivos(); let hist = []; let buscadas = [String(caravana)]; let i = 0;
-            while(i < buscadas.length) {
-                let c = buscadas[i]; hist.push(...datosActivos.filter(d => String(d.caravana) === c));
-                datosActivos.filter(d => d.accion === 'Cambio de Caravana' && String(d.valor) === c).forEach(o => { if(!buscadas.includes(String(o.caravana))) buscadas.push(String(o.caravana)); }); i++;
-            }
-            return hist.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            let historia = procesarEventos();
+            let hist = historia[String(caravana)] || [];
+            return [...hist].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
         }
+        // =========================================================================
 
         function buscarCaravanaBtn(rpForzado = null) {
             try {
@@ -855,7 +872,7 @@
                 let rpArchivado = rpActivo + "-BAJA-" + Math.floor(Math.random() * 10000);
                 setTimeout(() => {
                     ejecutarAccion('Cambio de Caravana', rpArchivado, 'RP archivado por Baja/Muerte', null);
-                    alert(`Baja registrada exitosamente. La caravana ${rpActivo} ha quedado libre.`);
+                    alert(`Baja registrada exitosamente. La caravana original (${rpActivo}) ha quedado libre y vacía de datos.`);
                     rpActivo = rpArchivado; buscarCaravanaBtn(rpArchivado);
                 }, 400);
             } else { ejecutarAccion(t, v, d, mId); }
@@ -921,8 +938,7 @@
         function actualizarInformeAvanzado() {
             const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
             const datosActivos = obtenerRegistrosActivos(); 
-            let aliasMap = {}; datosActivos.forEach(d => { if(d.accion === 'Cambio de Caravana') aliasMap[String(d.caravana)] = String(d.valor); });
-            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && !aliasMap[c]))]; 
+            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; 
             
             const tbodyMasivo = document.getElementById('tb-informe-masivo'); const tbodyEventos = document.getElementById('tb-informe-eventos'); const tbodyIndiv = document.getElementById('tb-informe-individual');
             document.getElementById('tabla-masiva').classList.add('oculto'); document.getElementById('tabla-eventos').classList.add('oculto'); document.getElementById('tabla-individual').classList.add('oculto');
@@ -1063,8 +1079,7 @@
 
         function procesarDatosDashboard() {
             const datosActivos = obtenerRegistrosActivos(); 
-            let aliasMap = {}; datosActivos.forEach(d => { if(d.accion === 'Cambio de Caravana') aliasMap[String(d.caravana)] = String(d.valor); });
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && !aliasMap[c]))];
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
             
             let vivas = []; let cantBajas = datosActivos.filter(r => r.accion === 'Baja').length;
             unicas.forEach(car => { if(!obtenerHistorial(car).some(x => x.accion === 'Baja')) { vivas.push(car); } }); unicas = vivas; 
@@ -1110,7 +1125,7 @@
 
         function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
         function abrirModal(id) { document.getElementById(id).style.display = 'flex'; } function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
-        function cargarListaRegistro() { const datosActivos = obtenerRegistrosActivos(); let aliasMap = {}; datosActivos.forEach(d => { if(d.accion === 'Cambio de Caravana') aliasMap[String(d.caravana)] = String(d.valor); }); let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && !aliasMap[c]))]; let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja')); const ul = document.getElementById('tb-registro'); ul.innerHTML = ""; vivas.forEach(car => { const regs = obtenerHistorial(car); let info = "-", dxText = "-", loteText = "-"; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { let vals = String(c.valor||"").split('|'); info = vals[0] ? vals[0].replace('Cat:','').trim() : info; loteText = (String(c.detalles||"").split('|')[0] ? String(c.detalles||"").split('|')[0].replace('Lote:','').trim() : ""); } else if(p) { info = String(p.detalles||"").split('|')[0] || "-"; } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = d.valor || "-"; ul.innerHTML += `<li onclick="navegarDesdeLista('${car}')"><div style="display:flex; flex-direction:column; gap:4px;"><strong style="font-size:18px; color:var(--texto);">${car}</strong><span style="font-size:12px; color:var(--muted);">${info} | ${loteText} | ${dxText}</span></div><span style="font-size:20px; color:var(--texto);">›</span></li>`; }); }
+        function cargarListaRegistro() { const datosActivos = obtenerRegistrosActivos(); let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja')); const ul = document.getElementById('tb-registro'); ul.innerHTML = ""; vivas.forEach(car => { const regs = obtenerHistorial(car); let info = "-", dxText = "-", loteText = "-"; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { let vals = String(c.valor||"").split('|'); info = vals[0] ? vals[0].replace('Cat:','').trim() : info; loteText = (String(c.detalles||"").split('|')[0] ? String(c.detalles||"").split('|')[0].replace('Lote:','').trim() : ""); } else if(p) { info = String(p.detalles||"").split('|')[0] || "-"; } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = d.valor || "-"; ul.innerHTML += `<li onclick="navegarDesdeLista('${car}')"><div style="display:flex; flex-direction:column; gap:4px;"><strong style="font-size:18px; color:var(--texto);">${car}</strong><span style="font-size:12px; color:var(--muted);">${info} | ${loteText} | ${dxText}</span></div><span style="font-size:20px; color:var(--texto);">›</span></li>`; }); }
         function filtrarLista(t) { const lis = document.getElementById('tb-registro').getElementsByTagName('li'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "flex" : "none"; }
         function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); buscarCaravanaBtn(); }
         
