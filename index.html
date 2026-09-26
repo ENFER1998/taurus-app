@@ -150,7 +150,7 @@
         </div>
     </div>
 
-    <!-- CORTINA DE HIERRO: MANTENIMIENTO -->
+    <!-- CORTINA DE HIERRO: MANTENIMIENTO GLOBAL -->
     <div id="pantalla-mantenimiento" class="oculto">
         <span style="font-size:60px; margin-bottom:20px;">🚧</span>
         <h1 style="color:var(--peligro); margin:0 0 10px 0; font-size:24px;">SISTEMA EN MANTENIMIENTO</h1>
@@ -305,8 +305,18 @@
                 </div>
             </div>
 
-            <!-- REPORTES -->
+            <!-- REPORTES Y PDF -->
             <div id="vista-informe" class="vista oculto">
+                
+                <!-- VISTA PREVIA DEL MEMBRETE -->
+                <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid var(--borde);">
+                    <img id="preview-logo-reporte" src="gemini-svg.png" style="width:50px; height:50px; object-fit:contain; border-radius:8px; background:white; padding:2px;">
+                    <div>
+                        <span style="font-size:11px; color:var(--muted); font-weight:bold; text-transform:uppercase;">Membrete de Documentos PDF</span>
+                        <strong id="preview-nombre-reporte" style="display:block; font-size:16px; color:var(--texto);">Hacienda</strong>
+                    </div>
+                </div>
+
                 <div class="tarjeta">
                     <select class="filtro-sel" id="f-inf-modo" onchange="cambiarModoReporte()" style="width:100%; margin-bottom:15px; border-color: var(--secundario); font-weight: bold; background-color: var(--secundario); color: white;">
                         <option value="eventos">📋 TRATAMIENTOS (Historial)</option>
@@ -361,9 +371,18 @@
                 
                 <div class="tarjeta" id="panel-membrete">
                     <div class="tarjeta-titulo">🖨️ Membrete Documentos PDF</div>
-                    <div class="form-grupo"><label>Nombre Empresa</label><input type="text" id="cfg-nom" class="form-control" placeholder="Taurus Control"></div>
-                    <div class="form-grupo"><label>Logo Oficial (PNG)</label><input type="file" id="cfg-logo" class="form-control" style="padding:6px;" accept="image/*"></div>
-                    <button class="btn-guardar" onclick="guardarDisenoServidor()">Guardar Diseño</button>
+                    
+                    <!-- VISTA PREVIA DEL LOGO AL CARGAR -->
+                    <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
+                        <img id="preview-logo-config" src="gemini-svg.png" style="width:60px; height:60px; object-fit:contain; border-radius:8px; border:1px solid var(--borde); background:white; padding:2px;">
+                        <div style="flex:1;">
+                            <label style="font-size:12px; font-weight:bold; color:var(--muted); margin-bottom:5px; display:block;">Nombre Empresa / Hacienda</label>
+                            <input type="text" id="cfg-nom" class="form-control" placeholder="Taurus Control">
+                        </div>
+                    </div>
+                    
+                    <div class="form-grupo"><label>Subir Nuevo Logo Oficial (PNG)</label><input type="file" id="cfg-logo" class="form-control" style="padding:6px;" accept="image/*"></div>
+                    <button class="btn-guardar" onclick="guardarDisenoServidor()">Guardar Diseño PDF</button>
                 </div>
 
                 <div class="tarjeta" id="panel-crear-peones">
@@ -542,21 +561,23 @@
         }
 
         // ==========================================
-        // PROCESADOR DE AVISOS Y POP-UPS (NUEVO)
+        // PROCESADOR DE AVISOS Y POP-UPS GLOBALES
         // ==========================================
         function procesarAlertaServidor(msg, id) {
             const banner = document.getElementById('banner-alerta-global');
             if (!msg || !id) { banner.classList.add('oculto'); return; }
             
             let leidas = lsGet('tc_alertas_leidas', []);
+            let mostradas = lsGet('tc_alertas_mostradas', []); 
+            
             if (!leidas.includes(id)) {
                 alertaGlobalIdActual = id;
                 document.getElementById('txt-alerta-global').innerText = msg;
                 document.getElementById('txt-banner-alerta').innerText = msg;
                 
-                // Mostrar Pop-up encima de todo
-                document.getElementById('modal-alerta-global').style.display = 'flex';
-                // Anclar en el Dashboard
+                if (!mostradas.includes(id)) {
+                    document.getElementById('modal-alerta-global').style.display = 'flex';
+                }
                 banner.classList.remove('oculto');
             } else {
                 banner.classList.add('oculto');
@@ -564,6 +585,13 @@
         }
 
         function cerrarPopUpAlerta() {
+            if (alertaGlobalIdActual) {
+                let mostradas = lsGet('tc_alertas_mostradas', []);
+                if (!mostradas.includes(alertaGlobalIdActual)) {
+                    mostradas.push(alertaGlobalIdActual);
+                    lsSet('tc_alertas_mostradas', mostradas);
+                }
+            }
             document.getElementById('modal-alerta-global').style.display = 'none';
         }
 
@@ -629,12 +657,10 @@
                 if (!response.ok) throw new Error("Error de conexión al servidor.");
                 const res = await response.json();
                 
-                // CORTINA DE HIERRO
                 if(res.mantenimiento) { throw new Error(res.mensaje); }
                 if(res.error) throw new Error(res.mensaje);
                 if(res.vencimiento && new Date() > new Date(res.vencimiento)) { throw new Error("Su licencia ha vencido."); }
                 
-                // PROCESAR ALERTA GLOBAL DE MANTENIMIENTO
                 procesarAlertaServidor(res.alerta_global, res.alerta_id);
 
                 let dataLimpia = Array.isArray(res.data) ? res.data : [];
@@ -738,7 +764,10 @@
                 }
 
                 const prefs = lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
-                const dGuardado = lsGet('tc_hacienda', {}); aplicarDisenoEnPantalla(dGuardado.nombre, dGuardado.logo);
+                
+                // APLICAR DISEÑO VISUAL
+                const dGuardado = lsGet('tc_hacienda', {}); 
+                aplicarDisenoEnPantalla(dGuardado.nombre || usHacienda, dGuardado.logo);
                 
                 setEstadoRed(navigator.onLine); procesarDatosDashboard(); 
                 document.getElementById('f-inf-rango-fecha').value = "30"; manejarRangoFechas();
@@ -754,7 +783,22 @@
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
 
-        function aplicarDisenoEnPantalla(nombre, logo) { document.getElementById('cfg-nom').value = nombre || ''; }
+        // ==========================================
+        // VISTA PREVIA DEL MEMBRETE 
+        // ==========================================
+        function aplicarDisenoEnPantalla(nombre, logo) { 
+            let n = nombre || 'Taurus Control';
+            let l = logo || 'gemini-svg.png';
+            
+            document.getElementById('cfg-nom').value = nombre || ''; 
+            document.getElementById('preview-nombre-reporte').innerText = n;
+            
+            const imgRep = document.getElementById('preview-logo-reporte');
+            if(imgRep) imgRep.src = l;
+            
+            const imgCfg = document.getElementById('preview-logo-config');
+            if(imgCfg) imgCfg.src = l;
+        }
 
         function fusionarDatos(nuevos) {
             let mapa = new Map();
@@ -780,7 +824,6 @@
                     if(pantMant) pantMant.classList.add('oculto');
                 }
                 
-                // ACTUALIZAR AVISO AL SINCRONIZAR
                 procesarAlertaServidor(res.alerta_global, res.alerta_id);
 
                 if(!res.error) {
@@ -1037,7 +1080,7 @@
             document.getElementById('inf-prenadas').innerText = tPreGlobal;
 
             if(fRp !== "") {
-                rpPrint = fRp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Dossier: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
+                rpPrint = fRp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
                 const regs = obtenerHistorial(fRp); let hInd = ""; 
                 regs.forEach(r => { if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') hInd+=`<tr><td>${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${obtenerBadgeAccion(r.accion)}</strong></td><td>${r.valor}</td><td style="font-size:11px; color:var(--muted);">${r.detalles}</td></tr>`; });
                 tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.filter(r => !r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master').length; document.getElementById('inf-prenadas').innerText = "-"; 
@@ -1237,7 +1280,7 @@
             
             const btn = document.getElementById('btn-crear-op');
             const btnOriginal = btn.innerHTML;
-            btn.innerHTML = "⏳ Verificando...";
+            btn.innerHTML = "⏳ Verificando Disponibilidad...";
             btn.disabled = true;
 
             try {
