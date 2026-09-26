@@ -57,7 +57,7 @@
         .btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
         .error-msg { color: var(--danger); font-size: 13px; margin-bottom: 15px; font-weight: bold; display: none; }
 
-        /* CORTINA DE HIERRO: MANTENIMIENTO */
+        /* CORTINA DE HIERRO GLOBAL */
         #pantalla-mantenimiento { position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg-base); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; text-align:center; }
         .spinner-mant { border: 5px solid var(--border); border-top: 5px solid var(--danger); border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin-top:30px;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -166,6 +166,15 @@
         <p style="color:var(--primary); font-size:14px; margin-top:20px; font-weight:bold;">Reconectando automáticamente...</p>
     </div>
 
+    <!-- MODAL POP-UP AVISO GLOBAL -->
+    <div id="modal-alerta-global" class="modal" style="z-index: 99999;">
+        <div class="modal-body" style="text-align: center; border: 2px solid var(--warning);">
+            <h3 style="color:var(--warning); margin-top:0; border-bottom: none; font-size:22px;">⚠️ Aviso Importante</h3>
+            <p id="txt-alerta-global" style="font-size:15px; line-height: 1.6; color:var(--text-main); margin-bottom: 25px; font-weight:bold;"></p>
+            <button class="btn-guardar" style="background:var(--warning);" onclick="cerrarPopUpAlerta()">Entendido / Cerrar Ventana</button>
+        </div>
+    </div>
+
     <div id="sidebar" class="oculto">
         <div class="sidebar-header">
             <img src="gemini-svg.png" alt="Logo">
@@ -195,6 +204,18 @@
 
         <div id="v-dash" class="vista oculto">
             <h2 class="titulo-seccion">Panel de Control General</h2>
+            
+            <!-- BANNER PERSISTENTE ALERTA GLOBAL -->
+            <div id="banner-alerta-global" class="tarjeta oculto" style="border-color: var(--warning); background: rgba(245, 158, 11, 0.05); padding: 15px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="flex:1;">
+                        <strong style="color:var(--warning); display:flex; align-items:center; gap:8px; margin-bottom:5px; font-size:14px;">⚠️ Mensaje de Administración</strong>
+                        <span id="txt-banner-alerta" style="font-size:13px; color:var(--text-main);"></span>
+                    </div>
+                    <button class="btn-outline" style="border-color:var(--warning); color:var(--warning); padding: 6px 15px; font-size:12px; margin-left:20px;" onclick="marcarAlertaLeida()">Marcar como Leído (Ocultar)</button>
+                </div>
+            </div>
+
             <div class="grid-3" style="margin-bottom: 20px;">
                 <div class="kpi-box" style="border-color: var(--primary);"><span>Inventario General Activo</span><strong id="dash-cabezas">0</strong></div>
                 <div class="kpi-box" style="border-color: var(--danger);"><span>Mortalidad / Bajas</span><strong id="dash-bajas">0</strong></div>
@@ -215,7 +236,6 @@
         <div id="v-ficha" class="vista oculto">
             <h2 class="titulo-seccion">Expediente Clínico Individual</h2>
             
-            <!-- TARJETA MODO RÁFAGA (Oculta por defecto si no tienen el plan) -->
             <div id="tarjeta-rafaga" class="tarjeta" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid var(--primary); background: var(--bg-card);">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div style="display:flex; align-items:center; gap:10px;">
@@ -603,6 +623,7 @@
 
         let dbCache = []; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
         let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
+        let alertaGlobalIdActual = "";
 
         if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
         function toggleTema() {
@@ -618,6 +639,42 @@
             t.style.zIndex = '9999'; t.style.fontWeight = 'bold'; t.style.boxShadow = '0 4px 15px rgba(0,0,0,0.4)'; t.style.fontSize = '14px';
             document.body.appendChild(t);
             setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() => t.remove(), 500); }, 2000);
+        }
+
+        // ==========================================
+        // PROCESADOR DE AVISOS Y POP-UPS GLOBALES
+        // ==========================================
+        function procesarAlertaServidor(msg, id) {
+            const banner = document.getElementById('banner-alerta-global');
+            if (!msg || !id) { banner.classList.add('oculto'); return; }
+            
+            let leidas = lsGet('tc_alertas_leidas', []);
+            if (!leidas.includes(id)) {
+                alertaGlobalIdActual = id;
+                document.getElementById('txt-alerta-global').innerText = msg;
+                document.getElementById('txt-banner-alerta').innerText = msg;
+                
+                // Mostrar Pop-up en pantalla completa
+                document.getElementById('modal-alerta-global').style.display = 'flex';
+                // Anclar el banner naranja en el Dashboard
+                banner.classList.remove('oculto');
+            } else {
+                banner.classList.add('oculto');
+            }
+        }
+
+        function cerrarPopUpAlerta() {
+            document.getElementById('modal-alerta-global').style.display = 'none';
+        }
+
+        window.marcarAlertaLeida = function() {
+            if (alertaGlobalIdActual) {
+                let leidas = lsGet('tc_alertas_leidas', []);
+                leidas.push(alertaGlobalIdActual);
+                lsSet('tc_alertas_leidas', leidas);
+            }
+            document.getElementById('modal-alerta-global').style.display = 'none';
+            document.getElementById('banner-alerta-global').classList.add('oculto');
         }
 
         function togglePermisos() {
@@ -677,8 +734,10 @@
                 if(res.error) throw new Error(res.mensaje);
                 if(res.vencimiento && new Date() > new Date(res.vencimiento)) { throw new Error("Su licencia ha vencido."); }
                 
+                // PROCESAR ALERTA GLOBAL DE MANTENIMIENTO
+                procesarAlertaServidor(res.alerta_global, res.alerta_id);
+
                 let dataLimpia = Array.isArray(res.data) ? res.data : [];
-                // GUARDAR TAMBIÉN LOS FEATURES EN CREDENCIALES
                 lsSet('tc_cred', { u: u, p: p, m: res.maestro, r: res.rol, v: res.vencimiento, n: res.nombre_completo, h: res.hacienda, f: res.features }); 
                 lsSet('tc_db', dataLimpia); 
                 lsSet('tc_hacienda', { nombre: res.hacienda, logo: res.logo }); 
@@ -716,9 +775,7 @@
                 if (window.OneSignalDeferred) { 
                     OneSignalDeferred.push(async function(OneSignal) { 
                         OneSignal.User.addTags({ rol: displayRol, estancia_id: m }); 
-                        if (isPropietario) {
-                            await OneSignal.Slidedown.promptPush();
-                        }
+                        if (isPropietario) { await OneSignal.Slidedown.promptPush(); }
                     }); 
                 }
                 
@@ -775,7 +832,6 @@
                     lblLic.style.color = diffDias <= 7 ? "var(--danger)" : "var(--success)";
                 } else { lblLic.innerText = "Licencia Perpetua / Sin Límite"; }
                 
-                // MÓDULOS PREMIUM (FEATURE TOGGLES)
                 const featuresActivos = cred.f || "";
                 if(!featuresActivos.includes('rafaga')) {
                     let bloqueRafaga = document.getElementById('tarjeta-rafaga');
@@ -816,14 +872,16 @@
             fetch(`${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(cred.u)}&password=${encodeURIComponent(cred.p)}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' })
             .then(r => r.json()).then(res => {
                 
-                // CORTINA DE HIERRO DEL KILL SWITCH
                 const pantMant = document.getElementById('pantalla-mantenimiento');
                 if(res.mantenimiento) {
                     if(pantMant) pantMant.classList.remove('oculto');
-                    return; // Aborta la sincronización para proteger la BD
+                    return; 
                 } else {
                     if(pantMant) pantMant.classList.add('oculto');
                 }
+                
+                // ACTUALIZAR AVISO AL SINCRONIZAR
+                procesarAlertaServidor(res.alerta_global, res.alerta_id);
 
                 if(!res.error) {
                     fusionarDatos(Array.isArray(res.data) ? res.data : []);
@@ -845,7 +903,7 @@
         }
 
         // =========================================================================
-        // MOTOR DE HISTORIAL (EVENT SOURCING) - MIGRACIÓN TOTAL PARA BAJAS/RENOMBRAR
+        // MOTOR DE HISTORIAL (EVENT SOURCING)
         // =========================================================================
         function procesarEventos() {
             let dbAsc = [...dbCache].sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
@@ -878,9 +936,7 @@
         function obtenerRegistrosActivos() {
             let historia = procesarEventos();
             let validos = [];
-            for(let rp in historia) {
-                validos = validos.concat(historia[rp]);
-            }
+            for(let rp in historia) { validos = validos.concat(historia[rp]); }
             const globalEvents = dbCache.filter(d => d.caravana === "---" || !d.caravana);
             return validos.concat(globalEvents).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
         }
