@@ -109,6 +109,7 @@
         let datosArchivoCrudo = [];
     </script>
 
+    <!-- PANTALLA LOGIN -->
     <div id="pantalla-login">
         <div class="login-box">
             <img src="gemini-svg.png" alt="Logo Taurus">
@@ -125,6 +126,7 @@
         </div>
     </div>
 
+    <!-- OVERLAYS -->
     <div id="loading-overlay" class="oculto">
         <div class="spinner"></div>
         <strong id="loading-text" style="color:white; font-size:18px; letter-spacing: 1px;">Procesando...</strong>
@@ -155,7 +157,12 @@
             </div>
             
             <div class="form-grupo" style="margin-top: 20px;">
-                <label style="color:var(--primary);">Plan / Módulos Habilitados</label>
+                <label style="color:var(--warning);">Límite de Operadores Permitidos</label>
+                <input type="number" id="e-limite" class="form-control" style="border-color: var(--warning);" min="1" placeholder="Ej: 5">
+            </div>
+
+            <div class="form-grupo" style="margin-top: 20px;">
+                <label style="color:var(--primary);">Módulos Habilitados</label>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <label class="check-container"><input type="checkbox" id="e-feat-rafaga"> <span>⚡ Modo Ráfaga (Balanza)</span></label>
                     <label class="check-container"><input type="checkbox" id="e-feat-bluetooth"> <span>📡 Conexión Bluetooth</span></label>
@@ -169,7 +176,7 @@
         </div>
     </div>
 
-    <!-- MODAL VER EQUIPO (PEONES) -->
+    <!-- MODAL VER EQUIPO (PEONES Y CONTRASEÑAS) -->
     <div id="modal-equipo" class="modal oculto">
         <div class="modal-body large">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 15px;">
@@ -182,8 +189,8 @@
                 <thead>
                     <tr>
                         <th>Usuario (Login)</th>
-                        <th>Rol Asignado</th>
-                        <th>Estado</th>
+                        <th>Estado de Conexión</th>
+                        <th style="text-align:right;">Control de Acceso</th>
                     </tr>
                 </thead>
                 <tbody id="tb-equipo">
@@ -222,22 +229,6 @@
             <span id="badge-top-status" style="background: rgba(16, 185, 129, 0.1); color: var(--success); padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; border: 1px solid var(--success);">🟢 Sistema En Línea</span>
         </div>
 
-        <!-- VISTA: CONFIGURACIÓN GLOBAL (KILL SWITCH) -->
-        <div id="v-config" class="vista oculto">
-            <h2 class="titulo-seccion">⚙️ Control Maestro de Operaciones</h2>
-            <div class="tarjeta" style="max-width: 600px; border-color: var(--danger);">
-                <h3 style="margin-top:0; color:var(--danger); display:flex; align-items:center; gap:10px;">⚠️ Bloqueo de Mantenimiento Global</h3>
-                <p style="color:var(--text-muted); line-height: 1.6; margin-bottom: 25px;">
-                    Al activar el modo de mantenimiento, las aplicaciones de PC y Celular de todos los clientes <strong>quedarán bloqueadas y desconectadas inmediatamente</strong>. Se enviará una notificación push a todos los dispositivos advirtiendo la interrupción.
-                </p>
-                <div style="background: rgba(239, 68, 68, 0.1); padding: 20px; border-radius: 8px; text-align: center; border: 1px solid rgba(239, 68, 68, 0.3);">
-                    <strong style="display:block; margin-bottom:15px; font-size:16px;">Estado Actual: <span id="lbl-status-mantenimiento">Cargando...</span></strong>
-                    <button class="btn btn-danger" id="btn-toggle-mant" style="font-size:16px; padding: 15px 30px;" onclick="toggleMantenimiento('ON')">🔴 ACTIVAR BLOQUEO GENERAL</button>
-                    <button class="btn btn-success oculto" id="btn-toggle-rest" style="font-size:16px; padding: 15px 30px;" onclick="toggleMantenimiento('OFF')">🟢 RESTAURAR SERVICIO Y DESBLOQUEAR</button>
-                </div>
-            </div>
-        </div>
-
         <!-- VISTA: NUEVO CLIENTE -->
         <div id="v-nuevo" class="vista">
             <h2 class="titulo-seccion">🚀 Alta de Nueva Hacienda (SaaS)</h2>
@@ -270,6 +261,10 @@
                     <div class="form-grupo">
                         <label>Vencimiento de Licencia *</label>
                         <input type="date" id="n-venc" class="form-control">
+                    </div>
+                    <div class="form-grupo">
+                        <label style="color:var(--warning);">Límite de Operadores (Peones)</label>
+                        <input type="number" id="n-limite" class="form-control" style="border-color: var(--warning);" value="1" min="1" placeholder="Ej: 3">
                     </div>
                 </div>
 
@@ -339,27 +334,59 @@
                         <input type="file" id="archivo-excel" class="form-control" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style="padding:10px; background: var(--bg-card);">
                     </div>
                     
-                    <button class="btn btn-warning" style="width:100%; margin-top:15px; padding: 15px;" onclick="leerArchivoInteligente()">📄 Analizar Archivo</button>
+                    <button class="btn btn-warning" style="width:100%; margin-top:15px; padding: 15px;" onclick="leerArchivoInteligente()">📄 Analizar y Leer Archivo</button>
                 </div>
                 
                 <div id="panel-mapeo" class="tarjeta oculto" style="border-color: var(--success); background: rgba(16, 185, 129, 0.05);">
-                    <h3 style="margin-top:0; color:var(--success); display: flex; align-items: center; gap: 8px;">✅ Archivo Escaneado</h3>
-                    <p style="font-size: 13px; color: var(--text-main); margin-bottom: 20px;">Asocia las columnas detectadas con los datos del sistema Taurus.</p>
+                    <h3 style="margin-top:0; color:var(--success); display: flex; align-items: center; gap: 8px;">✅ Archivo Escaneado Correctamente</h3>
+                    <p style="font-size: 13px; color: var(--text-main); margin-bottom: 20px;">Asocia las columnas que encontró el sistema con los datos de Taurus.</p>
                     
                     <div class="form-grupo">
-                        <label>Columna de la CARAVANA (RP) *</label>
+                        <label>¿Qué columna tiene la CARAVANA (RP)? *</label>
                         <select id="map-caravana" class="form-control" style="border-color: var(--primary);"></select>
                     </div>
                     <div class="form-grupo">
-                        <label>Columna de CATEGORÍA (Opcional)</label>
+                        <label>¿Qué columna tiene la CATEGORÍA? (Opcional)</label>
                         <select id="map-categoria" class="form-control"></select>
                     </div>
                     <div class="form-grupo">
-                        <label>Columna de LOTE (Opcional)</label>
+                        <label>¿Qué columna tiene el LOTE? (Opcional)</label>
                         <select id="map-lote" class="form-control"></select>
                     </div>
 
                     <button class="btn btn-success" style="width:100%; margin-top:20px; padding: 15px;" onclick="procesarMapeoEInyectar()">📤 Procesar e Inyectar Datos</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: CONFIGURACIÓN GLOBAL (KILL SWITCH Y AVISOS) -->
+        <div id="v-config" class="vista oculto">
+            <h2 class="titulo-seccion">⚙️ Control Maestro de Operaciones</h2>
+            
+            <div class="grid-2">
+                <!-- TARJETA: AVISO PREVIO -->
+                <div class="tarjeta" style="border-color: var(--warning); max-width: 600px;">
+                    <h3 style="margin-top:0; color:var(--warning); display:flex; align-items:center; gap:10px;">⏳ Anuncio Previo de Mantenimiento</h3>
+                    <p style="color:var(--text-muted); font-size: 13px; line-height: 1.5; margin-bottom: 15px;">
+                        Envía una notificación a todos los dispositivos advirtiendo el horario de actualización. Esto <strong>NO</strong> bloquea el sistema, solo avisa.
+                    </p>
+                    <div class="form-grupo">
+                        <input type="text" id="txt-aviso-mant" class="form-control" style="border-color: var(--warning);" placeholder="Ej: Hoy de 14:00 a 16:00 hs el sistema estará en actualización.">
+                    </div>
+                    <button class="btn btn-warning" style="width: 100%; margin-top: 10px;" onclick="enviarAvisoMantenimiento()">📣 Enviar Anuncio a Todos</button>
+                </div>
+
+                <!-- TARJETA: KILL SWITCH -->
+                <div class="tarjeta" style="max-width: 600px; border-color: var(--danger);">
+                    <h3 style="margin-top:0; color:var(--danger); display:flex; align-items:center; gap:10px;">⚠️ Bloqueo de Mantenimiento Global</h3>
+                    <p style="color:var(--text-muted); line-height: 1.5; margin-bottom: 25px; font-size: 13px;">
+                        Al activar el modo de mantenimiento, las aplicaciones de PC y Celular de todos los clientes <strong>quedarán bloqueadas y desconectadas inmediatamente</strong>. Se enviará una notificación push a todos los dispositivos.
+                    </p>
+                    <div style="background: rgba(239, 68, 68, 0.1); padding: 20px; border-radius: 8px; text-align: center; border: 1px solid rgba(239, 68, 68, 0.3);">
+                        <strong style="display:block; margin-bottom:15px; font-size:16px;">Estado Actual: <span id="lbl-status-mantenimiento">Cargando...</span></strong>
+                        <button class="btn btn-danger" id="btn-toggle-mant" style="font-size:16px; padding: 15px 30px; width: 100%;" onclick="toggleMantenimiento('ON')">🔴 ACTIVAR BLOQUEO GENERAL</button>
+                        <button class="btn btn-success oculto" id="btn-toggle-rest" style="font-size:16px; padding: 15px 30px; width: 100%;" onclick="toggleMantenimiento('OFF')">🟢 RESTAURAR SERVICIO Y DESBLOQUEAR</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -386,7 +413,7 @@
         function mostrarToast(mensaje, esError = false) { const toast = document.getElementById('toast-msg'); toast.innerText = mensaje; if(esError) toast.classList.add('error'); else toast.classList.remove('error'); toast.classList.add('mostrar'); setTimeout(() => { toast.classList.remove('mostrar'); }, 3000); }
 
         // ==========================================
-        // FUNCIONES KILL SWITCH
+        // FUNCIONES KILL SWITCH Y AVISOS PREVIOS
         // ==========================================
         function checkStatusInicial() {
             fetch(`${GOOGLE_SHEETS_URL}?accion=check_mantenimiento&t=${Date.now()}`)
@@ -413,18 +440,41 @@
 
         function toggleMantenimiento(nuevoEstado) {
             if(nuevoEstado === 'ON' && !confirm("⚠️ ¿Estás seguro que deseas desconectar a todos los clientes e inutilizar la plataforma?")) return;
+            
             toggleLoading(true, "Transmitiendo orden a los servidores...");
             const fd = new URLSearchParams(); fd.append('accion', 'toggle_mantenimiento'); fd.append('estado', nuevoEstado);
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { toggleLoading(false); actualizarUIKillSwitch(nuevoEstado); mostrarToast(`✅ Plataforma cambiada a estado: ${nuevoEstado}`); }).catch(() => { toggleLoading(false); mostrarToast("❌ Error de red", true); });
+            
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
+                toggleLoading(false); 
+                actualizarUIKillSwitch(nuevoEstado); 
+                mostrarToast(`✅ Plataforma cambiada a estado: ${nuevoEstado}`); 
+            }).catch(() => { toggleLoading(false); mostrarToast("❌ Error de red", true); });
+        }
+
+        function enviarAvisoMantenimiento() {
+            let msg = document.getElementById('txt-aviso-mant').value.trim();
+            if(!msg) return mostrarToast("⚠️ Escribe el mensaje de aviso", true);
+            if(!confirm("📣 ¿Enviar esta notificación push a TODOS los usuarios ahora mismo?")) return;
+            
+            toggleLoading(true, "Enviando anuncio global...");
+            const fd = new URLSearchParams();
+            fd.append('accion', 'aviso_mantenimiento');
+            fd.append('mensaje', "⏳ AVISO: " + msg);
+            
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' })
+            .then(() => { toggleLoading(false); mostrarToast("✅ Aviso enviado a todos"); document.getElementById('txt-aviso-mant').value = ''; })
+            .catch(()=> { toggleLoading(false); mostrarToast("❌ Error al enviar", true); });
         }
 
         // ==========================================
-        // ALTA DE CLIENTES SaaS CON PLANES Y NOMBRES
+        // ALTA DE CLIENTES SaaS CON LÍMITES LIBRES
         // ==========================================
         function getFeatures(prefijo) {
             let features = [];
             if(document.getElementById(`${prefijo}-feat-rafaga`).checked) features.push('rafaga');
             if(document.getElementById(`${prefijo}-feat-bluetooth`).checked) features.push('bluetooth');
+            let lim = document.getElementById(`${prefijo}-limite`).value;
+            if(lim) features.push(`limit:${lim}`);
             return features.join(',');
         }
 
@@ -432,6 +482,10 @@
             let f = String(featuresStr||"");
             document.getElementById('e-feat-rafaga').checked = f.includes('rafaga');
             document.getElementById('e-feat-bluetooth').checked = f.includes('bluetooth');
+            let limitVal = "1";
+            let arr = f.split(',');
+            arr.forEach(p => { if(p.startsWith('limit:')) limitVal = p.split(':')[1]; });
+            document.getElementById('e-limite').value = limitVal;
         }
 
         function crearCliente() {
@@ -442,11 +496,11 @@
             const h = document.getElementById('n-hacienda').value.trim();
             const feats = getFeatures('n');
             
-            if(!u || !p || !v || !h || !nom) return mostrarToast("⚠️ Complete todos los campos marcados con *", true);
+            if(!u || !p || !v || !h || !nom) return mostrarToast("⚠️ Complete todos los campos obligatorios", true);
             if(p.length < 4) return mostrarToast("⚠️ La contraseña debe tener mínimo 4 caracteres", true);
             
             toggleLoading(true, "Construyendo base de datos en Drive y aplicando permisos...");
-            const fd = newSearchParams(); 
+            const fd = new URLSearchParams(); 
             fd.append('accion', 'crear_cliente_nuevo'); 
             fd.append('nombre_completo', nom);
             fd.append('nuevo_usu', u); 
@@ -459,11 +513,6 @@
                 toggleLoading(false); mostrarToast("✅ Cuenta SaaS creada con éxito"); 
                 document.getElementById('n-nombre').value = ''; document.getElementById('n-usu').value = ''; document.getElementById('n-pass').value = ''; document.getElementById('n-venc').value = ''; document.getElementById('n-hacienda').value = ''; clientesCache = []; 
             }).catch(() => { toggleLoading(false); mostrarToast("❌ Error de red al crear cuenta", true); });
-        }
-
-        // Corrección para Safari/iOS de form data
-        function newSearchParams() {
-            return new URLSearchParams();
         }
 
         function cargarClientes() {
@@ -492,7 +541,7 @@
 
         function renderizarTablaClientes() {
             const tb = document.getElementById('tb-clientes'); tb.innerHTML = '';
-            if(clientesCache.length === 0) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">No se encontraron cuentas activas.</td></tr>'; return; }
+            if(clientesCache.length === 0) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding: 30px;">Haz clic en "Refrescar Monitor" para leer la base de datos.</td></tr>'; return; }
             
             clientesCache.forEach(c => {
                 let d = c.vencimiento ? new Date(c.vencimiento) : null;
@@ -503,9 +552,16 @@
                     fechaFormato = localDate.toISOString().split('T')[0];
                 }
                 
-                let featBadges = ""; let fc = String(c.features||"");
+                let featBadges = "";
+                let fc = String(c.features||"");
                 if(fc.includes('rafaga')) featBadges += `<span style="background:var(--bg-card); padding:3px 8px; border-radius:4px; font-size:10px; margin-right:5px; border:1px solid var(--border);">⚡ Ráfaga</span>`;
                 if(fc.includes('bluetooth')) featBadges += `<span style="background:rgba(59,130,246,0.1); color:#60a5fa; padding:3px 8px; border-radius:4px; font-size:10px; border:1px solid rgba(59,130,246,0.3);">📡 BT</span>`;
+                
+                let limitText = "Ilimitado";
+                let arr = fc.split(',');
+                arr.forEach(p => { if(p.startsWith('limit:')) { let num = p.split(':')[1]; limitText = (num === "999") ? "Op: Ilimitados" : "Op: " + num; } });
+                featBadges += `<span style="background:rgba(245,158,11,0.1); color:var(--warning); padding:3px 8px; border-radius:4px; font-size:10px; border:1px solid rgba(245,158,11,0.3); margin-left:5px;">👥 ${limitText}</span>`;
+
                 if(featBadges === "") featBadges = `<span style="font-size:10px; color:var(--text-muted);">Básico</span>`;
 
                 tb.innerHTML += `
@@ -583,11 +639,11 @@
         }
 
         // ==========================================
-        // CONTROL MAESTRO DE OPERADORES (PEONES)
+        // CONTROL MAESTRO DE OPERADORES Y CONTRASEÑAS
         // ==========================================
         function verEquipo(maestroId, haciendaName) {
             document.getElementById('lbl-equipo-hacienda').innerText = haciendaName;
-            document.getElementById('tb-equipo').innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Buscando sub-usuarios...</td></tr>';
+            document.getElementById('tb-equipo').innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:15px;">Buscando sub-usuarios...</td></tr>';
             document.getElementById('modal-equipo').classList.remove('oculto');
 
             fetch(`${GOOGLE_SHEETS_URL}?accion=listar_operadores&maestro=${encodeURIComponent(maestroId)}&t=${Date.now()}`)
@@ -595,20 +651,40 @@
             .then(res => {
                 const tb = document.getElementById('tb-equipo'); tb.innerHTML = '';
                 if(res.error || !res.data || res.data.length === 0) {
-                    tb.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Este cliente no ha registrado operadores.</td></tr>';
+                    tb.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:15px;">Este cliente no ha registrado operadores.</td></tr>';
                     return;
                 }
                 res.data.forEach(op => {
                     tb.innerHTML += `
                     <tr>
                         <td style="font-weight:bold; color:var(--text-main);">@${op}</td>
-                        <td><span style="background:var(--bg-card); padding:4px 8px; border-radius:4px; font-size:11px;">Móvil / Terreno</span></td>
                         <td><span style="color:var(--success); font-weight:bold; font-size:12px;">Activo</span></td>
+                        <td style="text-align:right;">
+                            <button class="btn btn-mini" style="background:#475569; width:auto; padding:6px 10px; margin-right:5px;" onclick="cambiarClaveOperador('${op}')">🔑 Pass</button>
+                            <button class="btn btn-mini btn-danger" style="width:auto; padding:6px 10px;" onclick="eliminarOpAdmin('${op}', '${maestroId}')">🗑️</button>
+                        </td>
                     </tr>`;
                 });
             }).catch(() => {
-                document.getElementById('tb-equipo').innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--danger);">Error al cargar el equipo.</td></tr>';
+                document.getElementById('tb-equipo').innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--danger); padding:15px;">Error al cargar el equipo.</td></tr>';
             });
+        }
+
+        function cambiarClaveOperador(opUsu) {
+            const nc = prompt(`Digita la nueva contraseña para el operador "@${opUsu}":`); 
+            if(!nc) return; 
+            if(nc.trim().length < 4) return mostrarToast("⚠️ Mínimo 4 caracteres", true);
+            
+            toggleLoading(true, "Actualizando clave del peón..."); 
+            const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', opUsu); fd.append('nuevo_pass', nc.trim());
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { toggleLoading(false); mostrarToast("✅ Clave del operador actualizada"); }).catch(() => { toggleLoading(false); mostrarToast("❌ Error de red", true); });
+        }
+
+        function eliminarOpAdmin(opUsu, maestroId) {
+            if(!confirm(`⚠️ ¿Despedir/Eliminar acceso al operador ${opUsu}?`)) return;
+            toggleLoading(true, "Eliminando operador...");
+            const fd = new URLSearchParams(); fd.append('accion', 'eliminar_peon'); fd.append('maestro', maestroId); fd.append('peon_usu', opUsu); 
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { toggleLoading(false); mostrarToast("✅ Operador Eliminado"); verEquipo(maestroId, document.getElementById('lbl-equipo-hacienda').innerText); }).catch(() => { toggleLoading(false); mostrarToast("❌ Error de conexión", true); });
         }
 
         // ==========================================
@@ -629,16 +705,16 @@
                     if(jsonCrudo.length === 0) throw new Error("Archivo vacío");
                     datosArchivoCrudo = jsonCrudo; const headers = Object.keys(jsonCrudo[0]);
                     llenarSelectMapeo('map-caravana', headers, false); llenarSelectMapeo('map-categoria', headers, true); llenarSelectMapeo('map-lote', headers, true);
-                    document.getElementById('panel-mapeo').classList.remove('oculto'); toggleLoading(false); mostrarToast("✅ Archivo escaneado");
-                } catch (err) { toggleLoading(false); mostrarToast("❌ Error al leer. Revisa los encabezados", true); }
+                    document.getElementById('panel-mapeo').classList.remove('oculto'); toggleLoading(false); mostrarToast("✅ Archivo escaneado correctamente");
+                } catch (err) { toggleLoading(false); mostrarToast("❌ Error al leer el archivo. Revisa que tenga encabezados.", true); console.error(err); }
             }; reader.readAsArrayBuffer(file);
         }
 
-        function llenarSelectMapeo(idSelect, headers, esOpcional = false) { const sel = document.getElementById(idSelect); sel.innerHTML = esOpcional ? '<option value="">-- Dejar en blanco --</option>' : '<option value="">-- Seleccione la columna --</option>'; headers.forEach(h => { sel.innerHTML += `<option value="${h}">${h}</option>`; }); }
+        function llenarSelectMapeo(idSelect, headers, esOpcional = false) { const sel = document.getElementById(idSelect); sel.innerHTML = esOpcional ? '<option value="">-- Dejar en blanco (Asignar "-") --</option>' : '<option value="">-- Seleccione la columna --</option>'; headers.forEach(h => { sel.innerHTML += `<option value="${h}">${h}</option>`; }); }
 
         function procesarMapeoEInyectar() {
             const colCaravana = document.getElementById('map-caravana').value; const colCat = document.getElementById('map-categoria').value; const colLote = document.getElementById('map-lote').value; const idPlanilla = document.getElementById('sel-cliente-masiva').value;
-            if(!colCaravana) return mostrarToast("⚠️ Falta columna principal de Caravana", true);
+            if(!colCaravana) return mostrarToast("⚠️ Debes indicar cuál es la columna de la Caravana", true);
             const fechaHoy = new Date().toISOString(); let datosAInyectar = [];
             datosArchivoCrudo.forEach(fila => {
                 let valorCaravana = fila[colCaravana];
@@ -647,8 +723,8 @@
                     datosAInyectar.push({ fecha: fechaHoy, caravana: String(valorCaravana).trim(), categoria: valCat, lote: valLote });
                 }
             });
-            if(datosAInyectar.length === 0) return mostrarToast("❌ No hay datos válidos", true);
-            if(confirm(`Se procesarán ${datosAInyectar.length} cabezas de ganado para este cliente.\n¿Proceder con la inyección segura en la base de datos?`)) {
+            if(datosAInyectar.length === 0) return mostrarToast("❌ No se encontraron datos válidos en la columna elegida", true);
+            if(confirm(`Se procesaron ${datosAInyectar.length} animales válidos.\n¿Proceder a inyectar en la base de datos del cliente?`)) {
                 document.getElementById('panel-mapeo').classList.add('oculto');
                 enviarCargaMasivaEnBloques(idPlanilla, datosAInyectar);
             }
@@ -663,13 +739,7 @@
             for (let i = 0; i < dataArray.length; i += chunkSize) {
                 const chunk = dataArray.slice(i, i + chunkSize);
                 toggleLoading(true, `Inyectando bloque ${Math.ceil((i+1)/chunkSize)} de ${Math.ceil(dataArray.length/chunkSize)}...`);
-                
-                const fd = new URLSearchParams(); 
-                fd.append('accion', 'carga_masiva'); 
-                fd.append('id_planilla', idPlanilla); 
-                fd.append('maestro', maestroId);
-                fd.append('datos', JSON.stringify(chunk));
-                
+                const fd = new URLSearchParams(); fd.append('accion', 'carga_masiva'); fd.append('id_planilla', idPlanilla); fd.append('maestro', maestroId); fd.append('datos', JSON.stringify(chunk));
                 try { await fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }); } 
                 catch (e) { toggleLoading(false); mostrarToast(`❌ Error inyectando bloque ${Math.ceil((i+1)/chunkSize)}`, true); return; }
             }
