@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Taurus Control - Móvil</title>
+    
+    <meta name="theme-color" content="#0f172a">
+    
     <!-- Íconos para la aplicación en pantalla de inicio -->
     <link rel="apple-touch-icon" href="gemini-svg.png">
     <link rel="icon" type="image/png" href="gemini-svg.png">
-    
-    <meta name="theme-color" content="#0f172a">
     
     <!-- LIBRERIAS PROFESIONALES PARA PDF PERFECTO -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -50,6 +51,11 @@
         .btn-ingresar:disabled { background: var(--muted); }
         .error-msj { color: var(--peligro); font-size: 14px; margin-bottom: 10px; display: none; font-weight: bold; }
 
+        /* PANTALLA DE MANTENIMIENTO GLOBAL */
+        #pantalla-mantenimiento { position:fixed; top:0; left:0; width:100%; height:100%; background:var(--primario); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; text-align:center; }
+        #pantalla-mantenimiento .spinner { border: 4px solid var(--borde); border-top: 4px solid var(--peligro); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-top:30px;}
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
         #pantalla-app { padding-bottom: 80px; width: 100%; }
         .cabecera { background-color: #0f172a; color: var(--texto); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--borde); position: sticky; top: 0; z-index: 100;}
         .cabecera h1 { margin: 0; font-size: 20px; display: flex; align-items: center; gap: 8px;}
@@ -84,7 +90,7 @@
         .buscador-contenedor { display: flex; gap: 10px; margin-bottom: 15px; align-items: stretch;}
         .buscador-input { flex: 1; min-width: 0; padding: 12px; border: 2px solid var(--borde); border-radius: 8px; font-size: 16px; font-weight: bold; background: #0f172a; color: var(--texto); outline: none;}
         .buscador-input:focus { border-color: var(--secundario); }
-        .buscador-btn { flex-shrink: 0; background: var(--secundario); color: white; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold; cursor: pointer;}
+        .buscador-btn { flex-shrink: 0; background: var(--secundario); color: white; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold;}
 
         .perfil-cabecera { text-align: center; margin-bottom: 20px;}
         .perfil-id { font-size: 40px; font-weight: 900; letter-spacing: 2px; line-height: 1; color: var(--texto);}
@@ -134,7 +140,7 @@
 
     <div id="pantalla-login">
         <div class="login-contenedor">
-            <div class="logo-icono"><img src="gemini-svg.ico" alt="Logo Taurus"></div>
+            <div class="logo-icono"><img src="gemini-svg.png" alt="Logo Taurus"></div>
             <div class="titulo-login">Taurus Control</div>
             <input type="text" id="usuario" class="form-control-login" placeholder="Usuario de Acceso" autocomplete="off">
             <input type="password" id="password" class="form-control-login" placeholder="Contraseña">
@@ -144,9 +150,18 @@
         </div>
     </div>
 
+    <!-- CORTINA DE HIERRO: MANTENIMIENTO -->
+    <div id="pantalla-mantenimiento" class="oculto">
+        <span style="font-size:60px; margin-bottom:20px;">🚧</span>
+        <h1 style="color:var(--peligro); margin:0 0 10px 0; font-size:24px;">SISTEMA EN MANTENIMIENTO</h1>
+        <p style="color:var(--muted); font-size:14px; line-height:1.6; max-width:400px;">Nuestros servidores están recibiendo una actualización para mejorar Taurus Control. La aplicación ha sido bloqueada temporalmente y tus datos están seguros.</p>
+        <div class="spinner"></div>
+        <p style="color:var(--secundario); font-size:12px; margin-top:15px; font-weight:bold;">Verificando conexión automáticamente...</p>
+    </div>
+
     <div id="pantalla-app" class="oculto">
         <header class="cabecera">
-            <h1><img src="gemini-svg.ico" alt="Taurus" style="width: 26px; height: 26px; border-radius: 6px; object-fit: contain;"> Taurus</h1>
+            <h1><img src="gemini-svg.png" alt="Taurus" style="width: 26px; height: 26px; border-radius: 6px; object-fit: contain;"> Taurus</h1>
             <div id="estado-red" class="badge-estado" onclick="sincronizarFondo(true)">🟢 Conectado</div>
         </header>
 
@@ -165,7 +180,7 @@
 
             <!-- FICHA CLÍNICA (MANGA) -->
             <div id="vista-manga" class="vista oculto">
-                <div class="tarjeta" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid var(--secundario);">
+                <div class="tarjeta" id="tarjeta-rafaga" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid var(--secundario);">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div style="display:flex; align-items:center; gap:10px;">
                             <span style="font-size:24px;">⚡</span>
@@ -208,7 +223,7 @@
                 </div>
 
                 <div class="buscador-contenedor">
-                    <input type="text" id="buscador-caravana" class="buscador-input" placeholder="Nº Caravana / RP">
+                    <input type="text" id="buscador-caravana" class="buscador-input" placeholder="Nº Caravana / RP" onkeyup="if(event.key === 'Enter') buscarCaravanaBtn()">
                     <button class="buscador-btn" onclick="buscarCaravanaBtn()">Buscar</button>
                 </div>
                 
@@ -518,11 +533,9 @@
             if(rafagaActiva) {
                 btn.innerText = "ENCENDIDO"; btn.style.background = "var(--secundario)"; btn.style.color = "white";
                 opciones.classList.remove('oculto'); verificarRafagaCustom();
-                notificarPropietario(`🟢 ${usNombre} ha ACTIVADO el Modo Ráfaga masivo.`);
             } else {
                 btn.innerText = "APAGADO"; btn.style.background = "transparent"; btn.style.color = "var(--texto)";
                 opciones.classList.add('oculto');
-                notificarPropietario(`🔴 ${usNombre} apagó el Modo Ráfaga.`);
             }
         };
 
@@ -558,11 +571,15 @@
                 const response = await fetch(url);
                 if (!response.ok) throw new Error("Error de conexión al servidor.");
                 const res = await response.json();
+                
+                // CORTINA DE HIERRO: BLOQUEO POR MANTENIMIENTO
+                if(res.mantenimiento) { throw new Error(res.mensaje); }
                 if(res.error) throw new Error(res.mensaje);
                 if(res.vencimiento && new Date() > new Date(res.vencimiento)) { throw new Error("Su licencia ha vencido."); }
                 
                 let dataLimpia = Array.isArray(res.data) ? res.data : [];
-                lsSet('tc_cred', { u: u, p: p, m: res.maestro, r: res.rol, v: res.vencimiento, n: res.nombre_completo, h: res.hacienda }); 
+                // GUARDAR TAMBIÉN LOS FEATURES EN CREDENCIALES
+                lsSet('tc_cred', { u: u, p: p, m: res.maestro, r: res.rol, v: res.vencimiento, n: res.nombre_completo, h: res.hacienda, f: res.features }); 
                 lsSet('tc_db', dataLimpia); 
                 lsSet('tc_hacienda', { nombre: res.hacienda, logo: res.logo }); 
                 
@@ -660,6 +677,13 @@
                     lblLic.style.color = diffDias <= 7 ? "var(--peligro)" : "var(--texto)";
                 } else { lblLic.value = "Licencia Perpetua / Sin Límite"; }
                 
+                // MÓDULOS PREMIUM (FEATURE TOGGLES)
+                const featuresActivos = cred.f || "";
+                if(!featuresActivos.includes('rafaga')) {
+                    let bloqueRafaga = document.getElementById('tarjeta-rafaga');
+                    if (bloqueRafaga) bloqueRafaga.style.display = 'none';
+                }
+
                 const prefs = lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
                 const dGuardado = lsGet('tc_hacienda', {}); aplicarDisenoEnPantalla(dGuardado.nombre, dGuardado.logo);
                 
@@ -668,6 +692,7 @@
                 
                 document.getElementById('pantalla-login').classList.add('oculto'); 
                 document.getElementById('pantalla-app').classList.remove('oculto'); 
+                document.getElementById('pantalla-mantenimiento').classList.add('oculto');
                 
                 if(tabSeleccionado) { cambiarVista(vistaInicial, tabSeleccionado); } else { cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
                 
@@ -693,12 +718,22 @@
 
             fetch(`${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(cred.u)}&password=${encodeURIComponent(cred.p)}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' })
             .then(r => r.json()).then(res => {
+                
+                // CORTINA DE HIERRO DEL KILL SWITCH
+                const pantMant = document.getElementById('pantalla-mantenimiento');
+                if(res.mantenimiento) {
+                    if(pantMant) pantMant.classList.remove('oculto');
+                    return; // Aborta la sincronización para proteger la BD
+                } else {
+                    if(pantMant) pantMant.classList.add('oculto');
+                }
+
                 if(!res.error) {
                     fusionarDatos(Array.isArray(res.data) ? res.data : []);
-                    if(rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
+                    if(rpActivo && document.getElementById('vista-manga') && !document.getElementById('vista-manga').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
                     procesarDatosDashboard(); 
-                    if(!document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); 
-                    if(!document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
+                    if(document.getElementById('vista-registro') && !document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); 
+                    if(document.getElementById('vista-informe') && !document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
                     cargarListaOperadores();
                     if(esManual) { setEstadoRed(true, '✅ ¡Listo!'); setTimeout(() => setEstadoRed(true), 2000); } else { setEstadoRed(true); }
                 } else { if(esManual) { setEstadoRed(true, '❌ Error'); setTimeout(() => setEstadoRed(true), 2000); } }
@@ -1152,29 +1187,28 @@
             
             const btn = document.getElementById('btn-crear-op');
             const btnOriginal = btn.innerHTML;
-            btn.innerHTML = "⏳ Verificando Disponibilidad...";
+            btn.innerHTML = "⏳ Verificando...";
             btn.disabled = true;
 
             try {
-                let checkFetch = await fetch(`${GOOGLE_SHEETS_URL}?accion=verificar_usuario&usuario=${encodeURIComponent(u)}`);
+                let checkFetch = await fetch(`${GOOGLE_SHEETS_URL}?accion=verificar_usuario&usuario=${encodeURIComponent(u)}&maestro=${maestroId}`);
                 let checkResult = await checkFetch.json();
+                
                 if(checkResult.existe) {
-                    alert(`⚠️ El usuario de acceso "${u}" ya existe en el sistema global. Por favor, elija uno diferente (ej: ${u}_1, ${u}_apellido, etc).`);
-                    btn.innerHTML = btnOriginal;
-                    btn.disabled = false;
-                    return;
+                    alert(`⚠️ El usuario de acceso "${u}" ya existe. Por favor, elija uno diferente.`);
+                    btn.innerHTML = btnOriginal; btn.disabled = false; return;
+                }
+
+                if(checkResult.limite_alcanzado) {
+                    alert(`⛔ LÍMITE ALCANZADO: Su plan actual no le permite crear más operadores. Por favor, contacte a Administración para hacer un upgrade de su licencia.`);
+                    btn.innerHTML = btnOriginal; btn.disabled = false; return;
                 }
 
                 btn.innerHTML = "⏳ Registrando...";
                 const fd = new URLSearchParams(); 
-                fd.append('accion', 'crear_peon'); 
-                fd.append('maestro', maestroId); 
-                fd.append('usuario', usActivo); 
-                fd.append('peon_usu', u); 
-                fd.append('peon_pass', p); 
-                fd.append('peon_nombre', n); 
-                fd.append('vencimiento', 'Heredado');
-                fd.append('peon_rol', rolFinal); 
+                fd.append('accion', 'crear_peon'); fd.append('maestro', maestroId); fd.append('usuario', usActivo); 
+                fd.append('peon_usu', u); fd.append('peon_pass', p); fd.append('peon_nombre', n); 
+                fd.append('vencimiento', 'Heredado'); fd.append('peon_rol', rolFinal); 
                 
                 await fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' });
                 
@@ -1187,20 +1221,14 @@
                 fd2.append('usuario', usActivo);
                 fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd2, mode: 'no-cors' });
 
-                document.getElementById('op-nombre').value = ''; 
-                document.getElementById('op-usu').value = ''; 
-                document.getElementById('op-pass').value = ''; 
+                document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 
                 
-                btn.innerHTML = btnOriginal;
-                btn.disabled = false;
-                
-                cargarListaOperadores(); 
-                alert("Usuario Registrado Exitosamente.");
+                btn.innerHTML = btnOriginal; btn.disabled = false;
+                cargarListaOperadores(); alert("Usuario Registrado Exitosamente.");
                 setTimeout(() => { sincronizarFondo(false); }, 1500);
             } catch(e) {
                 alert("Hubo un error de conexión al verificar el usuario.");
-                btn.innerHTML = btnOriginal;
-                btn.disabled = false;
+                btn.innerHTML = btnOriginal; btn.disabled = false;
             }
         }
 
