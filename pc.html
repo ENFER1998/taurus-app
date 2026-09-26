@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Taurus Control - Terminal PC</title>
     
-    <!-- Íconos para la aplicación web (Apple/iOS) -->
+    <!-- Íconos para la aplicación web -->
     <link rel="apple-touch-icon" href="gemini-svg.png">
     <link rel="icon" type="image/png" href="gemini-svg.png">
     
@@ -56,6 +56,11 @@
         .btn-primary:hover { background: var(--primary-hover); }
         .btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
         .error-msg { color: var(--danger); font-size: 13px; margin-bottom: 15px; font-weight: bold; display: none; }
+
+        /* CORTINA DE HIERRO: MANTENIMIENTO */
+        #pantalla-mantenimiento { position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg-base); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; text-align:center; }
+        .spinner-mant { border: 5px solid var(--border); border-top: 5px solid var(--danger); border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin-top:30px;}
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         #sidebar { width: 240px; background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
         .sidebar-header { padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border); background: var(--bg-card);}
@@ -152,6 +157,15 @@
         </div>
     </div>
 
+    <!-- CORTINA DE HIERRO: MANTENIMIENTO -->
+    <div id="pantalla-mantenimiento" class="oculto">
+        <span style="font-size:70px; margin-bottom:20px;">🚧</span>
+        <h1 style="color:var(--danger); margin:0 0 10px 0; font-size:32px;">SISTEMA EN MANTENIMIENTO</h1>
+        <p style="color:var(--text-muted); font-size:16px; line-height:1.6; max-width:500px;">Nuestros servidores están recibiendo una actualización para mejorar Taurus Control. La aplicación ha sido bloqueada temporalmente y tus datos están seguros.</p>
+        <div class="spinner-mant"></div>
+        <p style="color:var(--primary); font-size:14px; margin-top:20px; font-weight:bold;">Reconectando automáticamente...</p>
+    </div>
+
     <div id="sidebar" class="oculto">
         <div class="sidebar-header">
             <img src="gemini-svg.png" alt="Logo">
@@ -201,7 +215,8 @@
         <div id="v-ficha" class="vista oculto">
             <h2 class="titulo-seccion">Expediente Clínico Individual</h2>
             
-            <div class="tarjeta" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid var(--primary); background: var(--bg-card);">
+            <!-- TARJETA MODO RÁFAGA (Oculta por defecto si no tienen el plan) -->
+            <div id="tarjeta-rafaga" class="tarjeta" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid var(--primary); background: var(--bg-card);">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <span style="font-size:24px;">⚡</span>
@@ -314,7 +329,7 @@
             <h2 class="titulo-seccion">Inventario General Activo</h2>
             <div class="search-bar">
                 <input type="text" id="buscador-lista" class="form-control" style="margin:0;" placeholder="Buscar en inventario (Ej: caravana, lote, vacía)..." onkeyup="if(event.key === 'Enter') filtrarLista(this.value)">
-                <button class="btn-primary" style="width: 150px;" onclick="filtrarLista(document.getElementById('buscador-lista').value)">Buscar</button>
+                <button type="button" class="btn-primary" style="width: 150px; margin:0;" onclick="filtrarLista(document.getElementById('buscador-lista').value)">Buscar</button>
             </div>
             <div class="tarjeta" style="padding:0; overflow-y:auto; max-height: 60vh;">
                 <table class="tabla-datos">
@@ -429,7 +444,6 @@
                         <button type="button" class="btn-primary" onclick="guardarDisenoServidor()">Guardar Diseño de Impresión</button>
                     </div>
 
-                    <!-- NUEVO PANEL DE CREACIÓN DE PEONES CON PERMISOS GRANULARES -->
                     <div class="tarjeta" id="panel-crear-peones">
                         <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">👷 Control de Operadores</h3>
                         
@@ -459,10 +473,10 @@
                         <div class="form-grupo" id="caja-permisos">
                             <label style="font-size:12px; color:var(--text-muted); margin-bottom:8px; display:block;">Permisos de Acceso al Menú:</label>
                             <div style="display:flex; flex-direction:column; gap:8px; background:var(--bg-base); padding:10px; border:1px solid var(--border); border-radius:4px;">
-                                <label style="display:flex; gap:10px; cursor:pointer; font-size:13px;"><input type="checkbox" class="chk-permiso" value="dash" checked> 📊 Panel de Control</label>
-                                <label style="display:flex; gap:10px; cursor:pointer; font-size:13px;"><input type="checkbox" class="chk-permiso" value="ficha" checked> 🐄 Ficha Clínica (Manga)</label>
-                                <label style="display:flex; gap:10px; cursor:pointer; font-size:13px;"><input type="checkbox" class="chk-permiso" value="base" checked> 📋 Base de Datos</label>
-                                <label style="display:flex; gap:10px; cursor:pointer; font-size:13px;"><input type="checkbox" class="chk-permiso" value="reporte"> 📄 Reportes PDF</label>
+                                <label class="check-container"><input type="checkbox" class="chk-permiso" value="dash" checked> <span>📊 Panel de Control</span></label>
+                                <label class="check-container"><input type="checkbox" class="chk-permiso" value="ficha" checked> <span>🐄 Ficha Clínica (Manga)</span></label>
+                                <label class="check-container"><input type="checkbox" class="chk-permiso" value="base" checked> <span>📋 Base de Datos</span></label>
+                                <label class="check-container"><input type="checkbox" class="chk-permiso" value="reporte"> <span>📄 Reportes PDF</span></label>
                             </div>
                         </div>
                         <button type="button" id="btn-crear-op" class="btn-primary" style="background:#10b981;" onclick="crearOperador()">Registrar Usuario</button>
@@ -479,10 +493,10 @@
                             <div class="form-grupo">
                                 <label style="font-size:12px; color:var(--text-muted); margin-bottom:8px; display:block;">Nuevos Permisos:</label>
                                 <div style="display:flex; flex-direction:column; gap:8px; background:var(--bg-base); padding:10px; border:1px solid var(--border); border-radius:4px;">
-                                    <label style="display:flex; gap:10px; cursor:pointer; font-size:13px;"><input type="checkbox" class="chk-edit-permiso" value="dash"> 📊 Panel de Control</label>
-                                    <label style="display:flex; gap:10px; cursor:pointer; font-size:13px;"><input type="checkbox" class="chk-edit-permiso" value="ficha"> 🐄 Ficha Clínica (Manga)</label>
-                                    <label style="display:flex; gap:10px; cursor:pointer; font-size:13px;"><input type="checkbox" class="chk-edit-permiso" value="base"> 📋 Base de Datos</label>
-                                    <label style="display:flex; gap:10px; cursor:pointer; font-size:13px;"><input type="checkbox" class="chk-edit-permiso" value="reporte"> 📄 Reportes PDF</label>
+                                    <label class="check-container"><input type="checkbox" class="chk-edit-permiso" value="dash"> <span>📊 Panel de Control</span></label>
+                                    <label class="check-container"><input type="checkbox" class="chk-edit-permiso" value="ficha"> <span>🐄 Ficha Clínica (Manga)</span></label>
+                                    <label class="check-container"><input type="checkbox" class="chk-edit-permiso" value="base"> <span>📋 Base de Datos</span></label>
+                                    <label class="check-container"><input type="checkbox" class="chk-edit-permiso" value="reporte"> <span>📄 Reportes PDF</span></label>
                                 </div>
                             </div>
                             <button type="button" id="btn-editar-op" class="btn-primary" style="background:#3b82f6;" onclick="guardarEdicionOperador()">Actualizar Permisos</button>
@@ -495,9 +509,9 @@
                             <select id="op-del-usu-sel" class="form-control">
                                 <option value="">-- Seleccione un operador --</option>
                             </select>
-                            <span style="font-size:11px; color:var(--text-muted); display:block; margin-top:5px;">El sistema sincronizará la baja en todos los dispositivos para que el operador pierda acceso total.</span>
+                            <span style="font-size:11px; color:var(--text-muted); display:block; margin-top:5px;">El sistema sincronizará la baja para que el operador pierda acceso.</span>
                         </div>
-                        <button type="button" id="btn-eliminar-op" class="btn-primary" style="background:var(--danger);" onclick="eliminarOperador()">Eliminar Operador de la Nube</button>
+                        <button type="button" id="btn-eliminar-op" class="btn-primary" style="background:var(--danger);" onclick="eliminarOperador()">Eliminar Operador</button>
                     </div>
                 </div>
 
@@ -513,17 +527,17 @@
                     <div class="tarjeta" id="panel-analiticas">
                         <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">📊 Analíticas en Dashboard (Máx 3)</h3>
                         <div style="display:flex; flex-direction:column; gap:8px;">
-                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="1" onchange="verificarLimiteGraficos(this)"> 1. Tasa de Preñez Dinámica</label>
-                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="2" onchange="verificarLimiteGraficos(this)"> 2. Composición de Hacienda</label>
-                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="3" onchange="verificarLimiteGraficos(this)"> 3. Distribución por Lotes</label>
-                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="4" onchange="verificarLimiteGraficos(this)"> 4. Condición Corporal General</label>
-                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="5" onchange="verificarLimiteGraficos(this)"> 5. Causas de Vientre Vacío</label>
-                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="6" onchange="verificarLimiteGraficos(this)"> 6. Ratios de Sanidad Global</label>
-                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="7" onchange="verificarLimiteGraficos(this)"> 7. Preñez Eficaz por Lote</label>
-                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="8" onchange="verificarLimiteGraficos(this)"> 8. Eficacia por Toro</label>
-                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="9" onchange="verificarLimiteGraficos(this)"> 9. Promedios</label>
-                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="10" onchange="verificarLimiteGraficos(this)"> 10. Volumen</label>
-                            <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="11" onchange="verificarLimiteGraficos(this)"> 11. Causas de Baja / Mortalidad</label>
+                            <label class="check-container"><input type="checkbox" class="chk-graf" value="1" onchange="verificarLimiteGraficos(this)"> <span>1. Tasa de Preñez Dinámica</span></label>
+                            <label class="check-container"><input type="checkbox" class="chk-graf" value="2" onchange="verificarLimiteGraficos(this)"> <span>2. Composición de Hacienda</span></label>
+                            <label class="check-container"><input type="checkbox" class="chk-graf" value="3" onchange="verificarLimiteGraficos(this)"> <span>3. Distribución por Lotes</span></label>
+                            <label class="check-container"><input type="checkbox" class="chk-graf" value="4" onchange="verificarLimiteGraficos(this)"> <span>4. Condición Corporal General</span></label>
+                            <label class="check-container"><input type="checkbox" class="chk-graf" value="5" onchange="verificarLimiteGraficos(this)"> <span>5. Causas de Vientre Vacío</span></label>
+                            <label class="check-container"><input type="checkbox" class="chk-graf" value="6" onchange="verificarLimiteGraficos(this)"> <span>6. Ratios de Sanidad Global</span></label>
+                            <label class="check-container"><input type="checkbox" class="chk-graf" value="7" onchange="verificarLimiteGraficos(this)"> <span>7. Preñez Eficaz por Lote</span></label>
+                            <label class="check-container"><input type="checkbox" class="chk-graf" value="8" onchange="verificarLimiteGraficos(this)"> <span>8. Eficacia por Toro</span></label>
+                            <label class="check-container"><input type="checkbox" class="chk-graf" value="9" onchange="verificarLimiteGraficos(this)"> <span>9. Promedios</span></label>
+                            <label class="check-container"><input type="checkbox" class="chk-graf" value="10" onchange="verificarLimiteGraficos(this)"> <span>10. Volumen</span></label>
+                            <label class="check-container"><input type="checkbox" class="chk-graf" value="11" onchange="verificarLimiteGraficos(this)"> <span>11. Causas de Baja / Mortalidad</span></label>
                         </div>
                     </div>
                     
@@ -619,11 +633,9 @@
             if(rafagaActiva) {
                 btn.innerText = "ENCENDIDO"; btn.style.background = "var(--primary)"; btn.style.color = "white"; btn.style.borderColor = "var(--primary)";
                 opciones.classList.remove('oculto'); verificarRafagaCustom();
-                notificarPropietario(`🟢 ${usNombre} ha ACTIVADO el Modo Ráfaga masivo.`);
             } else {
                 btn.innerText = "APAGADO"; btn.style.background = "transparent"; btn.style.color = "var(--text-main)"; btn.style.borderColor = "var(--border)";
                 opciones.classList.add('oculto');
-                notificarPropietario(`🔴 ${usNombre} apagó el Modo Ráfaga.`);
             }
         };
 
@@ -659,11 +671,15 @@
                 const response = await fetch(url);
                 if (!response.ok) throw new Error("Error de conexión al servidor.");
                 const res = await response.json();
+                
+                // CORTINA DE HIERRO: BLOQUEO POR MANTENIMIENTO
+                if(res.mantenimiento) { throw new Error(res.mensaje); }
                 if(res.error) throw new Error(res.mensaje);
                 if(res.vencimiento && new Date() > new Date(res.vencimiento)) { throw new Error("Su licencia ha vencido."); }
                 
                 let dataLimpia = Array.isArray(res.data) ? res.data : [];
-                lsSet('tc_cred', { u: u, p: p, m: res.maestro, r: res.rol, v: res.vencimiento, n: res.nombre_completo, h: res.hacienda }); 
+                // GUARDAR TAMBIÉN LOS FEATURES EN CREDENCIALES
+                lsSet('tc_cred', { u: u, p: p, m: res.maestro, r: res.rol, v: res.vencimiento, n: res.nombre_completo, h: res.hacienda, f: res.features }); 
                 lsSet('tc_db', dataLimpia); 
                 lsSet('tc_hacienda', { nombre: res.hacienda, logo: res.logo }); 
                 
@@ -682,11 +698,8 @@
 
         function notificarPropietario(mensaje) {
             if(usRol.includes('Propietario') || usRol.includes('Dueño') || !navigator.onLine) return;
-            const fd = new URLSearchParams(); 
-            fd.append('accion', 'notificar_accion'); 
-            fd.append('maestro', maestroId); 
-            fd.append('mensaje', mensaje);
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).catch(e => console.error(e));
+            const fd = new URLSearchParams(); fd.append('accion', 'notificar_accion'); fd.append('maestro', maestroId); fd.append('mensaje', mensaje);
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' });
         }
 
         function arrancarSistema(datos, u, m, r, nombreCompleto, hacienda) {
@@ -762,6 +775,13 @@
                     lblLic.style.color = diffDias <= 7 ? "var(--danger)" : "var(--success)";
                 } else { lblLic.innerText = "Licencia Perpetua / Sin Límite"; }
                 
+                // MÓDULOS PREMIUM (FEATURE TOGGLES)
+                const featuresActivos = cred.f || "";
+                if(!featuresActivos.includes('rafaga')) {
+                    let bloqueRafaga = document.getElementById('tarjeta-rafaga');
+                    if (bloqueRafaga) bloqueRafaga.style.display = 'none';
+                }
+
                 const prefs = lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
                 const dGuardado = lsGet('tc_hacienda', {}); aplicarDisenoEnPantalla(dGuardado.nombre, dGuardado.logo);
                 
@@ -771,6 +791,7 @@
                 document.getElementById('pantalla-login').classList.add('oculto'); 
                 document.getElementById('sidebar').classList.remove('oculto'); 
                 document.getElementById('main-content').classList.remove('oculto');
+                document.getElementById('pantalla-mantenimiento').classList.add('oculto');
                 
                 if(tabSeleccionado) { cambiarVista(vistaInicial, tabSeleccionado); } else { cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4]); }
                 sincronizarPendientesAuto(); cargarListaOperadores();
@@ -794,6 +815,16 @@
 
             fetch(`${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(cred.u)}&password=${encodeURIComponent(cred.p)}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' })
             .then(r => r.json()).then(res => {
+                
+                // CORTINA DE HIERRO DEL KILL SWITCH
+                const pantMant = document.getElementById('pantalla-mantenimiento');
+                if(res.mantenimiento) {
+                    if(pantMant) pantMant.classList.remove('oculto');
+                    return; // Aborta la sincronización para proteger la BD
+                } else {
+                    if(pantMant) pantMant.classList.add('oculto');
+                }
+
                 if(!res.error) {
                     fusionarDatos(Array.isArray(res.data) ? res.data : []);
                     if(rpActivo && !document.getElementById('v-ficha').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
@@ -1253,25 +1284,24 @@
             btn.disabled = true;
 
             try {
-                let checkFetch = await fetch(`${GOOGLE_SHEETS_URL}?accion=verificar_usuario&usuario=${encodeURIComponent(u)}`);
+                let checkFetch = await fetch(`${GOOGLE_SHEETS_URL}?accion=verificar_usuario&usuario=${encodeURIComponent(u)}&maestro=${maestroId}`);
                 let checkResult = await checkFetch.json();
+                
                 if(checkResult.existe) {
-                    alert(`⚠️ El usuario de acceso "${u}" ya existe en el sistema global. Por favor, elija uno diferente (ej: ${u}_1, ${u}_apellido, etc).`);
-                    btn.innerHTML = btnOriginal;
-                    btn.disabled = false;
-                    return;
+                    alert(`⚠️ El usuario de acceso "${u}" ya existe. Por favor, elija uno diferente.`);
+                    btn.innerHTML = btnOriginal; btn.disabled = false; return;
+                }
+
+                if(checkResult.limite_alcanzado) {
+                    alert(`⛔ LÍMITE ALCANZADO: Su plan actual no le permite crear más operadores. Por favor, contacte a Administración para hacer un upgrade de su licencia.`);
+                    btn.innerHTML = btnOriginal; btn.disabled = false; return;
                 }
 
                 btn.innerHTML = "⏳ Registrando...";
                 const fd = new URLSearchParams(); 
-                fd.append('accion', 'crear_peon'); 
-                fd.append('maestro', maestroId); 
-                fd.append('usuario', usActivo); 
-                fd.append('peon_usu', u); 
-                fd.append('peon_pass', p); 
-                fd.append('peon_nombre', n); 
-                fd.append('vencimiento', 'Heredado');
-                fd.append('peon_rol', rolFinal); 
+                fd.append('accion', 'crear_peon'); fd.append('maestro', maestroId); fd.append('usuario', usActivo); 
+                fd.append('peon_usu', u); fd.append('peon_pass', p); fd.append('peon_nombre', n); 
+                fd.append('vencimiento', 'Heredado'); fd.append('peon_rol', rolFinal); 
                 
                 await fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' });
                 
@@ -1284,20 +1314,14 @@
                 fd2.append('usuario', usActivo);
                 fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd2, mode: 'no-cors' });
 
-                document.getElementById('op-nombre').value = ''; 
-                document.getElementById('op-usu').value = ''; 
-                document.getElementById('op-pass').value = ''; 
+                document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 
                 
-                btn.innerHTML = btnOriginal;
-                btn.disabled = false;
-                
-                cargarListaOperadores(); 
-                alert("Usuario Registrado Exitosamente.");
+                btn.innerHTML = btnOriginal; btn.disabled = false;
+                cargarListaOperadores(); alert("Usuario Registrado Exitosamente.");
                 setTimeout(() => { sincronizarFondo(false); }, 1500);
             } catch(e) {
                 alert("Hubo un error de conexión al verificar el usuario.");
-                btn.innerHTML = btnOriginal;
-                btn.disabled = false;
+                btn.innerHTML = btnOriginal; btn.disabled = false;
             }
         }
 
