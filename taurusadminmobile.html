@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Taurus Control - Master Admin Mobile</title>
     
-    <link rel="icon" href="gemini-svg.ico">
+    <link rel="icon" href="gemini-svg.png">
+    <link rel="apple-touch-icon" href="gemini-svg.png">
     <meta name="theme-color" content="#0f172a">
 
     <!-- LIBRERÍA SHEETJS PARA LEER EXCEL/CSV -->
@@ -16,7 +17,7 @@
             --bg-base: #0f172a; --bg-panel: #1e293b; --bg-card: #334155; 
             --border: #475569; --primary: #8b5cf6; 
             --success: #10b981; --warning: #f59e0b; --danger: #ef4444; 
-            --text-main: #f8fafc; --text-muted: #94a3b8; 
+            --text-main: #f8fafc; --text-muted: #94a3b8; --info: #3b82f6;
         }
 
         * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent;}
@@ -39,26 +40,36 @@
         .contenedor-scroll { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 90px; }
         
         .nav-inferior { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--bg-panel); display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid var(--border); z-index: 100; padding-bottom: env(safe-area-inset-bottom, 10px);}
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-muted); font-size: 10px; font-weight: bold; width: 25%; cursor: pointer;}
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-muted); font-size: 10px; font-weight: bold; width: 20%; cursor: pointer;}
         .nav-item.activo { color: var(--primary); }
-        .nav-icon { font-size: 22px; margin-bottom: 4px;}
+        .nav-icon { font-size: 20px; margin-bottom: 4px;}
 
         /* COMPONENTES */
         .tarjeta { background: var(--bg-panel); border-radius: 12px; padding: 20px; margin-bottom: 15px; border: 1px solid var(--border); }
         .tarjeta-titulo { font-size: 18px; font-weight: 900; margin: 0 0 15px 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; color: var(--primary); display: flex; align-items: center; gap: 8px;}
         
+        .kpi-grid { display: flex; gap: 10px; margin-bottom: 15px;}
+        .kpi-card { flex: 1; background: var(--bg-card); padding: 15px 10px; border-radius: 8px; border-top: 3px solid var(--primary); text-align: center;}
+        .kpi-card span { display: block; font-size: 10px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;}
+        .kpi-card strong { font-size: 24px; color: var(--text-main); line-height: 1;}
+
         .form-grupo { margin-bottom: 15px; }
         .form-grupo label { display: block; font-size: 11px; font-weight: bold; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase;}
         .form-control { width: 100%; padding: 12px; background: var(--bg-base); border: 1px solid var(--border); color: var(--text-main); border-radius: 8px; font-size: 14px; box-sizing: border-box; outline: none; }
         .form-control:focus { border-color: var(--primary); }
         
-        /* Fix de calendario para móviles */
+        /* Checkboxes Premium Móviles */
+        .check-container { display: flex; align-items: center; gap: 10px; background: var(--bg-base); padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; cursor: pointer;}
+        .check-container input { width: 18px; height: 18px; accent-color: var(--primary);}
+        .check-container span { font-size: 13px; font-weight: bold; color: var(--text-main); }
+        
         input[type="date"].form-control { -webkit-appearance: none; appearance: none; min-height: 44px; display: block; line-height: normal; font-family: inherit; }
         
         .btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; text-transform: uppercase; }
         .btn-success { background: var(--success); }
         .btn-warning { background: var(--warning); color: #fff;}
         .btn-danger { background: var(--danger); color: #fff;}
+        .btn-info { background: var(--info); color: #fff;}
         .btn-mini { padding: 10px 5px; font-size: 11px; border-radius: 6px; }
 
         .alerta-box { background: rgba(139, 92, 246, 0.1); border: 1px solid var(--primary); border-radius: 8px; padding: 15px; font-size: 12px; margin-bottom: 15px; line-height: 1.5; }
@@ -72,8 +83,8 @@
         .toast.mostrar { opacity: 1; }
         .toast.error { background: var(--danger); }
         
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .modal-body { background: var(--bg-panel); width: 100%; max-width: 400px; border-radius: 12px; padding: 25px; border: 1px solid var(--border); }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 15px; }
+        .modal-body { background: var(--bg-panel); width: 100%; max-width: 400px; border-radius: 12px; padding: 20px; border: 1px solid var(--border); max-height: 90vh; overflow-y: auto;}
     </style>
 </head>
 <body>
@@ -87,7 +98,7 @@
     <!-- PANTALLA LOGIN -->
     <div id="pantalla-login">
         <div class="login-box">
-            <img src="gemini-svg.ico" alt="Logo">
+            <img src="gemini-svg.png" alt="Logo">
             <h1>Taurus Admin</h1>
             <p>Panel Maestro Móvil (SaaS)</p>
             <div class="form-grupo"><input type="password" id="admin-pass" class="form-control" placeholder="Clave Maestra" style="text-align: center; letter-spacing: 2px;" autocomplete="off"></div>
@@ -100,13 +111,21 @@
     <div id="loading-overlay" class="oculto"><div class="spinner"></div><strong id="loading-text" style="color:white; font-size:16px;">Procesando...</strong></div>
     <div id="toast-msg" class="toast">Mensaje</div>
 
-    <!-- MODAL EDICIÓN -->
+    <!-- MODAL EDICIÓN CLIENTE -->
     <div id="modal-editar" class="modal oculto">
         <div class="modal-body">
-            <h3 style="margin-top:0; color:var(--primary); font-size:18px;">✏️ Editar Cliente</h3>
+            <h3 style="margin-top:0; color:var(--primary); font-size:18px; border-bottom:1px solid var(--border); padding-bottom:10px;">✏️ Editar Cliente</h3>
             <input type="hidden" id="edit-old-usu">
+            <div class="form-grupo"><label>Nombre y Apellido Titular</label><input type="text" id="edit-new-nombre" class="form-control"></div>
             <div class="form-grupo"><label>Nuevo Usuario Master</label><input type="text" id="edit-new-usu" class="form-control" autocapitalize="none"></div>
             <div class="form-grupo"><label>Nuevo Nombre Hacienda</label><input type="text" id="edit-new-hac" class="form-control"></div>
+            
+            <div class="form-grupo" style="margin-top:15px;">
+                <label style="color:var(--primary);">Módulos Habilitados</label>
+                <label class="check-container"><input type="checkbox" id="e-feat-rafaga"> <span>⚡ Modo Ráfaga (Balanza)</span></label>
+                <label class="check-container"><input type="checkbox" id="e-feat-bluetooth"> <span>📡 Conexión Bluetooth</span></label>
+            </div>
+
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button class="btn" style="background:var(--bg-card);" onclick="document.getElementById('modal-editar').classList.add('oculto')">Cancelar</button>
                 <button class="btn btn-success" onclick="guardarEdicion()">Guardar</button>
@@ -114,11 +133,34 @@
         </div>
     </div>
 
+    <!-- MODAL VER EQUIPO (PEONES) -->
+    <div id="modal-equipo" class="modal oculto">
+        <div class="modal-body">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px;">
+                <h3 style="margin:0; color:var(--info); font-size:16px;">👥 Operadores</h3>
+                <button class="btn" style="background:transparent; color:var(--text-muted); font-size:22px; padding:0; width:auto;" onclick="document.getElementById('modal-equipo').classList.add('oculto')">&times;</button>
+            </div>
+            <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 15px;">Hacienda: <strong id="lbl-equipo-hacienda" style="color:var(--text-main);">...</strong></p>
+            
+            <table style="width:100%; border-collapse: collapse; font-size:12px; text-align:left;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border); color:var(--text-muted); text-transform:uppercase; font-size:10px;">
+                        <th style="padding: 8px 0;">Usuario</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="tb-equipo">
+                    <tr><td colspan="2" style="text-align:center; color:var(--text-muted); padding:15px;">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- APP PRINCIPAL -->
     <div id="pantalla-app" class="oculto">
         <header class="cabecera">
-            <h1><img src="gemini-svg.ico" alt="Logo" style="width: 24px; height: 24px; border-radius: 6px;"> Admin</h1>
-            <div class="badge-estado">🟢 En Línea</div>
+            <h1><img src="gemini-svg.png" alt="Logo" style="width: 24px; height: 24px; border-radius: 6px;"> Admin</h1>
+            <div id="badge-top-status" class="badge-estado">🟢 En Línea</div>
         </header>
 
         <div class="contenedor-scroll">
@@ -126,21 +168,35 @@
             <!-- VISTA: ALTA -->
             <div id="v-nuevo" class="vista">
                 <div class="tarjeta">
-                    <h2 class="tarjeta-titulo">🚀 Alta de Cliente</h2>
-                    <div class="form-grupo"><label>Usuario Master (Login)</label><input type="text" id="n-usu" class="form-control" autocapitalize="none"></div>
-                    <div class="form-grupo"><label>Hacienda (Nombre Comercial)</label><input type="text" id="n-hacienda" class="form-control"></div>
-                    <div class="form-grupo"><label>Contraseña de Acceso</label><input type="text" id="n-pass" class="form-control" autocapitalize="none"></div>
-                    <div class="form-grupo"><label>Vencimiento de Licencia</label><input type="date" id="n-venc" class="form-control"></div>
-                    <button class="btn btn-success" style="margin-top:10px;" onclick="crearCliente()">⚡ Desplegar Cliente</button>
+                    <h2 class="tarjeta-titulo">🚀 Alta de Cuenta SaaS</h2>
+                    <div class="form-grupo"><label>Nombre y Apellido *</label><input type="text" id="n-nombre" class="form-control"></div>
+                    <div class="form-grupo"><label>Hacienda Comercial *</label><input type="text" id="n-hacienda" class="form-control"></div>
+                    <div class="form-grupo"><label>Usuario Login *</label><input type="text" id="n-usu" class="form-control" autocapitalize="none"></div>
+                    <div class="form-grupo"><label>Contraseña *</label><input type="text" id="n-pass" class="form-control" autocapitalize="none"></div>
+                    <div class="form-grupo"><label>Vencimiento Licencia *</label><input type="date" id="n-venc" class="form-control"></div>
+                    
+                    <div class="form-grupo" style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;">
+                        <label style="color:var(--primary);">Paquete Habilitado</label>
+                        <label class="check-container"><input type="checkbox" id="n-feat-rafaga" checked> <span>⚡ Modo Ráfaga</span></label>
+                        <label class="check-container"><input type="checkbox" id="n-feat-bluetooth"> <span>📡 Conexión Bluetooth</span></label>
+                    </div>
+
+                    <button class="btn btn-success" style="margin-top:10px;" onclick="crearCliente()">⚡ Crear Cuenta</button>
                 </div>
             </div>
 
-            <!-- VISTA: GESTIÓN (LISTA DE CLIENTES) -->
+            <!-- VISTA: GESTIÓN (LISTA DE CLIENTES Y KPIS) -->
             <div id="v-licencias" class="vista oculto">
+                <div class="kpi-grid">
+                    <div class="kpi-card" style="border-top-color: var(--primary);"><span>Cuentas</span><strong id="kpi-total">0</strong></div>
+                    <div class="kpi-card" style="border-top-color: var(--success);"><span>Activas</span><strong id="kpi-activas" style="color:var(--success);">0</strong></div>
+                    <div class="kpi-card" style="border-top-color: var(--danger);"><span>Vencidas</span><strong id="kpi-vencidas" style="color:var(--danger);">0</strong></div>
+                </div>
+
                 <div class="tarjeta" style="background: transparent; border: none; padding: 0; box-shadow: none;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h2 class="tarjeta-titulo" style="margin: 0; border: none; padding: 0;">🔑 Gestión SaaS</h2>
-                        <button class="btn btn-mini" style="background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border);" onclick="cargarClientes()">🔄 Sync</button>
+                        <h2 class="tarjeta-titulo" style="margin: 0; border: none; padding: 0;">🔑 Monitor SaaS</h2>
+                        <button class="btn btn-mini" style="background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border); width: auto;" onclick="cargarClientes()">🔄 Sync</button>
                     </div>
                     <div id="lista-clientes"></div>
                 </div>
@@ -149,14 +205,13 @@
             <!-- VISTA: CARGA MASIVA -->
             <div id="v-masiva" class="vista oculto">
                 <div class="tarjeta">
-                    <h2 class="tarjeta-titulo">📦 Importar CSV/Excel</h2>
-                    <div class="alerta-box">El sistema leerá cualquier archivo Excel (.xlsx) o CSV para asociar columnas.</div>
+                    <h2 class="tarjeta-titulo">📦 Importar Excel</h2>
+                    <div class="alerta-box">Selecciona un archivo Excel (.xlsx) o CSV. Soporte para miles de cabezas en bloques.</div>
                     <div class="form-grupo"><label>1. Destino (Cliente)</label><select id="sel-cliente-masiva" class="form-control" style="font-weight: bold;"><option value="">-- Sincroniza primero --</option></select></div>
-                    <div class="form-grupo"><label>2. Seleccionar Archivo</label><input type="file" id="archivo-excel" class="form-control" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style="padding: 10px; background: var(--bg-card);"></div>
+                    <div class="form-grupo"><label>2. Archivo (Local/Drive)</label><input type="file" id="archivo-excel" class="form-control" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style="padding: 10px; background: var(--bg-card);"></div>
                     <button class="btn btn-warning" style="margin-top:10px;" onclick="leerArchivoInteligente()">📄 Leer Archivo</button>
                 </div>
 
-                <!-- PANEL DE MAPEO -->
                 <div id="panel-mapeo" class="tarjeta oculto" style="border-color: var(--success); background: rgba(16, 185, 129, 0.05);">
                     <h3 style="margin-top:0; color:var(--success);">✅ Columnas Detectadas</h3>
                     <div class="form-grupo"><label>CARAVANA (RP) *</label><select id="map-caravana" class="form-control" style="border-color: var(--primary);"></select></div>
@@ -166,72 +221,116 @@
                 </div>
             </div>
 
+            <!-- VISTA: CONFIGURACIÓN Y KILL SWITCH -->
+            <div id="v-config" class="vista oculto">
+                <div class="tarjeta" style="border-color: var(--danger);">
+                    <h2 class="tarjeta-titulo" style="color:var(--danger); border-bottom-color:var(--danger);">⚠️ Kill Switch</h2>
+                    <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Inutiliza inmediatamente las apps de los clientes por mantenimiento de servidor.</p>
+                    
+                    <div style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid rgba(239, 68, 68, 0.3);">
+                        <strong style="display:block; margin-bottom:15px; font-size:14px;">Estado: <span id="lbl-status-mantenimiento">Cargando...</span></strong>
+                        <button class="btn btn-danger" id="btn-toggle-mant" onclick="toggleMantenimiento('ON')">🔴 BLOQUEAR SISTEMA</button>
+                        <button class="btn btn-success oculto" id="btn-toggle-rest" onclick="toggleMantenimiento('OFF')">🟢 RESTAURAR SERVICIO</button>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <nav class="nav-inferior">
             <div class="nav-item activo" onclick="cambiarVista('v-nuevo', this)"><span class="nav-icon">🚀</span>Alta</div>
-            <div class="nav-item" onclick="cambiarVista('v-licencias', this); cargarClientes();"><span class="nav-icon">🔑</span>Gestión</div>
+            <div class="nav-item" onclick="cambiarVista('v-licencias', this); cargarClientes();"><span class="nav-icon">🔑</span>Monitor</div>
             <div class="nav-item" onclick="cambiarVista('v-masiva', this); cargarClientesMasiva();"><span class="nav-icon">📦</span>Excel</div>
+            <div class="nav-item" onclick="cambiarVista('v-config', this); checkStatusInicial();"><span class="nav-icon">⚙️</span>Global</div>
             <div class="nav-item" onclick="cerrarSesion()"><span class="nav-icon" style="color: var(--danger);">🚪</span>Salir</div>
         </nav>
     </div>
 
     <script>
+        // ==========================================
+        // UI & NAVEGACIÓN
+        // ==========================================
         function ingresarAdmin() {
             if(document.getElementById('admin-pass').value === "master2026") { 
                 document.getElementById('pantalla-login').classList.add('oculto');
                 document.getElementById('pantalla-app').classList.remove('oculto');
                 mostrarToast("✅ Sesión Iniciada");
+                checkStatusInicial();
             } else { mostrarToast("❌ Contraseña Incorrecta", true); }
         }
 
-        function cerrarSesion() {
-            document.getElementById('admin-pass').value = '';
-            document.getElementById('pantalla-app').classList.add('oculto');
-            document.getElementById('pantalla-login').classList.remove('oculto');
+        function cerrarSesion() { document.getElementById('admin-pass').value = ''; document.getElementById('pantalla-app').classList.add('oculto'); document.getElementById('pantalla-login').classList.remove('oculto'); }
+        function cambiarVista(id, btn) { document.querySelectorAll('.vista').forEach(v => v.classList.add('oculto')); document.getElementById(id).classList.remove('oculto'); document.querySelectorAll('.nav-item').forEach(l => l.classList.remove('activo')); btn.classList.add('activo'); }
+        function toggleLoading(show, text="Procesando...") { document.getElementById('loading-text').innerText = text; document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; }
+        function mostrarToast(mensaje, esError = false) { const toast = document.getElementById('toast-msg'); toast.innerText = mensaje; if(esError) toast.classList.add('error'); else toast.classList.remove('error'); toast.classList.add('mostrar'); setTimeout(() => { toast.classList.remove('mostrar'); }, 3000); }
+
+        // ==========================================
+        // KILL SWITCH (MANTENIMIENTO)
+        // ==========================================
+        function checkStatusInicial() {
+            fetch(`${GOOGLE_SHEETS_URL}?accion=check_mantenimiento&t=${Date.now()}`).then(res => res.json()).then(res => { actualizarUIKillSwitch(res.mantenimiento ? 'ON' : 'OFF'); }).catch(()=>{});
         }
 
-        function cambiarVista(id, btn) {
-            document.querySelectorAll('.vista').forEach(v => v.classList.add('oculto'));
-            document.getElementById(id).classList.remove('oculto');
-            document.querySelectorAll('.nav-item').forEach(l => l.classList.remove('activo'));
-            btn.classList.add('activo');
+        function actualizarUIKillSwitch(estado) {
+            const btnMant = document.getElementById('btn-toggle-mant'); const btnRest = document.getElementById('btn-toggle-rest');
+            const lblStatus = document.getElementById('lbl-status-mantenimiento'); const badgeTop = document.getElementById('badge-top-status');
+
+            if(estado === 'ON') {
+                btnMant.classList.add('oculto'); btnRest.classList.remove('oculto');
+                lblStatus.innerText = "BLOQUEADO (MANTENIMIENTO)"; lblStatus.style.color = "var(--danger)";
+                badgeTop.innerText = "🔴 BLOQUEADO"; badgeTop.style.background = "rgba(239,68,68,0.1)"; badgeTop.style.color = "var(--danger)"; badgeTop.style.borderColor = "var(--danger)";
+            } else {
+                btnRest.classList.add('oculto'); btnMant.classList.remove('oculto');
+                lblStatus.innerText = "OPERATIVO (EN LÍNEA)"; lblStatus.style.color = "var(--success)";
+                badgeTop.innerText = "🟢 EN LÍNEA"; badgeTop.style.background = "rgba(16,185,129,0.1)"; badgeTop.style.color = "var(--success)"; badgeTop.style.borderColor = "var(--success)";
+            }
         }
 
-        function toggleLoading(show, text="Procesando...") {
-            document.getElementById('loading-text').innerText = text;
-            document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
-        }
-
-        function mostrarToast(mensaje, esError = false) {
-            const toast = document.getElementById('toast-msg');
-            toast.innerText = mensaje;
-            if(esError) toast.classList.add('error'); else toast.classList.remove('error');
-            toast.classList.add('mostrar');
-            setTimeout(() => { toast.classList.remove('mostrar'); }, 3000);
+        function toggleMantenimiento(nuevoEstado) {
+            if(nuevoEstado === 'ON' && !confirm("⚠️ ¿Desconectar a todos los clientes del sistema?")) return;
+            toggleLoading(true, "Transmitiendo orden...");
+            const fd = new URLSearchParams(); fd.append('accion', 'toggle_mantenimiento'); fd.append('estado', nuevoEstado);
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { toggleLoading(false); actualizarUIKillSwitch(nuevoEstado); mostrarToast(`✅ Sistema: ${nuevoEstado}`); }).catch(() => { toggleLoading(false); mostrarToast("❌ Error", true); });
         }
 
         // ==========================================
-        // ALTA CLIENTE
+        // ALTA Y EDICIÓN DE CLIENTES SAAS
         // ==========================================
+        function getFeatures(prefijo) {
+            let features = [];
+            if(document.getElementById(`${prefijo}-feat-rafaga`).checked) features.push('rafaga');
+            if(document.getElementById(`${prefijo}-feat-bluetooth`).checked) features.push('bluetooth');
+            return features.join(',');
+        }
+
+        function setFeatures(featuresStr) {
+            let f = String(featuresStr||"");
+            document.getElementById('e-feat-rafaga').checked = f.includes('rafaga');
+            document.getElementById('e-feat-bluetooth').checked = f.includes('bluetooth');
+        }
+
         function crearCliente() {
-            const u = document.getElementById('n-usu').value.trim(), p = document.getElementById('n-pass').value.trim(), v = document.getElementById('n-venc').value, h = document.getElementById('n-hacienda').value.trim();
-            if(!u || !p || !v || !h) return mostrarToast("⚠️ Complete todos los campos", true);
+            const nom = document.getElementById('n-nombre').value.trim(), u = document.getElementById('n-usu').value.trim(), p = document.getElementById('n-pass').value.trim(), v = document.getElementById('n-venc').value, h = document.getElementById('n-hacienda').value.trim();
+            if(!u || !p || !v || !h || !nom) return mostrarToast("⚠️ Complete todos los campos", true);
+            const feats = getFeatures('n');
+            
             toggleLoading(true, "Generando BD...");
-            const fd = new URLSearchParams(); fd.append('accion', 'crear_cliente_nuevo'); fd.append('nuevo_usu', u); fd.append('nuevo_pass', p); fd.append('vencimiento', v); fd.append('nombre_hacienda', h);
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { toggleLoading(false); mostrarToast("✅ Cliente creado exitosamente"); document.getElementById('n-usu').value=''; document.getElementById('n-pass').value=''; document.getElementById('n-venc').value=''; document.getElementById('n-hacienda').value=''; clientesCache=[]; }).catch(() => { toggleLoading(false); mostrarToast("❌ Error de red", true); });
+            const fd = new URLSearchParams(); fd.append('accion', 'crear_cliente_nuevo'); fd.append('nombre_completo', nom); fd.append('nuevo_usu', u); fd.append('nuevo_pass', p); fd.append('vencimiento', v); fd.append('nombre_hacienda', h); fd.append('features', feats);
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { toggleLoading(false); mostrarToast("✅ Cliente creado exitosamente"); document.getElementById('n-nombre').value=''; document.getElementById('n-usu').value=''; document.getElementById('n-pass').value=''; document.getElementById('n-venc').value=''; document.getElementById('n-hacienda').value=''; clientesCache=[]; }).catch(() => { toggleLoading(false); mostrarToast("❌ Error de red", true); });
         }
 
-        // ==========================================
-        // GESTIÓN (LEER, EDIT, DEL, PASS, VENC)
-        // ==========================================
         function cargarClientes() {
             toggleLoading(true, "Sincronizando...");
             fetch(`${GOOGLE_SHEETS_URL}?accion=listar_clientes&t=${Date.now()}`).then(res => res.json()).then(res => {
-                toggleLoading(false);
-                if(res.error) return mostrarToast("❌ Error al leer", true);
-                clientesCache = res.data; renderizarTarjetasClientes(); renderizarSelectMasiva();
+                toggleLoading(false); if(res.error) return mostrarToast("❌ Error al leer", true);
+                clientesCache = res.data; renderizarTarjetasClientes(); renderizarSelectMasiva(); calcularKPISaaS();
             }).catch(() => { toggleLoading(false); mostrarToast("❌ Falló conexión", true); });
+        }
+
+        function calcularKPISaaS() {
+            let total = clientesCache.length; let activas = 0; let vencidas = 0; let hoy = new Date();
+            clientesCache.forEach(c => { if(!c.vencimiento) { activas++; return; } let d = new Date(c.vencimiento); if(d >= hoy) activas++; else vencidas++; });
+            document.getElementById('kpi-total').innerText = total; document.getElementById('kpi-activas').innerText = activas; document.getElementById('kpi-vencidas').innerText = vencidas;
         }
 
         function renderizarTarjetasClientes() {
@@ -239,18 +338,37 @@
             if(clientesCache.length === 0) { cont.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted); background: var(--bg-panel); border-radius: 12px; border: 1px solid var(--border);">No hay clientes registrados.</div>'; return; }
 
             clientesCache.forEach(c => {
-                let f = c.vencimiento ? new Date(c.vencimiento).toISOString().split('T')[0] : '';
+                let d = c.vencimiento ? new Date(c.vencimiento) : null;
+                let fechaFormato = ""; 
+                if(d && !isNaN(d.getTime())) {
+                    let offset = d.getTimezoneOffset() * 60000;
+                    let localDate = new Date(d.getTime() - offset);
+                    fechaFormato = localDate.toISOString().split('T')[0];
+                }
+
+                let featBadges = ""; let fc = String(c.features||"");
+                if(fc.includes('rafaga')) featBadges += `<span style="background:var(--bg-card); padding:3px 8px; border-radius:4px; font-size:10px; margin-right:5px; border:1px solid var(--border);">⚡ Ráfaga</span>`;
+                if(fc.includes('bluetooth')) featBadges += `<span style="background:rgba(59,130,246,0.1); color:#60a5fa; padding:3px 8px; border-radius:4px; font-size:10px; border:1px solid rgba(59,130,246,0.3);">📡 BT</span>`;
+                if(featBadges === "") featBadges = `<span style="font-size:10px; color:var(--text-muted);">Básico</span>`;
+
                 cont.innerHTML += `
                     <div class="tarjeta" style="padding: 15px; border-left: 4px solid var(--primary);">
-                        <div><strong style="color:var(--primary); font-size:16px;">${c.usuario}</strong><div style="font-weight:bold; font-size:14px; margin-top:3px; color:var(--text-main);">${c.hacienda}</div><div style="font-size:10px; color:var(--text-muted); margin-top:4px;">ID: ${c.idPlanilla || 'Falta ID'}</div></div>
-                        <div class="form-grupo" style="margin-top: 15px; margin-bottom: 0;">
-                            <label>Vencimiento</label>
-                            <input type="date" id="venc-${c.usuario}" class="form-control" value="${f}" style="width: 100%; box-sizing: border-box; padding: 12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                            <div>
+                                <strong style="color:var(--text-main); font-size:15px;">${c.nombre || "Sin Nombre"}</strong><br>
+                                <span style="color:var(--primary); font-size:12px; font-weight:bold;">@${c.usuario}</span>
+                                <div style="font-weight:bold; font-size:13px; margin-top:5px; color:var(--text-muted);">${c.hacienda}</div>
+                            </div>
+                            <button class="btn btn-info btn-mini" style="width:auto; padding:6px 10px;" onclick="verEquipo('${c.usuario}', '${c.hacienda}')">👥</button>
                         </div>
-                        <div style="display: flex; gap: 5px; margin-top: 15px;">
-                            <button class="btn btn-success btn-mini" style="flex: 1;" onclick="actualizarVencimiento('${c.usuario}')">💾 Venc</button>
+                        <div style="margin-top: 10px; margin-bottom: 10px;">${featBadges}</div>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <input type="date" id="venc-${c.usuario}" class="form-control" value="${fechaFormato}" style="flex:1; padding: 10px; font-size:12px;">
+                            <button class="btn btn-success" style="width:auto; padding: 10px;" onclick="actualizarVencimiento('${c.usuario}')">💾</button>
+                        </div>
+                        <div style="display: flex; gap: 5px; margin-top: 10px;">
                             <button class="btn btn-mini" style="flex: 1; background: #475569;" onclick="cambiarClaveCliente('${c.usuario}')">🔑 Pass</button>
-                            <button class="btn btn-mini" style="flex: 1; background: #2563eb;" onclick="abrirEdicion('${c.usuario}', '${c.hacienda}')">✏️ Edit</button>
+                            <button class="btn btn-mini" style="flex: 1; background: #2563eb;" onclick="abrirEdicion('${c.usuario}', '${c.hacienda}', '${c.features||""}', '${c.nombre||""}')">✏️ Edit</button>
                             <button class="btn btn-danger btn-mini" style="flex: 1;" onclick="borrarCliente('${c.usuario}')">🗑️ Del</button>
                         </div>
                     </div>`;
@@ -260,11 +378,11 @@
         function actualizarVencimiento(usu) {
             const nf = document.getElementById(`venc-${usu}`).value; if(!nf) return mostrarToast("⚠️ Falta fecha", true);
             toggleLoading(true, "Guardando..."); const fd = new URLSearchParams(); fd.append('accion', 'actualizar_vencimiento'); fd.append('target_usu', usu); fd.append('nueva_fecha', nf);
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { toggleLoading(false); mostrarToast("✅ Actualizado"); }).catch(() => { toggleLoading(false); mostrarToast("❌ Error", true); });
+            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { toggleLoading(false); mostrarToast("✅ Actualizado"); cargarClientes(); }).catch(() => { toggleLoading(false); mostrarToast("❌ Error", true); });
         }
 
         function cambiarClaveCliente(usu) {
-            const nc = prompt(`Nueva clave para "${usu}":`); if(!nc) return; if(nc.trim().length < 4) return mostrarToast("⚠️ Mín 4 caracteres", true);
+            const nc = prompt(`Nueva clave maestra para "${usu}":`); if(!nc) return; if(nc.trim().length < 4) return mostrarToast("⚠️ Mín 4 caracteres", true);
             toggleLoading(true, "Cambiando..."); const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usu); fd.append('nuevo_pass', nc.trim());
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { toggleLoading(false); mostrarToast("✅ Clave guardada"); }).catch(() => { toggleLoading(false); mostrarToast("❌ Error", true); });
         }
@@ -275,25 +393,38 @@
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { toggleLoading(false); mostrarToast("✅ Cliente Eliminado"); cargarClientes(); }).catch(() => { toggleLoading(false); mostrarToast("❌ Error", true); });
         }
 
-        function abrirEdicion(usu, hac) {
-            document.getElementById('edit-old-usu').value = usu;
-            document.getElementById('edit-new-usu').value = usu;
-            document.getElementById('edit-new-hac').value = hac;
-            document.getElementById('modal-editar').classList.remove('oculto');
+        function abrirEdicion(usu, hac, feats, nom) {
+            document.getElementById('edit-old-usu').value = usu; document.getElementById('edit-new-usu').value = usu; document.getElementById('edit-new-hac').value = hac; document.getElementById('edit-new-nombre').value = nom;
+            setFeatures(feats); document.getElementById('modal-editar').classList.remove('oculto');
         }
 
         function guardarEdicion() {
-            const o = document.getElementById('edit-old-usu').value, nu = document.getElementById('edit-new-usu').value.trim(), nh = document.getElementById('edit-new-hac').value.trim();
-            if(!nu || !nh) return mostrarToast("⚠️ Completa los campos", true);
-            toggleLoading(true, "Editando..."); const fd = new URLSearchParams(); fd.append('accion', 'editar_cliente'); fd.append('old_usu', o); fd.append('new_usu', nu); fd.append('new_hac', nh);
+            const o = document.getElementById('edit-old-usu').value, nu = document.getElementById('edit-new-usu').value.trim(), nh = document.getElementById('edit-new-hac').value.trim(), nom = document.getElementById('edit-new-nombre').value.trim();
+            if(!nu || !nh || !nom) return mostrarToast("⚠️ Completa los campos", true);
+            const fts = getFeatures('e');
+            toggleLoading(true, "Editando..."); const fd = new URLSearchParams(); fd.append('accion', 'editar_cliente'); fd.append('old_usu', o); fd.append('new_usu', nu); fd.append('new_hac', nh); fd.append('nombre_completo', nom); fd.append('features', fts);
             fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { toggleLoading(false); document.getElementById('modal-editar').classList.add('oculto'); mostrarToast("✅ Cliente Editado"); cargarClientes(); }).catch(() => { toggleLoading(false); mostrarToast("❌ Error", true); });
+        }
+
+        function verEquipo(maestroId, haciendaName) {
+            document.getElementById('lbl-equipo-hacienda').innerText = haciendaName;
+            document.getElementById('tb-equipo').innerHTML = '<tr><td colspan="2" style="text-align:center; color:var(--text-muted); padding:15px;">Buscando...</td></tr>';
+            document.getElementById('modal-equipo').classList.remove('oculto');
+
+            fetch(`${GOOGLE_SHEETS_URL}?accion=listar_operadores&maestro=${encodeURIComponent(maestroId)}&t=${Date.now()}`)
+            .then(res => res.json())
+            .then(res => {
+                const tb = document.getElementById('tb-equipo'); tb.innerHTML = '';
+                if(res.error || !res.data || res.data.length === 0) { tb.innerHTML = '<tr><td colspan="2" style="text-align:center; color:var(--text-muted); padding:15px;">Sin operadores.</td></tr>'; return; }
+                res.data.forEach(op => { tb.innerHTML += `<tr><td style="padding: 10px 0; font-weight:bold; color:var(--primary);">@${op}</td><td><span style="color:var(--success); font-weight:bold; font-size:11px;">Activo</span></td></tr>`; });
+            }).catch(() => { document.getElementById('tb-equipo').innerHTML = '<tr><td colspan="2" style="text-align:center; color:var(--danger); padding:15px;">Error de carga.</td></tr>'; });
         }
 
         // ==========================================
         // EXCEL SHEETJS IMPORT MASIVA
         // ==========================================
         function cargarClientesMasiva() { if(clientesCache.length === 0) cargarClientes(); else renderizarSelectMasiva(); }
-        function renderizarSelectMasiva() { const sel = document.getElementById('sel-cliente-masiva'); sel.innerHTML = '<option value="">-- Elija destino --</option>'; clientesCache.forEach(c => { if(c.idPlanilla) sel.innerHTML += `<option value="${c.idPlanilla}">${c.hacienda} (${c.usuario})</option>`; }); }
+        function renderizarSelectMasiva() { const sel = document.getElementById('sel-cliente-masiva'); sel.innerHTML = '<option value="">-- Elija destino --</option>'; clientesCache.forEach(c => { if(c.idPlanilla) sel.innerHTML += `<option value="${c.idPlanilla}">${c.hacienda} (@${c.usuario})</option>`; }); }
 
         function leerArchivoInteligente() {
             const id = document.getElementById('sel-cliente-masiva').value, fi = document.getElementById('archivo-excel');
@@ -312,7 +443,7 @@
             }; reader.readAsArrayBuffer(fi.files[0]);
         }
 
-        function llenarSelect(id, h, opc) { const s = document.getElementById(id); s.innerHTML = opc ? '<option value="">-- Omitir (Asignar "-") --</option>' : '<option value="">-- Selecciona columna --</option>'; h.forEach(x => { s.innerHTML += `<option value="${x}">${x}</option>`; }); }
+        function llenarSelect(id, h, opc) { const s = document.getElementById(id); s.innerHTML = opc ? '<option value="">-- Omitir --</option>' : '<option value="">-- Columna --</option>'; h.forEach(x => { s.innerHTML += `<option value="${x}">${x}</option>`; }); }
 
         function procesarMapeoEInyectar() {
             const cC = document.getElementById('map-caravana').value, cCa = document.getElementById('map-categoria').value, cL = document.getElementById('map-lote').value, id = document.getElementById('sel-cliente-masiva').value;
@@ -323,13 +454,22 @@
                 if(vC !== undefined && String(vC).trim() !== "") batch.push({ fecha: fh, caravana: String(vC).trim(), categoria: cCa && f[cCa] ? String(f[cCa]).trim() : "-", lote: cL && f[cL] ? String(f[cL]).trim() : "Hacienda General" });
             });
             if(batch.length === 0) return mostrarToast("❌ Datos inválidos", true);
-            if(confirm(`Preparados ${batch.length} animales.\n¿Inyectar a la base de datos?`)) { document.getElementById('panel-mapeo').classList.add('oculto'); enviarCarga(id, batch); }
+            if(confirm(`Preparados ${batch.length} animales.\n¿Inyectar a la base de datos?`)) { document.getElementById('panel-mapeo').classList.add('oculto'); enviarCargaEnBloques(id, batch); }
         }
 
-        function enviarCarga(id, arr) {
-            toggleLoading(true, "Inyectando masivamente...");
-            const fd = new URLSearchParams(); fd.append('accion', 'carga_masiva'); fd.append('id_planilla', id); fd.append('datos', JSON.stringify(arr));
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { toggleLoading(false); mostrarToast("✅ Inyección exitosa"); document.getElementById('archivo-excel').value=''; datosArchivoCrudo=[]; }).catch(() => { toggleLoading(false); mostrarToast("❌ Error de red", true); });
+        async function enviarCargaEnBloques(idPlanilla, dataArray) {
+            const chunkSize = 500;
+            const selectOptions = document.getElementById('sel-cliente-masiva').options;
+            const textoCliente = selectOptions[document.getElementById('sel-cliente-masiva').selectedIndex].text;
+            const maestroId = textoCliente.substring(textoCliente.indexOf('(@') + 2, textoCliente.indexOf(')'));
+            
+            for (let i = 0; i < dataArray.length; i += chunkSize) {
+                const chunk = dataArray.slice(i, i + chunkSize);
+                toggleLoading(true, `Inyectando bloque ${Math.ceil((i+1)/chunkSize)} de ${Math.ceil(dataArray.length/chunkSize)}...`);
+                const fd = new URLSearchParams(); fd.append('accion', 'carga_masiva'); fd.append('id_planilla', idPlanilla); fd.append('maestro', maestroId); fd.append('datos', JSON.stringify(chunk));
+                try { await fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }); } catch (e) { toggleLoading(false); mostrarToast(`❌ Error inyectando bloque`, true); return; }
+            }
+            toggleLoading(false); mostrarToast("✅ Importación completada"); document.getElementById('archivo-excel').value=''; datosArchivoCrudo=[];
         }
     </script>
 </body>
