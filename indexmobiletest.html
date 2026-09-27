@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Taurus Control - FIREBASE TEST</title>
+    
+    <meta name="theme-color" content="#0f172a">
+    
+    <!-- LIBRERÍAS DE FIREBASE (Versión Compat para integración directa en HTML) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root { --primario: #0f172a; --secundario: #3b82f6; --exito: #10b981; --alerta: #f59e0b; --peligro: #ef4444; --borde: #334155; --texto: #f8fafc; --muted: #94a3b8; }
+        
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; color: var(--texto); background: #1e293b; min-height: 100vh; -webkit-tap-highlight-color: transparent; }
+        .oculto { display: none !important; }
+        
+        /* PANTALLA LOGIN */
+        #pantalla-login { display: flex; align-items: center; justify-content: center; height: 100vh; width: 100%; flex-direction: column; background: var(--primario); position: fixed; top:0; left:0; z-index:9999;}
+        .login-contenedor { background: #1e293b; border-radius: 16px; padding: 40px 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 90%; max-width: 360px; text-align: center; border: 1px solid var(--borde);}
+        .titulo-login { font-size: 24px; font-weight: 900; margin-bottom: 30px; color: var(--texto); }
+        .form-control-login { width: 100%; padding: 15px; border: 1px solid var(--borde); border-radius: 8px; font-size: 16px; margin-bottom: 15px; text-align: center; background: #0f172a; color: var(--texto); outline: none;}
+        .form-control-login:focus { border-color: var(--secundario); }
+        .btn-ingresar { width: 100%; background: var(--secundario); color: white; border: none; padding: 15px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s;}
+        .error-msj { color: var(--peligro); font-size: 14px; margin-bottom: 10px; display: none; font-weight: bold; }
+
+        /* APP PRINCIPAL */
+        #pantalla-app { padding-bottom: 80px; width: 100%; }
+        .cabecera { background-color: #0f172a; color: var(--texto); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--borde); position: sticky; top: 0; z-index: 100;}
+        .cabecera h1 { margin: 0; font-size: 20px; }
+        .badge-estado { font-size: 12px; background: var(--exito); padding: 5px 12px; border-radius: 20px; font-weight: bold; color: white; transition: 0.3s; }
+        .badge-estado.offline { background: var(--peligro); }
+        
+        .contenedor { padding: 15px; max-width: 800px; margin: 0 auto; }
+        .tarjeta { background: #0f172a; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--borde); box-shadow: 0 4px 6px rgba(0,0,0,0.3);}
+        
+        .grid-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .kpi-caja { background: #1e293b; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--borde);}
+        .kpi-valor { font-size: 26px; font-weight: 900; color: var(--secundario); margin: 5px 0; }
+        .kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: bold;}
+        
+        .buscador-contenedor { display: flex; gap: 10px; margin-bottom: 15px; align-items: stretch;}
+        .buscador-input { flex: 1; padding: 12px; border: 2px solid var(--borde); border-radius: 8px; font-size: 16px; font-weight: bold; background: #0f172a; color: var(--texto); outline: none;}
+        .buscador-btn { background: var(--secundario); color: white; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold;}
+
+        .perfil-cabecera { text-align: center; margin-bottom: 20px;}
+        .perfil-id { font-size: 40px; font-weight: 900; letter-spacing: 2px; line-height: 1; color: var(--texto);}
+        
+        .grid-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 10px; }
+        .dato-min { background: #1e293b; padding: 10px; border-radius: 8px; border: 1px solid var(--borde);}
+        .dato-min span { display: block; font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: bold; margin-bottom: 4px;}
+        .dato-min strong { font-size: 18px; color: var(--texto);}
+
+        .grid-acciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap: 10px; margin-top:20px;}
+        .btn-accion { background: #1e293b; border: 1px solid var(--borde); padding: 10px; border-radius: 12px; font-weight: bold; color: var(--texto); font-size: 14px; text-align: center; cursor: pointer;}
+        
+        .nav-inferior { position: fixed; bottom: 0; left: 0; width: 100%; background: #0f172a; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid var(--borde); z-index: 100;}
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); font-size: 12px; font-weight: bold; width: 50%; cursor: pointer;}
+        .nav-item.activo { color: var(--secundario); }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 200; align-items: center; justify-content: center;}
+        .modal-body { background: #0f172a; width: 92%; max-width: 400px; border-radius: 20px; padding: 25px; border: 1px solid var(--borde);}
+        .form-control { width: 100%; padding: 12px; border: 1px solid var(--borde); border-radius: 8px; font-size: 16px; background: #1e293b; color: var(--texto); outline:none; margin-bottom: 15px;}
+        .btn-guardar { width: 100%; background: var(--secundario); color: white; padding: 15px; border-radius: 8px; border: none; font-weight: bold;}
+        .cerrar { float: right; font-size: 24px; color: var(--muted); cursor: pointer;}
+    </style>
+</head>
+<body>
+
+    <!-- PANTALLA DE INICIO DE SESIÓN -->
+    <div id="pantalla-login">
+        <div class="login-contenedor">
+            <div class="titulo-login">Taurus (Firebase)</div>
+            <input type="text" id="usuario" class="form-control-login" placeholder="Usuario (ej: fer)" autocomplete="off">
+            <input type="password" id="password" class="form-control-login" placeholder="Contraseña">
+            <div id="error-login" class="error-msj"></div>
+            <button id="btn-ingreso" class="btn-ingresar" onclick="procesarIngreso()">Iniciar Sesión</button>
+        </div>
+    </div>
+
+    <!-- APP PRINCIPAL -->
+    <div id="pantalla-app" class="oculto">
+        <header class="cabecera">
+            <h1>Taurus Control</h1>
+            <div id="estado-red" class="badge-estado">🟢 Conectado</div>
+        </header>
+
+        <div class="contenedor">
+            <!-- DASHBOARD -->
+            <div id="vista-dashboard" class="vista">
+                <div class="grid-kpis">
+                    <div class="kpi-caja"><div class="kpi-valor" id="dash-acciones">0</div><div class="kpi-label">Registros Nube</div></div>
+                </div>
+            </div>
+
+            <!-- FICHA MANGA -->
+            <div id="vista-manga" class="vista oculto">
+                <div class="buscador-contenedor">
+                    <input type="text" id="buscador-caravana" class="buscador-input" placeholder="Nº Caravana" onkeyup="if(event.key === 'Enter') buscarCaravanaBtn()">
+                    <button class="buscador-btn" onclick="buscarCaravanaBtn()">Buscar</button>
+                </div>
+                
+                <div id="ficha-animal" class="tarjeta oculto">
+                    <div class="perfil-cabecera">
+                        <div class="perfil-id" id="val-caravana">---</div>
+                    </div>
+                    
+                    <div class="grid-datos">
+                        <div class="dato-min">
+                            <span>Último Peso</span>
+                            <strong id="val-peso">-</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="grid-acciones">
+                        <button class="btn-accion" onclick="abrirModal('modal-peso')">⚖️ Registrar Peso</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="nav-inferior">
+            <div class="nav-item activo" onclick="cambiarVista('vista-dashboard', this)">📊 Panel</div>
+            <div class="nav-item" onclick="cambiarVista('vista-manga', this)">🐄 Manga</div>
+        </nav>
+    </div>
+
+    <!-- MODAL DE PESAJE -->
+    <div id="modal-peso" class="modal">
+        <div class="modal-body">
+            <span class="cerrar" onclick="cerrarModal('modal-peso')">&times;</span>
+            <h3 style="margin-top:0;">Nuevo Peso</h3>
+            <input type="number" step="0.5" class="form-control" id="i-peso-val" placeholder="Ej: 450 Kg" style="font-size:24px; text-align:center;">
+            <button class="btn-guardar" onclick="prepararGuardado('modal-peso', 'Peso')">Guardar Peso</button>
+        </div>
+    </div>
+
+    <script>
+        // 1. INICIALIZACIÓN DE FIREBASE (Tus credenciales exactas)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDTXUYwYYkQ_pKDhui9H3cFmecgAPQ9eqA",
+            authDomain: "taurus-cbd59.firebaseapp.com",
+            projectId: "taurus-cbd59",
+            storageBucket: "taurus-cbd59.firebasestorage.app",
+            messagingSenderId: "250280835981",
+            appId: "1:250280835981:web:b95bc0a7ec9f7da2b75bc4"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // 2. ACTIVAR MODO OFFLINE (Magia pura: Adiós al tc_pendientes)
+        db.enablePersistence().catch(err => {
+            console.warn("Persistencia offline falló:", err);
+        });
+
+        // 3. VARIABLES GLOBALES
+        let dbCache = []; 
+        let rpActivo = null; 
+        let maestroId = "ESTANCIA_DEMO_01"; 
+
+        // 4. VERIFICAR SESIÓN ACTIVA AL ENTRAR (Inicia al instante si ya te logueaste antes)
+        auth.onAuthStateChanged((user) => {
+            if (user) arrancarSistemaFirebase();
+        });
+
+        // 5. INICIO DE SESIÓN
+        async function procesarIngreso() {
+            const u = document.getElementById('usuario').value.trim(); 
+            const p = document.getElementById('password').value.trim();
+            const err = document.getElementById('error-login');
+            
+            if(!u || !p) return; 
+            
+            try {
+                // Truco: Agrega @taurus.com al usuario para Firebase
+                const email = u.includes('@') ? u : u + '@taurus.com';
+                await auth.signInWithEmailAndPassword(email, p);
+            } catch(error) {
+                err.innerText = "Usuario o contraseña incorrectos."; 
+                err.style.display = 'block';
+            }
+        }
+
+        // 6. ARRANQUE DEL SISTEMA Y SINCRONIZACIÓN EN TIEMPO REAL
+        function arrancarSistemaFirebase() {
+            document.getElementById('pantalla-login').classList.add('oculto'); 
+            document.getElementById('pantalla-app').classList.remove('oculto');
+
+            // Escuchamos la base de datos de Firebase. Si hay un cambio, actualiza la pantalla en milisegundos.
+            const eventosRef = db.collection("estancias").doc(maestroId).collection("eventos");
+            
+            eventosRef.orderBy("fecha", "desc").limit(100).onSnapshot((snapshot) => {
+                let nuevosDatos = [];
+                snapshot.forEach(doc => nuevosDatos.push(doc.data()));
+                
+                dbCache = nuevosDatos; 
+                document.getElementById('dash-acciones').innerText = dbCache.length;
+                
+                if(rpActivo) buscarCaravanaBtn(rpActivo);
+                
+                setEstadoRed(true, '🟢 Conectado');
+            }, (error) => {
+                setEstadoRed(false, '🔴 Offline');
+            });
+        }
+
+        function setEstadoRed(online, texto) {
+            const b = document.getElementById('estado-red');
+            b.innerText = texto;
+            if(online) { b.classList.remove('offline'); } else { b.classList.add('offline'); }
+        }
+
+        // 7. GUARDAR DATOS (Soporta Offline automáticamente)
+        function ejecutarAccion(tipo, val, modalId) {
+            const obj = { 
+                fecha: new Date().toISOString(), 
+                accion: tipo, 
+                caravana: rpActivo, 
+                valor: val
+            };
+            
+            // Reflejamos al instante en pantalla
+            dbCache.unshift(obj); 
+            buscarCaravanaBtn(rpActivo); 
+            document.getElementById('dash-acciones').innerText = dbCache.length;
+            if(modalId) cerrarModal(modalId);
+
+            // Guardamos en Firebase. Si no hay red, Firebase lo guarda en el teléfono y lo sube después.
+            db.collection("estancias").doc(maestroId).collection("eventos").add(obj)
+            .then(() => console.log("Guardado en la nube"))
+            .catch(() => console.log("Guardado localmente (Offline)"));
+        }
+
+        // 8. FUNCIONES DE INTERFAZ
+        function buscarCaravanaBtn(rpForzado = null) {
+            let rp = rpForzado ? rpForzado : document.getElementById('buscador-caravana').value.trim(); 
+            if(!rp) return; 
+            
+            rpActivo = rp; 
+            document.getElementById('ficha-animal').classList.remove('oculto'); 
+            document.getElementById('val-caravana').innerText = rp;
+            
+            let regs = dbCache.filter(d => String(d.caravana) === String(rp)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            let uPeso = regs.find(d => d.accion === 'Peso');
+            document.getElementById('val-peso').innerText = uPeso ? uPeso.valor : "-";
+        }
+
+        function prepararGuardado(mId, t) {
+            const val = document.getElementById('i-peso-val').value + " Kg";
+            ejecutarAccion(t, val, mId);
+            document.getElementById('i-peso-val').value = '';
+        }
+
+        function cambiarVista(v, b) { 
+            document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); 
+            document.getElementById(v).classList.remove('oculto'); 
+            document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('activo')); 
+            if(b) b.classList.add('activo'); 
+        }
+
+        function abrirModal(id) { document.getElementById(id).style.display = 'flex'; } 
+        function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
+    </script>
+</body>
+</html>
