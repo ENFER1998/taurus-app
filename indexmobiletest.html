@@ -3,144 +3,536 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Taurus Control - FIREBASE TEST</title>
+    <title>Taurus Control - Móvil (Firebase)</title>
     
     <meta name="theme-color" content="#0f172a">
     
-    <!-- LIBRERÍAS DE FIREBASE (Versión Compat para integración directa en HTML) -->
+    <link rel="apple-touch-icon" href="gemini-svg.png">
+    <link rel="icon" type="image/png" href="gemini-svg.png">
+    
+    <!-- LIBRERIAS PROFESIONALES PARA PDF PERFECTO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- INTEGRACIÓN ONESIGNAL -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60",
+          serviceWorkerParam: { scope: "/taurus-app/" },
+          serviceWorkerPath: "/taurus-app/OneSignalSDKWorker.js"
+        });
+      });
+    </script>
+
+    <!-- FIREBASE SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
     <style>
         :root { --primario: #0f172a; --secundario: #3b82f6; --exito: #10b981; --alerta: #f59e0b; --peligro: #ef4444; --borde: #334155; --texto: #f8fafc; --muted: #94a3b8; }
+        body.tema-claro { --primario: #f8fafc; --borde: #cbd5e1; --texto: #0f172a; --muted: #64748b; background: #f1f5f9; color: var(--texto); }
+        body.tema-claro .login-contenedor, body.tema-claro .cabecera, body.tema-claro .tarjeta, body.tema-claro .kpi-caja, body.tema-claro .dato-min, body.tema-claro .btn-accion, body.tema-claro .filtro-sel, body.tema-claro .nav-inferior, body.tema-claro .modal-body, body.tema-claro .form-control { background: #ffffff; border-color: var(--borde); color: var(--texto); }
+        body.tema-claro .form-control-login, body.tema-claro .buscador-input { background: #f8fafc; border-color: var(--borde); color: var(--texto); }
+        body.tema-claro .btn-mini { background: #f1f5f9; color: var(--texto); border-color: var(--borde); }
+        body.tema-claro .kpi-label, body.tema-claro .nav-item { color: var(--muted); }
+        body.tema-claro .nav-item.activo { color: var(--secundario); }
         
         * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; color: var(--texto); background: #1e293b; min-height: 100vh; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; color: var(--texto); background: #1e293b; min-height: 100vh; transition: background 0.3s, color 0.3s; -webkit-tap-highlight-color: transparent; }
         .oculto { display: none !important; }
         
-        /* PANTALLA LOGIN */
         #pantalla-login { display: flex; align-items: center; justify-content: center; height: 100vh; width: 100%; flex-direction: column; background: var(--primario); position: fixed; top:0; left:0; z-index:9999;}
         .login-contenedor { background: #1e293b; border-radius: 16px; padding: 40px 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 90%; max-width: 360px; text-align: center; border: 1px solid var(--borde);}
+        .logo-icono img { width: 90px; height: 90px; margin-bottom: 10px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); object-fit: contain; }
         .titulo-login { font-size: 24px; font-weight: 900; margin-bottom: 30px; color: var(--texto); }
         .form-control-login { width: 100%; padding: 15px; border: 1px solid var(--borde); border-radius: 8px; font-size: 16px; margin-bottom: 15px; text-align: center; background: #0f172a; color: var(--texto); outline: none;}
         .form-control-login:focus { border-color: var(--secundario); }
         .btn-ingresar { width: 100%; background: var(--secundario); color: white; border: none; padding: 15px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s;}
+        .btn-ingresar:disabled { background: var(--muted); }
         .error-msj { color: var(--peligro); font-size: 14px; margin-bottom: 10px; display: none; font-weight: bold; }
 
-        /* APP PRINCIPAL */
+        /* CORTINA DE HIERRO GLOBAL */
+        #pantalla-mantenimiento { position:fixed; top:0; left:0; width:100%; height:100%; background:var(--primario); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; text-align:center; }
+        #pantalla-mantenimiento .spinner { border: 4px solid var(--borde); border-top: 4px solid var(--peligro); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-top:30px;}
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* MODAL POP-UP AVISO GLOBAL */
+        #modal-alerta-global { z-index: 99999; }
+        #modal-alerta-global .modal-body { text-align: center; border: 2px solid var(--alerta); }
+
         #pantalla-app { padding-bottom: 80px; width: 100%; }
         .cabecera { background-color: #0f172a; color: var(--texto); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--borde); position: sticky; top: 0; z-index: 100;}
-        .cabecera h1 { margin: 0; font-size: 20px; }
-        .badge-estado { font-size: 12px; background: var(--exito); padding: 5px 12px; border-radius: 20px; font-weight: bold; color: white; transition: 0.3s; }
-        .badge-estado.offline { background: var(--peligro); }
+        .cabecera h1 { margin: 0; font-size: 20px; display: flex; align-items: center; gap: 8px;}
+        .badge-estado { font-size: 12px; background: var(--exito); padding: 5px 12px; border-radius: 20px; font-weight: bold; color: white; transition: 0.3s; display: flex; align-items: center; justify-content: center;}
+        .badge-estado.offline { background: var(--peligro); color: white; }
         
         .contenedor { padding: 15px; max-width: 800px; margin: 0 auto; }
         .tarjeta { background: #0f172a; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--borde); box-shadow: 0 4px 6px rgba(0,0,0,0.3);}
+        .tarjeta-titulo { font-size: 18px; font-weight: bold; margin: 0 0 15px 0; border-bottom: 1px solid var(--borde); padding-bottom: 10px; color: var(--texto); }
         
         .grid-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 20px; }
         .kpi-caja { background: #1e293b; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--borde);}
         .kpi-valor { font-size: 26px; font-weight: 900; color: var(--secundario); margin: 5px 0; }
         .kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: bold;}
         
+        .grafico-flex { display: flex; align-items: center; gap: 20px; justify-content: space-around; flex-wrap: wrap;}
+        .torta-container { position: relative; width: 120px; height: 120px; }
+        .torta { width: 100%; height: 100%; border-radius: 50%; background: var(--borde); transition: background 1s ease-in-out;}
+        .torta-centro { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; background: var(--primario); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: var(--texto);}
+        .leyenda-torta { font-size: 14px; line-height: 1.8; color: var(--texto);}
+        .punto { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px;}
+        
+        .barra-categoria { margin-bottom: 15px;}
+        .barra-header { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: var(--texto);}
+        .barra-fondo { width: 100%; background: var(--borde); height: 10px; border-radius: 5px; overflow: hidden;}
+        .barra-relleno { height: 100%; border-radius: 5px; width: 0%; transition: width 1s ease;}
+
+        #lista-alertas { max-height: 160px; overflow-y: auto; padding-right: 5px; }
+        .alerta-item { display: flex; align-items: center; gap: 10px; background: rgba(245,158,11,0.1); padding: 12px; border-radius: 8px; border-left: 4px solid var(--alerta); margin-bottom: 10px; font-size: 14px; border: 1px solid rgba(245,158,11,0.3); color: var(--texto);}
+        .alerta-item.peligro { background: rgba(239,68,68,0.1); border-left-color: var(--peligro); border-color: rgba(239,68,68,0.3);}
+
         .buscador-contenedor { display: flex; gap: 10px; margin-bottom: 15px; align-items: stretch;}
-        .buscador-input { flex: 1; padding: 12px; border: 2px solid var(--borde); border-radius: 8px; font-size: 16px; font-weight: bold; background: #0f172a; color: var(--texto); outline: none;}
-        .buscador-btn { background: var(--secundario); color: white; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold;}
+        .buscador-input { flex: 1; min-width: 0; padding: 12px; border: 2px solid var(--borde); border-radius: 8px; font-size: 16px; font-weight: bold; background: #0f172a; color: var(--texto); outline: none;}
+        .buscador-input:focus { border-color: var(--secundario); }
+        .buscador-btn { flex-shrink: 0; background: var(--secundario); color: white; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold;}
 
         .perfil-cabecera { text-align: center; margin-bottom: 20px;}
         .perfil-id { font-size: 40px; font-weight: 900; letter-spacing: 2px; line-height: 1; color: var(--texto);}
+        .botones-perfil { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 20px;}
+        .btn-mini { background: #1e293b; border: 1px solid var(--borde); padding: 8px 15px; border-radius: 8px; font-size: 13px; font-weight: bold; color: var(--texto);}
+        
+        .panel-comentario { background: rgba(59, 130, 246, 0.1); border-left: 5px solid var(--secundario); padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; color: var(--texto);}
         
         .grid-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 10px; }
         .dato-min { background: #1e293b; padding: 10px; border-radius: 8px; border: 1px solid var(--borde);}
         .dato-min span { display: block; font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: bold; margin-bottom: 4px;}
-        .dato-min strong { font-size: 18px; color: var(--texto);}
+        .dato-min strong { font-size: 13px; word-wrap: break-word; color: var(--texto);}
 
         .grid-acciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap: 10px; margin-top:20px;}
-        .btn-accion { background: #1e293b; border: 1px solid var(--borde); padding: 10px; border-radius: 12px; font-weight: bold; color: var(--texto); font-size: 14px; text-align: center; cursor: pointer;}
+        .btn-accion { background: #1e293b; border: 1px solid var(--borde); padding: 10px; border-radius: 12px; font-weight: bold; color: var(--texto); display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; text-align: center;}
+        .btn-accion span { font-size: 22px; }
+        
+        .filtros-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;}
+        .filtro-sel { background: #1e293b; color: var(--texto); border: 1px solid var(--borde); padding: 12px; border-radius: 8px; font-size: 14px; outline: none; font-family: inherit;}
+        .lista-animales { list-style: none; padding: 0; margin: 0; }
+        .lista-animales li { padding: 15px; border-bottom: 1px solid var(--borde); display: flex; justify-content: space-between; align-items: center;}
+        
+        .btn-descargar { width: 100%; background: var(--exito); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; margin-bottom: 20px;}
+        .tabla-responsive { width: 100%; overflow-x: auto; border-radius: 8px;}
+        .tabla-informe { width: 100%; border-collapse: collapse; font-size: 13px; background: white; color: black; min-width: 400px;}
+        .tabla-informe th { background: #e2e8f0; padding: 10px; text-align: left; border: 1px solid #cbd5e1; color: black;}
+        .tabla-informe td { padding: 10px; border: 1px solid #cbd5e1; color: black;}
         
         .nav-inferior { position: fixed; bottom: 0; left: 0; width: 100%; background: #0f172a; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid var(--borde); z-index: 100;}
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); font-size: 12px; font-weight: bold; width: 50%; cursor: pointer;}
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); font-size: 10px; font-weight: bold; width: 20%;}
         .nav-item.activo { color: var(--secundario); }
+        .nav-icon { font-size: 22px; margin-bottom: 4px;}
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 200; align-items: center; justify-content: center;}
-        .modal-body { background: #0f172a; width: 92%; max-width: 400px; border-radius: 20px; padding: 25px; border: 1px solid var(--borde);}
-        .form-control { width: 100%; padding: 12px; border: 1px solid var(--borde); border-radius: 8px; font-size: 16px; background: #1e293b; color: var(--texto); outline:none; margin-bottom: 15px;}
-        .btn-guardar { width: 100%; background: var(--secundario); color: white; padding: 15px; border-radius: 8px; border: none; font-weight: bold;}
-        .cerrar { float: right; font-size: 24px; color: var(--muted); cursor: pointer;}
+        .modal-body { background: #0f172a; width: 92%; max-width: 450px; border-radius: 20px; padding: 25px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--borde);}
+        .modal-body h3 { border-bottom: 1px solid var(--borde); padding-bottom: 10px; margin-top:0; color: var(--texto);}
+        .form-grupo { margin-bottom: 15px; text-align: left; }
+        .form-grupo label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 8px; color: var(--muted);}
+        .form-control { width: 100%; padding: 12px; border: 1px solid var(--borde); border-radius: 8px; font-size: 16px; background: #1e293b; color: var(--texto); outline:none;}
+        .form-control.textarea { resize: vertical; min-height: 80px; }
+        .btn-guardar { width: 100%; background: var(--secundario); color: white; padding: 15px; border-radius: 8px; border: none; font-weight: bold; margin-top: 10px;}
+        .btn-guardar:disabled { opacity: 0.6; cursor: not-allowed; }
+        .cerrar { float: right; font-size: 30px; color: var(--muted);}
     </style>
 </head>
 <body>
 
-    <!-- PANTALLA DE INICIO DE SESIÓN -->
     <div id="pantalla-login">
         <div class="login-contenedor">
-            <div class="titulo-login">Taurus (Firebase)</div>
-            <input type="text" id="usuario" class="form-control-login" placeholder="Usuario (ej: fer)" autocomplete="off">
+            <div class="logo-icono"><img src="gemini-svg.png" alt="Logo Taurus"></div>
+            <div class="titulo-login">Taurus Control</div>
+            <input type="text" id="usuario" class="form-control-login" placeholder="Usuario de Acceso" autocomplete="off">
             <input type="password" id="password" class="form-control-login" placeholder="Contraseña">
             <div id="error-login" class="error-msj"></div>
             <button id="btn-ingreso" class="btn-ingresar" onclick="procesarIngreso()">Iniciar Sesión</button>
+            <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">Taurus Control<br><strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">Motor FIREBASE Integrado</strong></div>
         </div>
     </div>
 
-    <!-- APP PRINCIPAL -->
+    <!-- CORTINA DE HIERRO: MANTENIMIENTO GLOBAL -->
+    <div id="pantalla-mantenimiento" class="oculto">
+        <span style="font-size:60px; margin-bottom:20px;">🚧</span>
+        <h1 style="color:var(--peligro); margin:0 0 10px 0; font-size:24px;">SISTEMA EN MANTENIMIENTO</h1>
+        <p style="color:var(--muted); font-size:14px; line-height:1.6; max-width:400px;">Nuestros servidores están recibiendo una actualización para mejorar Taurus Control. La aplicación ha sido bloqueada temporalmente y tus datos están seguros.</p>
+        <div class="spinner"></div>
+        <p style="color:var(--secundario); font-size:12px; margin-top:15px; font-weight:bold;">Verificando conexión automáticamente...</p>
+    </div>
+
+    <!-- MODAL POP-UP AVISO GLOBAL -->
+    <div id="modal-alerta-global" class="modal">
+        <div class="modal-body">
+            <h3 style="color:var(--alerta); margin-top:0; border-bottom: none; font-size:22px; text-align:center;">⚠️ Aviso Importante</h3>
+            <p id="txt-alerta-global" style="font-size:16px; line-height: 1.5; color:var(--texto); margin-bottom: 25px; font-weight:bold; text-align:center;"></p>
+            <button class="btn-guardar" style="background:var(--alerta);" onclick="cerrarPopUpAlerta()">Entendido / Cerrar</button>
+        </div>
+    </div>
+
     <div id="pantalla-app" class="oculto">
         <header class="cabecera">
-            <h1>Taurus Control</h1>
+            <h1><img src="gemini-svg.png" alt="Taurus" style="width: 26px; height: 26px; border-radius: 6px; object-fit: contain;"> Taurus</h1>
             <div id="estado-red" class="badge-estado">🟢 Conectado</div>
         </header>
 
         <div class="contenedor">
+            
             <!-- DASHBOARD -->
-            <div id="vista-dashboard" class="vista">
-                <div class="grid-kpis">
-                    <div class="kpi-caja"><div class="kpi-valor" id="dash-acciones">0</div><div class="kpi-label">Registros Nube</div></div>
+            <div id="vista-dashboard" class="vista oculto">
+                
+                <!-- BANNER PERSISTENTE ALERTA GLOBAL -->
+                <div id="banner-alerta-global" class="tarjeta oculto" style="border-color: var(--alerta); background: rgba(245, 158, 11, 0.1);">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div style="flex:1;">
+                            <strong style="color:var(--alerta); display:flex; align-items:center; gap:5px; margin-bottom:5px; font-size:15px;">⚠️ Mensaje de Administración</strong>
+                            <span id="txt-banner-alerta" style="font-size:13px; color:var(--texto); line-height: 1.4;"></span>
+                        </div>
+                        <button class="btn-mini" style="background:var(--alerta); color:white; border:none; padding: 6px 12px; margin-left:10px;" onclick="marcarAlertaLeida()">Ocultar</button>
+                    </div>
                 </div>
+
+                <div class="grid-kpis">
+                    <div class="kpi-caja"><div class="kpi-valor" id="dash-cabezas">0</div><div class="kpi-label">Cabezas Únicas</div></div>
+                    <div class="kpi-caja" style="border-color: var(--peligro);"><div class="kpi-valor" id="dash-bajas" style="color: var(--peligro);">0</div><div class="kpi-label" style="color: var(--peligro);">Mortalidad / Bajas</div></div>
+                    <div class="kpi-caja"><div class="kpi-valor" id="dash-acciones">0</div><div class="kpi-label">Registros Procesados</div></div>
+                </div>
+                <div class="tarjeta" id="contenedor-alertas" style="display:none;"><div class="tarjeta-titulo" style="color:var(--alerta);">⚠️ Alertas (Deslizar)</div><div id="lista-alertas"></div></div>
+                <div id="contenedor-graficos-dinamicos"></div>
             </div>
 
-            <!-- FICHA MANGA -->
+            <!-- FICHA CLÍNICA (MANGA) -->
             <div id="vista-manga" class="vista oculto">
+                <div class="tarjeta" id="tarjeta-rafaga" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid var(--secundario);">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span style="font-size:24px;">⚡</span>
+                            <div>
+                                <strong style="display:block; color:var(--texto);">Modo Ráfaga</strong>
+                                <span style="font-size:11px; color:var(--muted);">Automatización con balanza/antena</span>
+                            </div>
+                        </div>
+                        <button class="btn-mini" id="btn-toggle-rafaga" style="border-color:var(--borde); font-weight:bold;" onclick="toggleRafaga()">APAGADO</button>
+                    </div>
+                    <div id="opciones-rafaga" class="oculto" style="margin-top:15px; padding-top:15px; border-top:1px solid var(--borde);">
+                        <div class="form-grupo" style="margin-bottom:10px;">
+                            <label style="font-size:11px;">Acción combinada con el peso:</label>
+                            <select id="rafaga-accion" class="form-control" style="padding:8px; font-size:13px; font-weight:bold;" onchange="verificarRafagaCustom()">
+                                <option value="solo_peso">⚖️ Solo Registrar Peso</option>
+                                <option value="Vacuna Aftosa">💉 Vacuna Aftosa</option>
+                                <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
+                                <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario (Ivermectina)</option>
+                                <option value="Vitamina ADE">💉 Vitamina ADE / Reconstituyente</option>
+                                <option value="OTRO">✏️ Personalizado (Escribir otro)...</option>
+                            </select>
+                            <input type="text" id="rafaga-prod-custom" class="form-control oculto" placeholder="Escriba el producto..." style="margin-top:8px; padding:8px; font-size:13px;">
+                        </div>
+                        <div id="caja-rafaga-detalles" class="form-grupo oculto" style="margin-bottom:0;">
+                            <label style="font-size:11px;">Dosis y Nota / Observación:</label>
+                            <input type="text" id="rafaga-detalles" class="form-control" placeholder="Ej: 5ml - Lote 12 | Subcutánea" style="padding:8px; font-size:13px; margin-bottom:10px;">
+                            
+                            <label style="font-size:11px; color:var(--alerta); font-weight:bold;">⏳ Próxima Dosis a este lote:</label>
+                            <select id="rafaga-recordatorio" class="form-control" style="padding:8px; font-size:13px; border-color: var(--alerta);">
+                                <option value="0">Sin recordatorio (Única dosis)</option>
+                                <option value="15">Avisar en 15 días</option>
+                                <option value="21">Avisar en 21 días</option>
+                                <option value="30">Avisar en 1 mes</option>
+                                <option value="90">Avisar en 3 meses</option>
+                                <option value="180">Avisar en 6 meses</option>
+                                <option value="365">Avisar en 1 año</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="buscador-contenedor">
-                    <input type="text" id="buscador-caravana" class="buscador-input" placeholder="Nº Caravana" onkeyup="if(event.key === 'Enter') buscarCaravanaBtn()">
+                    <input type="text" id="buscador-caravana" class="buscador-input" placeholder="Nº Caravana / RP" onkeyup="if(event.key === 'Enter') buscarCaravanaBtn()">
                     <button class="buscador-btn" onclick="buscarCaravanaBtn()">Buscar</button>
                 </div>
                 
                 <div id="ficha-animal" class="tarjeta oculto">
                     <div class="perfil-cabecera">
                         <div class="perfil-id" id="val-caravana">---</div>
+                        <div id="badge-estado-animal" class="badge-estado offline" style="display:none; margin: 10px auto; width: max-content;">DADO DE BAJA</div>
                     </div>
+                    <div class="botones-perfil">
+                        <button class="btn-mini" onclick="abrirModal('modal-perfil')">✏️ Genética</button>
+                        <button class="btn-mini" onclick="abrirModal('modal-clasificacion')">🏷️ Lote/Cat</button>
+                        <button class="btn-mini" style="color:var(--alerta); border-color:var(--alerta);" onclick="abrirModal('modal-renombrar')">🔄 Renombrar</button>
+                    </div>
+                    <div class="panel-comentario"><div style="flex:1;"><span style="font-size:12px; font-weight:bold; color:var(--secundario); display:block;">NOTAS GENERALES</span><span id="val-comentario" style="font-size:14px; font-style:italic; display:block; margin-top:3px;">Sin comentarios.</span></div><button class="btn-mini" style="background:var(--secundario); color:white; border:none;" onclick="abrirModal('modal-comentario')">Editar</button></div>
                     
                     <div class="grid-datos">
+                        <div class="dato-min"><span>Raza</span><strong id="val-raza">-</strong></div>
+                        <div class="dato-min"><span>Nacimiento</span><strong id="val-edad">-</strong></div>
+                        <div class="dato-min"><span>Carimbo Of.</span><strong id="val-carimbo">-</strong></div>
+                        <div class="dato-min"><span>Lote / Grupo</span><strong id="val-lote">-</strong></div>
+                        <div class="dato-min"><span>Categoría</span><strong id="val-categoria">-</strong></div>
+                        <div class="dato-min"><span>Padre/Madre</span><strong id="val-genealogia">-</strong></div>
+                        
+                        <div class="dato-min"><span>Dx Tacto</span><strong id="val-dx" style="color:var(--exito);">-</strong></div>
                         <div class="dato-min">
-                            <span>Último Peso</span>
-                            <strong id="val-peso">-</strong>
+                            <span>Peso Actual</span>
+                            <strong id="val-peso" style="display:block;">-</strong>
+                            <div id="val-gdp" style="margin-top:2px;"></div>
                         </div>
+
+                        <div class="dato-min" style="border-left: 3px solid #be185d;"><span>Últ. Inseminación</span><strong id="val-inseminacion">-</strong></div>
+                        <div class="dato-min" style="border-left: 3px solid #c2410c;"><span>Última Sanidad</span><strong id="val-sanidad">-</strong></div>
+                        <div class="dato-min" style="border-left: 3px solid var(--secundario); grid-column: 1 / -1;"><span>Régimen Nutricional</span><strong id="val-nutricion">-</strong></div>
                     </div>
                     
                     <div class="grid-acciones">
-                        <button class="btn-accion" onclick="abrirModal('modal-peso')">⚖️ Registrar Peso</button>
+                        <button class="btn-accion" onclick="abrirModal('modal-sanidad')"><span style="color:var(--peligro);">💉</span> Sanidad</button>
+                        <button class="btn-accion" onclick="abrirModal('modal-peso')"><span style="color:var(--secundario);">⚖️</span> Pesaje</button>
+                        <button class="btn-accion" onclick="abrirModal('modal-diagnostico')"><span style="color:var(--exito);">🩺</span> Tacto / Dx</button>
+                        <button class="btn-accion" onclick="abrirModal('modal-inseminacion')"><span style="color:#9333ea;">🧬</span> Inseminar</button>
+                        <button class="btn-accion" onclick="abrirModal('modal-nut')"><span style="color:var(--alerta);">🌾</span> Nutrición</button>
+                        <button class="btn-accion" onclick="verHistorial()"><span>📋</span> Historial</button>
+                        <button class="btn-accion" style="color:var(--peligro); border-color:var(--peligro);" onclick="abrirModal('m-baja')"><span>💀</span> Baja / Muerte</button>
+                        <button class="btn-accion" style="color:var(--peligro); border-color:var(--peligro);" onclick="borrarCaravana()"><span>🗑️</span> Borrar RP</button>
                     </div>
                 </div>
+            </div>
+
+            <!-- BASE DE DATOS -->
+            <div id="vista-registro" class="vista oculto">
+                <div class="tarjeta">
+                    <div class="tarjeta-titulo">📋 Inventario Activo</div>
+                    <div class="buscador-contenedor">
+                        <input type="text" id="buscador-lista" class="buscador-input" placeholder="Buscar RP o lote..." onkeyup="if(event.key === 'Enter') filtrarLista(this.value)">
+                        <button class="buscador-btn" onclick="filtrarLista(document.getElementById('buscador-lista').value)">Buscar</button>
+                    </div>
+                    <ul class="lista-animales" id="tb-registro"></ul>
+                </div>
+            </div>
+
+            <!-- REPORTES -->
+            <div id="vista-informe" class="vista oculto">
+                
+                <!-- VISTA PREVIA DEL MEMBRETE -->
+                <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid var(--borde);">
+                    <img id="preview-logo-reporte" src="gemini-svg.png" style="width:50px; height:50px; object-fit:contain; border-radius:8px; background:white; padding:2px;">
+                    <div>
+                        <span style="font-size:11px; color:var(--muted); font-weight:bold; text-transform:uppercase;">Membrete PDF</span>
+                        <strong id="preview-nombre-reporte" style="display:block; font-size:16px; color:var(--texto);">Hacienda</strong>
+                    </div>
+                </div>
+
+                <div class="tarjeta">
+                    <select class="filtro-sel" id="f-inf-modo" onchange="cambiarModoReporte()" style="width:100%; margin-bottom:15px; border-color: var(--secundario); font-weight: bold; background-color: var(--secundario); color: white;">
+                        <option value="eventos">📋 TRATAMIENTOS (Historial)</option>
+                        <option value="inventario">📊 INVENTARIO GENERAL</option>
+                    </select>
+
+                    <div id="filtros-eventos" class="filtros-grid">
+                        <select class="filtro-sel" id="f-inf-rango-fecha" onchange="manejarRangoFechas()"><option value="30">Últimos 30 Días</option><option value="hoy">Trabajos de Hoy</option><option value="7">Últimos 7 Días</option><option value="todo">Ver Todo</option><option value="custom">📅 Rango Manual...</option></select>
+                        <div id="caja-fechas-custom" style="display:none; gap:10px;">
+                            <input type="date" id="f-inf-desde" class="filtro-sel" style="flex:1;" onchange="actualizarInformeAvanzado()">
+                            <input type="date" id="f-inf-hasta" class="filtro-sel" style="flex:1;" onchange="actualizarInformeAvanzado()">
+                        </div>
+                        <select class="filtro-sel" id="f-inf-accion-oculto" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Trabajos</option><option value="Sanidad">💉 Sanidad</option><option value="Peso">⚖️ Pesos</option><option value="Diagnóstico">🩺 Tactos</option><option value="Inseminación">🧬 Reproducción</option><option value="Nutrición">🌾 Nutrición</option><option value="Baja">💀 Bajas</option></select>
+                        <input type="text" id="f-inf-keyword" class="filtro-sel" placeholder="🔍 Buscar producto..." onkeyup="actualizarInformeAvanzado()">
+                    </div>
+
+                    <div id="filtros-inventario" class="filtros-grid oculto" style="display: none;">
+                        <select class="filtro-sel" id="f-inf-lote" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Lotes</option><option value="Hacienda General">Hacienda General</option><option value="Lecheras">Lecheras</option><option value="Preñadas">Preñadas</option><option value="Inseminadas">Inseminadas</option><option value="Destete">Destete</option><option value="Enfermería">Enfermería</option></select>
+                        <select class="form-control" id="f-inf-cat" onchange="actualizarInformeAvanzado()"><option value="ALL">Todas las Categorías</option><option value="V:">Vacas / Vaquillas (V)</option><option value="VV:">Vacas Viejas (VV)</option><option value="TH:">Ternera Hembra (TH)</option><option value="TM:">Ternero Macho (TM)</option><option value="DH:">Desmamante Hembra (DH)</option><option value="DM:">Desmamante Macho (DM)</option><option value="Toros">Toros</option><option value="Novillos">Novillos</option><option value="Bueyes">Bueyes</option></select>
+                        <div style="display:flex; gap:10px;">
+                            <select class="form-control" style="flex:1;" id="f-inf-carimbo" onchange="actualizarInformeAvanzado()"><option value="ALL">Carimbos</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option></select>
+                            <select class="form-control" style="flex:1;" id="f-inf-dx" onchange="actualizarInformeAvanzado()"><option value="ALL">Estado</option><option value="Preñada">Preñadas</option><option value="Vacía">Vacías</option></select>
+                        </div>
+                    </div>
+
+                    <input type="text" id="f-inf-rp" class="filtro-sel" style="width:100%; margin-bottom:15px; border-color:var(--exito);" placeholder="🔍 Dossier Individual (Nº RP)" onkeyup="actualizarInformeAvanzado()">
+                    
+                    <div class="grid-kpis" style="margin-bottom:15px;">
+                        <div class="kpi-caja" style="padding:10px;"><div class="kpi-valor" id="inf-total" style="font-size:20px;">0</div><div class="kpi-label">Registros</div></div>
+                        <div class="kpi-caja" style="padding:10px;"><div class="kpi-valor" id="inf-prenadas" style="font-size:20px; color:var(--exito);">0</div><div class="kpi-label">Preñadas</div></div>
+                    </div>
+                    
+                    <button class="btn-descargar" id="btn-print-magico" onclick="ejecutarDescargaPDF()">🖨️ Descargar PDF</button>
+
+                    <div class="tabla-responsive">
+                        <table class="tabla-informe" id="tabla-eventos"><thead><tr><th>Fecha</th><th>RP</th><th>Trabajo Realizado</th><th>Detalles Extras</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
+                        <table class="tabla-informe oculto" id="tabla-masiva"><thead><tr><th>RP y Carimbo</th><th>Categoría / Lote</th><th>Últ. Peso</th><th>Dx Actual</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
+                        <table class="tabla-informe oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Trabajo Realizado</th><th>Valor Principal</th><th>Observaciones Adicionales</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AJUSTES -->
+            <div id="vista-config" class="vista oculto">
+                <div class="tarjeta">
+                    <div class="tarjeta-titulo">👤 Mi Perfil</div>
+                    <div class="form-grupo"><label>Sesión iniciada como:</label><input type="text" id="usuario-activo-lbl" class="form-control" readonly style="font-weight:bold; color:var(--exito);"></div>
+                    <div class="form-grupo" id="panel-licencia"><label>Motor Backend:</label><input type="text" id="lbl-licencia" class="form-control" value="🔥 Firebase Realtime Database" readonly style="font-weight:bold;"></div>
+                </div>
+                
+                <div class="tarjeta" id="panel-membrete">
+                    <div class="tarjeta-titulo">🖨️ Membrete Documentos PDF</div>
+                    
+                    <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
+                        <img id="preview-logo-config" src="gemini-svg.png" style="width:60px; height:60px; object-fit:contain; border-radius:8px; border:1px solid var(--borde); background:white; padding:2px;">
+                        <div style="flex:1;">
+                            <label style="font-size:12px; font-weight:bold; color:var(--muted); margin-bottom:5px; display:block;">Nombre Empresa / Hacienda</label>
+                            <input type="text" id="cfg-nom" class="form-control" placeholder="Taurus Control" style="margin-bottom:0;">
+                        </div>
+                    </div>
+                    
+                    <div class="form-grupo"><label>Subir Nuevo Logo Oficial (PNG)</label><input type="file" id="cfg-logo" class="form-control" style="padding:6px;" accept="image/*"></div>
+                    <button class="btn-guardar" onclick="guardarDisenoServidor()">Guardar Diseño PDF</button>
+                </div>
+
+                <div class="tarjeta" id="panel-crear-peones">
+                    <div class="tarjeta-titulo">👷 Control de Operadores</div>
+                    <div class="form-grupo"><label>Nombre y Apellido</label><input type="text" id="op-nombre" class="form-control" autocomplete="off" placeholder="Ej: Juan Ramírez"></div>
+                    <div class="form-grupo"><label>Correo de Acceso (Usuario)</label><input type="text" id="op-usu" class="form-control" autocomplete="off" placeholder="Ej: juan@taurus.com"></div>
+                    <div class="form-grupo">
+                        <label>Rol del Nuevo Usuario</label>
+                        <select id="op-rol" class="form-control" onchange="togglePermisos()">
+                            <option value="Operador">Operador (Acceso Limitado)</option>
+                            <option value="Propietario">Propietario (Acceso Total)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-grupo" id="caja-permisos">
+                        <label style="font-size:12px; color:var(--muted); margin-bottom:8px; display:block;">Permisos de Menú Inferior:</label>
+                        <div style="display:flex; flex-direction:column; gap:10px; background:var(--primario); padding:12px; border:1px solid var(--borde); border-radius:8px;">
+                            <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="dash" checked> 📊 Panel de Control</label>
+                            <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="ficha" checked> 🐄 Ficha Clínica (Manga)</label>
+                            <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="base" checked> 📋 Base de Datos</label>
+                            <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="reporte"> 📄 Reportes PDF</label>
+                        </div>
+                    </div>
+                    <button id="btn-crear-op" class="btn-guardar" style="background:var(--exito);" onclick="crearOperador()">Registrar Permisos de Usuario</button>
+                    
+                    <hr style="border-color:var(--borde); margin:20px 0;">
+                    
+                    <div class="tarjeta-titulo" style="font-size: 15px;">✏️ Editar Permisos</div>
+                    <div class="form-grupo">
+                        <select id="op-edit-usu-sel" class="form-control" onchange="cargarPermisosEdicion()">
+                            <option value="">-- Seleccione un operador --</option>
+                        </select>
+                    </div>
+                    <div id="caja-edit-permisos" class="oculto">
+                        <div class="form-grupo">
+                            <label style="font-size:12px; color:var(--muted); margin-bottom:8px; display:block;">Nuevos Permisos:</label>
+                            <div style="display:flex; flex-direction:column; gap:10px; background:var(--primario); padding:12px; border:1px solid var(--borde); border-radius:8px;">
+                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="dash"> 📊 Panel de Control</label>
+                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="ficha"> 🐄 Ficha Clínica (Manga)</label>
+                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="base"> 📋 Base de Datos</label>
+                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="reporte"> 📄 Reportes PDF</label>
+                            </div>
+                        </div>
+                        <button id="btn-editar-op" class="btn-guardar" style="background:var(--secundario);" onclick="guardarEdicionOperador()">Actualizar Permisos</button>
+                    </div>
+
+                    <hr style="border-color:var(--borde); margin:20px 0;">
+                    
+                    <div class="form-grupo">
+                        <label>Eliminar Operador Permanentemente</label>
+                        <select id="op-del-usu-sel" class="form-control"><option value="">-- Seleccione --</option></select>
+                    </div>
+                    <button id="btn-eliminar-op" class="btn-guardar" style="background:var(--peligro);" onclick="eliminarOperador()">Eliminar Operador</button>
+                </div>
+
+                <div class="tarjeta">
+                    <div class="tarjeta-titulo">🎨 Apariencia de la App</div>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-weight: bold; color: var(--texto);">Tema Claro / Oscuro</span>
+                        <button class="btn-mini" onclick="toggleTema()">Cambiar Tema</button>
+                    </div>
+                </div>
+                
+                <div class="tarjeta" id="panel-analiticas">
+                    <div class="tarjeta-titulo">📊 Analíticas Dashboard (Máx 3)</div>
+                    <div style="display:flex; flex-direction:column; gap:12px; font-size:14px;">
+                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="1" onchange="verificarLimiteGraficos(this)"> 1. Tasa de Preñez</label>
+                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="2" onchange="verificarLimiteGraficos(this)"> 2. Composición Hacienda</label>
+                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="3" onchange="verificarLimiteGraficos(this)"> 3. Distribución Lotes</label>
+                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="4" onchange="verificarLimiteGraficos(this)"> 4. Condición Corporal</label>
+                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="5" onchange="verificarLimiteGraficos(this)"> 5. Causas Vacías</label>
+                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="6" onchange="verificarLimiteGraficos(this)"> 6. Ratios Sanidad</label>
+                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="7" onchange="verificarLimiteGraficos(this)"> 7. Preñez por Lote</label>
+                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="8" onchange="verificarLimiteGraficos(this)"> 8. Eficacia Toros</label>
+                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="9" onchange="verificarLimiteGraficos(this)"> 9. Promedios Pesos</label>
+                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="10" onchange="verificarLimiteGraficos(this)"> 10. Volumen Trabajo</label>
+                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="11" onchange="verificarLimiteGraficos(this)"> 11. Causas de Baja</label>
+                    </div>
+                </div>
+
+                <a href="https://wa.me/595976139617" target="_blank" class="btn-guardar" style="display:block; text-align:center; background:#25D366; margin-top:20px; font-size:16px; text-decoration:none; padding:15px; box-sizing:border-box;">💬 Soporte Técnico WhatsApp</a>
+                <button class="btn-guardar" style="background: var(--peligro); margin-top: 20px; font-size: 16px;" onclick="cerrarSesion()">🚪 Cerrar Sesión</button>
             </div>
         </div>
 
         <nav class="nav-inferior">
-            <div class="nav-item activo" onclick="cambiarVista('vista-dashboard', this)">📊 Panel</div>
-            <div class="nav-item" onclick="cambiarVista('vista-manga', this)">🐄 Manga</div>
+            <div class="nav-item activo" onclick="cambiarVista('vista-dashboard', this)"><span class="nav-icon">📊</span>Panel</div>
+            <div class="nav-item" onclick="cambiarVista('vista-manga', this)"><span class="nav-icon">🐄</span>Ficha</div>
+            <div class="nav-item" onclick="cambiarVista('vista-registro', this); cargarListaRegistro();"><span class="nav-icon">📋</span>Buscar</div>
+            <div class="nav-item" onclick="cambiarVista('vista-informe', this); actualizarInformeAvanzado();"><span class="nav-icon">📄</span>Informes</div>
+            <div class="nav-item" onclick="cambiarVista('vista-config', this); cargarListaOperadores();"><span class="nav-icon">⚙️</span>Ajustes</div>
         </nav>
     </div>
 
-    <!-- MODAL DE PESAJE -->
-    <div id="modal-peso" class="modal">
+    <!-- MODALES GANADEROS -->
+    <div id="m-baja" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('m-baja')">&times;</span><h3>💀 Registro de Baja / Muerte</h3><div class="form-grupo"><label>Causa</label><select class="form-control" id="i-baja-causa"><option>Enfermedad</option><option>Accidente</option><option>Depredador</option><option>Natural / Desconocida</option><option>Venta / Faena</option></select></div><div class="form-grupo"><label>Observaciones</label><textarea class="form-control textarea" id="i-baja-txt"></textarea></div><button class="btn-guardar" style="background:var(--peligro);" onclick="prepararGuardado('m-baja', 'Baja')">Confirmar Baja</button></div></div>
+    <div id="modal-renombrar" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-renombrar')">&times;</span><h3>Modificar Número RP</h3><div class="form-grupo"><label>Nuevo RP</label><input type="text" class="form-control" id="f-nueva-caravana"></div><button class="btn-guardar" onclick="guardarCambioCaravana()">Confirmar</button></div></div>
+    <div id="modal-comentario" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-comentario')">&times;</span><h3>Anotación General</h3><div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-comentario', 'Comentario')">Guardar Nota</button></div></div>
+    <div id="modal-rfid" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-rfid')">&times;</span><h3>Vincular Bastón RFID</h3><p style="font-size:12px; color:var(--muted); margin-bottom:15px;">Chip <strong id="lbl-rfid-scaneado" style="color:var(--secundario);"></strong> no asignado.</p><div class="form-grupo"><input type="text" class="form-control" id="f-rfid-caravana" placeholder="Ingrese RP (Ej: 1234)" style="text-align: center; font-size: 20px; font-weight: bold;"></div><button class="btn-guardar" onclick="guardarVinculacionRFID()">Vincular y Abrir Ficha</button></div></div>
+    
+    <div id="m-perfil" class="modal">
         <div class="modal-body">
-            <span class="cerrar" onclick="cerrarModal('modal-peso')">&times;</span>
-            <h3 style="margin-top:0;">Nuevo Peso</h3>
-            <input type="number" step="0.5" class="form-control" id="i-peso-val" placeholder="Ej: 450 Kg" style="font-size:24px; text-align:center;">
-            <button class="btn-guardar" onclick="prepararGuardado('modal-peso', 'Peso')">Guardar Peso</button>
+            <span class="cerrar" onclick="cerrarModal('m-perfil')">&times;</span>
+            <h3>Datos Base del Animal</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="form-grupo"><label>Raza</label><input type="text" class="form-control" id="f-raza"></div>
+                <div class="form-grupo">
+                    <label>Nacimiento (Mes/Año)</label>
+                    <input type="month" class="form-control" id="f-nacimiento" onchange="mostrarCarimboCalculado()">
+                    <span id="lbl-auto-carimbo" style="font-size:10px; color:var(--exito); font-weight:bold; display:block; margin-top:3px;"></span>
+                </div>
+                <div class="form-grupo"><label>Padre</label><input type="text" class="form-control" id="f-padre"></div>
+                <div class="form-grupo"><label>Madre</label><input type="text" class="form-control" id="f-madre"></div>
+            </div>
+            <button class="btn-guardar" onclick="guardarPerfilCompleto()">Actualizar Perfil</button>
         </div>
     </div>
+    
+    <div id="modal-clasificacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-clasificacion')">&times;</span><h3>Clasificación y Lote</h3><div class="form-grupo"><label>Categoría</label><select class="form-control" id="input-cat-rapida"><option value="TH: Ternera Hembra">TH: Ternera Hembra</option><option value="TM: Ternero Macho">TM: Ternero Macho</option><option value="DH: Desmamante Hembra">DH: Desmamante Hembra</option><option value="DM: Desmamante Macho">DM: Desmamante Macho</option><option value="V: Vaca/Vaquilla">V: Vaca/Vaquilla</option><option value="VV: Vaca Vieja">VV: Vaca Vieja</option><option value="Toros">Toros</option><option value="Novillos">Novillos</option><option value="Bueyes">Bueyes</option></select></div><div class="form-grupo"><label>Lote Asignado</label><input type="text" list="lista-lotes" class="form-control" id="input-lote-rapido"><datalist id="lista-lotes"><option value="Hacienda General"></option><option value="Lecheras"></option><option value="Preñadas"></option><option value="Inseminadas"></option></datalist></div><div class="form-grupo"><label>Carimbo Manual (Opcional)</label><input type="number" class="form-control" id="input-carimbo-rapido"></div><button class="btn-guardar" onclick="guardarClasificacion()">Actualizar Ubicación</button></div></div>
+    <div id="modal-diagnostico" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-diagnostico')">&times;</span><h3>Tacto / Diagnóstico (Dx)</h3><div class="form-grupo"><select class="form-control" id="i-dx-sel" style="font-weight:bold; font-size:18px;"><option value="Preñada">✅ Preñada</option><option value="Vacía">❌ Vacía</option><option value="Vacía (Sangre)">🩸 Vacía (Sangre)</option></select></div><div class="form-grupo"><label>Observaciones</label><textarea class="form-control textarea" id="i-dx-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-diagnostico', 'Diagnóstico')">Registrar Tacto</button></div></div>
+    <div id="modal-peso" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-peso')">&times;</span><h3>Pesaje</h3><div class="form-grupo"><input type="number" step="0.5" class="form-control" id="i-peso-val" placeholder="Kg" style="font-size:24px; font-weight:bold; text-align:center;"></div><div class="form-grupo"><label>Condición Corporal</label><select class="form-control" id="i-peso-cond"><option>Óptima</option><option>Bajo Peso</option><option>Sobrepeso</option></select></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-peso-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-peso', 'Peso')">Registrar Peso</button></div></div>
+    
+    <div id="modal-sanidad" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-sanidad')">&times;</span><h3>💉 Tratamiento / Sanidad</h3><div class="form-grupo"><label>Producto</label><select class="form-control" id="i-sani-sel"><option>Antiparasitario (Ivermectina)</option><option>Vacuna Aftosa</option><option>Vacuna Carbunclo</option><option>Vitamina ADE</option><option>Tratamiento General</option></select></div><div class="form-grupo"><label>Lote / Detalles</label><input type="text" class="form-control" id="i-sani-lote"></div><div class="form-grupo"><label>Notas (Enfermedad, etc)</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div>
+        <div class="form-grupo">
+            <label style="color:var(--alerta);">⏳ Próxima Dosis / Recordatorio</label>
+            <select class="form-control" id="i-sani-recordatorio" style="border-color: var(--alerta);">
+                <option value="0">Sin recordatorio (Única dosis)</option>
+                <option value="15">Avisarme en 15 días</option>
+                <option value="21">Avisarme en 21 días</option>
+                <option value="30">Avisarme en 1 mes</option>
+                <option value="90">Avisarme en 3 meses</option>
+                <option value="180">Avisarme en 6 meses</option>
+                <option value="365">Avisarme en 1 año</option>
+            </select>
+        </div>
+        <button class="btn-guardar" onclick="prepararGuardado('modal-sanidad', 'Sanidad')">Registrar Sanidad</button></div></div>
+        
+    <div id="modal-inseminacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-inseminacion')">&times;</span><h3>🧬 Reproducción</h3><div class="form-grupo"><label>Inseminador / Método</label><input type="text" class="form-control" id="i-ins-quien"></div><div class="form-grupo"><label>Toro / Pajuela</label><input type="text" class="form-control" id="i-ins-toro"></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-ins-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-inseminacion', 'Inseminación')">Registrar</button></div></div>
+    <div id="modal-nut" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-nut')">&times;</span><h3>🌾 Suplemento Nutricional</h3><div class="form-grupo"><label>Alimento</label><input type="text" class="form-control" id="i-nut-prod" list="lista-alimentos"><datalist id="lista-alimentos"><option value="Sal Mineral"></option><option value="Sal Proteica"></option><option value="Forraje / Pastura"></option></datalist></div><div class="form-grupo"><label>Dosificación</label><input type="text" class="form-control" id="i-nut-rac"></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-nut', 'Nutrición')">Registrar Nutrición</button></div></div>
+    <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial Clínico</h3><div id="contenido-historial"></div></div></div>
 
     <script>
-        // 1. INICIALIZACIÓN DE FIREBASE (Tus credenciales exactas)
+        // ==========================================
+        // 1. INICIALIZACIÓN DE FIREBASE (El nuevo Motor)
+        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDTXUYwYYkQ_pKDhui9H3cFmecgAPQ9eqA",
             authDomain: "taurus-cbd59.firebaseapp.com",
@@ -154,118 +546,930 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // 2. ACTIVAR MODO OFFLINE (Magia pura: Adiós al tc_pendientes)
+        // ACTIVAR MODO OFFLINE AUTOMÁTICO (Reemplaza a tc_pendientes)
         db.enablePersistence().catch(err => {
-            console.warn("Persistencia offline falló:", err);
+            console.warn("La persistencia offline falló:", err);
         });
 
-        // 3. VARIABLES GLOBALES
-        let dbCache = []; 
-        let rpActivo = null; 
-        let maestroId = "ESTANCIA_DEMO_01"; 
+        // ==========================================
+        // 2. VARIABLES GLOBALES DE SESIÓN
+        // ==========================================
+        let dbCache = []; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
+        let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
+        let alertaGlobalIdActual = "";
+        let unsubscribeSnapshot = null;
 
-        // 4. VERIFICAR SESIÓN ACTIVA AL ENTRAR (Inicia al instante si ya te logueaste antes)
-        auth.onAuthStateChanged((user) => {
-            if (user) arrancarSistemaFirebase();
+        function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
+        function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
+
+        // ==========================================
+        // 3. INICIO AUTOMÁTICO (Si ya hay sesión)
+        // ==========================================
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                // El usuario ya ingresó antes. Buscamos sus datos en la base.
+                const userDoc = await db.collection("usuarios").doc(user.email).get();
+                if(userDoc.exists) {
+                    const ud = userDoc.data();
+                    arrancarSistemaFirebase(ud.maestroId, user.email, ud.rol, ud.nombre, ud.hacienda);
+                } else {
+                    // Salvavidas de prueba si el documento de usuario aún no existe
+                    arrancarSistemaFirebase("ESTANCIA_DEMO_01", user.email, "Propietario", "Administrador", "Taurus Demo");
+                }
+            }
         });
 
-        // 5. INICIO DE SESIÓN
+        if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
+        function toggleTema() {
+            document.body.classList.toggle('tema-claro');
+            localStorage.setItem('tc_tema', document.body.classList.contains('tema-claro') ? 'claro' : 'oscuro');
+        }
+
+        function mostrarToast(mensaje) {
+            let t = document.createElement('div');
+            t.innerText = mensaje;
+            t.style.position = 'fixed'; t.style.bottom = '80px'; t.style.left = '50%'; t.style.transform = 'translateX(-50%)';
+            t.style.background = 'var(--exito)'; t.style.color = 'white'; t.style.padding = '12px 24px'; t.style.borderRadius = '30px'; 
+            t.style.zIndex = '9999'; t.style.fontWeight = 'bold'; t.style.boxShadow = '0 4px 15px rgba(0,0,0,0.4)'; t.style.fontSize = '14px';
+            document.body.appendChild(t);
+            setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() => t.remove(), 500); }, 2000);
+        }
+
+        function cerrarPopUpAlerta() {
+            document.getElementById('modal-alerta-global').style.display = 'none';
+            document.getElementById('banner-alerta-global').classList.add('oculto');
+        }
+        window.marcarAlertaLeida = function() {
+            document.getElementById('modal-alerta-global').style.display = 'none';
+            document.getElementById('banner-alerta-global').classList.add('oculto');
+        }
+
+        function togglePermisos() {
+            const rol = document.getElementById('op-rol').value;
+            document.getElementById('caja-permisos').style.display = (rol === 'Propietario') ? 'none' : 'block';
+        }
+
+        let rafagaActiva = false;
+        window.toggleRafaga = function() {
+            rafagaActiva = !rafagaActiva;
+            const btn = document.getElementById('btn-toggle-rafaga');
+            const opciones = document.getElementById('opciones-rafaga');
+            if(rafagaActiva) {
+                btn.innerText = "ENCENDIDO"; btn.style.background = "var(--secundario)"; btn.style.color = "white";
+                opciones.classList.remove('oculto'); verificarRafagaCustom();
+            } else {
+                btn.innerText = "APAGADO"; btn.style.background = "transparent"; btn.style.color = "var(--texto)";
+                opciones.classList.add('oculto');
+            }
+        };
+
+        window.verificarRafagaCustom = function() {
+            const sel = document.getElementById('rafaga-accion').value;
+            const customInput = document.getElementById('rafaga-prod-custom');
+            const detallesBox = document.getElementById('caja-rafaga-detalles');
+            if(sel === 'solo_peso') { customInput.classList.add('oculto'); detallesBox.classList.add('oculto'); } 
+            else { detallesBox.classList.remove('oculto'); if(sel === 'OTRO') { customInput.classList.remove('oculto'); customInput.focus(); } else { customInput.classList.add('oculto'); } }
+        };
+
+        function setEstadoRed(online, texto = null) {
+            const b = document.getElementById('estado-red');
+            if(!b) return;
+            if(texto) { b.innerText = texto; } 
+            else if(navigator.onLine || online) { b.classList.remove('offline'); b.innerText = '🟢 Conectado'; } 
+            else { b.classList.add('offline'); b.innerText = '🔴 Modo Offline'; }
+        }
+        window.addEventListener('online', () => setEstadoRed(true)); window.addEventListener('offline', () => setEstadoRed(false));
+
+        // ==========================================
+        // 4. NUEVO INICIO DE SESIÓN CON FIREBASE
+        // ==========================================
         async function procesarIngreso() {
             const u = document.getElementById('usuario').value.trim(); 
             const p = document.getElementById('password').value.trim();
+            const btn = document.getElementById('btn-ingreso');
             const err = document.getElementById('error-login');
             
             if(!u || !p) return; 
-            
+            btn.disabled = true; btn.innerText = "Verificando en Firebase..."; err.style.display = 'none';
+
             try {
-                // Truco: Agrega @taurus.com al usuario para Firebase
+                // Formato correo para Firebase (Ej: fer@taurus.com)
                 const email = u.includes('@') ? u : u + '@taurus.com';
+                
                 await auth.signInWithEmailAndPassword(email, p);
+                
+                // Si el login fue exitoso, Firebase llama automáticamente a auth.onAuthStateChanged arriba.
+                // Lo dejamos terminar...
             } catch(error) {
-                err.innerText = "Usuario o contraseña incorrectos."; 
-                err.style.display = 'block';
+                console.error(error);
+                let msj = "Usuario o contraseña incorrectos.";
+                if(error.code === 'auth/network-request-failed') msj = "Sin conexión a internet para iniciar sesión.";
+                err.innerText = msj; err.style.display = 'block';
+                btn.disabled = false; btn.innerText = "Iniciar Sesión";
             }
         }
 
-        // 6. ARRANQUE DEL SISTEMA Y SINCRONIZACIÓN EN TIEMPO REAL
-        function arrancarSistemaFirebase() {
-            document.getElementById('pantalla-login').classList.add('oculto'); 
-            document.getElementById('pantalla-app').classList.remove('oculto');
+        // ==========================================
+        // 5. ARRANQUE DEL SISTEMA Y LECTURA EN TIEMPO REAL
+        // ==========================================
+        function arrancarSistemaFirebase(mId, uEmail, rolStr, nomCompleto, haciendaNom) {
+            maestroId = mId; usActivo = uEmail; usRol = rolStr; usNombre = nomCompleto; usHacienda = haciendaNom;
+            
+            let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
+            let displayRol = isPropietario ? 'Propietario' : 'Operador';
+            
+            if (window.AndroidTaurus && window.AndroidTaurus.identificarUsuarioPush) { window.AndroidTaurus.identificarUsuarioPush(usActivo, displayRol, maestroId); }
+            if (window.OneSignalDeferred) { 
+                OneSignalDeferred.push(async function(OneSignal) { 
+                    OneSignal.User.addTags({ rol: displayRol, estancia_id: maestroId }); 
+                    if (isPropietario) { await OneSignal.Slidedown.promptPush(); }
+                }); 
+            }
+            
+            document.getElementById('usuario-activo-lbl').value = `${usHacienda.toUpperCase()} - ${usNombre} (${displayRol})`;
+            
+            document.querySelectorAll('.vista').forEach(e => e.classList.add('oculto'));
+            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('activo'));
 
-            // Escuchamos la base de datos de Firebase. Si hay un cambio, actualiza la pantalla en milisegundos.
+            let tabSeleccionado = null; let vistaInicial = 'vista-dashboard';
+
+            if (isPropietario) {
+                document.querySelectorAll('.nav-item').forEach(li => li.style.display = 'flex');
+                tabSeleccionado = document.querySelectorAll('.nav-item')[0];
+            } else {
+                document.getElementById('panel-crear-peones').style.display = 'none'; 
+                document.getElementById('panel-membrete').style.display = 'none';
+                
+                let perms = usRol.includes('|') ? usRol.split('|')[1] : "dash,ficha,base,reporte";
+                let foundFirst = false;
+                
+                document.querySelectorAll('.nav-item').forEach(li => {
+                    let target = li.getAttribute('onclick');
+                    if(target && target.includes('cambiarVista')) {
+                        let viewId = target.match(/'([^']+)'/)[1];
+                        let esConfig = viewId.includes('config');
+                        let isAllowed = false;
+                        
+                        if(viewId.includes('dash') && perms.includes('dash')) isAllowed = true;
+                        if((viewId.includes('ficha') || viewId.includes('manga')) && perms.includes('ficha')) isAllowed = true;
+                        if((viewId.includes('base') || viewId.includes('registro')) && perms.includes('base')) isAllowed = true;
+                        if((viewId.includes('reporte') || viewId.includes('informe')) && perms.includes('reporte')) isAllowed = true;
+                        
+                        if (!esConfig && !isAllowed) { li.style.display = 'none'; } else {
+                            li.style.display = 'flex';
+                            if (!foundFirst && !esConfig) { vistaInicial = viewId; tabSeleccionado = li; foundFirst = true; }
+                        }
+                    }
+                });
+                if(!perms.includes('dash')) { let pAn = document.getElementById('panel-analiticas'); if(pAn) pAn.style.display = 'none'; }
+            }
+            
+            const prefs = lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
+            const dGuardado = lsGet('tc_hacienda', {}); 
+            aplicarDisenoEnPantalla(dGuardado.nombre || usHacienda, dGuardado.logo);
+            
+            document.getElementById('f-inf-rango-fecha').value = "30"; manejarRangoFechas();
+            
+            document.getElementById('pantalla-login').classList.add('oculto'); 
+            document.getElementById('pantalla-app').classList.remove('oculto'); 
+            
+            if(tabSeleccionado) { cambiarVista(vistaInicial, tabSeleccionado); } else { cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
+
+            // ==============================================================
+            // LA MAGIA DE FIREBASE: Escucha en vivo sin setInterval
+            // ==============================================================
             const eventosRef = db.collection("estancias").doc(maestroId).collection("eventos");
             
-            eventosRef.orderBy("fecha", "desc").limit(100).onSnapshot((snapshot) => {
+            if(unsubscribeSnapshot) unsubscribeSnapshot(); // Limpiar si había uno previo
+            
+            unsubscribeSnapshot = eventosRef.orderBy("fecha", "desc").limit(2000).onSnapshot((snapshot) => {
                 let nuevosDatos = [];
-                snapshot.forEach(doc => nuevosDatos.push(doc.data()));
+                snapshot.forEach(doc => {
+                    let d = doc.data();
+                    nuevosDatos.push(d);
+                });
                 
-                dbCache = nuevosDatos; 
-                document.getElementById('dash-acciones').innerText = dbCache.length;
+                dbCache = nuevosDatos; // Reemplaza todo el array local al instante
                 
-                if(rpActivo) buscarCaravanaBtn(rpActivo);
+                procesarDatosDashboard();
+                if(document.getElementById('vista-registro') && !document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); 
+                if(rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) buscarCaravanaBtn(rpActivo);
                 
-                setEstadoRed(true, '🟢 Conectado');
+                setEstadoRed(true, '⚡ Sincronizado');
+                setTimeout(() => setEstadoRed(true), 2000);
             }, (error) => {
-                setEstadoRed(false, '🔴 Offline');
+                console.log("Error o Modo Offline en onSnapshot: ", error);
+                setEstadoRed(false, '🔴 Modo Offline');
             });
+
+            cargarListaOperadores();
         }
 
-        function setEstadoRed(online, texto) {
-            const b = document.getElementById('estado-red');
-            b.innerText = texto;
-            if(online) { b.classList.remove('offline'); } else { b.classList.add('offline'); }
+        function aplicarDisenoEnPantalla(nombre, logo) { 
+            let n = nombre || 'Taurus Control';
+            let l = logo || 'gemini-svg.png';
+            
+            document.getElementById('cfg-nom').value = nombre || ''; 
+            document.getElementById('preview-nombre-reporte').innerText = n;
+            
+            const imgRep = document.getElementById('preview-logo-reporte');
+            if(imgRep) imgRep.src = l;
+            
+            const imgCfg = document.getElementById('preview-logo-config');
+            if(imgCfg) imgCfg.src = l;
         }
 
-        // 7. GUARDAR DATOS (Soporta Offline automáticamente)
-        function ejecutarAccion(tipo, val, modalId) {
+        // ==========================================
+        // 6. MOTOR DE EVENT SOURCING (PROCESAR DB)
+        // ==========================================
+        function procesarEventos() {
+            let dbAsc = [...dbCache].sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+            let historiaPorRP = {};
+            
+            dbAsc.forEach(evt => {
+                let rp = String(evt.caravana);
+                if(rp === "---" || !rp) return;
+                
+                if(!historiaPorRP[rp]) historiaPorRP[rp] = [];
+                
+                if(evt.accion === 'Borrar_Caravana') {
+                    historiaPorRP[rp] = []; 
+                } else if(evt.accion === 'Cambio de Caravana') {
+                    let nuevoRP = String(evt.valor);
+                    if(!historiaPorRP[nuevoRP]) historiaPorRP[nuevoRP] = [];
+                    
+                    let eventosTraspasados = historiaPorRP[rp].map(e => ({...e, caravana: nuevoRP}));
+                    historiaPorRP[nuevoRP] = historiaPorRP[nuevoRP].concat(eventosTraspasados);
+                    
+                    historiaPorRP[nuevoRP].push({...evt, caravana: nuevoRP}); 
+                    historiaPorRP[rp] = []; 
+                } else {
+                    historiaPorRP[rp].push(evt);
+                }
+            });
+            return historiaPorRP;
+        }
+
+        function obtenerRegistrosActivos() {
+            let historia = procesarEventos();
+            let validos = [];
+            for(let rp in historia) { validos = validos.concat(historia[rp]); }
+            const globalEvents = dbCache.filter(d => d.caravana === "---" || !d.caravana);
+            return validos.concat(globalEvents).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+        }
+
+        function obtenerHistorial(caravana) {
+            let historia = procesarEventos();
+            let hist = historia[String(caravana)] || [];
+            return [...hist].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+        }
+
+        // ==========================================
+        // 7. BUSCADOR Y FICHA DE ANIMAL
+        // ==========================================
+        function buscarCaravanaBtn(rpForzado = null) {
+            try {
+                let rp = rpForzado ? rpForzado : document.getElementById('buscador-caravana').value.trim(); 
+                if(!rp) return; 
+                let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === rp.toLowerCase());
+                if(esRFIDRegistrado) rp = esRFIDRegistrado.caravana;
+
+                rpActivo = rp; document.getElementById('ficha-animal').classList.remove('oculto'); 
+                const elCaravanaTop = document.getElementById('val-caravana'); if(elCaravanaTop) elCaravanaTop.innerText = rp;
+                
+                const regs = obtenerHistorial(rp); 
+                const uBaja = regs.find(d => d.accion === 'Baja');
+                const badgeBaja = document.getElementById('badge-estado-animal');
+                if(uBaja) { badgeBaja.style.display = 'block'; badgeBaja.innerText = "BAJA: " + uBaja.valor.toUpperCase(); } else { badgeBaja.style.display = 'none'; }
+
+                let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", nutricion="-", sanidad="-", inseminacion="-", htmlNotas=""; 
+                let gdpHtml = "";
+                let todosLosPesos = regs.filter(d => d.accion === 'Peso');
+                if(todosLosPesos.length >= 1) {
+                    let pesoActual = todosLosPesos[0];
+                    let p1 = parseFloat(pesoActual.valor); let d1 = new Date(pesoActual.fecha); let f1_str = pesoActual.fecha.split('T')[0] || ""; 
+                    let pesoAnterior = null;
+                    for(let i = 1; i < todosLosPesos.length; i++) { let fTemp_str = todosLosPesos[i].fecha.split('T')[0] || ""; if(f1_str !== fTemp_str && fTemp_str !== "") { pesoAnterior = todosLosPesos[i]; break; } }
+                    if(pesoAnterior) {
+                        let p2 = parseFloat(pesoAnterior.valor); let d2 = new Date(pesoAnterior.fecha);
+                        let diffTime = Math.abs(d1 - d2); let dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                        if(dias >= 1) { let gdp = ((p1 - p2) / dias).toFixed(3); if(gdp > 0) gdpHtml = `<span style="color:var(--exito); font-weight:bold; font-size:12px;">🚀 +${gdp} Kg/día</span>`; else if(gdp < 0) gdpHtml = `<span style="color:var(--peligro); font-weight:bold; font-size:12px;">⚠️ ${gdp} Kg/día</span>`; else gdpHtml = `<span style="color:var(--muted); font-weight:bold; font-size:12px;">⚖️ Mantuvo su peso</span>`; }
+                    } else {
+                        if(todosLosPesos.length > 1) { gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Pesajes del mismo día)</span>`; } else { gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Falta peso histórico)</span>`; }
+                    }
+                }
+                const elGdp = document.getElementById('val-gdp'); if (elGdp) elGdp.innerHTML = gdpHtml;
+
+                if(regs.length > 0) {
+                    const uP = regs.find(d => d.accion === 'Perfil Master'); 
+                    if(uP) { let p = String(uP.valor || "").split('|'); raza = p[0] || "-"; edad = p[1] || "-"; padre = p[2] || "-"; madre = p[3] || "-"; cat = String(uP.detalles || "").split('|')[0] || "-"; } 
+                    const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
+                    if(uC) { let v = String(uC.valor || "").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-"; } 
+                    const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
+                    const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
+                    const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nutricion = (uNut.valor || "-") + " | " + (uNut.detalles || "");
+                    const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) sanidad = (uSan.valor || "-") + " | " + (uSan.detalles || "");
+                    const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) inseminacion = (uIns.valor || "-") + " | " + (uIns.detalles || "");
+                    
+                    let ultComentario = "Sin comentarios.";
+                    regs.forEach(r => {
+                        try {
+                            let acc = String(r.accion).trim(); let det = String(r.detalles || ""); let notaTexto = "";
+                            if (acc === 'Comentario') { notaTexto = det.split('|')[0] || ""; if(ultComentario === "Sin comentarios.") ultComentario = notaTexto; } 
+                            else if (det.includes('Notas:')) { let parts = det.split('Notas:'); if (parts.length > 1) { let n = parts[1].split('|')[0].trim(); if(n && n !== "-" && n !== "") notaTexto = `[${acc}] ${n}`; } }
+                        } catch(e) {}
+                    });
+                    document.getElementById('val-comentario').innerText = ultComentario;
+                } else {
+                    document.getElementById('val-comentario').innerText = "Sin comentarios.";
+                }
+                
+                const elCat = document.getElementById('val-categoria'); if(elCat) elCat.innerText = cat;
+                const elPeso = document.getElementById('val-peso'); if(elPeso) elPeso.innerText = peso;
+                const elDx = document.getElementById('val-dx'); if(elDx) elDx.innerText = dx;
+                const elLote = document.getElementById('val-lote'); if(elLote) elLote.innerText = lote;
+                const elCarimbo = document.getElementById('val-carimbo'); if(elCarimbo) elCarimbo.innerText = carimbo;
+                const elGenealogia = document.getElementById('val-genealogia'); if(elGenealogia) elGenealogia.innerText = padre + " / " + madre;
+                const elNutricion = document.getElementById('val-nutricion'); if(elNutricion) elNutricion.innerText = nutricion;
+                const elSanidad = document.getElementById('val-sanidad'); if(elSanidad) elSanidad.innerText = sanidad;
+                const elInseminacion = document.getElementById('val-inseminacion'); if(elInseminacion) elInseminacion.innerText = inseminacion;
+                const elRaza = document.getElementById('val-raza'); if(elRaza) elRaza.innerText = raza;
+                
+                const elEdad = document.getElementById('val-edad'); if(elEdad) elEdad.innerText = edad;
+                const fRaza = document.getElementById('f-raza'); if(fRaza) fRaza.value = raza !== "-" ? raza : ""; 
+                const fNacimiento = document.getElementById('f-nacimiento'); 
+                if(fNacimiento) { fNacimiento.value = edad !== "-" ? edad : ""; mostrarCarimboCalculado(); } 
+                const fPadre = document.getElementById('f-padre'); if(fPadre) fPadre.value = padre !== "-" ? padre : ""; 
+                const fMadre = document.getElementById('f-madre'); if(fMadre) fMadre.value = madre !== "-" ? madre : ""; 
+                const inputCarimbo = document.getElementById('input-carimbo-rapido'); if(inputCarimbo) inputCarimbo.value = carimbo !== "-" ? carimbo : ""; 
+                const inputLote = document.getElementById('input-lote-rapido'); if(inputLote) inputLote.value = lote !== "-" ? lote : ""; 
+                const fComentario = document.getElementById('f-comentario-txt'); if(fComentario) fComentario.value = ""; 
+                
+                const catSelect = document.getElementById('input-cat-rapida'); 
+                if(catSelect) { for(let i=0; i<catSelect.options.length; i++) { if(catSelect.options[i].value === cat) catSelect.selectedIndex = i; } }
+            } catch(e) { console.error("Error al visualizar ficha", e); }
+        }
+
+        // ==========================================
+        // 8. GUARDADO EN FIREBASE (SOPORTA OFFLINE NATURAMENTE)
+        // ==========================================
+        function ejecutarAccion(tipo, val, det, modalId) {
             const obj = { 
                 fecha: new Date().toISOString(), 
                 accion: tipo, 
-                caravana: rpActivo, 
-                valor: val
+                caravana: rpActivo || "---", 
+                valor: val, 
+                detalles: det + ` | Op: ${usNombre}` 
             };
             
-            // Reflejamos al instante en pantalla
+            // Reflejo visual inmediato (Optimistic UI)
             dbCache.unshift(obj); 
-            buscarCaravanaBtn(rpActivo); 
-            document.getElementById('dash-acciones').innerText = dbCache.length;
+            if (rpActivo && rpActivo !== "---") buscarCaravanaBtn(rpActivo); 
+            procesarDatosDashboard(); 
             if(modalId) cerrarModal(modalId);
 
-            // Guardamos en Firebase. Si no hay red, Firebase lo guarda en el teléfono y lo sube después.
+            // Guardado Firebase
             db.collection("estancias").doc(maestroId).collection("eventos").add(obj)
-            .then(() => console.log("Guardado en la nube"))
-            .catch(() => console.log("Guardado localmente (Offline)"));
+            .then(() => {
+                if(tipo === 'Peso') mostrarToast("✅ Peso guardado");
+            })
+            .catch((err) => {
+                console.log("Guardado en caché (Offline)", err);
+                if(tipo === 'Peso') mostrarToast("💾 Peso en Caché");
+            });
         }
 
-        // 8. FUNCIONES DE INTERFAZ
-        function buscarCaravanaBtn(rpForzado = null) {
-            let rp = rpForzado ? rpForzado : document.getElementById('buscador-caravana').value.trim(); 
-            if(!rp) return; 
+        function prepararGuardado(mId, t) { 
+            if(!rpActivo) return; let v = "-", d = ""; const i = document.getElementById(mId).querySelectorAll('.form-control, .textarea'); 
+            if(t === 'Comentario') { d = i[0].value; } 
+            else if(t === 'Peso') { v = i[0].value + " Kg"; d = `Cond: ${i[1].value}. Notas: ${i[2].value}`; } 
+            else if(t === 'Sanidad') { let recordatorio = document.getElementById('i-sani-recordatorio').value; v = i[0].value; d = `Lote: ${i[1].value}. Notas: ${i[2].value}`; if (recordatorio !== "0") { d += ` | [RECORDATORIO:${recordatorio}]`; } } 
+            else if(t === 'Diagnóstico') { v = "Dx: " + i[0].value; d = i[1].value || "-"; } 
+            else if(t === 'Inseminación') { v = "Toro: " + i[1].value; d = `Ins: ${i[0].value}. Notas: ${i[2].value}`; } 
+            else if(t === 'Nutrición') { v = i[0].value; d = `Ración: ${i[1].value}. Notas: ${i[2].value}`; } 
+            else if(t === 'Baja') { v = i[0].value; d = i[1].value || "Sin observaciones"; }
             
-            rpActivo = rp; 
-            document.getElementById('ficha-animal').classList.remove('oculto'); 
-            document.getElementById('val-caravana').innerText = rp;
+            if(t === 'Baja') {
+                ejecutarAccion(t, v, d, mId); 
+                let rpArchivado = rpActivo + "-BAJA-" + Math.floor(Math.random() * 10000);
+                setTimeout(() => {
+                    ejecutarAccion('Cambio de Caravana', rpArchivado, 'RP archivado por Baja/Muerte', null);
+                    alert(`Baja registrada exitosamente. La caravana original (${rpActivo}) ha quedado libre y vacía de datos.`);
+                    rpActivo = rpArchivado; buscarCaravanaBtn(rpArchivado);
+                }, 400);
+            } else { ejecutarAccion(t, v, d, mId); }
+            i.forEach(el => el.value = ''); 
+        }
+
+        function mostrarCarimboCalculado() {
+            const fechaVal = document.getElementById('f-nacimiento').value; const lbl = document.getElementById('lbl-auto-carimbo');
+            if(!fechaVal) { lbl.innerText = ""; return; }
+            const partes = fechaVal.split('-'); let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
+            if (mes >= 7) anio += 1;
+            let carimboCalculado = anio % 10;
+            lbl.innerText = "🎯 Carimbo Oficial SENACSA calculado: " + carimboCalculado;
+        }
+
+        function guardarPerfilCompleto() { 
+            if(!rpActivo) return; 
+            const fRaza = document.getElementById('f-raza') ? document.getElementById('f-raza').value : "-";
+            const fNacimiento = document.getElementById('f-nacimiento') ? document.getElementById('f-nacimiento').value : "-";
+            const fPadre = document.getElementById('f-padre') ? document.getElementById('f-padre').value : "-";
+            const fMadre = document.getElementById('f-madre') ? document.getElementById('f-madre').value : "-";
+            const catValor = document.getElementById('val-categoria') ? document.getElementById('val-categoria').innerText : "-";
             
-            let regs = dbCache.filter(d => String(d.caravana) === String(rp)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-            let uPeso = regs.find(d => d.accion === 'Peso');
-            document.getElementById('val-peso').innerText = uPeso ? uPeso.valor : "-";
+            ejecutarAccion('Perfil Master', `${fRaza||"-"}|${fNacimiento||"-"}|${fPadre||"-"}|${fMadre||"-"}`, catValor, 'm-perfil'); 
+            
+            if (fNacimiento && fNacimiento !== "-") {
+                const partes = fNacimiento.split('-'); let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
+                if (mes >= 7) anio += 1;
+                let carimboCalculado = anio % 10; let loteActual = document.getElementById('val-lote').innerText || "-"; let catActual = document.getElementById('val-categoria').innerText || "-";
+                ejecutarAccion('Actualización de Datos', `Cat: ${catActual} | Carimbo: ${carimboCalculado}`, `Lote: ${loteActual}`, null);
+            }
         }
 
-        function prepararGuardado(mId, t) {
-            const val = document.getElementById('i-peso-val').value + " Kg";
-            ejecutarAccion(t, val, mId);
-            document.getElementById('i-peso-val').value = '';
+        function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'modal-clasificacion'); }
+        function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'modal-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
+        function borrarCaravana() { if(!rpActivo) return; if(confirm(`¿ELIMINAR todo el historial de la caravana ${rpActivo}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null); alert("Historial eliminado. El número quedó libre."); cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); } }
+        function verHistorial() { abrirModal('modal-historial'); let h = "<ul style='list-style:none; padding:0; margin:0;'>"; obtenerHistorial(rpActivo).forEach(r => { if(!r.accion.includes('Vinculacion')) { h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px;"><span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span><br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span></li>`; }}); document.getElementById('contenido-historial').innerHTML = h + "</ul>"; }
+
+        function cambiarModoReporte() {
+            const modo = document.getElementById('f-inf-modo').value;
+            if(modo === 'inventario') { document.getElementById('filtros-inventario').style.display = 'flex'; document.getElementById('filtros-eventos').style.display = 'none'; } 
+            else { document.getElementById('filtros-inventario').style.display = 'none'; document.getElementById('filtros-eventos').style.display = 'flex'; }
+            actualizarInformeAvanzado();
         }
 
-        function cambiarVista(v, b) { 
-            document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); 
-            document.getElementById(v).classList.remove('oculto'); 
-            document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('activo')); 
-            if(b) b.classList.add('activo'); 
+        function manejarRangoFechas() {
+            const rango = document.getElementById('f-inf-rango-fecha').value; const cajaManual = document.getElementById('caja-fechas-custom');
+            const dDesde = document.getElementById('f-inf-desde'); const dHasta = document.getElementById('f-inf-hasta');
+            let hoy = new Date(); let desde = new Date();
+            if (rango === 'custom') { cajaManual.style.display = 'flex'; } else {
+                cajaManual.style.display = 'none';
+                if(rango === 'hoy') { } else if (rango === '7') { desde.setDate(hoy.getDate() - 7); } else if (rango === '30') { desde.setDate(hoy.getDate() - 30); } else if (rango === 'todo') { desde = new Date('2000-01-01'); }
+                dDesde.value = desde.toISOString().split('T')[0]; dHasta.value = hoy.toISOString().split('T')[0];
+            }
+            actualizarInformeAvanzado();
         }
 
-        function abrirModal(id) { document.getElementById(id).style.display = 'flex'; } 
-        function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
+        function obtenerBadgeAccion(accion) {
+            if(accion === 'Sanidad') return `Sanidad`; if(accion === 'Peso') return `Peso`; if(accion === 'Diagnóstico') return `Tacto`; if(accion === 'Inseminación') return `Reproducción`; if(accion === 'Nutrición') return `Nutrición`; if(accion === 'Baja') return `Baja / Muerte`;
+            return `${accion}`;
+        }
+
+        function actualizarInformeAvanzado() {
+            const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
+            const datosActivos = obtenerRegistrosActivos(); 
+            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; 
+            
+            const tbodyMasivo = document.getElementById('tb-informe-masivo'); const tbodyEventos = document.getElementById('tb-informe-eventos'); const tbodyIndiv = document.getElementById('tb-informe-individual');
+            document.getElementById('tabla-masiva').classList.add('oculto'); document.getElementById('tabla-eventos').classList.add('oculto'); document.getElementById('tabla-individual').classList.add('oculto');
+            
+            let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja'));
+            
+            let tPreGlobal = 0; vivas.forEach(car => { const regs = obtenerHistorial(car); const uDx = regs.find(d => d.accion === 'Diagnóstico'); if (uDx && String(uDx.valor).includes('Preñada')) tPreGlobal++; });
+            document.getElementById('inf-prenadas').innerText = tPreGlobal;
+
+            if(fRp !== "") {
+                rpPrint = fRp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Dossier: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
+                const regs = obtenerHistorial(fRp); let hInd = ""; 
+                regs.forEach(r => { if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') hInd+=`<tr><td>${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${obtenerBadgeAccion(r.accion)}</strong></td><td>${r.valor}</td><td style="font-size:11px; color:var(--muted);">${r.detalles}</td></tr>`; });
+                tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.filter(r => !r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master').length; document.getElementById('inf-prenadas').innerText = "-"; 
+                return;
+            }
+
+            rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar PDF`;
+
+            if(modo === 'inventario') {
+                document.getElementById('tabla-masiva').classList.remove('oculto');
+                const fLote = document.getElementById('f-inf-lote').value; const fCat = document.getElementById('f-inf-cat').value; const fDx = document.getElementById('f-inf-dx').value; const fCarimbo = document.getElementById('f-inf-carimbo').value;
+                tbodyMasivo.innerHTML = ""; let countTotal = 0;
+                
+                vivas.forEach(car => {
+                    const regs = obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
+                    const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
+                    const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
+                    if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; }
+                    const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-";
+                    
+                    let pasaFiltro = true; 
+                    if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; 
+                    if(fCat !== "ALL" && !cat.includes(fCat)) pasaFiltro = false; 
+                    if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false; 
+                    if(fCarimbo !== "ALL" && carimbo !== fCarimbo) pasaFiltro = false; 
+                    
+                    if(pasaFiltro) { countTotal++; tbodyMasivo.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:15px;">${car}<br><span style="font-size:11px; color:gray;">Cb: ${carimbo}</span></td><td style="color:#000; border-color:#cbd5e1;">${cat}<br><span style="font-size:11px; color:gray;">${lote}</span></td><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${peso}</td><td style="color:#000; border-color:#cbd5e1;">${dx}</td></tr>`; }
+                });
+                document.getElementById('inf-total').innerText = countTotal; 
+            } else {
+                document.getElementById('tabla-eventos').classList.remove('oculto');
+                const fAcc = document.getElementById('f-inf-accion-oculto').value; const fDesde = document.getElementById('f-inf-desde').value; const fHasta = document.getElementById('f-inf-hasta').value; const fKey = document.getElementById('f-inf-keyword').value.trim().toLowerCase();
+                let eventos = datosActivos.filter(d => !d.accion.includes('Vinculacion') && d.accion !== 'Perfil Master' && d.accion !== 'Actualización de Datos' && d.caravana !== "---" && d.accion !== 'Baja Operador');
+                if(fAcc !== "ALL") eventos = eventos.filter(d => d.accion === fAcc); if(fDesde) eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00'));
+                if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); if(fKey) eventos = eventos.filter(d => (String(d.valor) + String(d.detalles)).toLowerCase().includes(fKey));
+                tbodyEventos.innerHTML = "";
+                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { tbodyEventos.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:15px;">${r.caravana}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:11px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
+                document.getElementById('inf-total').innerText = eventos.length; 
+            }
+        }
+
+        function cleanPDFText(text) {
+            if (!text) return ''; let str = String(text);
+            str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️|✏️|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️|🚪/g, '');
+            str = str.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+            return str.trim();
+        }
+
+        function ejecutarDescargaPDF() {
+            const btn = document.getElementById('btn-print-magico');
+            const textoOriginal = btn.innerText; btn.innerText = "⏳ Generando Archivo PDF...";
+
+            setTimeout(() => {
+                try {
+                    const hd = lsGet('tc_hacienda', {}); const h_nom = hd.nombre || 'TAURUS CONTROL'; const h_log = hd.logo || "";
+                    const modo = document.getElementById('f-inf-modo').value; const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4');
+                    
+                    const addMembrete = (tituloReporte) => {
+                        doc.setFontSize(20); doc.setFont("helvetica", "bold"); doc.text(cleanPDFText(h_nom).toUpperCase(), 14, 20);
+                        doc.setFontSize(11); doc.setFont("helvetica", "normal"); doc.text(cleanPDFText(tituloReporte), 14, 27);
+                        doc.setFontSize(9); doc.text(`Emitido: ${new Date().toLocaleDateString()}`, 14, 32);
+                        if (h_log && h_log.startsWith('data:image')) { try { let imgProps = doc.getImageProperties(h_log); let ratio = imgProps.width / imgProps.height; let targetHeight = 16; let targetWidth = targetHeight * ratio; if(targetWidth > 40) { targetWidth = 40; targetHeight = targetWidth / ratio; } doc.addImage(h_log, 'PNG', 196 - targetWidth, 15, targetWidth, targetHeight, '', 'FAST'); } catch(e) {} }
+                        doc.setLineWidth(0.5); doc.line(14, 35, 196, 35);
+                    };
+
+                    if (rpPrint !== "") {
+                        const regs = obtenerHistorial(rpPrint);
+                        if (regs.length === 0) { alert("Sin registros para este RP."); btn.innerText = textoOriginal; return; }
+                        let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
+                        const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor||"").split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=String(uP.detalles||"").split('|')[0]||"-"; } 
+                        const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; lote=String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; } 
+                        const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
+                        const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
+                        const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nut = (uNut.valor || "") + " | " + (uNut.detalles || "");
+                        const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "") + " | " + (uSan.detalles || "");
+                        const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) ins = (uIns.valor || "") + " | " + (uIns.detalles || "");
+
+                        addMembrete(`Dossier Clínico Histórico - RP: ${rpPrint.toUpperCase()}`);
+                        doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.text("Resumen del Perfil", 14, 43);
+
+                        doc.autoTable({ startY: 46, theme: 'grid', styles: { fontSize: 9, cellPadding: 3, textColor: 20 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold' },
+                            body: [
+                                [`Categoría: ${cleanPDFText(cat)}`, `Lote: ${cleanPDFText(lote)}`, `Carimbo: ${cleanPDFText(carimbo)}`],
+                                [`Raza: ${cleanPDFText(raza)}`, `Nacimiento: ${cleanPDFText(edad)}`, `Último Peso: ${cleanPDFText(peso)}`],
+                                [`Dx Actual: ${cleanPDFText(dx)}`, `Genealogía: ${cleanPDFText(pa)} / ${cleanPDFText(ma)}`, `Régimen: ${cleanPDFText(nut)}`],
+                                [`Últ. Sanidad: ${cleanPDFText(san)}`, { content: `Últ. Inseminación: ${cleanPDFText(ins)}`, colSpan: 2 }]
+                            ]
+                        });
+                        doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.text("Trazabilidad Histórica de Sucesos", 14, doc.lastAutoTable.finalY + 10);
+                        const tableData = []; const rows = document.getElementById('tb-informe-individual').querySelectorAll('tr');
+                        rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText).replace(/\n/g, ' ') ]); } });
+                        doc.autoTable({ startY: doc.lastAutoTable.finalY + 13, theme: 'grid', head: [['Fecha', 'Procedimiento', 'Valor Principal', 'Observaciones Adicionales']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 40 }, 2: { cellWidth: 40, fontStyle: 'bold' }, 3: { cellWidth: 'auto' } } });
+                        
+                        let filename = `Dossier_RP_${rpPrint.toUpperCase()}.pdf`;
+                        if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
+
+                    } else {
+                        const isInventario = (modo === 'inventario');
+                        const titulo = isInventario ? "Reporte Analítico de Inventario General" : "Reporte Analítico de Trabajos y Procedimientos";
+                        addMembrete(titulo);
+                        const totalReg = document.getElementById('inf-total').innerText; const totalPre = document.getElementById('inf-prenadas').innerText;
+                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Registros Listados: ${cleanPDFText(totalReg)}`, 14, 43); doc.text(`Total Preñadas Global: ${cleanPDFText(totalPre)}`, 130, 43);
+
+                        const tableData = []; let headRows = []; let colStyles = {};
+                        if (isInventario) {
+                            headRows = [['RP y Carimbo', 'Categoría y Ubicación', 'Último Peso', 'Diagnóstico Actual']];
+                            colStyles = { 0: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 1: { cellWidth: 80 }, 2: { cellWidth: 30, halign: 'center' }, 3: { cellWidth: 40, halign: 'center' } };
+                            const rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr');
+                            rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText).replace(/\n/g, ' - '), cleanPDFText(tds[1].innerText).replace(/\n/g, ' - '), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText) ]); } });
+                        } else {
+                            headRows = [['Fecha', 'Caravana', 'Trabajo Realizado', 'Detalles Extras']];
+                            colStyles = { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 2: { cellWidth: 40 }, 3: { cellWidth: 'auto' } };
+                            const rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr');
+                            rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText).replace(/\n/g, ' ') ]); } });
+                        }
+                        doc.autoTable({ startY: 48, theme: 'grid', head: headRows, body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: colStyles });
+                        
+                        let filename = 'Reporte_General.pdf';
+                        if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
+                    }
+                    btn.innerText = textoOriginal;
+                } catch (error) { console.error(error); alert("Error al generar el PDF: " + error.message); btn.innerText = textoOriginal; }
+            }, 100);
+        }
+
+        function verificarLimiteGraficos(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { alert('Solo puede fijar 3 gráficas simultáneas.'); checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); lsSet('tc_prefs', prefs); if(dbCache.length > 0) procesarDatosDashboard(); } }
+
+        function procesarDatosDashboard() {
+            const datosActivos = obtenerRegistrosActivos(); 
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
+            
+            let vivas = []; let cantBajas = datosActivos.filter(r => r.accion === 'Baja').length;
+            unicas.forEach(car => { if(!obtenerHistorial(car).some(x => x.accion === 'Baja')) { vivas.push(car); } }); unicas = vivas; 
+            
+            document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
+            let elBajas = document.getElementById('dash-bajas'); if(elBajas) elBajas.innerText = cantBajas;
+
+            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos-dinamicos').innerHTML = "<p style='color:var(--muted); text-align:center; padding:20px;'>Inventario vacío.</p>"; return; }
+            
+            let g1={p:0,v:0}, g2={v:0,t:0,o:0}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}, g11={}; let alertasHTML = "";
+            datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; if(r.accion === 'Baja') { let causa = String(r.valor).trim(); g11[causa] = (g11[causa] || 0) + 1; } });
+            
+            unicas.forEach(car => {
+                const regs = obtenerHistorial(car); let cat = "", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                if(uC) { let v=String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : ""; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
+                cat = cat.toLowerCase(); const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
+                
+                if(uDx) { if(String(uDx.valor||"").includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } } if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--texto);">${car}</strong> diagnosticada Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } } }
+                if(cat.includes('vaca') || cat.includes('vaquilla')) g2.v++; else if(cat.includes('terne') || cat.includes('desmamante')) g2.t++; else g2.o++; g3[lote] = (g3[lote] || 0) + 1;
+                if(uPeso) { if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--texto);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; else g4.opt++; let pVal = parseFloat(uPeso.valor); if(!isNaN(pVal)) { if(cat.includes('vaca') || cat.includes('vaquilla')) { g9.vw += pVal; g9.vc++; } if(cat.includes('terne') || cat.includes('desmamante')) { g9.tw += pVal; g9.tc++; } } } 
+                if(uSan) g6.con++; else g6.sin++;
+            });
+            
+            const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
+            const prefs = lsGet('tc_prefs', ['1', '3']); let htmlGraficos = ""; const makeBar = (lbl, val, total, col) => { let p = total>0 ? Math.round((val/total)*100) : 0; return `<div class="barra-categoria"><div class="barra-header"><span style="color:var(--texto);">${lbl} (${val})</span><span style="color:var(--texto);">${p}%</span></div><div class="barra-fondo"><div class="barra-relleno" style="background:${col}; width:${p}%;"></div></div></div>`; };
+            
+            prefs.forEach(g => {
+                let html = `<div class="tarjeta">`;
+                if(g === '1') { let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; html += `<div class="tarjeta-titulo">Tasa de Preñez Dinámica</div><div class="grafico-flex"><div class="torta-container"><div class="torta" style="background: conic-gradient(var(--exito) 0% ${pp}%, var(--peligro) ${pp}% 100%);"></div><div class="torta-centro">${pp}%</div></div><div class="leyenda-torta"><div><span class="punto" style="background: var(--exito);"></span> Preñadas (${g1.p})</div><div><span class="punto" style="background: var(--peligro);"></span> Vacías (${g1.v})</div></div></div></div>`; } 
+                else if(g === '2') { let t = g2.v + g2.t + g2.o || 1; html += `<div class="tarjeta-titulo">Composición de Hacienda</div>${makeBar('Vacas/Vaquillas', g2.v, t, 'var(--secundario)')}${makeBar('Terneros/as', g2.t, t, 'var(--alerta)')}${makeBar('Toros/Otros', g2.o, t, '#8b5cf6')}</div>`; } 
+                else if(g === '3') { html += `<div class="tarjeta-titulo">Distribución por Lotes</div>`; let lKeys = Object.keys(g3).sort((a,b)=>g3[b]-g3[a]).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--secundario)':i===1?'var(--alerta)':'var(--exito)'; html += makeBar(k, g3[k], unicas.length, col); }); html+=`</div>`;} 
+                else if(g === '4') { let t = g4.opt + g4.bp + g4.sp || 1; html += `<div class="tarjeta-titulo">Condición Corporal</div>${makeBar('Óptima', g4.opt, t, 'var(--exito)')}${makeBar('Bajo Peso', g4.bp, t, 'var(--peligro)')}${makeBar('Sobrepeso', g4.sp, t, 'var(--alerta)')}</div>`; } 
+                else if(g === '5') { let t = g5.norm + g5.san || 1; html += `<div class="tarjeta-titulo">Causas Vientre Vacío</div>${makeBar('Normal', g5.norm, t, 'var(--alerta)')}${makeBar('Sangre/Problema', g5.san, t, 'var(--peligro)')}</div>`; } 
+                else if(g === '6') { let t = unicas.length; html += `<div class="tarjeta-titulo">Sanidad Global</div>${makeBar('Con Registro', g6.con, t, 'var(--exito)')}${makeBar('Sin Registros', g6.sin, t, '#64748b')}</div>`; } 
+                else if(g === '7') { html += `<div class="tarjeta-titulo">Preñez por Lote</div>`; let lKeys = Object.keys(g7).sort((a,b)=>g7[b].p-g7[a].p).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--exito)':i===1?'var(--secundario)':'var(--alerta)'; html += makeBar(k, g7[k].p, g7[k].t, col); }); html+=`</div>`;} 
+                else if(g === '8') { html += `<div class="tarjeta-titulo">Eficacia de Toros</div>`; let lKeys = Object.keys(g8).sort((a,b)=>g8[b].p-g8[a].p).slice(0,3); if(lKeys.length===0) html += `<p style="color:var(--muted); font-size:12px;">Sin cruces.</p>`; lKeys.forEach((k, i) => { html += makeBar(k, g8[k].p, g8[k].t, '#be185d'); }); html+=`</div>`;} 
+                else if(g === '9') { let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; html += `<div class="tarjeta-titulo">Promedio de Pesos</div><div class="grid-kpis"><div class="kpi-caja"><strong style="font-size:20px; color:var(--secundario); display:block;">${pv} Kg</strong><span style="font-size:11px; color:var(--muted); font-weight:bold; text-transform:uppercase;">Vacas</span></div><div class="kpi-caja"><strong style="font-size:20px; color:var(--secundario); display:block;">${pt} Kg</strong><span style="font-size:11px; color:var(--muted); font-weight:bold; text-transform:uppercase;">Terneros</span></div></div></div>`; } 
+                else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1; html += `<div class="tarjeta-titulo">Volumen Clínico</div>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Nutrición', g10.nut, t, '#84cc16')}${makeBar('Sanidad', g10.san, t, '#c2410c')}</div>`; } 
+                else if(g === '11') { let t = cantBajas || 1; html += `<div class="tarjeta-titulo">Causas de Baja / Mortalidad</div>`; let lKeys = Object.keys(g11).sort((a,b)=>g11[b]-g11[a]).slice(0,4); if(lKeys.length === 0) html += `<p style="color:var(--muted); font-size:12px;">Sin registros de bajas.</p>`; lKeys.forEach((k, i) => { let col = i===0?'var(--peligro)':i===1?'var(--alerta)':'#be185d'; html += makeBar(k, g11[k], t, col); }); html+=`</div>`; }
+                htmlGraficos += html;
+            }); document.getElementById('contenedor-graficos-dinamicos').innerHTML = htmlGraficos;
+        }
+
+        function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
+        function abrirModal(id) { document.getElementById(id).style.display = 'flex'; } function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
+        
+        function cargarListaRegistro() { const datosActivos = obtenerRegistrosActivos(); let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja')); const ul = document.getElementById('tb-registro'); ul.innerHTML = ""; vivas.forEach(car => { const regs = obtenerHistorial(car); let info = "-", dxText = "-", loteText = "-"; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { let vals = String(c.valor||"").split('|'); info = vals[0] ? vals[0].replace('Cat:','').trim() : info; loteText = (String(c.detalles||"").split('|')[0] ? String(c.detalles||"").split('|')[0].replace('Lote:','').trim() : ""); } else if(p) { info = String(p.detalles||"").split('|')[0] || "-"; } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = d.valor || "-"; ul.innerHTML += `<li onclick="navegarDesdeLista('${car}')"><div style="display:flex; flex-direction:column; gap:4px;"><strong style="font-size:18px; color:var(--texto);">${car}</strong><span style="font-size:12px; color:var(--muted);">${info} | ${loteText} | ${dxText}</span></div><span style="font-size:20px; color:var(--texto);">›</span></li>`; }); }
+        function filtrarLista(t) { const lis = document.getElementById('tb-registro').getElementsByTagName('li'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "flex" : "none"; }
+        function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); buscarCaravanaBtn(); }
+        
+        function guardarDisenoServidor() { 
+            const n = document.getElementById('cfg-nom').value.trim(); 
+            const f = document.getElementById('cfg-logo'); 
+            
+            let p = (b64) => { 
+                lsSet('tc_hacienda', {nombre: n, logo: b64}); 
+                aplicarDisenoEnPantalla(n, b64); 
+                
+                // Guardamos en Firebase Usuarios
+                db.collection("usuarios").doc(usActivo).update({
+                    hacienda: n,
+                    logo: b64
+                });
+                alert("Membrete oficial de PDF actualizado."); 
+            }; 
+            
+            if(f.files && f.files[0]) { 
+                const r = new FileReader(); r.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const maxW = 200, maxH = 200; if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); p(canvas.toDataURL('image/png')); }; img.src = e.target.result; }; r.readAsDataURL(f.files[0]); 
+            } else { 
+                const logoGuardado = lsGet('tc_hacienda', {}).logo || ""; p(logoGuardado); 
+            } 
+        }
+        
+        // ==========================================
+        // 9. GESTIÓN DE PEONES EN FIREBASE
+        // ==========================================
+        async function crearOperador() { 
+            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
+            const n = document.getElementById('op-nombre').value.trim();
+            const u = document.getElementById('op-usu').value.trim(); 
+            const rolSel = document.getElementById('op-rol').value;
+            
+            if(!n || !u) { alert("Completar Nombre y Correo de Usuario."); return; } 
+            const email = u.includes('@') ? u : u + '@taurus.com';
+            
+            let rolFinal = rolSel;
+            if (rolSel === 'Operador') {
+                let permisos = Array.from(document.querySelectorAll('.chk-permiso:checked')).map(c => c.value).join(',');
+                if(!permisos) { alert("Debe seleccionar al menos un permiso de acceso para el operador."); return; }
+                rolFinal = 'Operador|' + permisos;
+            }
+            
+            const btn = document.getElementById('btn-crear-op');
+            btn.innerHTML = "⏳ Registrando...";
+            btn.disabled = true;
+
+            try {
+                await db.collection('usuarios').doc(email.toLowerCase()).set({
+                    nombre: n,
+                    rol: rolFinal,
+                    maestroId: maestroId,
+                    hacienda: usHacienda
+                });
+
+                document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = '';
+                cargarListaOperadores(); 
+                
+                alert(`⚠️ ¡ATENCIÓN!\n\nSe han guardado los permisos para:\n${email}\n\nRECUERDE: Debe registrar este mismo correo y una contraseña en la pestaña 'Authentication' de la consola de Firebase para que el operador pueda ingresar.`);
+                
+            } catch(e) {
+                alert("Hubo un error de conexión al verificar el usuario.");
+            } finally {
+                btn.innerHTML = "Registrar Permisos de Usuario"; btn.disabled = false;
+            }
+        }
+
+        async function cargarListaOperadores() {
+            if (!usRol.includes('Propietario') && !usRol.includes('Dueño')) return;
+            try {
+                const querySnapshot = await db.collection("usuarios").where("maestroId", "==", maestroId).get();
+                const selDel = document.getElementById('op-del-usu-sel');
+                const selEdit = document.getElementById('op-edit-usu-sel');
+                let options = '<option value="">-- Seleccione un operador --</option>';
+                
+                querySnapshot.forEach((doc) => {
+                    let d = doc.data();
+                    if(doc.id !== usActivo.toLowerCase()) {
+                        options += `<option value="${doc.id}">${doc.id} (${d.nombre})</option>`;
+                    }
+                });
+                
+                if(selDel) selDel.innerHTML = options;
+                if(selEdit) selEdit.innerHTML = options;
+            } catch(e) { console.error("Error al cargar operadores", e); }
+        }
+
+        async function cargarPermisosEdicion() {
+            let u = document.getElementById('op-edit-usu-sel').value;
+            let caja = document.getElementById('caja-edit-permisos');
+            if(!u) { caja.classList.add('oculto'); return; }
+            caja.classList.remove('oculto');
+            
+            let doc = await db.collection("usuarios").doc(u).get();
+            let perms = "dash,ficha,base,reporte"; 
+            
+            if(doc.exists) {
+                let rMatch = doc.data().rol;
+                if(rMatch) {
+                    if(rMatch.includes('|')) perms = rMatch.split('|')[1];
+                    else if(rMatch === 'Propietario') perms = "dash,ficha,base,reporte";
+                    else perms = rMatch; 
+                }
+            }
+            document.querySelectorAll('.chk-edit-permiso').forEach(chk => { chk.checked = perms.includes(chk.value); });
+        }
+
+        async function guardarEdicionOperador() {
+            if(!navigator.onLine) { alert("Necesitas conexión."); return; }
+            let u = document.getElementById('op-edit-usu-sel').value;
+            if(!u) return;
+
+            let permisos = Array.from(document.querySelectorAll('.chk-edit-permiso:checked')).map(c => c.value).join(',');
+            if(!permisos) { alert("Seleccione al menos un permiso."); return; }
+            let rolFinal = 'Operador|' + permisos;
+
+            const btn = document.getElementById('btn-editar-op');
+            btn.innerHTML = "⏳ Actualizando...";
+            btn.disabled = true;
+
+            try {
+                await db.collection("usuarios").doc(u).update({ rol: rolFinal });
+                alert("Permisos actualizados con éxito.");
+                document.getElementById('op-edit-usu-sel').value = "";
+                document.getElementById('caja-edit-permisos').classList.add('oculto');
+            } catch(e) {
+                alert("Error de red.");
+            } finally {
+                btn.innerHTML = "Actualizar Permisos";
+                btn.disabled = false;
+            }
+        }
+
+        async function eliminarOperador() {
+            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; }
+            const selectEl = document.getElementById('op-del-usu-sel');
+            const u = selectEl.value.trim();
+            if(!u) { alert("Seleccione un operador de la lista."); return; }
+            
+            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso del operador "${u}"? (Deberá eliminarlo también de Authentication en Firebase)`)) {
+                const btn = document.getElementById('btn-eliminar-op');
+                btn.innerHTML = "⏳ Eliminando...";
+                btn.disabled = true;
+                
+                try {
+                    await db.collection("usuarios").doc(u).delete();
+                    alert(`El operador "${u}" ha sido eliminado. Recuerda borrar su cuenta en la pestaña Authentication de Firebase.`); 
+                    selectEl.value = ''; 
+                    cargarListaOperadores(); 
+                } catch(e) {
+                    alert("Hubo un error de conexión.");
+                } finally {
+                    btn.innerHTML = "Eliminar Operador";
+                    btn.disabled = false;
+                }
+            }
+        }
+        
+        function cerrarSesion() { 
+            let leidas = localStorage.getItem('tc_alertas_leidas');
+            let mostradas = localStorage.getItem('tc_alertas_mostradas');
+            let prefs = localStorage.getItem('tc_prefs');
+            let tema = localStorage.getItem('tc_tema');
+            
+            auth.signOut().then(() => {
+                localStorage.clear(); 
+                if(leidas) localStorage.setItem('tc_alertas_leidas', leidas);
+                if(mostradas) localStorage.setItem('tc_alertas_mostradas', mostradas);
+                if(prefs) localStorage.setItem('tc_prefs', prefs);
+                if(tema) localStorage.setItem('tc_tema', tema);
+                
+                window.location.reload(); 
+            });
+        }
+
+        // ==========================================
+        // 10. LECTOR HID / TECLADO AUTOMÁTICO
+        // ==========================================
+        function forzarSaltoAFicha() {
+            let tabFicha = document.querySelectorAll('.nav-item')[1];
+            if (typeof cambiarVista === "function" && tabFicha && tabFicha.style.display !== 'none') {
+                cambiarVista('vista-manga', tabFicha);
+            }
+        }
+
+        window.recibirTagNFC = function(tagHex) {
+            let dataMinuscula = String(tagHex).trim().toLowerCase();
+            let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === dataMinuscula);
+            
+            if(esRFIDRegistrado) {
+                forzarSaltoAFicha();
+                let buscador = document.getElementById('buscador-caravana');
+                if (buscador) buscador.value = esRFIDRegistrado.caravana;
+                if (typeof buscarCaravanaBtn === "function") buscarCaravanaBtn();
+            } else {
+                rfidPendiente = tagHex;
+                let inputVincular = document.getElementById('f-rfid-caravana');
+                if (inputVincular) inputVincular.value = '';
+                let lblScaneado = document.getElementById('lbl-rfid-scaneado');
+                if (lblScaneado) lblScaneado.innerText = tagHex;
+                if (typeof abrirModal === "function") abrirModal('modal-rfid');
+                setTimeout(() => { if(inputVincular) inputVincular.focus(); }, 500);
+            }
+        };
+
+        let bufferTeclado = "";
+        let timeoutTeclado;
+
+        document.addEventListener('keydown', function(event) {
+            if(event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'CapsLock') return;
+
+            if (event.key === 'Enter') {
+                if (bufferTeclado.length > 2) {
+                    event.preventDefault(); 
+                    let dataLimpia = bufferTeclado.replace(/[^a-zA-Z0-9.-]/g, '').trim().toUpperCase(); 
+                    let esPeso = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
+                    
+                    if (esPeso) {
+                        if (typeof rpActivo !== 'undefined' && rpActivo && rpActivo !== "---") {
+                            if(typeof rafagaActiva !== 'undefined' && rafagaActiva) {
+                                let sel = document.getElementById('rafaga-accion').value;
+                                let notas = document.getElementById('rafaga-detalles').value.trim();
+                                let recordatorioRafaga = document.getElementById('rafaga-recordatorio').value; 
+                                
+                                ejecutarAccion('Peso', dataLimpia + " Kg", "Automático (Ráfaga)", null);
+                                
+                                if(sel !== 'solo_peso') {
+                                    let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
+                                    let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga";
+                                    if (recordatorioRafaga !== "0") { detCompleto += ` | [RECORDATORIO:${recordatorioRafaga}]`; }
+                                    ejecutarAccion('Sanidad', producto, detCompleto, null);
+                                }
+                                if(typeof mostrarToast === 'function') mostrarToast("✅ ¡Guardado!");
+                            } else {
+                                forzarSaltoAFicha();
+                                if (typeof abrirModal === "function") abrirModal('modal-peso');
+                                let inputPeso = document.getElementById('i-peso-val');
+                                if (inputPeso) inputPeso.value = dataLimpia;
+                            }
+                        } else {
+                            alert("⚖️ Peso recibido: " + dataLimpia + " Kg. ¡Debes leer la caravana de un animal primero!");
+                        }
+                    } else {
+                        let tagLimpio = dataLimpia.replace(/TAG/gi, '');
+                        forzarSaltoAFicha();
+                        if (typeof window.recibirTagNFC === "function") { window.recibirTagNFC(tagLimpio); }
+                    }
+                }
+                bufferTeclado = "";
+                clearTimeout(timeoutTeclado);
+                return;
+            }
+
+            if (event.key.length === 1) {
+                bufferTeclado += event.key;
+                clearTimeout(timeoutTeclado);
+                timeoutTeclado = setTimeout(() => { bufferTeclado = ""; }, 500); 
+            }
+        });
     </script>
 </body>
 </html>
