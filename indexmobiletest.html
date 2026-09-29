@@ -225,7 +225,7 @@
                     <div id="opciones-rafaga" class="oculto" style="margin-top:15px; padding-top:15px; border-top:1px solid var(--borde);">
                         <div class="form-grupo" style="margin-bottom:10px;">
                             <label style="font-size:11px;">Acción combinada con el peso:</label>
-                            <select id="rafaga-accion" class="form-control" style="padding:8px; font-size:13px; font-weight:bold;" onchange="verificarRafagaCustom()">
+                            <select id="rafaga-accion" class="form-control" style="padding:8px; font-size:13px; font-weight:bold;" onchange="verificarSelectCustom('rafaga-accion', 'rafaga-prod-custom')">
                                 <option value="solo_peso">⚖️ Solo Registrar Peso</option>
                                 <option value="Vacuna Aftosa">💉 Vacuna Aftosa</option>
                                 <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
@@ -278,7 +278,7 @@
                         <div class="dato-min"><span>Categoría</span><strong id="val-categoria">-</strong></div>
                         <div class="dato-min"><span>Padre/Madre</span><strong id="val-genealogia">-</strong></div>
                         
-                        <div class="dato-min"><span>Dx Tacto</span><strong id="val-dx" style="color:var(--exito);">-</strong></div>
+                        <div class="dato-min"><span>Dx Clínico</span><strong id="val-dx" style="color:var(--exito);">-</strong></div>
                         <div class="dato-min">
                             <span>Peso Actual</span>
                             <strong id="val-peso" style="display:block;">-</strong>
@@ -293,7 +293,7 @@
                     <div class="grid-acciones">
                         <button class="btn-accion" onclick="abrirModal('modal-sanidad')"><span style="color:var(--peligro);">💉</span> Sanidad</button>
                         <button class="btn-accion" onclick="abrirModal('modal-peso')"><span style="color:var(--secundario);">⚖️</span> Pesaje</button>
-                        <button class="btn-accion" onclick="abrirModal('modal-diagnostico')"><span style="color:var(--exito);">🩺</span> Tacto / Dx</button>
+                        <button class="btn-accion" onclick="abrirModal('modal-diagnostico')"><span style="color:var(--exito);">🩺</span> Clínica / Dx</button>
                         <button class="btn-accion" onclick="abrirModal('modal-inseminacion')"><span style="color:#9333ea;">🧬</span> Inseminar</button>
                         <button class="btn-accion" onclick="abrirModal('modal-nut')"><span style="color:var(--alerta);">🌾</span> Nutrición</button>
                         <button class="btn-accion" onclick="verHistorial()"><span>📋</span> Historial</button>
@@ -498,11 +498,58 @@
         </nav>
     </div>
 
-    <!-- MODALES GANADEROS -->
-    <div id="m-baja" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('m-baja')">&times;</span><h3>💀 Registro de Baja / Muerte</h3><div class="form-grupo"><label>Causa</label><select class="form-control" id="i-baja-causa"><option>Enfermedad</option><option>Accidente</option><option>Depredador</option><option>Natural / Desconocida</option><option>Venta / Faena</option></select></div><div class="form-grupo"><label>Observaciones</label><textarea class="form-control textarea" id="i-baja-txt"></textarea></div><button class="btn-guardar" style="background:var(--peligro);" onclick="prepararGuardado('m-baja', 'Baja')">Confirmar Baja</button></div></div>
-    <div id="modal-renombrar" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-renombrar')">&times;</span><h3>Modificar Número RP</h3><div class="form-grupo"><label>Nuevo RP</label><input type="text" class="form-control" id="f-nueva-caravana"></div><button class="btn-guardar" onclick="guardarCambioCaravana()">Confirmar</button></div></div>
-    <div id="modal-comentario" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-comentario')">&times;</span><h3>Anotación General</h3><div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-comentario', 'Comentario')">Guardar Nota</button></div></div>
-    <div id="modal-rfid" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-rfid')">&times;</span><h3>Vincular Bastón RFID</h3><p style="font-size:12px; color:var(--muted); margin-bottom:15px;">Chip <strong id="lbl-rfid-scaneado" style="color:var(--secundario);"></strong> no asignado.</p><div class="form-grupo"><input type="text" class="form-control" id="f-rfid-caravana" placeholder="Ingrese RP (Ej: 1234)" style="text-align: center; font-size: 20px; font-weight: bold;"></div><button class="btn-guardar" onclick="guardarVinculacionRFID()">Vincular y Abrir Ficha</button></div></div>
+    <!-- MODALES GANADEROS ESTANDARIZADOS -->
+    <div id="m-baja" class="modal">
+        <div class="modal-body">
+            <span class="cerrar" onclick="cerrarModal('m-baja')">&times;</span>
+            <h3>💀 Registro de Baja / Muerte</h3>
+            <div class="form-grupo">
+                <label>Causa</label>
+                <select class="form-control" id="i-baja-causa" onchange="verificarSelectCustom('i-baja-causa', 'i-baja-causa-custom')">
+                    <option value="Enfermedad">🦠 Enfermedad</option>
+                    <option value="Accidente">💥 Accidente</option>
+                    <option value="Depredador">🐆 Depredador</option>
+                    <option value="Natural / Desconocida">❓ Natural / Desconocida</option>
+                    <option value="Venta / Faena">🥩 Venta / Faena</option>
+                    <option value="OTRO">✏️ Otra causa...</option>
+                </select>
+                <input type="text" id="i-baja-causa-custom" class="form-control oculto" placeholder="Especifique la causa..." style="margin-top:8px;">
+            </div>
+            <div class="form-grupo">
+                <label>Observaciones</label>
+                <textarea class="form-control textarea" id="i-baja-txt"></textarea>
+            </div>
+            <button class="btn-guardar" style="background:var(--peligro);" onclick="prepararGuardado('m-baja', 'Baja')">Confirmar Baja</button>
+        </div>
+    </div>
+
+    <div id="modal-renombrar" class="modal">
+        <div class="modal-body">
+            <span class="cerrar" onclick="cerrarModal('modal-renombrar')">&times;</span>
+            <h3>Modificar Número RP</h3>
+            <div class="form-grupo"><label>Nuevo RP</label><input type="text" class="form-control" id="f-nueva-caravana"></div>
+            <button class="btn-guardar" onclick="guardarCambioCaravana()">Confirmar</button>
+        </div>
+    </div>
+
+    <div id="modal-comentario" class="modal">
+        <div class="modal-body">
+            <span class="cerrar" onclick="cerrarModal('modal-comentario')">&times;</span>
+            <h3>Anotación General</h3>
+            <div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt"></textarea></div>
+            <button class="btn-guardar" onclick="prepararGuardado('modal-comentario', 'Comentario')">Guardar Nota</button>
+        </div>
+    </div>
+
+    <div id="modal-rfid" class="modal">
+        <div class="modal-body">
+            <span class="cerrar" onclick="cerrarModal('modal-rfid')">&times;</span>
+            <h3>Vincular Bastón RFID</h3>
+            <p style="font-size:12px; color:var(--muted); margin-bottom:15px;">Chip <strong id="lbl-rfid-scaneado" style="color:var(--secundario);"></strong> no asignado.</p>
+            <div class="form-grupo"><input type="text" class="form-control" id="f-rfid-caravana" placeholder="Ingrese RP (Ej: 1234)" style="text-align: center; font-size: 20px; font-weight: bold;"></div>
+            <button class="btn-guardar" onclick="guardarVinculacionRFID()">Vincular y Abrir Ficha</button>
+        </div>
+    </div>
     
     <div id="m-perfil" class="modal">
         <div class="modal-body">
@@ -522,27 +569,187 @@
         </div>
     </div>
     
-    <div id="modal-clasificacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-clasificacion')">&times;</span><h3>Clasificación y Lote</h3><div class="form-grupo"><label>Categoría</label><select class="form-control" id="input-cat-rapida"><option value="TH: Ternera Hembra">TH: Ternera Hembra</option><option value="TM: Ternero Macho">TM: Ternero Macho</option><option value="DH: Desmamante Hembra">DH: Desmamante Hembra</option><option value="DM: Desmamante Macho">DM: Desmamante Macho</option><option value="V: Vaca/Vaquilla">V: Vaca/Vaquilla</option><option value="VV: Vaca Vieja">VV: Vaca Vieja</option><option value="Toros">Toros</option><option value="Novillos">Novillos</option><option value="Bueyes">Bueyes</option></select></div><div class="form-grupo"><label>Lote Asignado</label><input type="text" list="lista-lotes" class="form-control" id="input-lote-rapido"><datalist id="lista-lotes"><option value="Hacienda General"></option><option value="Lecheras"></option><option value="Preñadas"></option><option value="Inseminadas"></option></datalist></div><div class="form-grupo"><label>Carimbo Manual (Opcional)</label><input type="number" class="form-control" id="input-carimbo-rapido"></div><button class="btn-guardar" onclick="guardarClasificacion()">Actualizar Ubicación</button></div></div>
-    <div id="modal-diagnostico" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-diagnostico')">&times;</span><h3>Tacto / Diagnóstico (Dx)</h3><div class="form-grupo"><select class="form-control" id="i-dx-sel" style="font-weight:bold; font-size:18px;"><option value="Preñada">✅ Preñada</option><option value="Vacía">❌ Vacía</option><option value="Vacía (Sangre)">🩸 Vacía (Sangre)</option></select></div><div class="form-grupo"><label>Observaciones</label><textarea class="form-control textarea" id="i-dx-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-diagnostico', 'Diagnóstico')">Registrar Tacto</button></div></div>
-    <div id="modal-peso" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-peso')">&times;</span><h3>Pesaje</h3><div class="form-grupo"><input type="number" step="0.5" class="form-control" id="i-peso-val" placeholder="Kg" style="font-size:24px; font-weight:bold; text-align:center;"></div><div class="form-grupo"><label>Condición Corporal</label><select class="form-control" id="i-peso-cond"><option>Óptima</option><option>Bajo Peso</option><option>Sobrepeso</option></select></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-peso-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-peso', 'Peso')">Registrar Peso</button></div></div>
-    
-    <div id="modal-sanidad" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-sanidad')">&times;</span><h3>💉 Tratamiento / Sanidad</h3><div class="form-grupo"><label>Producto</label><select class="form-control" id="i-sani-sel"><option>Antiparasitario (Ivermectina)</option><option>Vacuna Aftosa</option><option>Vacuna Carbunclo</option><option>Vitamina ADE</option><option>Tratamiento General</option></select></div><div class="form-grupo"><label>Lote / Detalles</label><input type="text" class="form-control" id="i-sani-lote"></div><div class="form-grupo"><label>Notas (Enfermedad, etc)</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div>
-        <div class="form-grupo">
-            <label style="color:var(--alerta);">⏳ Próxima Dosis / Recordatorio</label>
-            <select class="form-control" id="i-sani-recordatorio" style="border-color: var(--alerta);">
-                <option value="0">Sin recordatorio (Única dosis)</option>
-                <option value="15">Avisarme en 15 días</option>
-                <option value="21">Avisarme en 21 días</option>
-                <option value="30">Avisarme en 1 mes</option>
-                <option value="90">Avisarme en 3 meses</option>
-                <option value="180">Avisarme en 6 meses</option>
-                <option value="365">Avisarme en 1 año</option>
-            </select>
+    <div id="modal-clasificacion" class="modal">
+        <div class="modal-body">
+            <span class="cerrar" onclick="cerrarModal('modal-clasificacion')">&times;</span>
+            <h3>Clasificación y Lote</h3>
+            <div class="form-grupo">
+                <label>Categoría</label>
+                <select class="form-control" id="input-cat-rapida">
+                    <option value="TH: Ternera Hembra">TH: Ternera Hembra</option>
+                    <option value="TM: Ternero Macho">TM: Ternero Macho</option>
+                    <option value="DH: Desmamante Hembra">DH: Desmamante Hembra</option>
+                    <option value="DM: Desmamante Macho">DM: Desmamante Macho</option>
+                    <option value="V: Vaca/Vaquilla">V: Vaca/Vaquilla</option>
+                    <option value="VV: Vaca Vieja">VV: Vaca Vieja</option>
+                    <option value="Toros">Toros</option>
+                    <option value="Novillos">Novillos</option>
+                    <option value="Bueyes">Bueyes</option>
+                </select>
+            </div>
+            <div class="form-grupo">
+                <label>Lote Asignado</label>
+                <select class="form-control" id="input-lote-rapido" onchange="verificarSelectCustom('input-lote-rapido', 'input-lote-rapido-custom')">
+                    <option value="Hacienda General">Hacienda General</option>
+                    <option value="Lecheras">Lecheras</option>
+                    <option value="Preñadas">Preñadas</option>
+                    <option value="Inseminadas">Inseminadas</option>
+                    <option value="Destete">Destete</option>
+                    <option value="Enfermería">Enfermería</option>
+                    <option value="OTRO">✏️ Escribir otro lote...</option>
+                </select>
+                <input type="text" id="input-lote-rapido-custom" class="form-control oculto" placeholder="Nombre del lote..." style="margin-top:8px;">
+            </div>
+            <div class="form-grupo"><label>Carimbo Manual (Opcional)</label><input type="number" class="form-control" id="input-carimbo-rapido"></div>
+            <button class="btn-guardar" onclick="guardarClasificacion()">Actualizar Ubicación</button>
         </div>
-        <button class="btn-guardar" onclick="prepararGuardado('modal-sanidad', 'Sanidad')">Registrar Sanidad</button></div></div>
+    </div>
+
+    <!-- MODAL DIAGNÓSTICO (GENERAL Y REPRODUCTIVO) -->
+    <div id="modal-diagnostico" class="modal">
+        <div class="modal-body">
+            <span class="cerrar" onclick="cerrarModal('modal-diagnostico')">&times;</span>
+            <h3>🩺 Clínica / Diagnóstico</h3>
+            <div class="form-grupo">
+                <label>Tipo de Diagnóstico</label>
+                <select class="form-control" id="i-dx-sel" style="font-weight:bold; font-size:16px;">
+                    <optgroup label="Reproductivo (Hembras)">
+                        <option value="Preñada">✅ Preñada</option>
+                        <option value="Vacía">❌ Vacía</option>
+                        <option value="Vacía (Sangre)">🩸 Vacía (Sangre)</option>
+                    </optgroup>
+                    <optgroup label="Clínica General (Hembras/Machos)">
+                        <option value="Enfermedad">🤒 Enfermedad General</option>
+                        <option value="Lesión">🩹 Lesión / Herida</option>
+                        <option value="Problema Podal">🪨 Problema Podal (Pezuñas)</option>
+                        <option value="Sano / Alta">✅ Sano / Alta Médica</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="form-grupo">
+                <label>Observaciones o Tratamiento</label>
+                <textarea class="form-control textarea" id="i-dx-txt"></textarea>
+            </div>
+            <button class="btn-guardar" onclick="prepararGuardado('modal-diagnostico', 'Diagnóstico')">Registrar Diagnóstico</button>
+        </div>
+    </div>
+
+    <div id="modal-peso" class="modal">
+        <div class="modal-body">
+            <span class="cerrar" onclick="cerrarModal('modal-peso')">&times;</span>
+            <h3>⚖️ Pesaje</h3>
+            <div class="form-grupo">
+                <input type="number" step="0.5" class="form-control" id="i-peso-val" placeholder="Kg" style="font-size:24px; font-weight:bold; text-align:center;">
+            </div>
+            <div class="form-grupo">
+                <label>Condición Corporal</label>
+                <select class="form-control" id="i-peso-cond">
+                    <option value="Óptima">🟢 Óptima</option>
+                    <option value="Bajo Peso">🟡 Bajo Peso</option>
+                    <option value="Sobrepeso">🔴 Sobrepeso</option>
+                </select>
+            </div>
+            <div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-peso-txt"></textarea></div>
+            <button class="btn-guardar" onclick="prepararGuardado('modal-peso', 'Peso')">Registrar Peso</button>
+        </div>
+    </div>
+    
+    <div id="modal-sanidad" class="modal">
+        <div class="modal-body">
+            <span class="cerrar" onclick="cerrarModal('modal-sanidad')">&times;</span>
+            <h3>💉 Tratamiento / Sanidad</h3>
+            <div class="form-grupo">
+                <label>Producto</label>
+                <select class="form-control" id="i-sani-sel" onchange="verificarSelectCustom('i-sani-sel', 'i-sani-sel-custom')">
+                    <option value="Antiparasitario (Ivermectina)">Antiparasitario (Ivermectina)</option>
+                    <option value="Vacuna Aftosa">Vacuna Aftosa</option>
+                    <option value="Vacuna Carbunclo">Vacuna Carbunclo</option>
+                    <option value="Vitamina ADE">Vitamina ADE</option>
+                    <option value="Tratamiento General">Tratamiento General</option>
+                    <option value="OTRO">✏️ Otro producto...</option>
+                </select>
+                <input type="text" id="i-sani-sel-custom" class="form-control oculto" placeholder="Nombre del producto..." style="margin-top:8px;">
+            </div>
+            <div class="form-grupo"><label>Lote / Detalles (Dosis)</label><input type="text" class="form-control" id="i-sani-lote"></div>
+            <div class="form-grupo"><label>Notas (Enfermedad, etc)</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div>
+            <div class="form-grupo">
+                <label style="color:var(--alerta);">⏳ Próxima Dosis / Recordatorio</label>
+                <select class="form-control" id="i-sani-recordatorio" style="border-color: var(--alerta);">
+                    <option value="0">Sin recordatorio (Única dosis)</option>
+                    <option value="15">Avisarme en 15 días</option>
+                    <option value="21">Avisarme en 21 días</option>
+                    <option value="30">Avisarme en 1 mes</option>
+                    <option value="90">Avisarme en 3 meses</option>
+                    <option value="180">Avisarme en 6 meses</option>
+                    <option value="365">Avisarme en 1 año</option>
+                </select>
+            </div>
+            <button class="btn-guardar" onclick="prepararGuardado('modal-sanidad', 'Sanidad')">Registrar Sanidad</button>
+        </div>
+    </div>
         
-    <div id="modal-inseminacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-inseminacion')">&times;</span><h3>🧬 Reproducción</h3><div class="form-grupo"><label>Inseminador / Método</label><input type="text" class="form-control" id="i-ins-quien"></div><div class="form-grupo"><label>Toro / Pajuela</label><input type="text" class="form-control" id="i-ins-toro"></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-ins-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-inseminacion', 'Inseminación')">Registrar</button></div></div>
-    <div id="modal-nut" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-nut')">&times;</span><h3>🌾 Suplemento Nutricional</h3><div class="form-grupo"><label>Alimento</label><input type="text" class="form-control" id="i-nut-prod" list="lista-alimentos"><datalist id="lista-alimentos"><option value="Sal Mineral"></option><option value="Sal Proteica"></option><option value="Forraje / Pastura"></option></datalist></div><div class="form-grupo"><label>Dosificación</label><input type="text" class="form-control" id="i-nut-rac"></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-nut', 'Nutrición')">Registrar Nutrición</button></div></div>
+    <!-- MODAL INSEMINACIÓN ACTUALIZADO -->
+    <div id="modal-inseminacion" class="modal">
+        <div class="modal-body">
+            <span class="cerrar" onclick="cerrarModal('modal-inseminacion')">&times;</span>
+            <h3>🧬 Reproducción</h3>
+            <div class="form-grupo">
+                <label>Método Reproductivo</label>
+                <select class="form-control" id="i-ins-quien" onchange="verificarSelectCustom('i-ins-quien', 'i-ins-quien-custom')">
+                    <option value="IATF (Tiempo Fijo)">🧬 IATF (Tiempo Fijo)</option>
+                    <option value="Inseminación Artificial">🧬 Inseminación Artificial</option>
+                    <option value="Monta Natural">🐂 Monta Natural</option>
+                    <option value="Transferencia Embriones">🔬 Transferencia Embriones</option>
+                    <option value="OTRO">✏️ Otro método...</option>
+                </select>
+                <input type="text" id="i-ins-quien-custom" class="form-control oculto" placeholder="Especifique..." style="margin-top:8px;">
+            </div>
+            <div class="form-grupo">
+                <label>Toro / Genética</label>
+                <select class="form-control" id="i-ins-toro" onchange="verificarSelectCustom('i-ins-toro', 'i-ins-toro-custom')">
+                    <option value="Toro Propio / Repaso">🐂 Toro Propio / Repaso</option>
+                    <option value="Semen Nacional">💉 Semen Nacional</option>
+                    <option value="Semen Importado">✈️ Semen Importado</option>
+                    <option value="OTRO">✏️ Especificar Código/Nombre...</option>
+                </select>
+                <input type="text" id="i-ins-toro-custom" class="form-control oculto" placeholder="Ej: Brangus 1234" style="margin-top:8px;">
+            </div>
+            <div class="form-grupo"><label>Notas / Observaciones</label><textarea class="form-control textarea" id="i-ins-txt"></textarea></div>
+            <button class="btn-guardar" onclick="prepararGuardado('modal-inseminacion', 'Inseminación')">Registrar Inseminación</button>
+        </div>
+    </div>
+
+    <!-- MODAL NUTRICIÓN ACTUALIZADO -->
+    <div id="modal-nut" class="modal">
+        <div class="modal-body">
+            <span class="cerrar" onclick="cerrarModal('modal-nut')">&times;</span>
+            <h3>🌾 Suplemento Nutricional</h3>
+            <div class="form-grupo">
+                <label>Tipo de Alimento</label>
+                <select class="form-control" id="i-nut-prod" onchange="verificarSelectCustom('i-nut-prod', 'i-nut-prod-custom')">
+                    <option value="Sal Mineral">🧂 Sal Mineral</option>
+                    <option value="Sal Proteica">🥩 Sal Proteica</option>
+                    <option value="Forraje / Pastura">🌾 Forraje / Pastura</option>
+                    <option value="Balanceado Comercial">🌽 Balanceado Comercial</option>
+                    <option value="Fardo / Heno">🌿 Fardo / Heno</option>
+                    <option value="OTRO">✏️ Otro alimento...</option>
+                </select>
+                <input type="text" id="i-nut-prod-custom" class="form-control oculto" placeholder="Escriba el alimento..." style="margin-top:8px;">
+            </div>
+            <div class="form-grupo">
+                <label>Dosificación</label>
+                <select class="form-control" id="i-nut-rac" onchange="verificarSelectCustom('i-nut-rac', 'i-nut-rac-custom')">
+                    <option value="Ad Libitum (Libre)">Ad Libitum (Libre acceso)</option>
+                    <option value="Racionado (Kg/día)">Racionado (Kg/día)</option>
+                    <option value="OTRO">✏️ Especificar dosis...</option>
+                </select>
+                <input type="text" id="i-nut-rac-custom" class="form-control oculto" placeholder="Ej: 2 Kg por animal" style="margin-top:8px;">
+            </div>
+            <div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div>
+            <button class="btn-guardar" onclick="prepararGuardado('modal-nut', 'Nutrición')">Registrar Nutrición</button>
+        </div>
+    </div>
+
     <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial Clínico</h3><div id="contenido-historial"></div></div></div>
 
     <script>
@@ -593,6 +800,20 @@
                 }
             }
         }
+
+        // ==========================================
+        // HELPER PARA SELECTS "OTRO"
+        // ==========================================
+        window.verificarSelectCustom = function(selId, custId) {
+            let val = document.getElementById(selId).value;
+            let cust = document.getElementById(custId);
+            if(val === 'OTRO') {
+                cust.classList.remove('oculto');
+                cust.focus();
+            } else {
+                cust.classList.add('oculto');
+            }
+        };
 
         // ==========================================
         // 3. INICIO AUTOMÁTICO Y KILL SWITCH
@@ -1083,15 +1304,65 @@
             });
         }
 
+        // Nueva función inteligente para leer los Selects "OTRO"
+        function getVal(baseId) {
+            let el = document.getElementById(baseId);
+            if(!el) return "";
+            if(el.value === "OTRO") {
+                let cust = document.getElementById(baseId + "-custom");
+                return cust ? cust.value.trim() : "OTRO";
+            }
+            return el.value.trim();
+        }
+
         function prepararGuardado(mId, t) { 
-            if(!rpActivo) return; let v = "-", d = ""; const i = document.getElementById(mId).querySelectorAll('.form-control, .textarea'); 
-            if(t === 'Comentario') { d = i[0].value; } 
-            else if(t === 'Peso') { v = i[0].value + " Kg"; d = `Cond: ${i[1].value}. Notas: ${i[2].value}`; } 
-            else if(t === 'Sanidad') { let recordatorio = document.getElementById('i-sani-recordatorio').value; v = i[0].value; d = `Lote: ${i[1].value}. Notas: ${i[2].value}`; if (recordatorio !== "0") { d += ` | [RECORDATORIO:${recordatorio}]`; } } 
-            else if(t === 'Diagnóstico') { v = "Dx: " + i[0].value; d = i[1].value || "-"; } 
-            else if(t === 'Inseminación') { v = "Toro: " + i[1].value; d = `Ins: ${i[0].value}. Notas: ${i[2].value}`; } 
-            else if(t === 'Nutrición') { v = i[0].value; d = `Ración: ${i[1].value}. Notas: ${i[2].value}`; } 
-            else if(t === 'Baja') { v = i[0].value; d = i[1].value || "Sin observaciones"; }
+            if(!rpActivo) return; 
+            let v = "-", d = ""; 
+            
+            if(t === 'Comentario') { 
+                d = document.getElementById('f-comentario-txt').value;
+                document.getElementById('f-comentario-txt').value = '';
+            } 
+            else if(t === 'Peso') { 
+                v = document.getElementById('i-peso-val').value + " Kg"; 
+                d = `Cond: ${document.getElementById('i-peso-cond').value}. Notas: ${document.getElementById('i-peso-txt').value}`; 
+                document.getElementById('i-peso-val').value = '';
+                document.getElementById('i-peso-txt').value = '';
+            } 
+            else if(t === 'Sanidad') { 
+                let recordatorio = document.getElementById('i-sani-recordatorio').value; 
+                v = getVal('i-sani-sel'); 
+                d = `Lote: ${document.getElementById('i-sani-lote').value}. Notas: ${document.getElementById('i-sani-txt').value}`; 
+                if (recordatorio !== "0") { d += ` | [RECORDATORIO:${recordatorio}]`; } 
+                document.getElementById('i-sani-lote').value = '';
+                document.getElementById('i-sani-txt').value = '';
+                if(document.getElementById('i-sani-sel-custom')) document.getElementById('i-sani-sel-custom').value = '';
+            } 
+            else if(t === 'Diagnóstico') { 
+                v = "Dx: " + document.getElementById('i-dx-sel').value; 
+                d = document.getElementById('i-dx-txt').value || "-"; 
+                document.getElementById('i-dx-txt').value = '';
+            } 
+            else if(t === 'Inseminación') { 
+                v = "Toro: " + getVal('i-ins-toro'); 
+                d = `Ins: ${getVal('i-ins-quien')}. Notas: ${document.getElementById('i-ins-txt').value}`; 
+                document.getElementById('i-ins-txt').value = '';
+                if(document.getElementById('i-ins-toro-custom')) document.getElementById('i-ins-toro-custom').value = '';
+                if(document.getElementById('i-ins-quien-custom')) document.getElementById('i-ins-quien-custom').value = '';
+            } 
+            else if(t === 'Nutrición') { 
+                v = getVal('i-nut-prod'); 
+                d = `Ración: ${getVal('i-nut-rac')}. Notas: ${document.getElementById('i-nut-txt').value}`; 
+                document.getElementById('i-nut-txt').value = '';
+                if(document.getElementById('i-nut-prod-custom')) document.getElementById('i-nut-prod-custom').value = '';
+                if(document.getElementById('i-nut-rac-custom')) document.getElementById('i-nut-rac-custom').value = '';
+            } 
+            else if(t === 'Baja') { 
+                v = getVal('i-baja-causa'); 
+                d = document.getElementById('i-baja-txt').value || "Sin observaciones"; 
+                document.getElementById('i-baja-txt').value = '';
+                if(document.getElementById('i-baja-causa-custom')) document.getElementById('i-baja-causa-custom').value = '';
+            }
             
             if(t === 'Baja') {
                 ejecutarAccion(t, v, d, mId); 
@@ -1101,8 +1372,9 @@
                     alert(`Baja registrada exitosamente. La caravana original (${rpActivo}) ha quedado libre y vacía de datos.`);
                     rpActivo = rpArchivado; buscarCaravanaBtn(rpArchivado);
                 }, 400);
-            } else { ejecutarAccion(t, v, d, mId); }
-            i.forEach(el => el.value = ''); 
+            } else { 
+                ejecutarAccion(t, v, d, mId); 
+            }
         }
 
         function mostrarCarimboCalculado() {
@@ -1132,7 +1404,7 @@
             }
         }
 
-        function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'modal-clasificacion'); }
+        function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${getVal('input-lote-rapido')||"-"}`, 'modal-clasificacion'); }
         function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'modal-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
         function borrarCaravana() { if(!rpActivo) return; if(confirm(`¿ELIMINAR todo el historial de la caravana ${rpActivo}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null); alert("Historial eliminado. El número quedó libre."); cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); } }
         function verHistorial() { abrirModal('modal-historial'); let h = "<ul style='list-style:none; padding:0; margin:0;'>"; obtenerHistorial(rpActivo).forEach(r => { if(!r.accion.includes('Vinculacion')) { h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px;"><span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span><br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span></li>`; }}); document.getElementById('contenido-historial').innerHTML = h + "</ul>"; }
@@ -1157,7 +1429,7 @@
         }
 
         function obtenerBadgeAccion(accion) {
-            if(accion === 'Sanidad') return `Sanidad`; if(accion === 'Peso') return `Peso`; if(accion === 'Diagnóstico') return `Tacto`; if(accion === 'Inseminación') return `Reproducción`; if(accion === 'Nutrición') return `Nutrición`; if(accion === 'Baja') return `Baja / Muerte`;
+            if(accion === 'Sanidad') return `Sanidad`; if(accion === 'Peso') return `Peso`; if(accion === 'Diagnóstico') return `Clínica/Dx`; if(accion === 'Inseminación') return `Reproducción`; if(accion === 'Nutrición') return `Nutrición`; if(accion === 'Baja') return `Baja / Muerte`;
             return `${accion}`;
         }
 
