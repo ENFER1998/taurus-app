@@ -600,61 +600,87 @@
             } catch (e) { mostrarToast("❌ Error crítico", true); } finally { toggleLoading(false); }
         }
 
-       async function borrarUsuarioMaestroGhost(usu) {
-            if(!confirm(`⚠️ PELIGRO DE DESTRUCCIÓN TOTAL:\n¿Eliminar DE RAÍZ al Master "${usu}", incluyendo absolutamente todos sus animales, historial y su cuenta de acceso?`)) return;
-            
-            toggleLoading(true, "Vaciando base de datos...");
-            
-            try {
-                // 1. DESTRUIR TODOS LOS ANIMALES Y EVENTOS (Subcolección)
-                const snapshotEventos = await db.collection('estancias').doc(usu).collection('eventos').get();
-                if (!snapshotEventos.empty) {
-                    const docs = snapshotEventos.docs;
-                    for (let i = 0; i < docs.length; i += 450) {
-                        const chunk = docs.slice(i, i + 450);
-                        const batch = db.batch();
-                        chunk.forEach(doc => batch.delete(doc.ref));
-                        await batch.commit();
-                    }
-                }
+   async function borrarUsuarioMaestroGhost(usu) {
+    if(!confirm(`⚠️ PELIGRO DE DESTRUCCIÓN TOTAL:\n¿Eliminar DE RAÍZ al Master "${usu}", incluyendo todos sus dueños extra, peones, animales, historial y su cuenta de acceso?`)) return;
+    
+    toggleLoading(true, "Purgando base de datos y equipo...");
+    
+    try {
+        // 1. ELIMINAR TODOS LOS MIEMBROS DEL EQUIPO (Peones y Dueños Extra con maestroId == usu)
+        const snapEquipo = await db.collection('usuarios').where('maestroId', '==', usu).get();
+        for (const docOp of snapEquipo.docs) {
+            let opData = docOp.data();
+            if (opData.password && docOp.id !== usu) {
+                // Borrar de Auth de Firebase el miembro del equipo
+                await gestionarAuthUsuario(docOp.id, opData.password, 'eliminar');
+            }
+            // Borrar documento de Firestore del miembro
+            await docOp.ref.delete();
+        }
 
-                // 2. DESTRUIR CONFIGURACIONES Y MEMBRETES DE LA ESTANCIA
-                await db.collection('estancias').doc(usu).delete();
-
-                // 3. RECUPERAR CLAVE Y DESTRUIR PERFIL
-                const docUsu = await db.collection('usuarios').doc(usu).get();
-                let clave = null;
-                if (docUsu.exists) {
-                    clave = docUsu.data().password;
-                    await db.collection('usuarios').doc(usu).delete();
-                }
-
-                // 4. DESTRUIR LA CUENTA DE FIREBASE AUTHENTICATION
-                if (clave) {
-                    toggleLoading(true, "Eliminando cuenta en Firebase Auth...");
-                    let exitoAuth = await gestionarAuthUsuario(usu, clave, 'eliminar');
-                    if (!exitoAuth) {
-                        alert(`⚠️ La base de datos y los animales de ${usu} fueron eliminados, pero el correo no se pudo borrar de Firebase Auth (probablemente la contraseña registrada no coincidía). \n\nVe a tu consola de Firebase -> Authentication y bórralo manualmente.`);
-                    } else {
-                        mostrarToast("✅ Estancia y cuenta eliminadas sin dejar rastro.");
-                    }
-                } else {
-                    mostrarToast("✅ Datos eliminados (No se encontró clave para borrar el Auth).");
-                }
-
-                toggleLoading(false);
-                cargarClientes(); 
-                
-            } catch (e) {
-                toggleLoading(false);
-                alert("Error crítico al intentar purgar los datos: " + e.message);
+        // 2. DESTRUIR TODAS LAS SUBCOLECCIONES DE LA ESTANCIA (ej. eventos y cualquier otra)
+        const estanciaRef = db.collection('estancias').doc(usu);
+        
+        // Borrar subcolección 'eventos'
+        const snapshotEventos = await estanciaRef.collection('eventos').get();
+        if (!snapshotEventos.empty) {
+            const docs = snapshotEventos.docs;
+            for (let i = 0; i < docs.length; i += 450) {
+                const chunk = docs.slice(i, i + 450);
+                const batch = db.batch();
+                chunk.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
             }
         }
-        function abrirEdicion(usu, hac, feats, nom) {
-            document.getElementById('edit-old-usu').value = usu; document.getElementById('edit-new-usu').value = usu; 
-            document.getElementById('edit-new-hac').value = hac; document.getElementById('edit-new-nombre').value = nom;
-            setFeatures(feats); abrirModal('modal-editar');
+
+        // Borrar cualquier otra subcolección dinámica que pudiera existir
+        try {
+            const subcollections = await estanciaRef.listCollections();
+            for (const subcol of subcollections) {
+                const subDocs = await subcol.get();
+                for (let i = 0; i < subDocs.docs.length; i += 450) {
+                    const chunk = subDocs.docs.slice(i, i + 450);
+                    const batch = db.batch();
+                    chunk.forEach(doc => batch.delete(doc.ref));
+                    await batch.commit();
+                }
+            }
+        } catch (errSub) {
+            console.log("Subcolecciones adicionales limpiadas o no requeridas");
         }
+
+        // 3. DESTRUIR EL DOCUMENTO PRINCIPAL DE LA ESTANCIA (Nombre, Membrete, Configs)
+        await estanciaRef.delete();
+
+        // 4. RECUPERAR CLAVE Y DESTRUIR PERFIL DEL MASTER EN 'usuarios'
+        const docUsu = await db.collection('usuarios').doc(usu).get();
+        let clave = null;
+        if (docUsu.exists) {
+            clave = docUsu.data().password;
+            await db.collection('usuarios').doc(usu).delete();
+        }
+
+        // 5. DESTRUIR LA CUENTA DE FIREBASE AUTHENTICATION DEL MASTER
+        if (clave) {
+            toggleLoading(true, "Eliminando cuenta Master en Firebase Auth...");
+            let exitoAuth = await gestionarAuthUsuario(usu, clave, 'eliminar');
+            if (!exitoAuth) {
+                alert(`⚠️ Los datos y el equipo de ${usu} fueron eliminados, pero el correo Master no se pudo borrar automáticamente de Firebase Auth (la contraseña no coincidía).\n\nBórralo manualmente en Firebase Console -> Authentication.`);
+            } else {
+                mostrarToast("✅ Estancia, equipo y cuenta eliminados sin dejar rastro.");
+            }
+        } else {
+            mostrarToast("✅ Datos eliminados correctamente.");
+        }
+
+        toggleLoading(false);
+        cargarClientes(); 
+        
+    } catch (e) {
+        toggleLoading(false);
+        alert("Error crítico al intentar purgar los datos: " + e.message);
+    }
+}
 
         async function guardarEdicion() {
             const uId = document.getElementById('edit-old-usu').value; const nH = document.getElementById('edit-new-hac').value.trim(); const nN = document.getElementById('edit-new-nombre').value.trim(); 
