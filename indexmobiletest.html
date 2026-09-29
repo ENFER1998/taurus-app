@@ -71,24 +71,26 @@
         
         .contenedor { padding: 15px; max-width: 800px; margin: 0 auto; }
         .tarjeta { background: #0f172a; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--borde); box-shadow: 0 4px 6px rgba(0,0,0,0.3);}
-        .tarjeta-titulo { font-size: 18px; font-weight: bold; margin: 0 0 15px 0; border-bottom: 1px solid var(--borde); padding-bottom: 10px; color: var(--texto); }
+        .tarjeta-titulo { font-size: 16px; font-weight: bold; margin: 0 0 12px 0; border-bottom: 1px solid var(--borde); padding-bottom: 8px; color: var(--texto); }
         
         .grid-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 20px; }
         .kpi-caja { background: #1e293b; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--borde);}
         .kpi-valor { font-size: 26px; font-weight: 900; color: var(--secundario); margin: 5px 0; }
         .kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: bold;}
         
-        .grafico-flex { display: flex; align-items: center; gap: 20px; justify-content: space-around; flex-wrap: wrap;}
-        .torta-container { position: relative; width: 120px; height: 120px; }
+        .grafico-flex { display: flex; align-items: center; gap: 15px; justify-content: space-between; flex-wrap: nowrap;}
+        .torta-container { position: relative; width: 90px; height: 90px; flex-shrink: 0; }
         .torta { width: 100%; height: 100%; border-radius: 50%; background: var(--borde); transition: background 1s ease-in-out;}
-        .torta-centro { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; background: var(--primario); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: var(--texto);}
-        .leyenda-torta { font-size: 14px; line-height: 1.8; color: var(--texto);}
-        .punto { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px;}
+        .torta-centro { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; background: var(--primario); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; color: var(--texto);}
+        .leyenda-torta { font-size: 12px; line-height: 1.6; color: var(--texto);}
+        .punto { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px;}
         
-        .barra-categoria { margin-bottom: 15px;}
-        .barra-header { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: var(--texto);}
-        .barra-fondo { width: 100%; background: var(--borde); height: 10px; border-radius: 5px; overflow: hidden;}
-        .barra-relleno { height: 100%; border-radius: 5px; width: 0%; transition: width 1s ease;}
+        .barra-categoria { margin-bottom: 10px;}
+        .barra-header { display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: var(--texto);}
+        .barra-fondo { width: 100%; background: var(--borde); height: 8px; border-radius: 4px; overflow: hidden;}
+        .barra-relleno { height: 100%; border-radius: 4px; width: 0%; transition: width 1s ease;}
+
+        .contenedor-scroll-analitica { max-height: 130px; overflow-y: auto; padding-right: 5px; flex: 1; }
 
         #lista-alertas { max-height: 160px; overflow-y: auto; padding-right: 5px; }
         .alerta-item { display: flex; align-items: center; gap: 10px; background: rgba(245,158,11,0.1); padding: 12px; border-radius: 8px; border-left: 4px solid var(--alerta); margin-bottom: 10px; font-size: 14px; border: 1px solid rgba(245,158,11,0.3); color: var(--texto);}
@@ -379,7 +381,6 @@
                 <div class="tarjeta" id="panel-membrete">
                     <div class="tarjeta-titulo">🖨️ Membrete Documentos PDF</div>
                     
-                    <!-- VISTA PREVIA DEL LOGO AL CARGAR -->
                     <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
                         <img id="preview-logo-config" src="gemini-svg.png" style="width:60px; height:60px; object-fit:contain; border-radius:8px; border:1px solid var(--borde); background:white; padding:2px;">
                         <div style="flex:1;">
@@ -392,7 +393,6 @@
                     <button class="btn-guardar" onclick="guardarDisenoServidor()">Guardar Diseño PDF</button>
                 </div>
 
-                <!-- CONTROL DE OPERADORES Y DUEÑOS (IGUAL QUE EN PC) -->
                 <div class="tarjeta" id="panel-crear-peones">
                     <div class="tarjeta-titulo">👷 Control de Operadores y Dueños</div>
                     
@@ -463,7 +463,6 @@
                     <button class="btn-guardar" id="btn-eliminar-op" style="background:var(--peligro);" onclick="eliminarOperador()">Eliminar Operador / Usuario</button>
                 </div>
 
-                <!-- 11 ANALÍTICAS EN DASHBOARD MÓVIL -->
                 <div class="tarjeta" id="panel-analiticas">
                     <div class="tarjeta-titulo">📊 Analíticas en Dashboard (Máx 3)</div>
                     <div style="display:flex; flex-direction:column; gap:8px;">
@@ -707,9 +706,7 @@
                 unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot(snapshot => {
                     let nuevosDatos = [];
                     snapshot.forEach(doc => nuevosDatos.push(doc.data()));
-                    
                     fusionarDatos(nuevosDatos);
-
                     if(rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
                     procesarDatosDashboard(); 
                     if(!document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); 
@@ -1175,51 +1172,134 @@
 
             if(datosActivos.length === 0) { document.getElementById('contenedor-graficos-dinamicos').innerHTML = "<p style='color:var(--muted); text-align:center; padding:20px;'>Inventario vacío.</p>"; return; }
             
-            let g1={p:0,v:0}, g2={v:0,t:0,o:0}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}, g11={}; let alertasHTML = "";
+            let g1={p:0,v:0}, g2={}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}, g11={}; let alertasHTML = "";
             datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; if(r.accion === 'Baja') { let causa = String(r.valor).trim(); g11[causa] = (g11[causa] || 0) + 1; } });
             
             unicas.forEach(car => {
-                const regs = obtenerHistorial(car); let cat = "", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                if(uC) { let v=String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : ""; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
-                cat = cat.toLowerCase(); const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
+                const regs = obtenerHistorial(car); let cat = "Sin Categoría", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                if(uC) { let v=String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : "Sin Categoría"; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
+                else {
+                    const uP = regs.find(d => d.accion === 'Perfil Master');
+                    if(uP && uP.detalles) { cat = String(uP.detalles).split('|')[0] || "Sin Categoría"; }
+                }
                 
-                let esVaca = cat.includes('vaca') || cat.includes('vaquilla') || cat.startsWith('v:') || cat.startsWith('vv:');
-                let esTernero = cat.includes('terne') || cat.includes('desmamante') || cat.startsWith('th:') || cat.startsWith('tm:') || cat.startsWith('dh:') || cat.startsWith('dm:');
+                let catKey = cat.trim();
+                g2[catKey] = (g2[catKey] || 0) + 1;
+                g3[lote] = (g3[lote] || 0) + 1;
+
+                const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
+                
+                let esVaca = catKey.toLowerCase().includes('vaca') || catKey.toLowerCase().includes('vaquilla') || catKey.toLowerCase().startsWith('v:');
 
                 if(uDx) { if(String(uDx.valor||"").includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } } if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--texto);">${car}</strong> diagnosticada Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } } }
                 
-                if(esVaca) g2.v++; else if(esTernero) g2.t++; else g2.o++; g3[lote] = (g3[lote] || 0) + 1;
-                
                 if(uPeso) { 
-                    if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--texto);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } 
+                    if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️️</span><div><strong style="color:var(--texto);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } 
                     else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; 
                     else g4.opt++; 
-                    
                     let pVal = parseFloat(uPeso.valor); 
                     if(!isNaN(pVal)) { 
                         if(esVaca) { g9.vw += pVal; g9.vc++; } 
-                        if(esTernero) { g9.tw += pVal; g9.tc++; } 
+                        else { g9.tw += pVal; g9.tc++; } 
                     } 
                 } 
                 if(uSan) g6.con++; else g6.sin++;
             });
             
             const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
-            const prefs = lsGet('tc_prefs', ['1', '3']); let htmlGraficos = ""; const makeBar = (lbl, val, total, col) => { let p = total>0 ? Math.round((val/total)*100) : 0; return `<div class="barra-categoria"><div class="barra-header"><span style="color:var(--texto);">${lbl} (${val})</span><span style="color:var(--texto);">${p}%</span></div><div class="barra-fondo"><div class="barra-relleno" style="background:${col}; width:${p}%;"></div></div></div>`; };
-            
+            const prefs = lsGet('tc_prefs', ['1', '3']); let htmlGraficos = ""; 
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#38bdf8'];
+
+            const makePieAndBars = (title, dataObj, totalCount) => {
+                let keys = Object.keys(dataObj).sort((a,b)=>dataObj[b]-dataObj[a]);
+                let currentAngle = 0; let gradientStops = [];
+                keys.forEach((k, idx) => {
+                    let pct = totalCount > 0 ? (dataObj[k] / totalCount) * 100 : 0;
+                    let nextAngle = currentAngle + pct;
+                    gradientStops.push(`${colors[idx % colors.length]} ${currentAngle}% ${nextAngle}%`);
+                    currentAngle = nextAngle;
+                });
+                let conicStyle = gradientStops.length > 0 ? `background: conic-gradient(${gradientStops.join(', ')});` : '';
+                
+                let barsHTML = "";
+                keys.forEach((k, idx) => {
+                    let col = colors[idx % colors.length];
+                    let val = dataObj[k];
+                    let p = totalCount > 0 ? Math.round((val / totalCount) * 100) : 0;
+                    barsHTML += `<div class="barra-categoria">
+                        <div class="barra-header"><span><span class="punto" style="background:${col};"></span>${k} (${val})</span><span>${p}%</span></div>
+                        <div class="barra-fondo"><div class="barra-relleno" style="background:${col}; width:${p}%;"></div></div>
+                    </div>`;
+                });
+
+                return `<div class="tarjeta">
+                    <div class="tarjeta-titulo">${title}</div>
+                    <div class="grafico-flex">
+                        <div class="torta-container">
+                            <div class="torta" style="${conicStyle}"></div>
+                            <div class="torta-centro">${totalCount}</div>
+                        </div>
+                        <div class="contenedor-scroll-analitica">${barsHTML}</div>
+                    </div>
+                </div>`;
+            };
+
             prefs.forEach(g => {
-                let html = `<div class="tarjeta">`;
-                if(g === '1') { let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; html += `<div class="tarjeta-titulo">Tasa de Preñez Dinámica</div><div class="grafico-flex"><div class="torta-container"><div class="torta" style="background: conic-gradient(var(--exito) 0% ${pp}%, var(--peligro) ${pp}% 100%);"></div><div class="torta-centro">${pp}%</div></div><div class="leyenda-torta"><div><span class="punto" style="background: var(--exito);"></span> Preñadas (${g1.p})</div><div><span class="punto" style="background: var(--peligro);"></span> Vacías (${g1.v})</div></div></div></div>`; } 
-                else if(g === '2') { let t = g2.v + g2.t + g2.o || 1; html += `<div class="tarjeta-titulo">Composición de Hacienda</div>${makeBar('Vacas/Vaquillas', g2.v, t, 'var(--secundario)')}${makeBar('Terneros/as', g2.t, t, 'var(--alerta)')}${makeBar('Toros/Otros', g2.o, t, '#8b5cf6')}</div>`; } 
-                else if(g === '3') { html += `<div class="tarjeta-titulo">Distribución por Lotes</div>`; let lKeys = Object.keys(g3).sort((a,b)=>g3[b]-g3[a]).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--secundario)':i===1?'var(--alerta)':'var(--exito)'; html += makeBar(k, g3[k], unicas.length, col); }); html+=`</div>`;} 
-                else if(g === '4') { let t = g4.opt + g4.bp + g4.sp || 1; html += `<div class="tarjeta-titulo">Condición Corporal</div>${makeBar('Óptima', g4.opt, t, 'var(--exito)')}${makeBar('Bajo Peso', g4.bp, t, 'var(--peligro)')}${makeBar('Sobrepeso', g4.sp, t, 'var(--alerta)')}</div>`; } 
-                else if(g === '5') { let t = g5.norm + g5.san || 1; html += `<div class="tarjeta-titulo">Causas Vientre Vacío</div>${makeBar('Normal', g5.norm, t, 'var(--alerta)')}${makeBar('Sangre/Problema', g5.san, t, 'var(--peligro)')}</div>`; } 
-                else if(g === '6') { let t = unicas.length; html += `<div class="tarjeta-titulo">Sanidad Global</div>${makeBar('Con Registro', g6.con, t, 'var(--exito)')}${makeBar('Sin Registros', g6.sin, t, '#64748b')}</div>`; } 
-                else if(g === '7') { html += `<div class="tarjeta-titulo">Preñez por Lote</div>`; let lKeys = Object.keys(g7).sort((a,b)=>g7[b].p-g7[a].p).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--exito)':i===1?'var(--secundario)':'var(--alerta)'; html += makeBar(k, g7[k].p, g7[k].t, col); }); html+=`</div>`;} 
-                else if(g === '8') { html += `<div class="tarjeta-titulo">Eficacia de Toros</div>`; let lKeys = Object.keys(g8).sort((a,b)=>g8[b].p-g8[a].p).slice(0,3); if(lKeys.length===0) html += `<p style="color:var(--muted); font-size:12px;">Sin cruces.</p>`; lKeys.forEach((k, i) => { html += makeBar(k, g8[k].p, g8[k].t, '#be185d'); }); html+=`</div>`;} 
-                else if(g === '9') { let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; html += `<div class="tarjeta-titulo">Promedio de Pesos</div><div class="grid-kpis"><div class="kpi-caja"><strong style="font-size:20px; color:var(--secundario); display:block;">${pv} Kg</strong><span style="font-size:11px; color:var(--muted); font-weight:bold; text-transform:uppercase;">Vacas</span></div><div class="kpi-caja"><strong style="font-size:20px; color:var(--secundario); display:block;">${pt} Kg</strong><span style="font-size:11px; color:var(--muted); font-weight:bold; text-transform:uppercase;">Terneros</span></div></div></div>`; } 
-                else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1; html += `<div class="tarjeta-titulo">Volumen Clínico</div>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Nutrición', g10.nut, t, '#84cc16')}${makeBar('Sanidad', g10.san, t, '#c2410c')}</div>`; } 
-                else if(g === '11') { let t = cantBajas || 1; html += `<div class="tarjeta-titulo">Causas de Baja / Mortalidad</div>`; let lKeys = Object.keys(g11).sort((a,b)=>g11[b]-g11[a]).slice(0,4); if(lKeys.length === 0) html += `<p style="color:var(--muted); font-size:12px;">Sin registros de bajas.</p>`; lKeys.forEach((k, i) => { let col = i===0?'var(--peligro)':i===1?'var(--alerta)':'#be185d'; html += makeBar(k, g11[k], t, col); }); html+=`</div>`; }
+                let html = "";
+                if(g === '1') { 
+                    let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; 
+                    html += `<div class="tarjeta">
+                        <div class="tarjeta-titulo">Tasa de Preñez Dinámica</div>
+                        <div class="grafico-flex" style="justify-content:space-around;">
+                            <div class="torta-container">
+                                <div class="torta" style="background: conic-gradient(var(--exito) 0% ${pp}%, var(--peligro) ${pp}% 100%);"></div>
+                                <div class="torta-centro">${pp}%</div>
+                            </div>
+                            <div class="leyenda-torta">
+                                <div><span class="punto" style="background: var(--exito);"></span> Preñadas (${g1.p})</div>
+                                <div><span class="punto" style="background: var(--peligro);"></span> Vacías (${g1.v})</div>
+                            </div>
+                        </div>
+                    </div>`; 
+                } 
+                else if(g === '2') { html += makePieAndBars("Composición de Hacienda (Detallada)", g2, unicas.length); } 
+                else if(g === '3') { html += makePieAndBars("Distribución por Lotes", g3, unicas.length); } 
+                else if(g === '4') { 
+                    let t = g4.opt + g4.bp + g4.sp || 1; 
+                    let d4 = { "Óptima": g4.opt, "Bajo Peso": g4.bp, "Sobrepeso": g4.sp };
+                    html += makePieAndBars("Condición Corporal", d4, t); 
+                } 
+                else if(g === '5') { 
+                    let t = g5.norm + g5.san || 1; 
+                    let d5 = { "Normal": g5.norm, "Sangre/Problema": g5.san };
+                    html += makePieAndBars("Causas Vientre Vacío", d5, t); 
+                } 
+                else if(g === '6') { 
+                    let t = unicas.length; 
+                    let d6 = { "Con Registro": g6.con, "Sin Registros": g6.sin };
+                    html += makePieAndBars("Sanidad Global", d6, t); 
+                } 
+                else if(g === '7') { 
+                    let d7 = {}; Object.keys(g7).forEach(k => d7[k] = g7[k].p);
+                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1); 
+                } 
+                else if(g === '8') { 
+                    let d8 = {}; Object.keys(g8).forEach(k => d8[k] = g8[k].p);
+                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1); 
+                } 
+                else if(g === '9') { 
+                    let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; 
+                    html += `<div class="tarjeta"><div class="tarjeta-titulo">Promedio de Pesos</div><div class="grid-kpis"><div class="kpi-caja"><div class="kpi-valor" style="font-size:20px;">${pv} Kg</div><div class="kpi-label">Vacas</div></div><div class="kpi-caja"><div class="kpi-valor" style="font-size:20px;">${pt} Kg</div><div class="kpi-label">Terneros</div></div></div></div>`; 
+                } 
+                else if(g === '10') { 
+                    let d10 = { "Pesajes": g10.peso, "Diagnósticos": g10.dx, "Nutrición": g10.nut, "Sanidad": g10.san };
+                    let t10 = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1;
+                    html += makePieAndBars("Volumen Clínico", d10, t10); 
+                } 
+                else if(g === '11') { 
+                    let t11 = cantBajas || 1;
+                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11); 
+                }
                 htmlGraficos += html;
             }); document.getElementById('contenedor-graficos-dinamicos').innerHTML = htmlGraficos;
         }
