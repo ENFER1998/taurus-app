@@ -169,7 +169,7 @@
     <!-- MODAL POP-UP AVISO GLOBAL -->
     <div id="modal-alerta-global" class="modal">
         <div class="modal-body">
-            <h3 style="color:var(--alerta); margin-top:0; border-bottom: none; font-size:22px; text-align:center;">⚠️ Aviso Importante</h3>
+            <h3 style="color:var(--alerta); margin-top:0; border-bottom: none; font-size:22px; text-align:center;">⚠️️ Aviso Importante</h3>
             <p id="txt-alerta-global" style="font-size:16px; line-height: 1.5; color:var(--texto); margin-bottom: 25px; font-weight:bold; text-align:center;"></p>
             <button class="btn-guardar" style="background:var(--alerta);" onclick="cerrarPopUpAlerta()">Entendido / Cerrar</button>
         </div>
@@ -638,8 +638,9 @@
                 unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot(snapshot => {
                     let nuevosDatos = [];
                     snapshot.forEach(doc => nuevosDatos.push(doc.data()));
-                    dbCache = nuevosDatos.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
-                    lsSet('tc_db', dbCache);
+                    
+                    // APLICANDO LA LIMPIEZA TOTAL PARA EVITAR DATOS FANTASMAS AL RECREAR ESTANCIAS
+                    fusionarDatos(nuevosDatos);
 
                     if(rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
                     procesarDatosDashboard(); 
@@ -746,6 +747,28 @@
                 
                 sincronizarPendientesAuto();
             } catch(e) { console.error("Error al construir la pantalla:", e); }
+        }
+
+        // ==========================================
+        // FUSIÓN DE DATOS Y LIMPIEZA OFFLINE/NUBE
+        // ==========================================
+        function fusionarDatos(nuevos) {
+            let pendientes = lsGet('tc_pendientes', []);
+            let mapa = new Map();
+            
+            // 1. La nube es la fuente oficial de verdad. Si la estancia fue borrada y 
+            // recreada vacía, 'nuevos' llegará vacío ([]), limpiando los datos viejos.
+            if(Array.isArray(nuevos)) {
+                nuevos.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
+            }
+            
+            // 2. Mantenemos los cambios locales pendientes hechos offline que aún no se subieron.
+            if(Array.isArray(pendientes)) {
+                pendientes.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
+            }
+
+            dbCache = Array.from(mapa.values()).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            lsSet('tc_db', dbCache);
         }
 
         // ==========================================
@@ -1205,7 +1228,7 @@
                         let w = img.width, h = img.height; 
                         const maxW = 200, maxH = 200; 
                         if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } 
-                        else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } 
+                        else { if (h > maxH) { w = Math.round(h * maxH / h); h = maxH; } } 
                         canvas.width = w; canvas.height = h; 
                         const ctx = canvas.getContext('2d'); 
                         ctx.drawImage(img, 0, 0, w, h); 
