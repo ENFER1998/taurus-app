@@ -987,20 +987,31 @@
 
                 const prefs = lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
                 
-               // APLICAR DISEÑO VISUAL Y MEMBRETE (CORREGIDO PARA FIREBASE)
-                db.collection('estancias').doc(m).get().then(docE => {
-                    let hNombre = usHacienda; 
+             // APLICAR DISEÑO VISUAL Y MEMBRETE (SINCRONIZACIÓN EN TIEMPO REAL)
+                db.collection('estancias').doc(m).onSnapshot(docE => {
+                    let hNombre = hacienda || "HACIENDA"; 
                     let hLogo = "gemini-svg.png";
                     
-                    // Si hay un logo guardado en Firebase, lo usamos
-                    if (docE.exists && docE.data().logo_hacienda) { 
-                        hLogo = docE.data().logo_hacienda; 
-                        hNombre = docE.data().nombre_hacienda || usHacienda; 
+                    if (docE.exists) { 
+                        if (docE.data().logo_hacienda) hLogo = docE.data().logo_hacienda; 
+                        if (docE.data().nombre_hacienda) hNombre = docE.data().nombre_hacienda; 
                     } 
                     
-                    // FORZAMOS LA ACTUALIZACIÓN EN LOCALSTORAGE PARA ELIMINAR EL RASTRO VIEJO DE SHEETS
+                    // Guardado local limpio y aplicación visual
                     lsSet('tc_hacienda', { nombre: hNombre, logo: hLogo });
                     aplicarDisenoEnPantalla(hNombre, hLogo);
+                    
+                    // Actualización de textos en UI (Diferenciado para PC y Móvil)
+                    let topbarPC = document.getElementById('topbar-estancia');
+                    if (topbarPC) {
+                        topbarPC.innerText = `ESTANCIA: ${hNombre.toUpperCase()} | Operador: ${usNombre}`;
+                    }
+                    
+                    let lblPerfilMob = document.getElementById('usuario-activo-lbl');
+                    if (lblPerfilMob) {
+                        let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
+                        lblPerfilMob.value = `${hNombre.toUpperCase()} - ${usNombre} (${isPropietario ? 'Propietario' : 'Operador'})`;
+                    }
                 });
                 
                 document.getElementById('f-inf-rango-fecha').value = "30"; manejarRangoFechas();
@@ -1468,12 +1479,37 @@
         function guardarDisenoServidor() { 
             const n = document.getElementById('cfg-nom').value.trim(); 
             const f = document.getElementById('cfg-logo'); 
+            
             let p = (b64) => { 
                 db.collection('estancias').doc(maestroId).set({ nombre_hacienda: n, logo_hacienda: b64 }, { merge: true }).then(() => {
-                    lsSet('tc_hacienda', {nombre: n, logo: b64}); aplicarDisenoEnPantalla(n, b64); alert("Membrete oficial de PDF actualizado.");
+                    // Ya no aplicamos manualmente acá. El onSnapshot (Paso 1) lo detectará en milisegundos 
+                    // y actualizará tu teléfono, la PC y cualquier otro dispositivo conectado.
+                    alert("Membrete y nombre actualizados. Se sincronizarán en todos sus dispositivos al instante.");
                 });
             }; 
-            if(f.files && f.files[0]) { const r = new FileReader(); r.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const maxW = 200, maxH = 200; if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); p(canvas.toDataURL('image/png')); }; img.src = e.target.result; }; r.readAsDataURL(f.files[0]); } else { const logoGuardado = lsGet('tc_hacienda', {}).logo || ""; p(logoGuardado); } 
+            
+            if(f.files && f.files[0]) { 
+                const r = new FileReader(); 
+                r.onload = function(e) { 
+                    const img = new Image(); 
+                    img.onload = function() { 
+                        const canvas = document.createElement('canvas'); 
+                        let w = img.width, h = img.height; 
+                        const maxW = 200, maxH = 200; 
+                        if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } 
+                        else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } 
+                        canvas.width = w; canvas.height = h; 
+                        const ctx = canvas.getContext('2d'); 
+                        ctx.drawImage(img, 0, 0, w, h); 
+                        p(canvas.toDataURL('image/png')); 
+                    }; 
+                    img.src = e.target.result; 
+                }; 
+                r.readAsDataURL(f.files[0]); 
+            } else { 
+                const logoGuardado = lsGet('tc_hacienda', {}).logo || ""; 
+                p(logoGuardado); 
+            } 
         }
         
         async function crearOperador() { 
