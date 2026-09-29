@@ -52,12 +52,10 @@
         .tarjeta { background: #0f172a; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--borde); box-shadow: 0 4px 6px rgba(0,0,0,0.3); width: 100%;}
         .tarjeta-titulo { font-size: 18px; font-weight: bold; margin: 0 0 15px 0; border-bottom: 1px solid var(--borde); padding-bottom: 10px; color: var(--texto); display:flex; align-items:center; gap:8px;}
         
-        /* FORMULARIOS Y BOTONES (Corregidos para Mobile) */
+        /* FORMULARIOS Y BOTONES */
         .grid-mobile { display: flex; flex-direction: column; gap: 15px; width: 100%; }
         .form-grupo { margin-bottom: 15px; text-align: left; width: 100%; }
         .form-grupo label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 8px; color: var(--muted); text-transform: uppercase;}
-        
-        /* Control estricto de inputs para que no se desborden */
         .form-control { width: 100%; max-width: 100%; min-width: 0; padding: 12px; border: 1px solid var(--borde); border-radius: 8px; font-size: 14px; background: #1e293b; color: var(--texto); outline:none; box-sizing:border-box;}
         input[type="date"] { display: block; }
         
@@ -151,7 +149,7 @@
         </div>
     </div>
 
-    <!-- MODAL EQUIPO (DUEÑOS Y PEONES) - CARDS EN VEZ DE TABLA -->
+    <!-- MODAL EQUIPO (DUEÑOS Y PEONES) -->
     <div id="modal-equipo" class="modal oculto">
         <div class="modal-body">
             <span class="cerrar" onclick="cerrarModal('modal-equipo')">&times;</span>
@@ -199,7 +197,7 @@
                 </div>
             </div>
 
-            <!-- VISTA: LICENCIAS (AHORA CON CARDS EN VEZ DE TABLA DESLIZABLE) -->
+            <!-- VISTA: LICENCIAS -->
             <div id="v-licencias" class="vista oculto">
                 <h2 class="tarjeta-titulo">🔑 Gestión de Suscripciones</h2>
                 
@@ -233,6 +231,13 @@
             <!-- VISTA: CARGA MASIVA -->
             <div id="v-masiva" class="vista oculto">
                 <h2 class="tarjeta-titulo">📦 Importación Masiva</h2>
+                
+                <div class="tarjeta" style="border-color: var(--peligro); background: rgba(239, 68, 68, 0.05); margin-bottom: 20px;">
+                    <h3 style="margin-top:0; font-size:16px; color:var(--peligro); display:flex; align-items:center; gap:8px;">⏪ Revertir Carga</h3>
+                    <p style="font-size:12px; color:var(--texto); line-height: 1.5; margin-bottom: 15px;">Si el Excel se subió con errores, puedes usar este botón para borrar de forma segura todos los registros que entraron en la última importación masiva en este dispositivo.</p>
+                    <button class="btn btn-danger" onclick="deshacerUltimaImportacion()">Deshacer Última Carga Masiva</button>
+                </div>
+
                 <div class="tarjeta">
                     <div class="form-grupo">
                         <label>1. Cliente Destino</label>
@@ -246,13 +251,19 @@
                 </div>
                 
                 <div id="panel-mapeo" class="tarjeta oculto" style="border-color: var(--exito);">
-                    <h3 style="margin-top:0; font-size:16px; color:var(--exito);">✅ Archivo Leído</h3>
+                    <h3 style="margin-top:0; font-size:16px; color:var(--exito);">✅ Archivo Leído Exitosamente</h3>
+                    <p style="font-size:12px; color:var(--muted); margin-bottom: 15px;">Taurus intentó detectar las columnas automáticamente. Revisa que coincidan antes de inyectar.</p>
+                    
                     <div class="grid-mobile">
                         <div class="form-grupo"><label>Columna CARAVANA (RP) *</label><select id="map-caravana" class="form-control" style="border-color:var(--secundario);"></select></div>
                         <div class="form-grupo"><label>Columna CATEGORÍA</label><select id="map-categoria" class="form-control"></select></div>
                         <div class="form-grupo"><label>Columna LOTE</label><select id="map-lote" class="form-control"></select></div>
+                        
+                        <div class="form-grupo"><label>Columna PESO (Kg)</label><select id="map-peso" class="form-control"></select></div>
+                        <div class="form-grupo"><label>Columna RAZA</label><select id="map-raza" class="form-control"></select></div>
+                        <div class="form-grupo"><label>Columna NOTAS / OBSERVACIONES</label><select id="map-notas" class="form-control"></select></div>
                     </div>
-                    <button class="btn btn-success" style="margin-top:15px;" onclick="procesarMapeoEInyectar()">📤 Inyectar a Firebase</button>
+                    <button class="btn btn-success" style="margin-top:15px; font-size: 16px; padding: 15px;" onclick="procesarMapeoEInyectar()">📤 Inyectar a Firebase</button>
                 </div>
             </div>
 
@@ -306,6 +317,9 @@
         let clientesCache = [];
         let datosArchivoCrudo = [];
         let unsubscribeConfig = null;
+
+        function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
+        function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
@@ -674,9 +688,10 @@
         }
 
         // ==========================================
-        // CARGA MASIVA
+        // CARGA MASIVA, AUTO-DETECCIÓN Y DESHACER
         // ==========================================
         function cargarClientesMasiva() { if(clientesCache.length === 0) cargarClientes(); else renderizarSelectMasiva(); }
+        
         function renderizarSelectMasiva() { 
             const sel = document.getElementById('sel-cliente-masiva'); sel.innerHTML = '<option value="">-- Elija destino --</option>'; 
             clientesCache.forEach(c => { sel.innerHTML += `<option value="${c.maestroId}">${c.hacienda} (${c.usuario})</option>`; }); 
@@ -693,9 +708,29 @@
                     datosArchivoCrudo = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {defval: ""}); 
                     if(datosArchivoCrudo.length === 0) throw new Error();
                     const headers = Object.keys(datosArchivoCrudo[0]);
-                    llenarSelectMapeo('map-caravana', headers, false); llenarSelectMapeo('map-categoria', headers, true); llenarSelectMapeo('map-lote', headers, true);
-                    document.getElementById('panel-mapeo').classList.remove('oculto'); toggleLoading(false); mostrarToast("✅ Archivo escaneado");
-                } catch (err) { toggleLoading(false); mostrarToast("❌ Error al leer", true); }
+                    
+                    llenarSelectMapeo('map-caravana', headers, false); 
+                    llenarSelectMapeo('map-categoria', headers, true); 
+                    llenarSelectMapeo('map-lote', headers, true);
+                    llenarSelectMapeo('map-peso', headers, true);
+                    llenarSelectMapeo('map-raza', headers, true);
+                    llenarSelectMapeo('map-notas', headers, true);
+                    
+                    // AUTO-DETECCIÓN INTELIGENTE DE COLUMNAS
+                    autoSeleccionarMapeo('map-caravana', ['caravana', 'rp', 'tag']);
+                    autoSeleccionarMapeo('map-categoria', ['categoria', 'cat']);
+                    autoSeleccionarMapeo('map-lote', ['lote', 'grupo']);
+                    autoSeleccionarMapeo('map-peso', ['peso', 'kg', 'kilos']);
+                    autoSeleccionarMapeo('map-raza', ['raza', 'genetica']);
+                    autoSeleccionarMapeo('map-notas', ['nota', 'observacion', 'detalle']);
+                    
+                    document.getElementById('panel-mapeo').classList.remove('oculto'); 
+                    toggleLoading(false); 
+                    mostrarToast("✅ Archivo escaneado");
+                } catch (err) { 
+                    toggleLoading(false); 
+                    mostrarToast("❌ Error al leer. Verifica que sea un Excel válido.", true); 
+                }
             }; reader.readAsArrayBuffer(fi.files[0]);
         }
 
@@ -704,18 +739,102 @@
             headers.forEach(h => { sel.innerHTML += `<option value="${h}">${h}</option>`; }); 
         }
 
+        function autoSeleccionarMapeo(id, opcionesBase) {
+            const sel = document.getElementById(id);
+            for(let i=0; i<sel.options.length; i++) {
+                let textoOpt = sel.options[i].text.toLowerCase();
+                if(opcionesBase.some(palabra => textoOpt.includes(palabra))) {
+                    sel.selectedIndex = i;
+                    return;
+                }
+            }
+        }
+
         function procesarMapeoEInyectar() {
-            const cCar = document.getElementById('map-caravana').value; const cCat = document.getElementById('map-categoria').value; const cLot = document.getElementById('map-lote').value; const mId = document.getElementById('sel-cliente-masiva').value;
+            const cCar = document.getElementById('map-caravana').value; 
+            const cCat = document.getElementById('map-categoria').value; 
+            const cLot = document.getElementById('map-lote').value; 
+            const cPeso = document.getElementById('map-peso').value; 
+            const cRaza = document.getElementById('map-raza').value; 
+            const cNot = document.getElementById('map-notas').value; 
+            const mId = document.getElementById('sel-cliente-masiva').value;
+            
             if(!cCar) return mostrarToast("⚠️ Falta Columna Caravana", true);
-            const hoy = new Date().toISOString(); let datos = [];
-            datosArchivoCrudo.forEach(f => {
+            
+            let datosAInyectar = [];
+            const batchId = new Date().getTime().toString(); // ID único para toda esta carga masiva
+            
+            datosArchivoCrudo.forEach((f, index) => {
                 let vCar = f[cCar];
                 if(vCar && String(vCar).trim() !== "") {
-                    datos.push({ fecha: hoy, accion: 'Actualización de Datos', caravana: String(vCar).trim(), valor: `Cat: ${cCat&&f[cCat]?String(f[cCat]).trim():"-"}`, detalles: `Lote: ${cLot&&f[cLot]?String(f[cLot]).trim():"Hacienda General"}`, maestro: mId });
+                    let rp = String(vCar).trim();
+                    let valCat = cCat && f[cCat] ? String(f[cCat]).trim() : "-";
+                    let valLote = cLot && f[cLot] ? String(f[cLot]).trim() : "Hacienda General";
+                    
+                    // Sumamos milisegundos para que no colisionen los eventos de un mismo animal
+                    let baseTime = new Date().getTime() + (index * 10);
+                    
+                    // 1. Ubicación y Clasificación
+                    datosAInyectar.push({ 
+                        fecha: new Date(baseTime).toISOString(), 
+                        accion: 'Actualización de Datos', 
+                        caravana: rp, 
+                        valor: `Cat: ${valCat} | Carimbo: -`, 
+                        detalles: `Lote: ${valLote}`, 
+                        maestro: mId,
+                        batch_id: batchId
+                    });
+
+                    // 2. Raza / Genética
+                    if(cRaza && f[cRaza]) {
+                        datosAInyectar.push({ 
+                            fecha: new Date(baseTime + 1).toISOString(), 
+                            accion: 'Perfil Master', 
+                            caravana: rp, 
+                            valor: `${String(f[cRaza]).trim()}|-|-|-`, 
+                            detalles: valCat, 
+                            maestro: mId,
+                            batch_id: batchId
+                        });
+                    }
+
+                    // 3. Pesaje Inicial
+                    if(cPeso && f[cPeso]) {
+                        datosAInyectar.push({ 
+                            fecha: new Date(baseTime + 2).toISOString(), 
+                            accion: 'Peso', 
+                            caravana: rp, 
+                            valor: `${String(f[cPeso]).trim()} Kg`, 
+                            detalles: `Cond: Óptima. Notas: Importación Masiva`, 
+                            maestro: mId,
+                            batch_id: batchId
+                        });
+                    }
+
+                    // 4. Notas Generales
+                    if(cNot && f[cNot]) {
+                        datosAInyectar.push({ 
+                            fecha: new Date(baseTime + 3).toISOString(), 
+                            accion: 'Comentario', 
+                            caravana: rp, 
+                            valor: `-`, 
+                            detalles: String(f[cNot]).trim(), 
+                            maestro: mId,
+                            batch_id: batchId
+                        });
+                    }
                 }
             });
-            if(datos.length === 0) return mostrarToast("❌ Sin datos válidos", true);
-            if(confirm(`Se procesaron ${datos.length} animales.\n¿Inyectar en Firestore?`)) { document.getElementById('panel-mapeo').classList.add('oculto'); enviarCargaMasivaEnBloques(mId, datos); }
+            
+            if(datosAInyectar.length === 0) return mostrarToast("❌ Sin datos válidos", true);
+            
+            if(confirm(`Se generaron ${datosAInyectar.length} registros para el historial clínico general.\n¿Inyectar en Firestore?`)) { 
+                document.getElementById('panel-mapeo').classList.add('oculto'); 
+                
+                // Guardamos el ID de esta carga localmente para poder deshacerla después
+                lsSet('tc_ultimo_batch', { mId: mId, batchId: batchId });
+                enviarCargaMasivaEnBloques(mId, datosAInyectar); 
+            }
         }
 
         async function enviarCargaMasivaEnBloques(mId, arr) {
@@ -726,7 +845,40 @@
                 const batch = db.batch(); chunk.forEach(item => { batch.set(col.doc(), item); });
                 try { await batch.commit(); } catch (e) { toggleLoading(false); return mostrarToast(`❌ Error en bloque`, true); }
             }
-            toggleLoading(false); mostrarToast("✅ Importación completada"); document.getElementById('archivo-excel').value = ''; datosArchivoCrudo = [];
+            toggleLoading(false); mostrarToast("✅ Importación masiva completada"); document.getElementById('archivo-excel').value = ''; datosArchivoCrudo = [];
+        }
+
+        async function deshacerUltimaImportacion() {
+            let lastBatch = lsGet('tc_ultimo_batch', null);
+            if(!lastBatch || !lastBatch.mId || !lastBatch.batchId) {
+                return mostrarToast("⚠️ No hay registro de una carga reciente para deshacer en este dispositivo.", true);
+            }
+            if(!confirm("⚠️ PELIGRO: ¿Estás seguro de eliminar TODOS los registros que entraron en tu última importación masiva? Esta acción no se puede recuperar.")) return;
+
+            toggleLoading(true, "Buscando y revirtiendo datos...");
+            try {
+                const snapshot = await db.collection('estancias').doc(lastBatch.mId).collection('eventos').where('batch_id', '==', lastBatch.batchId).get();
+                if(snapshot.empty) {
+                    toggleLoading(false);
+                    return mostrarToast("⚠️ No se encontraron datos vinculados a esa importación.", true);
+                }
+
+                // Borramos en bloques para no exceder los límites de Firestore
+                const docs = snapshot.docs;
+                for (let i = 0; i < docs.length; i += 450) {
+                    const chunk = docs.slice(i, i + 450);
+                    const batch = db.batch();
+                    chunk.forEach(doc => batch.delete(doc.ref));
+                    await batch.commit();
+                }
+
+                lsSet('tc_ultimo_batch', null);
+                toggleLoading(false);
+                mostrarToast("✅ Última importación eliminada con éxito.");
+            } catch(e) {
+                toggleLoading(false);
+                mostrarToast("❌ Error al revertir la importación", true);
+            }
         }
 
         // Anclajes Globales (para evitar bloqueos CSP)
@@ -734,7 +886,7 @@
         window.toggleMantenimiento = toggleMantenimiento; window.enviarAvisoMantenimiento = enviarAvisoMantenimiento; window.crearCliente = crearCliente; window.cargarClientes = cargarClientes;
         window.actualizarVencimiento = actualizarVencimiento; window.cambiarClaveMaestroGhost = cambiarClaveMaestroGhost; window.borrarUsuarioMaestroGhost = borrarUsuarioMaestroGhost;
         window.abrirEdicion = abrirEdicion; window.guardarEdicion = guardarEdicion; window.verEquipo = verEquipo; window.cambiarClaveMiembroGhost = cambiarClaveMiembroGhost; window.eliminarMiembroGhost = eliminarMiembroGhost;
-        window.cargarClientesMasiva = cargarClientesMasiva; window.leerArchivoInteligente = leerArchivoInteligente; window.procesarMapeoEInyectar = procesarMapeoEInyectar;
+        window.cargarClientesMasiva = cargarClientesMasiva; window.leerArchivoInteligente = leerArchivoInteligente; window.procesarMapeoEInyectar = procesarMapeoEInyectar; window.deshacerUltimaImportacion = deshacerUltimaImportacion;
     </script>
 </body>
 </html>
