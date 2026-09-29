@@ -19,11 +19,13 @@
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({
-          appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60",
-          serviceWorkerParam: { scope: "/taurus-app/" },
-          serviceWorkerPath: "/taurus-app/OneSignalSDKWorker.js"
-        });
+        try {
+            await OneSignal.init({
+              appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60",
+              serviceWorkerParam: { scope: "/taurus-app/" },
+              serviceWorkerPath: "/taurus-app/OneSignalSDKWorker.js"
+            });
+        } catch(e){}
       });
     </script>
 
@@ -149,12 +151,12 @@
     <div id="pantalla-login">
         <div class="login-contenedor">
             <div class="logo-icono"><img src="gemini-svg.png" alt="Logo Taurus"></div>
-            <div class="titulo-login">Taurus Control</div>
+            <div class="titulo-login">Taurus Control &copy; 2026</div>
             <input type="text" id="usuario" class="form-control-login" placeholder="Usuario de Acceso" autocomplete="off">
             <input type="password" id="password" class="form-control-login" placeholder="Contraseña">
             <div id="error-login" class="error-msj"></div>
             <button id="btn-ingreso" class="btn-ingresar" onclick="procesarIngreso()">Iniciar Sesión</button>
-            <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">Taurus Control<br><strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">Motor FIREBASE Integrado</strong></div>
+            <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">Taurus Control<br><strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">Desarrollado por Fernando Rodriguez</strong></div>
         </div>
     </div>
 
@@ -262,7 +264,7 @@
                         <div id="badge-estado-animal" class="badge-estado offline" style="display:none; margin: 10px auto; width: max-content;">DADO DE BAJA</div>
                     </div>
                     <div class="botones-perfil">
-                        <button class="btn-mini" onclick="abrirModal('modal-perfil')">✏️ Genética</button>
+                        <button class="btn-mini" onclick="abrirModal('m-perfil')">✏️ Genética</button>
                         <button class="btn-mini" onclick="abrirModal('modal-clasificacion')">🏷️ Lote/Cat</button>
                         <button class="btn-mini" style="color:var(--alerta); border-color:var(--alerta);" onclick="abrirModal('modal-renombrar')">🔄 Renombrar</button>
                     </div>
@@ -369,15 +371,22 @@
 
             <!-- AJUSTES -->
             <div id="vista-config" class="vista oculto">
+                
+                <div class="tarjeta" id="panel-offline" style="display:none; border-color: var(--alerta); background: rgba(245, 158, 11, 0.1);">
+                    <div class="tarjeta-titulo" style="color: var(--alerta); font-size: 15px; border-bottom: none; margin-bottom: 5px; padding-bottom: 0;">⚠️ Pendiente de Sincronizar</div>
+                    <p style="font-size:13px; color:var(--texto); margin: 0;">Tienes <strong id="lbl-pendientes" style="color:var(--alerta); font-size:16px;">0</strong> registro(s) esperando conexión a internet para subirse a la nube.</p>
+                </div>
+
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">👤 Mi Perfil</div>
                     <div class="form-grupo"><label>Sesión iniciada como:</label><input type="text" id="usuario-activo-lbl" class="form-control" readonly style="font-weight:bold; color:var(--exito);"></div>
+                    <div class="form-grupo" id="panel-licencia"><label>Motor Backend:</label><input type="text" id="lbl-licencia" class="form-control" value="🔥 Firebase Realtime Sync" readonly style="font-weight:bold;"></div>
                     
                     <div class="form-grupo" style="margin-top: 15px;">
                         <label>Cambiar mi Contraseña de Acceso</label>
                         <input type="password" id="nueva-clave" class="form-control" placeholder="Mínimo 6 caracteres">
                     </div>
-                    <button class="btn-guardar" onclick="cambiarMiContrasena()">Actualizar Contraseña</button>
+                    <button class="btn-guardar" style="margin-top: 0;" onclick="cambiarMiContrasena()">Actualizar Contraseña</button>
                 </div>
                 
                 <div class="tarjeta" id="panel-membrete">
@@ -399,7 +408,8 @@
                     <div class="tarjeta-titulo">👷 Control de Operadores</div>
                     <div class="form-grupo"><label>Nombre y Apellido</label><input type="text" id="op-nombre" class="form-control" autocomplete="off" placeholder="Ej: Juan Ramírez"></div>
                     <div class="form-grupo"><label>Correo de Acceso (Usuario)</label><input type="text" id="op-usu" class="form-control" autocomplete="off" placeholder="Ej: juan@taurus.com"></div>
-                    <div class="form-grupo"><label>Contraseña de Acceso</label><input type="text" id="op-pass" class="form-control" autocomplete="off" placeholder="Mínimo 6 caracteres"></div>
+                    <div class="form-grupo"><label>Contraseña de Acceso</label><input type="password" id="op-pass" class="form-control" autocomplete="off" placeholder="Mínimo 6 caracteres"></div>
+                    
                     <div class="form-grupo">
                         <label>Rol del Nuevo Usuario</label>
                         <select id="op-rol" class="form-control" onchange="togglePermisos()">
@@ -565,14 +575,27 @@
         let alertaGlobalIdActual = "";
         let unsubscribeSnapshot = null;
         let unsubscribeConfig = null;
+        let pendingCount = 0; // Contador de sincronización offline
 
         function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 
+        function updatePendingUI() {
+            const pnl = document.getElementById('panel-offline');
+            const lbl = document.getElementById('lbl-pendientes');
+            if(pnl && lbl) {
+                if(pendingCount > 0) {
+                    pnl.style.display = 'block';
+                    lbl.innerText = pendingCount;
+                } else {
+                    pnl.style.display = 'none';
+                }
+            }
+        }
+
         // ==========================================
         // 3. INICIO AUTOMÁTICO Y KILL SWITCH
         // ==========================================
-        
         function iniciarKillSwitch() {
             if(unsubscribeConfig) unsubscribeConfig();
             unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot((doc) => {
@@ -725,7 +748,6 @@
             btn.disabled = true; btn.innerText = "Verificando en Firebase..."; err.style.display = 'none';
 
             try {
-                // Formato correo para Firebase (Ej: fer@taurus.com)
                 const email = u.includes('@') ? u : u + '@taurus.com';
                 await auth.signInWithEmailAndPassword(email, p);
             } catch(error) {
@@ -749,8 +771,10 @@
             if (window.AndroidTaurus && window.AndroidTaurus.identificarUsuarioPush) { window.AndroidTaurus.identificarUsuarioPush(usActivo, displayRol, maestroId); }
             if (window.OneSignalDeferred) { 
                 OneSignalDeferred.push(async function(OneSignal) { 
-                    OneSignal.User.addTags({ rol: displayRol, estancia_id: maestroId }); 
-                    if (isPropietario) { await OneSignal.Slidedown.promptPush(); }
+                    try {
+                        OneSignal.User.addTags({ rol: displayRol, estancia_id: maestroId }); 
+                        if (isPropietario) { await OneSignal.Slidedown.promptPush(); }
+                    } catch(e){}
                 }); 
             }
             
@@ -979,8 +1003,19 @@
         }
 
         // ==========================================
-        // 8. GUARDADO EN FIREBASE (SOPORTA OFFLINE)
+        // 8. GUARDADO EN FIREBASE Y OFFLINE TRACKING
         // ==========================================
+        const APPS_SCRIPT_NOTIFICACIONES = "https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec";
+
+        function notificarPropietario(mensaje) {
+            if(usRol.includes('Propietario') || usRol.includes('Dueño') || !navigator.onLine) return;
+            const fd = new URLSearchParams(); 
+            fd.append('accion', 'notificar_accion'); 
+            fd.append('maestro', maestroId); 
+            fd.append('mensaje', mensaje);
+            fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(e => console.error(e));
+        }
+
         function ejecutarAccion(tipo, val, det, modalId) {
             const obj = { 
                 fecha: new Date().toISOString(), 
@@ -990,20 +1025,31 @@
                 detalles: det + ` | Op: ${usNombre}` 
             };
             
-            // Reflejo visual inmediato
+            // Reflejo visual inmediato (Optimistic UI)
             dbCache.unshift(obj); 
             if (rpActivo && rpActivo !== "---") buscarCaravanaBtn(rpActivo); 
             procesarDatosDashboard(); 
             if(modalId) cerrarModal(modalId);
 
+            // Disparar Push a OneSignal si es un peón trabajando
+            if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana') {
+                notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
+            }
+
+            // Sumar al contador de pendientes
+            pendingCount++;
+            updatePendingUI();
+
             // Guardado Firebase
             db.collection("estancias").doc(maestroId).collection("eventos").add(obj)
             .then(() => {
+                pendingCount = Math.max(0, pendingCount - 1);
+                updatePendingUI();
                 if(tipo === 'Peso') mostrarToast("✅ Peso guardado");
             })
             .catch((err) => {
                 console.log("Guardado en caché (Offline)", err);
-                if(tipo === 'Peso') mostrarToast("💾 Peso en Caché (Offline)");
+                if(tipo === 'Peso') mostrarToast("💾 Peso en Caché");
             });
         }
 
@@ -1532,6 +1578,9 @@
         let timeoutTeclado;
 
         document.addEventListener('keydown', function(event) {
+            // 🛡️ ESCUDO: Si el teclado móvil dispara un evento fantasma sin tecla, lo ignoramos para evitar el Crash.
+            if (!event.key) return; 
+
             if(event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'CapsLock') return;
 
             if (event.key === 'Enter') {
