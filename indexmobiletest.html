@@ -195,7 +195,7 @@
                 <div id="banner-alerta-global" class="tarjeta oculto" style="border-color: var(--alerta); background: rgba(245, 158, 11, 0.1);">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div style="flex:1;">
-                            <strong style="color:var(--alerta); display:flex; align-items:center; gap:5px; margin-bottom:5px; font-size:15px;">⚠️ Mensaje de Administración</strong>
+                            <strong style="color:var(--alerta); display:flex; align-items:center; gap:5px; margin-bottom:5px; font-size:15px;">⚠️️ Mensaje de Administración</strong>
                             <span id="txt-banner-alerta" style="font-size:13px; color:var(--texto); line-height: 1.4;"></span>
                         </div>
                         <button class="btn-mini" style="background:var(--alerta); color:white; border:none; padding: 6px 12px; margin-left:10px;" onclick="marcarAlertaLeida()">Ocultar</button>
@@ -712,6 +712,7 @@
             btn.disabled = true; btn.innerText = "Verificando..."; err.style.display = 'none';
             let email = u.includes('@') ? u.toLowerCase() : u.toLowerCase() + '@taurus.com';
             try {
+                if(!navigator.onLine) throw new Error("Offline");
                 await firebase.auth().signInWithEmailAndPassword(email, p);
             } catch(error) {
                 err.innerText = "Usuario no registrado en Firebase o clave incorrecta.";
@@ -754,7 +755,7 @@
                     cargarListasFiltrosSelects();
                     cargarListaOperadores();
                     setEstadoRed(true);
-                }, err => { setEstadoRed(false, '❌ Red Local'); });
+                }, err => { setEstadoRed(false, '❌ Error de red'); });
                 
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
                 
@@ -1453,7 +1454,7 @@
             const datosActivos = obtenerRegistrosActivos();
             let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
             
-            let estadoFiltro = document.getElementById('filtro-reg-estado').value; // 'vivos', 'bajas', 'todos'
+            let estadoFiltro = document.getElementById('filtro-reg-estado').value;
             let loteFiltro = document.getElementById('filtro-reg-lote').value;
             let catFiltro = document.getElementById('filtro-reg-cat').value;
             let dxFiltro = document.getElementById('filtro-reg-dx').value;
