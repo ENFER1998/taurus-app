@@ -405,7 +405,7 @@
                 </div>
 
                 <div class="tarjeta" id="panel-crear-peones">
-                    <div class="tarjeta-titulo">👷 Control de Operadores</div>
+                    <div class="tarjeta-titulo">👷 Control de Equipo</div>
                     <div class="form-grupo"><label>Nombre y Apellido</label><input type="text" id="op-nombre" class="form-control" autocomplete="off" placeholder="Ej: Juan Ramírez"></div>
                     <div class="form-grupo"><label>Correo de Acceso (Usuario)</label><input type="text" id="op-usu" class="form-control" autocomplete="off" placeholder="Ej: juan@taurus.com"></div>
                     <div class="form-grupo"><label>Contraseña de Acceso</label><input type="password" id="op-pass" class="form-control" autocomplete="off" placeholder="Mínimo 6 caracteres"></div>
@@ -413,13 +413,13 @@
                     <div class="form-grupo">
                         <label>Rol del Nuevo Usuario</label>
                         <select id="op-rol" class="form-control" onchange="togglePermisos()">
-                            <option value="Operador">Operador (Acceso Limitado)</option>
-                            <option value="Propietario">Propietario (Acceso Total)</option>
+                            <option value="Operador">Operador (Peón con Acceso Limitado)</option>
+                            <option value="Propietario">Propietario (Dueño Extra con Acceso Total)</option>
                         </select>
                     </div>
                     
                     <div class="form-grupo" id="caja-permisos">
-                        <label style="font-size:12px; color:var(--muted); margin-bottom:8px; display:block;">Permisos de Menú Inferior:</label>
+                        <label style="font-size:12px; color:var(--muted); margin-bottom:8px; display:block;">Permisos de Menú Inferior (Solo Peones):</label>
                         <div style="display:flex; flex-direction:column; gap:10px; background:var(--primario); padding:12px; border:1px solid var(--borde); border-radius:8px;">
                             <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="dash" checked> 📊 Panel de Control</label>
                             <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="ficha" checked> 🐄 Ficha Clínica (Manga)</label>
@@ -427,11 +427,11 @@
                             <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="reporte"> 📄 Reportes PDF</label>
                         </div>
                     </div>
-                    <button id="btn-crear-op" class="btn-guardar" style="background:var(--exito);" onclick="crearOperador()">Registrar Operador</button>
+                    <button id="btn-crear-op" class="btn-guardar" style="background:var(--exito);" onclick="crearOperador()">Registrar Usuario</button>
                     
                     <hr style="border-color:var(--borde); margin:20px 0;">
                     
-                    <div class="tarjeta-titulo" style="font-size: 15px;">✏️ Editar Permisos</div>
+                    <div class="tarjeta-titulo" style="font-size: 15px;">✏️ Editar Permisos (Solo Peones)</div>
                     <div class="form-grupo">
                         <select id="op-edit-usu-sel" class="form-control" onchange="cargarPermisosEdicion()">
                             <option value="">-- Seleccione un operador --</option>
@@ -453,10 +453,10 @@
                     <hr style="border-color:var(--borde); margin:20px 0;">
                     
                     <div class="form-grupo">
-                        <label>Eliminar Operador Permanentemente</label>
+                        <label>Eliminar Usuario (Dueño o Peón)</label>
                         <select id="op-del-usu-sel" class="form-control"><option value="">-- Seleccione --</option></select>
                     </div>
-                    <button id="btn-eliminar-op" class="btn-guardar" style="background:var(--peligro);" onclick="eliminarOperador()">Eliminar Operador</button>
+                    <button id="btn-eliminar-op" class="btn-guardar" style="background:var(--peligro);" onclick="eliminarOperador()">Eliminar Usuario</button>
                 </div>
 
                 <div class="tarjeta">
@@ -1694,17 +1694,33 @@
                 const maestroRef = await db.collection('usuarios').doc(maestroId.toLowerCase()).get();
                 if(maestroRef.exists) {
                     let f = maestroRef.data().features || "";
-                    let limitVal = 999; // Ilimitado por defecto
-                    f.split(',').forEach(p => { if(p.startsWith('limit:')) limitVal = parseInt(p.split(':')[1]); });
+                    let limitOps = 999;
+                    let limitOwn = 999;
+                    f.split(',').forEach(p => { 
+                        if(p.startsWith('limitOps:')) limitOps = parseInt(p.split(':')[1]); 
+                        if(p.startsWith('limitOwn:')) limitOwn = parseInt(p.split(':')[1]); 
+                        if(p.startsWith('limit:')) limitOps = parseInt(p.split(':')[1]);
+                    });
 
                     const opsSnapshot = await db.collection('usuarios').where('maestroId', '==', maestroId).get();
-                    // Contamos los operadores, excluyendo al maestro (dueño)
-                    const currentOps = opsSnapshot.docs.filter(doc => doc.id !== maestroId.toLowerCase()).length;
+                    
+                    let countOps = 0;
+                    let countOwns = 0;
+                    opsSnapshot.docs.forEach(doc => {
+                        if(doc.id !== maestroId.toLowerCase()) {
+                            let d = doc.data();
+                            if(d.rol.includes('Propietario') || d.rol.includes('Dueño')) countOwns++;
+                            else countOps++;
+                        }
+                    });
 
-                    if(currentOps >= limitVal) {
-                        alert(`❌ LÍMITE ALCANZADO: Tu plan solo permite un máximo de ${limitVal} operador(es). Debes eliminar uno existente o solicitar ampliación.`);
-                        btn.innerHTML = "Registrar Operador"; btn.disabled = false;
-                        return; // Detenemos la creación
+                    if (rolSel === 'Operador' && countOps >= limitOps) {
+                        alert(`❌ LÍMITE ALCANZADO: Tu plan solo permite un máximo de ${limitOps} operador(es).`);
+                        btn.innerHTML = "Registrar Usuario"; btn.disabled = false; return;
+                    }
+                    if (rolSel === 'Propietario' && countOwns >= limitOwn) {
+                        alert(`❌ LÍMITE ALCANZADO: Tu plan permite un máximo de ${limitOwn} dueño(s) extra(s).`);
+                        btn.innerHTML = "Registrar Usuario"; btn.disabled = false; return;
                     }
                 }
 
@@ -1712,7 +1728,7 @@
                 let rolFinal = rolSel;
                 if (rolSel === 'Operador') {
                     let permisos = Array.from(document.querySelectorAll('.chk-permiso:checked')).map(c => c.value).join(',');
-                    if(!permisos) { alert("Debe seleccionar al menos un permiso de acceso para el operador."); btn.innerHTML = "Registrar Operador"; btn.disabled = false; return; }
+                    if(!permisos) { alert("Debe seleccionar al menos un permiso de acceso para el operador."); btn.innerHTML = "Registrar Usuario"; btn.disabled = false; return; }
                     rolFinal = 'Operador|' + permisos;
                 }
 
@@ -1733,14 +1749,14 @@
                 document.getElementById('op-pass').value = '';
                 
                 cargarListaOperadores(); 
-                mostrarToast("✅ Operador creado correctamente");
+                mostrarToast("✅ Usuario creado correctamente");
                 
             } catch(e) {
                 console.error(e);
                 if(e.code === 'auth/email-already-in-use') alert("El correo ya está en uso.");
                 else alert("Hubo un error de conexión al registrar al usuario.");
             } finally {
-                btn.innerHTML = "Registrar Operador"; btn.disabled = false;
+                btn.innerHTML = "Registrar Usuario"; btn.disabled = false;
             }
         }
 
@@ -1750,7 +1766,7 @@
                 const querySnapshot = await db.collection("usuarios").where("maestroId", "==", maestroId).get();
                 const selDel = document.getElementById('op-del-usu-sel');
                 const selEdit = document.getElementById('op-edit-usu-sel');
-                let options = '<option value="">-- Seleccione un operador --</option>';
+                let options = '<option value="">-- Seleccione un usuario --</option>';
                 
                 querySnapshot.forEach((doc) => {
                     let d = doc.data();
@@ -1810,26 +1826,54 @@
             }
         }
 
+        // ==========================================
+        // TRUCO MAESTRO PARA ELIMINAR DE AUTH DESDE EL CELULAR
+        // ==========================================
+        async function gestionarAuthUsuario(email, claveActual, accion) {
+            const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryGhostAppMob");
+            let exito = false;
+            try {
+                await secondaryApp.auth().signInWithEmailAndPassword(email, claveActual);
+                if(accion === 'eliminar') {
+                    await secondaryApp.auth().currentUser.delete();
+                    exito = true;
+                }
+            } catch(e) { console.error("Error AuthGhost:", e); } 
+            finally {
+                try { await secondaryApp.auth().signOut(); } catch(e){}
+                try { await secondaryApp.delete(); } catch(e){}
+            }
+            return exito;
+        }
+
         async function eliminarOperador() {
             if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; }
             const selectEl = document.getElementById('op-del-usu-sel');
             const u = selectEl.value.trim();
-            if(!u) { alert("Seleccione un operador de la lista."); return; }
+            if(!u) { alert("Seleccione un usuario de la lista."); return; }
             
-            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso del operador "${u}"?`)) {
+            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar de raíz al usuario "${u}"?`)) {
                 const btn = document.getElementById('btn-eliminar-op');
                 btn.innerHTML = "⏳ Eliminando...";
                 btn.disabled = true;
                 
                 try {
-                    await db.collection("usuarios").doc(u).delete();
-                    alert(`El operador "${u}" ha sido eliminado de la base de datos.`); 
+                    const doc = await db.collection("usuarios").doc(u).get();
+                    if(doc.exists) {
+                        const clave = doc.data().password;
+                        if(clave) {
+                            await gestionarAuthUsuario(u, clave, 'eliminar');
+                        }
+                        await db.collection("usuarios").doc(u).delete();
+                    }
+                    
+                    alert(`El usuario "${u}" ha sido eliminado de la base de datos.`); 
                     selectEl.value = ''; 
                     cargarListaOperadores(); 
                 } catch(e) {
                     alert("Hubo un error de conexión.");
                 } finally {
-                    btn.innerHTML = "Eliminar Operador";
+                    btn.innerHTML = "Eliminar Usuario";
                     btn.disabled = false;
                 }
             }
