@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Taurus Control - Móvil (Firebase)</title>
+    <title>Taurus Control - Móvil</title>
     
     <meta name="theme-color" content="#0f172a">
     
+    <!-- Íconos para la aplicación en pantalla de inicio -->
     <link rel="apple-touch-icon" href="gemini-svg.png">
     <link rel="icon" type="image/png" href="gemini-svg.png">
     
@@ -14,25 +15,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     
-    <!-- INTEGRACIÓN ONESIGNAL -->
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-    <script>
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function(OneSignal) {
-        try {
-            await OneSignal.init({
-              appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60",
-              serviceWorkerParam: { scope: "/taurus-app/" },
-              serviceWorkerPath: "/taurus-app/OneSignalSDKWorker.js"
-            });
-        } catch(e){}
-      });
-    </script>
-
-    <!-- FIREBASE SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+<!-- INTEGRACIÓN ONESIGNAL -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60",
+      serviceWorkerParam: { scope: "/taurus-app/" },
+      serviceWorkerPath: "/taurus-app/OneSignalSDKWorker.js"
+    });
+  });
+</script>
 
     <style>
         :root { --primario: #0f172a; --secundario: #3b82f6; --exito: #10b981; --alerta: #f59e0b; --peligro: #ef4444; --borde: #334155; --texto: #f8fafc; --muted: #94a3b8; }
@@ -156,7 +150,7 @@
             <input type="password" id="password" class="form-control-login" placeholder="Contraseña">
             <div id="error-login" class="error-msj"></div>
             <button id="btn-ingreso" class="btn-ingresar" onclick="procesarIngreso()">Iniciar Sesión</button>
-            <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">Taurus Control &copy; 2026<br><strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">Desarrollado por Fernando Rodriguez</strong></div>
+            <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">Taurus Control<br><strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">Desarrollado por Fernando Rodriguez &copy; 2026</strong></div>
         </div>
     </div>
 
@@ -181,7 +175,7 @@
     <div id="pantalla-app" class="oculto">
         <header class="cabecera">
             <h1><img src="gemini-svg.png" alt="Taurus" style="width: 26px; height: 26px; border-radius: 6px; object-fit: contain;"> Taurus</h1>
-            <div id="estado-red" class="badge-estado">🟢 Conectado</div>
+            <div id="estado-red" class="badge-estado" onclick="sincronizarFondo(true)">🟢 Conectado</div>
         </header>
 
         <div class="contenedor">
@@ -225,7 +219,7 @@
                     <div id="opciones-rafaga" class="oculto" style="margin-top:15px; padding-top:15px; border-top:1px solid var(--borde);">
                         <div class="form-grupo" style="margin-bottom:10px;">
                             <label style="font-size:11px;">Acción combinada con el peso:</label>
-                            <select id="rafaga-accion" class="form-control" style="padding:8px; font-size:13px; font-weight:bold;" onchange="verificarSelectCustom('rafaga-accion', 'rafaga-prod-custom')">
+                            <select id="rafaga-accion" class="form-control" style="padding:8px; font-size:13px; font-weight:bold;" onchange="verificarRafagaCustom()">
                                 <option value="solo_peso">⚖️ Solo Registrar Peso</option>
                                 <option value="Vacuna Aftosa">💉 Vacuna Aftosa</option>
                                 <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
@@ -264,7 +258,7 @@
                         <div id="badge-estado-animal" class="badge-estado offline" style="display:none; margin: 10px auto; width: max-content;">DADO DE BAJA</div>
                     </div>
                     <div class="botones-perfil">
-                        <button class="btn-mini" onclick="abrirModal('m-perfil')">✏️ Genética</button>
+                        <button class="btn-mini" onclick="abrirModal('modal-perfil')">✏️ Genética</button>
                         <button class="btn-mini" onclick="abrirModal('modal-clasificacion')">🏷️ Lote/Cat</button>
                         <button class="btn-mini" style="color:var(--alerta); border-color:var(--alerta);" onclick="abrirModal('modal-renombrar')">🔄 Renombrar</button>
                     </div>
@@ -278,7 +272,7 @@
                         <div class="dato-min"><span>Categoría</span><strong id="val-categoria">-</strong></div>
                         <div class="dato-min"><span>Padre/Madre</span><strong id="val-genealogia">-</strong></div>
                         
-                        <div class="dato-min"><span>Dx Clínico</span><strong id="val-dx" style="color:var(--exito);">-</strong></div>
+                        <div class="dato-min"><span>Dx Tacto</span><strong id="val-dx" style="color:var(--exito);">-</strong></div>
                         <div class="dato-min">
                             <span>Peso Actual</span>
                             <strong id="val-peso" style="display:block;">-</strong>
@@ -293,7 +287,7 @@
                     <div class="grid-acciones">
                         <button class="btn-accion" onclick="abrirModal('modal-sanidad')"><span style="color:var(--peligro);">💉</span> Sanidad</button>
                         <button class="btn-accion" onclick="abrirModal('modal-peso')"><span style="color:var(--secundario);">⚖️</span> Pesaje</button>
-                        <button class="btn-accion" onclick="abrirModal('modal-diagnostico')"><span style="color:var(--exito);">🩺</span> Clínica / Dx</button>
+                        <button class="btn-accion" onclick="abrirModal('modal-diagnostico')"><span style="color:var(--exito);">🩺</span> Tacto / Dx</button>
                         <button class="btn-accion" onclick="abrirModal('modal-inseminacion')"><span style="color:#9333ea;">🧬</span> Inseminar</button>
                         <button class="btn-accion" onclick="abrirModal('modal-nut')"><span style="color:var(--alerta);">🌾</span> Nutrición</button>
                         <button class="btn-accion" onclick="verHistorial()"><span>📋</span> Historial</button>
@@ -371,27 +365,18 @@
 
             <!-- AJUSTES -->
             <div id="vista-config" class="vista oculto">
-                
-                <!-- ALERTA DE REGISTROS PENDIENTES OFFLINE -->
-                <div class="tarjeta" id="panel-offline" style="display:none; border-color: var(--alerta); background: rgba(245, 158, 11, 0.1);">
-                    <div class="tarjeta-titulo" style="color: var(--alerta); font-size: 15px; border-bottom: none; margin-bottom: 5px; padding-bottom: 0;">⚠️ Pendiente de Sincronizar</div>
-                    <p style="font-size:13px; color:var(--texto); margin: 0;">Tienes <strong id="lbl-pendientes" style="color:var(--alerta); font-size:16px;">0</strong> registro(s) esperando conexión a internet para subirse a la nube.</p>
-                </div>
-
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">👤 Mi Perfil</div>
                     <div class="form-grupo"><label>Sesión iniciada como:</label><input type="text" id="usuario-activo-lbl" class="form-control" readonly style="font-weight:bold; color:var(--exito);"></div>
-                    
-                    <div class="form-grupo" style="margin-top: 15px;">
-                        <label>Cambiar mi Contraseña de Acceso</label>
-                        <input type="password" id="nueva-clave" class="form-control" placeholder="Mínimo 6 caracteres">
-                    </div>
-                    <button class="btn-guardar" style="margin-top: 0;" onclick="cambiarMiContrasena()">Actualizar Contraseña</button>
+                    <div class="form-grupo" id="panel-licencia"><label>Vencimiento de Licencia:</label><input type="text" id="lbl-licencia" class="form-control" readonly style="font-weight:bold;"></div>
+                    <div class="form-grupo" style="margin-top: 15px;"><label>Cambiar mi Contraseña</label><input type="password" id="nueva-clave" class="form-control" placeholder="Mínimo 4 caracteres"></div>
+                    <button class="btn-guardar" onclick="cambiarMiContrasena()">Actualizar Contraseña</button>
                 </div>
                 
                 <div class="tarjeta" id="panel-membrete">
-                    <div class="tarjeta-titulo">🖨️️ Membrete Documentos PDF</div>
+                    <div class="tarjeta-titulo">🖨️ Membrete Documentos PDF</div>
                     
+                    <!-- VISTA PREVIA DEL LOGO AL CARGAR -->
                     <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
                         <img id="preview-logo-config" src="gemini-svg.png" style="width:60px; height:60px; object-fit:contain; border-radius:8px; border:1px solid var(--borde); background:white; padding:2px;">
                         <div style="flex:1;">
@@ -405,21 +390,21 @@
                 </div>
 
                 <div class="tarjeta" id="panel-crear-peones">
-                    <div class="tarjeta-titulo">👷 Control de Equipo</div>
+                    <div class="tarjeta-titulo">👷 Control de Operadores</div>
                     <div class="form-grupo"><label>Nombre y Apellido</label><input type="text" id="op-nombre" class="form-control" autocomplete="off" placeholder="Ej: Juan Ramírez"></div>
-                    <div class="form-grupo"><label>Correo de Acceso (Usuario)</label><input type="text" id="op-usu" class="form-control" autocomplete="off" placeholder="Ej: juan@taurus.com"></div>
-                    <div class="form-grupo"><label>Contraseña de Acceso</label><input type="password" id="op-pass" class="form-control" autocomplete="off" placeholder="Mínimo 6 caracteres"></div>
+                    <div class="form-grupo"><label>Usuario de Acceso</label><input type="text" id="op-usu" class="form-control" autocomplete="off" placeholder="Ej: jramirez"></div>
+                    <div class="form-grupo"><label>Contraseña</label><input type="password" id="op-pass" class="form-control" autocomplete="new-password"></div>
                     
                     <div class="form-grupo">
                         <label>Rol del Nuevo Usuario</label>
                         <select id="op-rol" class="form-control" onchange="togglePermisos()">
-                            <option value="Operador">Operador (Peón con Acceso Limitado)</option>
-                            <option value="Propietario">Propietario (Dueño Extra con Acceso Total)</option>
+                            <option value="Operador">Operador (Acceso Limitado)</option>
+                            <option value="Propietario">Propietario (Acceso Total)</option>
                         </select>
                     </div>
                     
                     <div class="form-grupo" id="caja-permisos">
-                        <label style="font-size:12px; color:var(--muted); margin-bottom:8px; display:block;">Permisos de Menú Inferior (Solo Peones):</label>
+                        <label style="font-size:12px; color:var(--muted); margin-bottom:8px; display:block;">Permisos de Menú Inferior:</label>
                         <div style="display:flex; flex-direction:column; gap:10px; background:var(--primario); padding:12px; border:1px solid var(--borde); border-radius:8px;">
                             <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="dash" checked> 📊 Panel de Control</label>
                             <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="ficha" checked> 🐄 Ficha Clínica (Manga)</label>
@@ -431,7 +416,7 @@
                     
                     <hr style="border-color:var(--borde); margin:20px 0;">
                     
-                    <div class="tarjeta-titulo" style="font-size: 15px;">✏️ Editar Permisos (Solo Peones)</div>
+                    <div class="tarjeta-titulo" style="font-size: 15px;">✏️ Editar Permisos</div>
                     <div class="form-grupo">
                         <select id="op-edit-usu-sel" class="form-control" onchange="cargarPermisosEdicion()">
                             <option value="">-- Seleccione un operador --</option>
@@ -453,10 +438,10 @@
                     <hr style="border-color:var(--borde); margin:20px 0;">
                     
                     <div class="form-grupo">
-                        <label>Eliminar Usuario (Dueño o Peón)</label>
+                        <label>Eliminar Operador Permanentemente</label>
                         <select id="op-del-usu-sel" class="form-control"><option value="">-- Seleccione --</option></select>
                     </div>
-                    <button id="btn-eliminar-op" class="btn-guardar" style="background:var(--peligro);" onclick="eliminarOperador()">Eliminar Usuario</button>
+                    <button id="btn-eliminar-op" class="btn-guardar" style="background:var(--peligro);" onclick="eliminarOperador()">Eliminar Operador</button>
                 </div>
 
                 <div class="tarjeta">
@@ -498,58 +483,11 @@
         </nav>
     </div>
 
-    <!-- MODALES GANADEROS ESTANDARIZADOS -->
-    <div id="m-baja" class="modal">
-        <div class="modal-body">
-            <span class="cerrar" onclick="cerrarModal('m-baja')">&times;</span>
-            <h3>💀 Registro de Baja / Muerte</h3>
-            <div class="form-grupo">
-                <label>Causa</label>
-                <select class="form-control" id="i-baja-causa" onchange="verificarSelectCustom('i-baja-causa', 'i-baja-causa-custom')">
-                    <option value="Enfermedad">🦠 Enfermedad</option>
-                    <option value="Accidente">💥 Accidente</option>
-                    <option value="Depredador">🐆 Depredador</option>
-                    <option value="Natural / Desconocida">❓ Natural / Desconocida</option>
-                    <option value="Venta / Faena">🥩 Venta / Faena</option>
-                    <option value="OTRO">✏️ Otra causa...</option>
-                </select>
-                <input type="text" id="i-baja-causa-custom" class="form-control oculto" placeholder="Especifique la causa..." style="margin-top:8px;">
-            </div>
-            <div class="form-grupo">
-                <label>Observaciones</label>
-                <textarea class="form-control textarea" id="i-baja-txt"></textarea>
-            </div>
-            <button class="btn-guardar" style="background:var(--peligro);" onclick="prepararGuardado('m-baja', 'Baja')">Confirmar Baja</button>
-        </div>
-    </div>
-
-    <div id="modal-renombrar" class="modal">
-        <div class="modal-body">
-            <span class="cerrar" onclick="cerrarModal('modal-renombrar')">&times;</span>
-            <h3>Modificar Número RP</h3>
-            <div class="form-grupo"><label>Nuevo RP</label><input type="text" class="form-control" id="f-nueva-caravana"></div>
-            <button class="btn-guardar" onclick="guardarCambioCaravana()">Confirmar</button>
-        </div>
-    </div>
-
-    <div id="modal-comentario" class="modal">
-        <div class="modal-body">
-            <span class="cerrar" onclick="cerrarModal('modal-comentario')">&times;</span>
-            <h3>Anotación General</h3>
-            <div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt"></textarea></div>
-            <button class="btn-guardar" onclick="prepararGuardado('modal-comentario', 'Comentario')">Guardar Nota</button>
-        </div>
-    </div>
-
-    <div id="modal-rfid" class="modal">
-        <div class="modal-body">
-            <span class="cerrar" onclick="cerrarModal('modal-rfid')">&times;</span>
-            <h3>Vincular Bastón RFID</h3>
-            <p style="font-size:12px; color:var(--muted); margin-bottom:15px;">Chip <strong id="lbl-rfid-scaneado" style="color:var(--secundario);"></strong> no asignado.</p>
-            <div class="form-grupo"><input type="text" class="form-control" id="f-rfid-caravana" placeholder="Ingrese RP (Ej: 1234)" style="text-align: center; font-size: 20px; font-weight: bold;"></div>
-            <button class="btn-guardar" onclick="guardarVinculacionRFID()">Vincular y Abrir Ficha</button>
-        </div>
-    </div>
+    <!-- MODALES GANADEROS -->
+    <div id="m-baja" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('m-baja')">&times;</span><h3>💀 Registro de Baja / Muerte</h3><div class="form-grupo"><label>Causa</label><select class="form-control" id="i-baja-causa"><option>Enfermedad</option><option>Accidente</option><option>Depredador</option><option>Natural / Desconocida</option><option>Venta / Faena</option></select></div><div class="form-grupo"><label>Observaciones</label><textarea class="form-control textarea" id="i-baja-txt"></textarea></div><button class="btn-guardar" style="background:var(--peligro);" onclick="prepararGuardado('m-baja', 'Baja')">Confirmar Baja</button></div></div>
+    <div id="modal-renombrar" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-renombrar')">&times;</span><h3>Modificar Número RP</h3><div class="form-grupo"><label>Nuevo RP</label><input type="text" class="form-control" id="f-nueva-caravana"></div><button class="btn-guardar" onclick="guardarCambioCaravana()">Confirmar</button></div></div>
+    <div id="modal-comentario" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-comentario')">&times;</span><h3>Anotación General</h3><div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-comentario', 'Comentario')">Guardar Nota</button></div></div>
+    <div id="modal-rfid" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-rfid')">&times;</span><h3>Vincular Bastón RFID</h3><p style="font-size:12px; color:var(--muted); margin-bottom:15px;">Chip <strong id="lbl-rfid-scaneado" style="color:var(--secundario);"></strong> no asignado.</p><div class="form-grupo"><input type="text" class="form-control" id="f-rfid-caravana" placeholder="Ingrese RP (Ej: 1234)" style="text-align: center; font-size: 20px; font-weight: bold;"></div><button class="btn-guardar" onclick="guardarVinculacionRFID()">Vincular y Abrir Ficha</button></div></div>
     
     <div id="m-perfil" class="modal">
         <div class="modal-body">
@@ -569,197 +507,33 @@
         </div>
     </div>
     
-    <div id="modal-clasificacion" class="modal">
-        <div class="modal-body">
-            <span class="cerrar" onclick="cerrarModal('modal-clasificacion')">&times;</span>
-            <h3>Clasificación y Lote</h3>
-            <div class="form-grupo">
-                <label>Categoría</label>
-                <select class="form-control" id="input-cat-rapida">
-                    <option value="TH: Ternera Hembra">TH: Ternera Hembra</option>
-                    <option value="TM: Ternero Macho">TM: Ternero Macho</option>
-                    <option value="DH: Desmamante Hembra">DH: Desmamante Hembra</option>
-                    <option value="DM: Desmamante Macho">DM: Desmamante Macho</option>
-                    <option value="V: Vaca/Vaquilla">V: Vaca/Vaquilla</option>
-                    <option value="VV: Vaca Vieja">VV: Vaca Vieja</option>
-                    <option value="Toros">Toros</option>
-                    <option value="Novillos">Novillos</option>
-                    <option value="Bueyes">Bueyes</option>
-                </select>
-            </div>
-            <div class="form-grupo">
-                <label>Lote Asignado</label>
-                <select class="form-control" id="input-lote-rapido" onchange="verificarSelectCustom('input-lote-rapido', 'input-lote-rapido-custom')">
-                    <option value="Hacienda General">Hacienda General</option>
-                    <option value="Lecheras">Lecheras</option>
-                    <option value="Preñadas">Preñadas</option>
-                    <option value="Inseminadas">Inseminadas</option>
-                    <option value="Destete">Destete</option>
-                    <option value="Enfermería">Enfermería</option>
-                    <option value="OTRO">✏️ Escribir otro lote...</option>
-                </select>
-                <input type="text" id="input-lote-rapido-custom" class="form-control oculto" placeholder="Nombre del lote..." style="margin-top:8px;">
-            </div>
-            <div class="form-grupo"><label>Carimbo Manual (Opcional)</label><input type="number" class="form-control" id="input-carimbo-rapido"></div>
-            <button class="btn-guardar" onclick="guardarClasificacion()">Actualizar Ubicación</button>
-        </div>
-    </div>
-
-    <!-- MODAL DIAGNÓSTICO (GENERAL Y REPRODUCTIVO) -->
-    <div id="modal-diagnostico" class="modal">
-        <div class="modal-body">
-            <span class="cerrar" onclick="cerrarModal('modal-diagnostico')">&times;</span>
-            <h3>🩺 Clínica / Diagnóstico</h3>
-            <div class="form-grupo">
-                <label>Tipo de Diagnóstico</label>
-                <select class="form-control" id="i-dx-sel" style="font-weight:bold; font-size:16px;" onchange="verificarSelectCustom('i-dx-sel', 'i-dx-sel-custom')">
-                    <optgroup label="Reproductivo (Hembras)">
-                        <option value="Preñada">✅ Preñada</option>
-                        <option value="Vacía">❌ Vacía</option>
-                        <option value="Vacía (Sangre)">🩸 Vacía (Sangre)</option>
-                    </optgroup>
-                    <optgroup label="Clínica General (Hembras/Machos)">
-                        <option value="Enfermedad">🤒 Enfermedad General</option>
-                        <option value="Lesión">🩹 Lesión / Herida</option>
-                        <option value="Problema Podal">🪨 Problema Podal (Pezuñas)</option>
-                        <option value="Sano / Alta">✅ Sano / Alta Médica</option>
-                        <option value="OTRO">✏️ Otro diagnóstico...</option>
-                    </optgroup>
-                </select>
-                <input type="text" id="i-dx-sel-custom" class="form-control oculto" placeholder="Especifique diagnóstico..." style="margin-top:8px;">
-            </div>
-            <div class="form-grupo">
-                <label>Observaciones o Tratamiento</label>
-                <textarea class="form-control textarea" id="i-dx-txt"></textarea>
-            </div>
-            <button class="btn-guardar" onclick="prepararGuardado('modal-diagnostico', 'Diagnóstico')">Registrar Diagnóstico</button>
-        </div>
-    </div>
-
-    <div id="modal-peso" class="modal">
-        <div class="modal-body">
-            <span class="cerrar" onclick="cerrarModal('modal-peso')">&times;</span>
-            <h3>⚖️ Pesaje</h3>
-            <div class="form-grupo">
-                <input type="number" step="0.5" class="form-control" id="i-peso-val" placeholder="Kg" style="font-size:24px; font-weight:bold; text-align:center;">
-            </div>
-            <div class="form-grupo">
-                <label>Condición Corporal</label>
-                <select class="form-control" id="i-peso-cond" onchange="verificarSelectCustom('i-peso-cond', 'i-peso-cond-custom')">
-                    <option value="Óptima">🟢 Óptima</option>
-                    <option value="Bajo Peso">🟡 Bajo Peso</option>
-                    <option value="Sobrepeso">🔴 Sobrepeso</option>
-                    <option value="OTRO">✏️ Otra condición...</option>
-                </select>
-                <input type="text" id="i-peso-cond-custom" class="form-control oculto" placeholder="Especifique..." style="margin-top:8px;">
-            </div>
-            <div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-peso-txt"></textarea></div>
-            <button class="btn-guardar" onclick="prepararGuardado('modal-peso', 'Peso')">Registrar Peso</button>
-        </div>
-    </div>
+    <div id="modal-clasificacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-clasificacion')">&times;</span><h3>Clasificación y Lote</h3><div class="form-grupo"><label>Categoría</label><select class="form-control" id="input-cat-rapida"><option value="TH: Ternera Hembra">TH: Ternera Hembra</option><option value="TM: Ternero Macho">TM: Ternero Macho</option><option value="DH: Desmamante Hembra">DH: Desmamante Hembra</option><option value="DM: Desmamante Macho">DM: Desmamante Macho</option><option value="V: Vaca/Vaquilla">V: Vaca/Vaquilla</option><option value="VV: Vaca Vieja">VV: Vaca Vieja</option><option value="Toros">Toros</option><option value="Novillos">Novillos</option><option value="Bueyes">Bueyes</option></select></div><div class="form-grupo"><label>Lote Asignado</label><input type="text" list="lista-lotes" class="form-control" id="input-lote-rapido"><datalist id="lista-lotes"><option value="Hacienda General"></option><option value="Lecheras"></option><option value="Preñadas"></option><option value="Inseminadas"></option></datalist></div><div class="form-grupo"><label>Carimbo Manual (Opcional)</label><input type="number" class="form-control" id="input-carimbo-rapido"></div><button class="btn-guardar" onclick="guardarClasificacion()">Actualizar Ubicación</button></div></div>
+    <div id="modal-diagnostico" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-diagnostico')">&times;</span><h3>Tacto / Diagnóstico (Dx)</h3><div class="form-grupo"><select class="form-control" id="i-dx-sel" style="font-weight:bold; font-size:18px;"><option value="Preñada">✅ Preñada</option><option value="Vacía">❌ Vacía</option><option value="Vacía (Sangre)">🩸 Vacía (Sangre)</option></select></div><div class="form-grupo"><label>Observaciones</label><textarea class="form-control textarea" id="i-dx-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-diagnostico', 'Diagnóstico')">Registrar Tacto</button></div></div>
+    <div id="modal-peso" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-peso')">&times;</span><h3>Pesaje</h3><div class="form-grupo"><input type="number" step="0.5" class="form-control" id="i-peso-val" placeholder="Kg" style="font-size:24px; font-weight:bold; text-align:center;"></div><div class="form-grupo"><label>Condición Corporal</label><select class="form-control" id="i-peso-cond"><option>Óptima</option><option>Bajo Peso</option><option>Sobrepeso</option></select></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-peso-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-peso', 'Peso')">Registrar Peso</button></div></div>
     
-    <div id="modal-sanidad" class="modal">
-        <div class="modal-body">
-            <span class="cerrar" onclick="cerrarModal('modal-sanidad')">&times;</span>
-            <h3>💉 Tratamiento / Sanidad</h3>
-            <div class="form-grupo">
-                <label>Producto</label>
-                <select class="form-control" id="i-sani-sel" onchange="verificarSelectCustom('i-sani-sel', 'i-sani-sel-custom')">
-                    <option value="Antiparasitario (Ivermectina)">Antiparasitario (Ivermectina)</option>
-                    <option value="Vacuna Aftosa">Vacuna Aftosa</option>
-                    <option value="Vacuna Carbunclo">Vacuna Carbunclo</option>
-                    <option value="Vitamina ADE">Vitamina ADE</option>
-                    <option value="Tratamiento General">Tratamiento General</option>
-                    <option value="OTRO">✏️ Otro producto...</option>
-                </select>
-                <input type="text" id="i-sani-sel-custom" class="form-control oculto" placeholder="Nombre del producto..." style="margin-top:8px;">
-            </div>
-            <div class="form-grupo"><label>Lote / Detalles (Dosis)</label><input type="text" class="form-control" id="i-sani-lote"></div>
-            <div class="form-grupo"><label>Notas (Enfermedad, etc)</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div>
-            <div class="form-grupo">
-                <label style="color:var(--alerta);">⏳ Próxima Dosis / Recordatorio</label>
-                <select class="form-control" id="i-sani-recordatorio" style="border-color: var(--alerta);">
-                    <option value="0">Sin recordatorio (Única dosis)</option>
-                    <option value="15">Avisarme en 15 días</option>
-                    <option value="21">Avisarme en 21 días</option>
-                    <option value="30">Avisarme en 1 mes</option>
-                    <option value="90">Avisarme en 3 meses</option>
-                    <option value="180">Avisarme en 6 meses</option>
-                    <option value="365">Avisarme en 1 año</option>
-                </select>
-            </div>
-            <button class="btn-guardar" onclick="prepararGuardado('modal-sanidad', 'Sanidad')">Registrar Sanidad</button>
+    <div id="modal-sanidad" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-sanidad')">&times;</span><h3>💉 Tratamiento / Sanidad</h3><div class="form-grupo"><label>Producto</label><select class="form-control" id="i-sani-sel"><option>Antiparasitario (Ivermectina)</option><option>Vacuna Aftosa</option><option>Vacuna Carbunclo</option><option>Vitamina ADE</option><option>Tratamiento General</option></select></div><div class="form-grupo"><label>Lote / Detalles</label><input type="text" class="form-control" id="i-sani-lote"></div><div class="form-grupo"><label>Notas (Enfermedad, etc)</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div>
+        <div class="form-grupo">
+            <label style="color:var(--alerta);">⏳ Próxima Dosis / Recordatorio</label>
+            <select class="form-control" id="i-sani-recordatorio" style="border-color: var(--alerta);">
+                <option value="0">Sin recordatorio (Única dosis)</option>
+                <option value="15">Avisarme en 15 días</option>
+                <option value="21">Avisarme en 21 días</option>
+                <option value="30">Avisarme en 1 mes</option>
+                <option value="90">Avisarme en 3 meses</option>
+                <option value="180">Avisarme en 6 meses</option>
+                <option value="365">Avisarme en 1 año</option>
+            </select>
         </div>
-    </div>
+        <button class="btn-guardar" onclick="prepararGuardado('modal-sanidad', 'Sanidad')">Registrar Sanidad</button></div></div>
         
-    <!-- MODAL INSEMINACIÓN ACTUALIZADO -->
-    <div id="modal-inseminacion" class="modal">
-        <div class="modal-body">
-            <span class="cerrar" onclick="cerrarModal('modal-inseminacion')">&times;</span>
-            <h3>🧬 Reproducción</h3>
-            <div class="form-grupo">
-                <label>Método Reproductivo</label>
-                <select class="form-control" id="i-ins-quien" onchange="verificarSelectCustom('i-ins-quien', 'i-ins-quien-custom')">
-                    <option value="IATF (Tiempo Fijo)">🧬 IATF (Tiempo Fijo)</option>
-                    <option value="Inseminación Artificial">🧬 Inseminación Artificial</option>
-                    <option value="Monta Natural">🐂 Monta Natural</option>
-                    <option value="Transferencia Embriones">🔬 Transferencia Embriones</option>
-                    <option value="OTRO">✏️ Otro método...</option>
-                </select>
-                <input type="text" id="i-ins-quien-custom" class="form-control oculto" placeholder="Especifique..." style="margin-top:8px;">
-            </div>
-            <div class="form-grupo">
-                <label>Toro / Genética</label>
-                <select class="form-control" id="i-ins-toro" onchange="verificarSelectCustom('i-ins-toro', 'i-ins-toro-custom')">
-                    <option value="Toro Propio / Repaso">🐂 Toro Propio / Repaso</option>
-                    <option value="Semen Nacional">💉 Semen Nacional</option>
-                    <option value="Semen Importado">✈️ Semen Importado</option>
-                    <option value="OTRO">✏️ Especificar Código/Nombre...</option>
-                </select>
-                <input type="text" id="i-ins-toro-custom" class="form-control oculto" placeholder="Ej: Brangus 1234" style="margin-top:8px;">
-            </div>
-            <div class="form-grupo"><label>Notas / Observaciones</label><textarea class="form-control textarea" id="i-ins-txt"></textarea></div>
-            <button class="btn-guardar" onclick="prepararGuardado('modal-inseminacion', 'Inseminación')">Registrar Inseminación</button>
-        </div>
-    </div>
-
-    <!-- MODAL NUTRICIÓN ACTUALIZADO -->
-    <div id="modal-nut" class="modal">
-        <div class="modal-body">
-            <span class="cerrar" onclick="cerrarModal('modal-nut')">&times;</span>
-            <h3>🌾 Suplemento Nutricional</h3>
-            <div class="form-grupo">
-                <label>Tipo de Alimento</label>
-                <select class="form-control" id="i-nut-prod" onchange="verificarSelectCustom('i-nut-prod', 'i-nut-prod-custom')">
-                    <option value="Sal Mineral">🧂 Sal Mineral</option>
-                    <option value="Sal Proteica">🥩 Sal Proteica</option>
-                    <option value="Forraje / Pastura">🌾 Forraje / Pastura</option>
-                    <option value="Balanceado Comercial">🌽 Balanceado Comercial</option>
-                    <option value="Fardo / Heno">🌿 Fardo / Heno</option>
-                    <option value="OTRO">✏️ Otro alimento...</option>
-                </select>
-                <input type="text" id="i-nut-prod-custom" class="form-control oculto" placeholder="Escriba el alimento..." style="margin-top:8px;">
-            </div>
-            <div class="form-grupo">
-                <label>Dosificación</label>
-                <select class="form-control" id="i-nut-rac" onchange="verificarSelectCustom('i-nut-rac', 'i-nut-rac-custom')">
-                    <option value="Ad Libitum (Libre)">Ad Libitum (Libre acceso)</option>
-                    <option value="Racionado (Kg/día)">Racionado (Kg/día)</option>
-                    <option value="OTRO">✏️ Especificar dosis...</option>
-                </select>
-                <input type="text" id="i-nut-rac-custom" class="form-control oculto" placeholder="Ej: 2 Kg por animal" style="margin-top:8px;">
-            </div>
-            <div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div>
-            <button class="btn-guardar" onclick="prepararGuardado('modal-nut', 'Nutrición')">Registrar Nutrición</button>
-        </div>
-    </div>
-
+    <div id="modal-inseminacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-inseminacion')">&times;</span><h3>🧬 Reproducción</h3><div class="form-grupo"><label>Inseminador / Método</label><input type="text" class="form-control" id="i-ins-quien"></div><div class="form-grupo"><label>Toro / Pajuela</label><input type="text" class="form-control" id="i-ins-toro"></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-ins-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-inseminacion', 'Inseminación')">Registrar</button></div></div>
+    <div id="modal-nut" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-nut')">&times;</span><h3>🌾 Suplemento Nutricional</h3><div class="form-grupo"><label>Alimento</label><input type="text" class="form-control" id="i-nut-prod" list="lista-alimentos"><datalist id="lista-alimentos"><option value="Sal Mineral"></option><option value="Sal Proteica"></option><option value="Forraje / Pastura"></option></datalist></div><div class="form-grupo"><label>Dosificación</label><input type="text" class="form-control" id="i-nut-rac"></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-nut', 'Nutrición')">Registrar Nutrición</button></div></div>
     <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial Clínico</h3><div id="contenido-historial"></div></div></div>
 
     <script>
-        // ==========================================
-        // 1. INICIALIZACIÓN DE FIREBASE
-        // ==========================================
+        const APPS_SCRIPT_NOTIFICACIONES = "https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec";
+        
+        // CONFIGURACIÓN FIREBASE (Autenticación y Base de Datos Nativas)
         const firebaseConfig = {
             apiKey: "AIzaSyDTXUYwYYkQ_pKDhui9H3cFmecgAPQ9eqA",
             authDomain: "taurus-cbd59.firebaseapp.com",
@@ -768,120 +542,36 @@
             messagingSenderId: "250280835981",
             appId: "1:250280835981:web:b95bc0a7ec9f7da2b75bc4"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const auth = firebase.auth();
-
-        // ACTIVAR MODO OFFLINE AUTOMÁTICO
-        db.enablePersistence().catch(err => {
-            console.warn("La persistencia offline falló:", err);
-        });
-
-        // ==========================================
-        // 2. VARIABLES GLOBALES DE SESIÓN
-        // ==========================================
-        let dbCache = []; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
-        let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
-        let alertaGlobalIdActual = "";
-        let unsubscribeSnapshot = null;
-        let unsubscribeConfig = null;
-        let pendingCount = 0; 
-        let ultimaNotificacionRafaga = 0;
-        let usFeatures = ""; 
 
         function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 
-        function updatePendingUI() {
-            const pnl = document.getElementById('panel-offline');
-            const lbl = document.getElementById('lbl-pendientes');
-            if(pnl && lbl) {
-                if(pendingCount > 0) {
-                    pnl.style.display = 'block';
-                    lbl.innerText = pendingCount;
-                } else {
-                    pnl.style.display = 'none';
-                }
-            }
-        }
+        let dbCache = []; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
+        let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
+        let alertaGlobalIdActual = "";
+        let notificadoMantenimiento = false;
+        
+        let unsubscribeEventos = null;
+        let unsubscribeConfig = null;
 
-        // ==========================================
-        // HELPER PARA SELECTS "OTRO"
-        // ==========================================
-        window.verificarSelectCustom = function(selId, custId) {
-            let val = document.getElementById(selId).value;
-            let cust = document.getElementById(custId);
-            if(cust) {
-                if(val === 'OTRO') {
-                    cust.classList.remove('oculto');
-                    cust.focus();
-                } else {
-                    cust.classList.add('oculto');
-                }
-            }
-        };
-
-        // ==========================================
-        // 3. INICIO AUTOMÁTICO Y KILL SWITCH
-        // ==========================================
-        function iniciarKillSwitch() {
-            if(unsubscribeConfig) unsubscribeConfig();
-            unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot((doc) => {
-                const pantMant = document.getElementById('pantalla-mantenimiento');
-                const banner = document.getElementById('banner-alerta-global');
-                
-                if(doc.exists) {
-                    const data = doc.data();
-                    
-                    // Kill Switch (Bloqueo Total)
-                    if(data.mantenimiento) {
-                        pantMant.classList.remove('oculto');
-                    } else {
-                        pantMant.classList.add('oculto');
-                    }
-
-                    // Avisos Globales (Banner Naranja)
-                    if(data.alerta_global && data.alerta_global.trim() !== "") {
-                        let leidas = lsGet('tc_alertas_leidas', []);
-                        if (!leidas.includes(data.alerta_global)) {
-                            alertaGlobalIdActual = data.alerta_global;
-                            document.getElementById('txt-alerta-global').innerText = data.alerta_global;
-                            document.getElementById('txt-banner-alerta').innerText = data.alerta_global;
-                            
-                            let mostradas = lsGet('tc_alertas_mostradas', []);
-                            if (!mostradas.includes(data.alerta_global)) {
-                                document.getElementById('modal-alerta-global').style.display = 'flex';
-                            }
-                            banner.classList.remove('oculto');
-                        } else {
-                            banner.classList.add('oculto');
-                        }
-                    } else {
-                        banner.classList.add('oculto');
-                    }
-                }
-            });
-        }
-
-        auth.onAuthStateChanged(async (user) => {
+        // Auto-inicio de sesión con Firebase Auth
+        firebase.auth().onAuthStateChanged((user) => {
             if (user) {
-                try {
-                    const userDoc = await db.collection("usuarios").doc(user.email.toLowerCase()).get();
-                    if(userDoc.exists) {
-                        const ud = userDoc.data();
-                        iniciarKillSwitch();
-                        arrancarSistemaFirebase(ud.maestroId, user.email, ud.rol, ud.nombre, ud.hacienda, ud.features);
-                    } else {
-                        mostrarToast("Error: Su perfil no está configurado en la base de datos.");
-                        auth.signOut();
+                db.collection('usuarios').doc(user.email).get().then(doc => {
+                    if (doc.exists) {
+                        const userData = doc.data();
+                        // Reviso licencias localmente, aunque el admin manda el aviso
+                        if(userData.vencimiento && new Date() > new Date(userData.vencimiento)) {
+                            cerrarSesion(); alert("Su licencia ha vencido.");
+                            return;
+                        }
+                        arrancarSistemaFirebase(user.email, userData.maestroId, userData.rol, userData.nombre, userData.hacienda, userData.features);
                     }
-                } catch(e) {
-                    console.error("Error al cargar perfil de usuario:", e);
-                }
-            } else {
-                document.getElementById('pantalla-login').classList.remove('oculto');
-                document.getElementById('pantalla-app').classList.add('oculto');
+                }).catch(e => {
+                    console.error("Error al obtener perfil", e);
+                });
             }
         });
 
@@ -894,11 +584,59 @@
         function mostrarToast(mensaje) {
             let t = document.createElement('div');
             t.innerText = mensaje;
-            t.style.position = 'fixed'; t.style.bottom = '80px'; t.style.left = '50%'; t.style.transform = 'translateX(-50%)';
-            t.style.background = 'var(--exito)'; t.style.color = 'white'; t.style.padding = '12px 24px'; t.style.borderRadius = '30px'; 
+            t.style.position = 'fixed'; t.style.bottom = '30px'; t.style.left = '50%'; t.style.transform = 'translateX(-50%)';
+            t.style.background = 'var(--success)'; t.style.color = 'white'; t.style.padding = '12px 24px'; t.style.borderRadius = '30px'; 
             t.style.zIndex = '9999'; t.style.fontWeight = 'bold'; t.style.boxShadow = '0 4px 15px rgba(0,0,0,0.4)'; t.style.fontSize = '14px';
             document.body.appendChild(t);
             setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() => t.remove(), 500); }, 2000);
+        }
+
+        // ==========================================
+        // NOTIFICACIONES NATIVAS EN ESCRITORIO (ELECTRON)
+        // ==========================================
+        function solicitarPermisoNotificaciones() {
+            if (!("Notification" in window)) return;
+            if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
+        }
+
+        function lanzarNotificacionEscritorio(titulo, mensaje) {
+            if (!("Notification" in window)) return;
+            if (Notification.permission === "granted") {
+                new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' });
+            } else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' });
+                    }
+                });
+            }
+        }
+
+        // ==========================================
+        // PROCESADOR DE AVISOS Y POP-UPS GLOBALES
+        // ==========================================
+        function procesarAlertaServidor(msg, id) {
+            const banner = document.getElementById('banner-alerta-global');
+            if (!msg || !id) { banner.classList.add('oculto'); return; }
+            
+            let leidas = lsGet('tc_alertas_leidas', []);
+            let mostradas = lsGet('tc_alertas_mostradas', []); 
+            
+            if (!leidas.includes(id)) {
+                alertaGlobalIdActual = id;
+                document.getElementById('txt-alerta-global').innerText = msg;
+                document.getElementById('txt-banner-alerta').innerText = msg;
+                
+                if (!mostradas.includes(id)) {
+                    document.getElementById('modal-alerta-global').style.display = 'flex';
+                    lanzarNotificacionEscritorio("Aviso Importante", msg);
+                }
+                banner.classList.remove('oculto');
+            } else {
+                banner.classList.add('oculto');
+            }
         }
 
         function cerrarPopUpAlerta() {
@@ -908,6 +646,8 @@
                     mostradas.push(alertaGlobalIdActual);
                     lsSet('tc_alertas_mostradas', mostradas);
                 }
+                
+                // NUEVO: Marcarlo también como leído para ocultar el banner en el Dashboard
                 let leidas = lsGet('tc_alertas_leidas', []);
                 if (!leidas.includes(alertaGlobalIdActual)) {
                     leidas.push(alertaGlobalIdActual);
@@ -939,10 +679,10 @@
             const btn = document.getElementById('btn-toggle-rafaga');
             const opciones = document.getElementById('opciones-rafaga');
             if(rafagaActiva) {
-                btn.innerText = "ENCENDIDO"; btn.style.background = "var(--secundario)"; btn.style.color = "white";
+                btn.innerText = "ENCENDIDO"; btn.style.background = "var(--primary)"; btn.style.color = "white"; btn.style.borderColor = "var(--primary)";
                 opciones.classList.remove('oculto'); verificarRafagaCustom();
             } else {
-                btn.innerText = "APAGADO"; btn.style.background = "transparent"; btn.style.color = "var(--texto)";
+                btn.innerText = "APAGADO"; btn.style.background = "transparent"; btn.style.color = "var(--text-main)"; btn.style.borderColor = "var(--border)";
                 opciones.classList.add('oculto');
             }
         };
@@ -958,164 +698,229 @@
         function setEstadoRed(online, texto = null) {
             const b = document.getElementById('estado-red');
             if(!b) return;
-            
-            // ESCUDO OFFLINE: Si no hay red, no importa qué diga Firebase, forzamos el estado rojo.
-            if(!navigator.onLine) {
-                b.classList.add('offline'); 
-                b.innerText = '🔴 Modo Offline';
-                return;
-            }
-
-            if(texto) { 
-                b.classList.remove('offline'); 
-                b.innerText = texto; 
-            } else if(online) { 
-                b.classList.remove('offline'); 
-                b.innerText = '🟢 Conectado'; 
-            } else {
-                b.classList.add('offline'); 
-                b.innerText = '🔴 Modo Offline'; 
-            }
+            if(texto) { b.innerText = texto; } 
+            else if(navigator.onLine || online) { b.classList.replace('offline','online'); b.innerText = '🟢 Conectado'; } 
+            else { b.classList.replace('online','offline'); b.innerText = '🔴 Red Local'; }
         }
         window.addEventListener('online', () => setEstadoRed(true)); window.addEventListener('offline', () => setEstadoRed(false));
 
-        // ==========================================
-        // 4. NUEVO INICIO DE SESIÓN CON FIREBASE
-        // ==========================================
         async function procesarIngreso() {
-            const u = document.getElementById('usuario').value.trim(); 
+            let u = document.getElementById('usuario').value.trim(); 
             const p = document.getElementById('password').value.trim();
             const btn = document.getElementById('btn-ingreso');
             const err = document.getElementById('error-login');
             
             if(!u || !p) return; 
-            btn.disabled = true; btn.innerText = "Verificando en Firebase..."; err.style.display = 'none';
+            btn.disabled = true; btn.innerText = "Verificando Credenciales..."; err.style.display = 'none';
+
+            let email = u.includes('@') ? u.toLowerCase() : u.toLowerCase() + '@taurus.com';
 
             try {
-                const email = u.includes('@') ? u : u + '@taurus.com';
-                await auth.signInWithEmailAndPassword(email, p);
+                if(!navigator.onLine) throw new Error("Offline");
+                await firebase.auth().signInWithEmailAndPassword(email, p);
+                solicitarPermisoNotificaciones();
+                // El onAuthStateChanged se encarga de lo demás.
             } catch(error) {
-                console.error(error);
-                let msj = "Usuario o contraseña incorrectos.";
-                if(error.code === 'auth/network-request-failed') msj = "Sin conexión a internet para iniciar sesión.";
-                err.innerText = msj; err.style.display = 'block';
-                btn.disabled = false; btn.innerText = "Iniciar Sesión";
+                console.error("Detalle del error:", error);
+                err.innerText = "Credenciales incorrectas o error de red."; 
+                err.style.display = 'block';
+                btn.disabled = false; btn.innerText = "Ingresar al Sistema";
             }
         }
 
-        // ==========================================
-        // 5. ARRANQUE DEL SISTEMA Y LECTURA EN TIEMPO REAL
-        // ==========================================
-        function arrancarSistemaFirebase(mId, uEmail, rolStr, nomCompleto, haciendaNom, featuresCargados) {
-            maestroId = mId; usActivo = uEmail; usRol = rolStr; usNombre = nomCompleto; usHacienda = haciendaNom;
-            usFeatures = featuresCargados || ""; 
+        function notificarPropietario(mensaje) {
+            if(usRol.includes('Propietario') || usRol.includes('Dueño') || !navigator.onLine) return;
+            const fd = new URLSearchParams(); fd.append('accion', 'notificar_accion'); fd.append('maestro', maestroId); fd.append('mensaje', mensaje);
+            fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
+        }
 
-            // MAGIA DE LA UI: Ocultar Modo Ráfaga si no está habilitado en Firebase
-            let tarjetaRafaga = document.getElementById('tarjeta-rafaga');
-            if (tarjetaRafaga) {
-                if (!usFeatures.includes('rafaga')) {
-                    tarjetaRafaga.style.display = 'none'; 
-                } else {
-                    tarjetaRafaga.style.display = 'block'; 
-                }
-            }
-
-            let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
-            let displayRol = isPropietario ? 'Propietario' : 'Operador';
-            
-            if (window.AndroidTaurus && window.AndroidTaurus.identificarUsuarioPush) { window.AndroidTaurus.identificarUsuarioPush(usActivo, displayRol, maestroId); }
-            if (window.OneSignalDeferred) { 
-                OneSignalDeferred.push(async function(OneSignal) { 
-                    try {
-                        OneSignal.User.addTags({ rol: displayRol, estancia_id: maestroId }); 
-                        if (isPropietario) { await OneSignal.Slidedown.promptPush(); }
-                    } catch(e){}
-                }); 
-            }
-            
-            document.getElementById('usuario-activo-lbl').value = `${usHacienda.toUpperCase()} - ${usNombre} (${displayRol})`;
-            
-            document.querySelectorAll('.vista').forEach(e => e.classList.add('oculto'));
-            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('activo'));
-
-            let tabSeleccionado = null; let vistaInicial = 'vista-dashboard';
-
-            if (isPropietario) {
-                document.querySelectorAll('.nav-item').forEach(li => li.style.display = 'flex');
-                tabSeleccionado = document.querySelectorAll('.nav-item')[0];
-            } else {
-                document.getElementById('panel-crear-peones').style.display = 'none'; 
-                document.getElementById('panel-membrete').style.display = 'none';
+        function arrancarSistemaFirebase(u, m, r, nombreCompleto, hacienda, featuresStr) {
+            try {
+                usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
                 
-                let perms = usRol.includes('|') ? usRol.split('|')[1] : "dash,ficha,base,reporte";
-                let foundFirst = false;
-                
-                document.querySelectorAll('.nav-item').forEach(li => {
-                    let target = li.getAttribute('onclick');
-                    if(target && target.includes('cambiarVista')) {
-                        let viewId = target.match(/'([^']+)'/)[1];
-                        let esConfig = viewId.includes('config');
-                        let isAllowed = false;
+                // 1. Escuchar Configuración (Kill Switch)
+                if(unsubscribeConfig) unsubscribeConfig();
+                unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot(doc => {
+                    if(doc.exists) {
+                        const conf = doc.data();
+                        procesarAlertaServidor(conf.alerta_global, "alerta_fb");
+                        const pantMant = document.getElementById('pantalla-mantenimiento');
                         
-                        if(viewId.includes('dash') && perms.includes('dash')) isAllowed = true;
-                        if((viewId.includes('ficha') || viewId.includes('manga')) && perms.includes('ficha')) isAllowed = true;
-                        if((viewId.includes('base') || viewId.includes('registro')) && perms.includes('base')) isAllowed = true;
-                        if((viewId.includes('reporte') || viewId.includes('informe')) && perms.includes('reporte')) isAllowed = true;
-                        
-                        if (!esConfig && !isAllowed) { li.style.display = 'none'; } else {
-                            li.style.display = 'flex';
-                            if (!foundFirst && !esConfig) { vistaInicial = viewId; tabSeleccionado = li; foundFirst = true; }
+                        if(conf.mantenimiento) {
+                            if(pantMant) pantMant.classList.remove('oculto');
+                            if(!window.notificadoMantenimiento) {
+                                lanzarNotificacionEscritorio("🚧 Sistema en Mantenimiento", "El sistema ha sido bloqueado temporalmente.");
+                                window.notificadoMantenimiento = true;
+                            }
+                        } else {
+                            if(pantMant) pantMant.classList.add('oculto');
+                            if (window.notificadoMantenimiento) {
+                                lanzarNotificacionEscritorio("✅ Servicio Restaurado", "El mantenimiento ha finalizado.");
+                                window.notificadoMantenimiento = false;
+                            }
                         }
                     }
                 });
-                if(!perms.includes('dash')) { let pAn = document.getElementById('panel-analiticas'); if(pAn) pAn.style.display = 'none'; }
-            }
-            
-            const prefs = lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
-            const dGuardado = lsGet('tc_hacienda', {}); 
-            aplicarDisenoEnPantalla(dGuardado.nombre || usHacienda, dGuardado.logo);
-            
-            document.getElementById('f-inf-rango-fecha').value = "30"; manejarRangoFechas();
-            
-            document.getElementById('pantalla-login').classList.add('oculto'); 
-            document.getElementById('pantalla-app').classList.remove('oculto'); 
-            
-            if(tabSeleccionado) { cambiarVista(vistaInicial, tabSeleccionado); } else { cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
 
-            // ==============================================================
-            // LA MAGIA DE FIREBASE: Escucha en vivo sin setInterval
-            // ==============================================================
-            const eventosRef = db.collection("estancias").doc(maestroId).collection("eventos");
-            
-            if(unsubscribeSnapshot) unsubscribeSnapshot(); 
-            
-            unsubscribeSnapshot = eventosRef.orderBy("fecha", "desc").limit(2000).onSnapshot((snapshot) => {
-                let nuevosDatos = [];
-                snapshot.forEach(doc => {
-                    let d = doc.data();
-                    nuevosDatos.push(d);
+                // 2. Escuchar Colección en Tiempo Real
+                setEstadoRed(true, '🔄 Sincronizando...');
+                if(unsubscribeEventos) unsubscribeEventos();
+                unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot(snapshot => {
+                    let nuevosDatos = [];
+                    snapshot.forEach(doc => nuevosDatos.push(doc.data()));
+                    
+                    let mapAnterior = new Set(dbCache.map(d => d.fecha + '_' + d.caravana + '_' + d.accion));
+                    let notificar = nuevosDatos.filter(d => d && d.fecha && !mapAnterior.has(d.fecha + '_' + d.caravana + '_' + d.accion));
+
+                    dbCache = nuevosDatos.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+                    lsSet('tc_db', dbCache);
+
+                    // Sistema de notificación interno para registros nuevos en PC
+                    if (notificar.length > 0 && mapAnterior.size > 0) {
+                        if (notificar.length <= 3) {
+                            notificar.forEach(n => {
+                                let op = n.usuario || "Un operador";
+                                if (n.detalles && n.detalles.includes("Op: ")) {
+                                    op = n.detalles.split("Op: ")[1].trim();
+                                }
+                                if(op.toLowerCase() !== usNombre.toLowerCase() && n.caravana !== '---') {
+                                    lanzarNotificacionEscritorio("Alerta Taurus", `${op} registró [${n.accion}] al RP ${n.caravana}`);
+                                }
+                            });
+                        }
+                    }
+
+                    if(rpActivo && !document.getElementById('v-ficha').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
+                    procesarDatosDashboard(); 
+                    if(!document.getElementById('v-base').classList.contains('oculto')) cargarListaRegistro(); 
+                    if(!document.getElementById('v-reporte').classList.contains('oculto')) actualizarInformeAvanzado();
+                    cargarListaOperadores();
+                    
+                    setEstadoRed(true);
+                }, err => {
+                    console.error("Error fetching data: ", err);
+                    setEstadoRed(false, '❌ Error de red');
                 });
                 
-                dbCache = nuevosDatos; 
+                let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
+                let displayRol = isPropietario ? 'Propietario' : 'Operador';
                 
-                procesarDatosDashboard();
-                if(document.getElementById('vista-registro') && !document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); 
-                if(rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) buscarCaravanaBtn(rpActivo);
-                
-                if (navigator.onLine) {
-                    setEstadoRed(true, '⚡ Sincronizado');
-                    setTimeout(() => setEstadoRed(true), 2000);
-                } else {
-                    setEstadoRed(false, '🔴 Modo Offline');
+                if (window.OneSignalDeferred) { 
+                    OneSignalDeferred.push(async function(OneSignal) { 
+                        try {
+                            OneSignal.User.addTags({ rol: displayRol, estancia_id: m }); 
+                            if (isPropietario) { await OneSignal.Slidedown.promptPush(); }
+                        } catch (e) {}
+                    }); 
                 }
-            }, (error) => {
-                console.log("Error o Modo Offline en onSnapshot: ", error);
-                setEstadoRed(false, '🔴 Modo Offline');
-            });
+                
+                document.getElementById('topbar-estancia').innerText = `ESTANCIA: ${usHacienda.toUpperCase()} | Operador: ${usNombre}`;
+                document.getElementById('lbl-sidebar-user').innerText = `${usNombre.toUpperCase()} (${displayRol})`;
+                document.getElementById('lbl-perfil-usu').innerText = `${usNombre.toUpperCase()} (Rol: ${displayRol})`;
+                
+                document.querySelectorAll('.vista').forEach(e => e.classList.add('oculto'));
+                document.querySelectorAll('.sidebar-nav li').forEach(e => e.classList.remove('activo'));
 
-            cargarListaOperadores();
+                let tabSeleccionado = null; let vistaInicial = 'v-dash';
+
+                if (isPropietario) {
+                    document.querySelectorAll('.sidebar-nav li').forEach(li => li.style.display = 'flex');
+                    tabSeleccionado = document.querySelectorAll('.sidebar-nav li')[0];
+                } else {
+                    document.getElementById('panel-crear-peones').style.display = 'none'; 
+                    document.getElementById('panel-membrete').style.display = 'none';
+                    document.getElementById('panel-licencia').style.display = 'none';
+                    
+                    let perms = usRol.includes('|') ? usRol.split('|')[1] : "dash,ficha,base,reporte";
+                    let foundFirst = false;
+                    
+                    document.querySelectorAll('.sidebar-nav li').forEach(li => {
+                        let target = li.getAttribute('onclick');
+                        if(target && target.includes('cambiarVista')) {
+                            let viewId = target.match(/'([^']+)'/)[1];
+                            let esConfig = viewId.includes('config');
+                            let isAllowed = false;
+                            
+                            if(viewId.includes('dash') && perms.includes('dash')) isAllowed = true;
+                            if(viewId.includes('ficha') && perms.includes('ficha')) isAllowed = true;
+                            if(viewId.includes('base') && perms.includes('base')) isAllowed = true;
+                            if(viewId.includes('reporte') && perms.includes('reporte')) isAllowed = true;
+                            
+                            if (!esConfig && !isAllowed) {
+                                li.style.display = 'none'; 
+                            } else {
+                                li.style.display = 'flex';
+                                if (!foundFirst && !esConfig) { vistaInicial = viewId; tabSeleccionado = li; foundFirst = true; }
+                            }
+                        }
+                    });
+
+                    if(!perms.includes('dash')) { let pAn = document.getElementById('panel-analiticas'); if(pAn) pAn.style.display = 'none'; }
+                }
+                
+                // Mostrar vencimiento y configuraciones
+                db.collection('usuarios').doc(m).get().then(docM => {
+                    if(docM.exists) {
+                        let mData = docM.data();
+                        const lblLic = document.getElementById('lbl-licencia');
+                        if(mData.vencimiento) {
+                            const fVenc = new Date(mData.vencimiento); const diffDias = Math.ceil((fVenc - new Date()) / (1000 * 60 * 60 * 24));
+                            lblLic.innerText = fVenc.toLocaleDateString() + ` (${diffDias} días restantes)`;
+                            lblLic.style.color = diffDias <= 7 ? "var(--danger)" : "var(--success)";
+                        } else { lblLic.innerText = "Licencia Perpetua / Sin Límite"; }
+                        
+                        const featuresActivos = mData.features || "";
+                        if(!featuresActivos.includes('rafaga')) {
+                            let bloqueRafaga = document.getElementById('tarjeta-rafaga');
+                            if (bloqueRafaga) bloqueRafaga.style.display = 'none';
+                        }
+                    }
+                });
+
+                const prefs = lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
+                
+                // APLICAR DISEÑO VISUAL Y MEMBRETE (SINCRONIZACIÓN EN TIEMPO REAL)
+                db.collection('estancias').doc(m).onSnapshot(docE => {
+                    let hNombre = usHacienda || "HACIENDA"; 
+                    let hLogo = "gemini-svg.png";
+                    
+                    if (docE.exists) { 
+                        if (docE.data().logo_hacienda) hLogo = docE.data().logo_hacienda; 
+                        if (docE.data().nombre_hacienda) hNombre = docE.data().nombre_hacienda; 
+                    } 
+                    
+                    // Guardado local limpio y aplicación visual
+                    lsSet('tc_hacienda', { nombre: hNombre, logo: hLogo });
+                    aplicarDisenoEnPantalla(hNombre, hLogo);
+                    
+                    // Actualización de textos en UI (Diferenciado para PC y Móvil)
+                    let topbarPC = document.getElementById('topbar-estancia');
+                    if (topbarPC) {
+                        topbarPC.innerText = `ESTANCIA: ${hNombre.toUpperCase()} | Operador: ${usNombre}`;
+                    }
+                    
+                    let lblPerfilMob = document.getElementById('usuario-activo-lbl');
+                    if (lblPerfilMob) {
+                        let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
+                        lblPerfilMob.value = `${hNombre.toUpperCase()} - ${usNombre} (${isPropietario ? 'Propietario' : 'Operador'})`;
+                    }
+                });
+                
+                document.getElementById('f-inf-rango-fecha').value = "30"; manejarRangoFechas();
+                
+                document.getElementById('pantalla-login').classList.add('oculto'); 
+                document.getElementById('sidebar').classList.remove('oculto'); 
+                document.getElementById('main-content').classList.remove('oculto');
+                document.getElementById('pantalla-mantenimiento').classList.add('oculto');
+                
+                if(tabSeleccionado) { cambiarVista(vistaInicial, tabSeleccionado); } else { cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4]); }
+                sincronizarPendientesAuto(); cargarListaOperadores();
+            } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
 
+        // ==========================================
+        // VISTA PREVIA DEL MEMBRETE 
+        // ==========================================
         function aplicarDisenoEnPantalla(nombre, logo) { 
             let n = nombre || 'Taurus Control';
             let l = logo || 'gemini-svg.png';
@@ -1130,9 +935,22 @@
             if(imgCfg) imgCfg.src = l;
         }
 
-        // ==========================================
-        // 6. MOTOR DE EVENT SOURCING (PROCESAR DB)
-        // ==========================================
+        async function sincronizarPendientesAuto() {
+            let p = lsGet('tc_pendientes', []); if(p.length === 0) return;
+            if(navigator.onLine) {
+                const batch = db.batch();
+                const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
+                p.forEach(obj => { batch.set(colRef.doc(), obj); });
+                try {
+                    await batch.commit();
+                    lsSet('tc_pendientes', []);
+                } catch(e) {}
+            }
+        }
+
+        // =========================================================================
+        // MOTOR DE HISTORIAL (EVENT SOURCING)
+        // =========================================================================
         function procesarEventos() {
             let dbAsc = [...dbCache].sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
             let historiaPorRP = {};
@@ -1174,10 +992,8 @@
             let hist = historia[String(caravana)] || [];
             return [...hist].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
         }
+        // =========================================================================
 
-        // ==========================================
-        // 7. BUSCADOR Y FICHA DE ANIMAL
-        // ==========================================
         function buscarCaravanaBtn(rpForzado = null) {
             try {
                 let rp = rpForzado ? rpForzado : document.getElementById('buscador-caravana').value.trim(); 
@@ -1191,7 +1007,7 @@
                 const regs = obtenerHistorial(rp); 
                 const uBaja = regs.find(d => d.accion === 'Baja');
                 const badgeBaja = document.getElementById('badge-estado-animal');
-                if(uBaja) { badgeBaja.style.display = 'block'; badgeBaja.innerText = "BAJA: " + uBaja.valor.toUpperCase(); } else { badgeBaja.style.display = 'none'; }
+                if(uBaja) { badgeBaja.style.display = 'inline-block'; badgeBaja.innerText = "BAJA: " + uBaja.valor.toUpperCase(); } else { badgeBaja.style.display = 'none'; }
 
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", nutricion="-", sanidad="-", inseminacion="-", htmlNotas=""; 
                 let gdpHtml = "";
@@ -1204,9 +1020,9 @@
                     if(pesoAnterior) {
                         let p2 = parseFloat(pesoAnterior.valor); let d2 = new Date(pesoAnterior.fecha);
                         let diffTime = Math.abs(d1 - d2); let dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                        if(dias >= 1) { let gdp = ((p1 - p2) / dias).toFixed(3); if(gdp > 0) gdpHtml = `<span style="color:var(--exito); font-weight:bold; font-size:12px;">🚀 +${gdp} Kg/día</span>`; else if(gdp < 0) gdpHtml = `<span style="color:var(--peligro); font-weight:bold; font-size:12px;">⚠️ ${gdp} Kg/día</span>`; else gdpHtml = `<span style="color:var(--muted); font-weight:bold; font-size:12px;">⚖️ Mantuvo su peso</span>`; }
+                        if(dias >= 1) { let gdp = ((p1 - p2) / dias).toFixed(3); if(gdp > 0) gdpHtml = `<span style="color:var(--success); font-weight:bold; font-size:11px;">🚀 +${gdp} Kg/día</span>`; else if(gdp < 0) gdpHtml = `<span style="color:var(--danger); font-weight:bold; font-size:11px;">⚠️ ${gdp} Kg/día</span>`; else gdpHtml = `<span style="color:var(--text-muted); font-weight:bold; font-size:11px;">⚖️ Mantuvo su peso</span>`; }
                     } else {
-                        if(todosLosPesos.length > 1) { gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Pesajes del mismo día)</span>`; } else { gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Falta peso histórico)</span>`; }
+                        if(todosLosPesos.length > 1) { gdpHtml = `<span style="color:var(--text-muted); font-size:10px; font-style:italic;">(Pesos del mismo día)</span>`; } else { gdpHtml = `<span style="color:var(--text-muted); font-size:10px; font-style:italic;">(Falta peso histórico)</span>`; }
                     }
                 }
                 const elGdp = document.getElementById('val-gdp'); if (elGdp) elGdp.innerHTML = gdpHtml;
@@ -1228,12 +1044,11 @@
                             let acc = String(r.accion).trim(); let det = String(r.detalles || ""); let notaTexto = "";
                             if (acc === 'Comentario') { notaTexto = det.split('|')[0] || ""; if(ultComentario === "Sin comentarios.") ultComentario = notaTexto; } 
                             else if (det.includes('Notas:')) { let parts = det.split('Notas:'); if (parts.length > 1) { let n = parts[1].split('|')[0].trim(); if(n && n !== "-" && n !== "") notaTexto = `[${acc}] ${n}`; } }
+                            if (notaTexto && notaTexto !== "-" && notaTexto.toLowerCase() !== "sin comentarios.") { htmlNotas += `<div class="nota-item"><span class="f">${new Date(r.fecha).toLocaleDateString()}</span><span class="t">${notaTexto}</span></div>`; }
                         } catch(e) {}
                     });
-                    document.getElementById('val-comentario').innerText = ultComentario;
-                } else {
-                    document.getElementById('val-comentario').innerText = "Sin comentarios.";
                 }
+                if(htmlNotas === "") htmlNotas = "<span style='font-size:13px; color:var(--text-muted); font-style:italic;'>Sin anotaciones extra.</span>";
                 
                 const elCat = document.getElementById('val-categoria'); if(elCat) elCat.innerText = cat;
                 const elPeso = document.getElementById('val-peso'); if(elPeso) elPeso.innerText = peso;
@@ -1244,6 +1059,7 @@
                 const elNutricion = document.getElementById('val-nutricion'); if(elNutricion) elNutricion.innerText = nutricion;
                 const elSanidad = document.getElementById('val-sanidad'); if(elSanidad) elSanidad.innerText = sanidad;
                 const elInseminacion = document.getElementById('val-inseminacion'); if(elInseminacion) elInseminacion.innerText = inseminacion;
+                const elNotas = document.getElementById('val-notas'); if(elNotas) elNotas.innerHTML = htmlNotas;
                 const elRaza = document.getElementById('val-raza'); if(elRaza) elRaza.innerText = raza;
                 
                 const elEdad = document.getElementById('val-edad'); if(elEdad) elEdad.innerText = edad;
@@ -1261,128 +1077,34 @@
             } catch(e) { console.error("Error al visualizar ficha", e); }
         }
 
-        // ==========================================
-        // 8. GUARDADO EN FIREBASE Y OFFLINE TRACKING
-        // ==========================================
-        const APPS_SCRIPT_NOTIFICACIONES = "https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec";
-
-        function notificarPropietario(mensaje) {
-            if(usRol.includes('Propietario') || usRol.includes('Dueño') || !navigator.onLine) return;
-            const fd = new URLSearchParams(); 
-            fd.append('accion', 'notificar_accion'); 
-            fd.append('maestro', maestroId); 
-            fd.append('mensaje', mensaje);
-            fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(e => console.error(e));
-        }
-
         function ejecutarAccion(tipo, val, det, modalId) {
-            const obj = { 
-                fecha: new Date().toISOString(), 
-                accion: tipo, 
-                caravana: rpActivo || "---", 
-                valor: val, 
-                detalles: det + ` | Op: ${usNombre}` 
-            };
+            const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: rpActivo, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
             
-            // Reflejo visual inmediato (Optimistic UI)
-            dbCache.unshift(obj); 
-            if (rpActivo && rpActivo !== "---") buscarCaravanaBtn(rpActivo); 
-            procesarDatosDashboard(); 
+            // Actualización optimista local
+            dbCache.unshift(obj); buscarCaravanaBtn(rpActivo); procesarDatosDashboard(); 
             if(modalId) cerrarModal(modalId);
-
-            // Disparar Push Inteligente (Antispam)
-            if(tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana') {
-                if(typeof rafagaActiva !== 'undefined' && rafagaActiva) {
-                    // Modo ráfaga: Avisar solo una vez cada 10 minutos para no saturar
-                    let ahora = Date.now();
-                    if(ahora - ultimaNotificacionRafaga > 10 * 60 * 1000) {
-                        notificarPropietario(`⚡ ${usNombre} está trabajando masivamente en la manga (Modo Ráfaga)`);
-                        ultimaNotificacionRafaga = ahora;
-                    }
-                } else {
-                    // Modo normal: Avisar por cada animal
-                    notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
-                }
+            
+            if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador') {
+                notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
             }
 
-            // Sumar al contador de pendientes
-            pendingCount++;
-            updatePendingUI();
-
-            // Guardado Firebase
-            db.collection("estancias").doc(maestroId).collection("eventos").add(obj)
-            .then(() => {
-                pendingCount = Math.max(0, pendingCount - 1);
-                updatePendingUI();
-                if(tipo === 'Peso') mostrarToast("✅ Peso guardado");
-            })
-            .catch((err) => {
-                console.log("Guardado en caché (Offline)", err);
-                if(tipo === 'Peso') mostrarToast("💾 Peso en Caché");
-            });
-        }
-
-        // Nueva función inteligente para leer los Selects "OTRO"
-        function getVal(baseId) {
-            let el = document.getElementById(baseId);
-            if(!el) return "";
-            if(el.value === "OTRO") {
-                let cust = document.getElementById(baseId + "-custom");
-                return cust && cust.value.trim() !== "" ? cust.value.trim() : "OTRO";
-            }
-            return el.value.trim();
+            if(navigator.onLine) { 
+                db.collection('estancias').doc(maestroId).collection('eventos').add(obj).catch(e => {
+                    let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); 
+                });
+            } 
+            else { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); }
         }
 
         function prepararGuardado(mId, t) { 
-            if(!rpActivo) return; 
-            let v = "-", d = ""; 
-            
-            if(t === 'Comentario') { 
-                d = document.getElementById('f-comentario-txt').value;
-                document.getElementById('f-comentario-txt').value = '';
-            } 
-            else if(t === 'Peso') { 
-                v = document.getElementById('i-peso-val').value + " Kg"; 
-                d = `Cond: ${getVal('i-peso-cond')}. Notas: ${document.getElementById('i-peso-txt').value}`; 
-                document.getElementById('i-peso-val').value = '';
-                document.getElementById('i-peso-txt').value = '';
-                if(document.getElementById('i-peso-cond-custom')) document.getElementById('i-peso-cond-custom').value = '';
-            } 
-            else if(t === 'Sanidad') { 
-                let recordatorio = document.getElementById('i-sani-recordatorio').value; 
-                v = getVal('i-sani-sel'); 
-                d = `Lote: ${document.getElementById('i-sani-lote').value}. Notas: ${document.getElementById('i-sani-txt').value}`; 
-                if (recordatorio !== "0") { d += ` | [RECORDATORIO:${recordatorio}]`; } 
-                document.getElementById('i-sani-lote').value = '';
-                document.getElementById('i-sani-txt').value = '';
-                if(document.getElementById('i-sani-sel-custom')) document.getElementById('i-sani-sel-custom').value = '';
-            } 
-            else if(t === 'Diagnóstico') { 
-                v = "Dx: " + getVal('i-dx-sel'); 
-                d = document.getElementById('i-dx-txt').value || "-"; 
-                document.getElementById('i-dx-txt').value = '';
-                if(document.getElementById('i-dx-sel-custom')) document.getElementById('i-dx-sel-custom').value = '';
-            } 
-            else if(t === 'Inseminación') { 
-                v = "Toro: " + getVal('i-ins-toro'); 
-                d = `Ins: ${getVal('i-ins-quien')}. Notas: ${document.getElementById('i-ins-txt').value}`; 
-                document.getElementById('i-ins-txt').value = '';
-                if(document.getElementById('i-ins-toro-custom')) document.getElementById('i-ins-toro-custom').value = '';
-                if(document.getElementById('i-ins-quien-custom')) document.getElementById('i-ins-quien-custom').value = '';
-            } 
-            else if(t === 'Nutrición') { 
-                v = getVal('i-nut-prod'); 
-                d = `Ración: ${getVal('i-nut-rac')}. Notas: ${document.getElementById('i-nut-txt').value}`; 
-                document.getElementById('i-nut-txt').value = '';
-                if(document.getElementById('i-nut-prod-custom')) document.getElementById('i-nut-prod-custom').value = '';
-                if(document.getElementById('i-nut-rac-custom')) document.getElementById('i-nut-rac-custom').value = '';
-            } 
-            else if(t === 'Baja') { 
-                v = getVal('i-baja-causa'); 
-                d = document.getElementById('i-baja-txt').value || "Sin observaciones"; 
-                document.getElementById('i-baja-txt').value = '';
-                if(document.getElementById('i-baja-causa-custom')) document.getElementById('i-baja-causa-custom').value = '';
-            }
+            if(!rpActivo) return; let v = "-", d = ""; const i = document.getElementById(mId).querySelectorAll('.form-control, .textarea'); 
+            if(t === 'Comentario') { d = i[0].value; } 
+            else if(t === 'Peso') { v = i[0].value + " Kg"; d = `Cond: ${i[1].value}. Notas: ${i[2].value}`; } 
+            else if(t === 'Sanidad') { let recordatorio = document.getElementById('i-sani-recordatorio').value; v = i[0].value; d = `Lote: ${i[1].value}. Notas: ${i[2].value}`; if (recordatorio !== "0") { d += ` | [RECORDATORIO:${recordatorio}]`; } } 
+            else if(t === 'Diagnóstico') { v = "Dx: " + i[0].value; d = i[1].value || "-"; } 
+            else if(t === 'Inseminación') { v = "Toro: " + i[1].value; d = `Ins: ${i[0].value}. Notas: ${i[2].value}`; } 
+            else if(t === 'Nutrición') { v = i[0].value; d = `Ración: ${i[1].value}. Notas: ${i[2].value}`; } 
+            else if(t === 'Baja') { v = i[0].value; d = i[1].value || "Sin observaciones"; }
             
             if(t === 'Baja') {
                 ejecutarAccion(t, v, d, mId); 
@@ -1392,9 +1114,8 @@
                     alert(`Baja registrada exitosamente. La caravana original (${rpActivo}) ha quedado libre y vacía de datos.`);
                     rpActivo = rpArchivado; buscarCaravanaBtn(rpArchivado);
                 }, 400);
-            } else { 
-                ejecutarAccion(t, v, d, mId); 
-            }
+            } else { ejecutarAccion(t, v, d, mId); }
+            i.forEach(el => el.value = ''); 
         }
 
         function mostrarCarimboCalculado() {
@@ -1424,10 +1145,10 @@
             }
         }
 
-        function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${getVal('input-lote-rapido')||"-"}`, 'modal-clasificacion'); }
-        function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'modal-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
-        function borrarCaravana() { if(!rpActivo) return; if(confirm(`¿ELIMINAR todo el historial de la caravana ${rpActivo}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null); alert("Historial eliminado. El número quedó libre."); cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); } }
-        function verHistorial() { abrirModal('modal-historial'); let h = "<ul style='list-style:none; padding:0; margin:0;'>"; obtenerHistorial(rpActivo).forEach(r => { if(!r.accion.includes('Vinculacion')) { h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px;"><span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span><br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span></li>`; }}); document.getElementById('contenido-historial').innerHTML = h + "</ul>"; }
+        function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'm-clasi'); }
+        function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'm-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
+        function borrarCaravana() { if(!rpActivo) return; if(confirm(`¿ELIMINAR todo el historial de la caravana ${rpActivo}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null); alert("Historial eliminado. El número quedó libre."); cambiarVista('v-dash', document.querySelectorAll('.sidebar-nav li')[0]); } }
+        function verTrazabilidad() { abrirModal('m-traza'); let h = ""; obtenerHistorial(rpActivo).forEach(r => { h += `<tr><td style="white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${r.accion}</strong></td><td>${r.valor}</td><td style="font-size:12px;">${r.detalles}</td></tr>`; }); document.getElementById('tb-traza').innerHTML = h; }
 
         function cambiarModoReporte() {
             const modo = document.getElementById('f-inf-modo').value;
@@ -1449,7 +1170,7 @@
         }
 
         function obtenerBadgeAccion(accion) {
-            if(accion === 'Sanidad') return `Sanidad`; if(accion === 'Peso') return `Peso`; if(accion === 'Diagnóstico') return `Clínica/Dx`; if(accion === 'Inseminación') return `Reproducción`; if(accion === 'Nutrición') return `Nutrición`; if(accion === 'Baja') return `Baja / Muerte`;
+            if(accion === 'Sanidad') return `Sanidad`; if(accion === 'Peso') return `Peso`; if(accion === 'Diagnóstico') return `Tacto`; if(accion === 'Inseminación') return `Reproducción`; if(accion === 'Nutrición') return `Nutrición`; if(accion === 'Baja') return `Baja / Muerte`;
             return `${accion}`;
         }
 
@@ -1467,14 +1188,14 @@
             document.getElementById('inf-prenadas').innerText = tPreGlobal;
 
             if(fRp !== "") {
-                rpPrint = fRp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Dossier: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
+                rpPrint = fRp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
                 const regs = obtenerHistorial(fRp); let hInd = ""; 
-                regs.forEach(r => { if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') hInd+=`<tr><td>${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${obtenerBadgeAccion(r.accion)}</strong></td><td>${r.valor}</td><td style="font-size:11px; color:var(--muted);">${r.detalles}</td></tr>`; });
+                regs.forEach(r => { if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') hInd+=`<tr><td>${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${obtenerBadgeAccion(r.accion)}</strong></td><td>${r.valor}</td><td style="font-size:12px; color:var(--text-muted);">${r.detalles}</td></tr>`; });
                 tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.filter(r => !r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master').length; document.getElementById('inf-prenadas').innerText = "-"; 
                 return;
             }
 
-            rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar PDF`;
+            rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar Informe PDF`;
 
             if(modo === 'inventario') {
                 document.getElementById('tabla-masiva').classList.remove('oculto');
@@ -1485,7 +1206,7 @@
                     const regs = obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
                     const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
-                    if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; }
+                    if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles||"split('|')[0]") ? String(uC.detalles||"split('|')[0]").replace('Lote:','').trim() : "-"; }
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-";
                     
                     let pasaFiltro = true; 
@@ -1494,7 +1215,7 @@
                     if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false; 
                     if(fCarimbo !== "ALL" && carimbo !== fCarimbo) pasaFiltro = false; 
                     
-                    if(pasaFiltro) { countTotal++; tbodyMasivo.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:15px;">${car}<br><span style="font-size:11px; color:gray;">Cb: ${carimbo}</span></td><td style="color:#000; border-color:#cbd5e1;">${cat}<br><span style="font-size:11px; color:gray;">${lote}</span></td><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${peso}</td><td style="color:#000; border-color:#cbd5e1;">${dx}</td></tr>`; }
+                    if(pasaFiltro) { countTotal++; tbodyMasivo.innerHTML += `<tr><td><strong>${car}</strong><br><span style="font-size:11px; color:var(--text-muted);">Cb: ${carimbo}</span></td><td>${cat}<br><span style="font-size:11px; color:var(--text-muted);">${lote}</span></td><td>${peso}</td><td>${dx}</td></tr>`; }
                 });
                 document.getElementById('inf-total').innerText = countTotal; 
             } else {
@@ -1504,14 +1225,14 @@
                 if(fAcc !== "ALL") eventos = eventos.filter(d => d.accion === fAcc); if(fDesde) eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00'));
                 if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); if(fKey) eventos = eventos.filter(d => (String(d.valor) + String(d.detalles)).toLowerCase().includes(fKey));
                 tbodyEventos.innerHTML = "";
-                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { tbodyEventos.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:15px;">${r.caravana}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:11px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
+                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { tbodyEventos.innerHTML += `<tr><td style="white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${r.caravana}</strong></td><td>${obtenerBadgeAccion(r.accion)}</td><td><strong>${r.valor}</strong><br><span style="color:var(--text-muted);">${r.detalles}</span></td></tr>`; });
                 document.getElementById('inf-total').innerText = eventos.length; 
             }
         }
 
         function cleanPDFText(text) {
             if (!text) return ''; let str = String(text);
-            str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️|✏|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️|🚪/g, '');
+            str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️|✏️|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️|🚪/g, '');
             str = str.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
             return str.trim();
         }
@@ -1562,7 +1283,7 @@
                         doc.autoTable({ startY: doc.lastAutoTable.finalY + 13, theme: 'grid', head: [['Fecha', 'Procedimiento', 'Valor Principal', 'Observaciones Adicionales']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 40 }, 2: { cellWidth: 40, fontStyle: 'bold' }, 3: { cellWidth: 'auto' } } });
                         
                         let filename = `Dossier_RP_${rpPrint.toUpperCase()}.pdf`;
-                        if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
+                        doc.save(filename);
 
                     } else {
                         const isInventario = (modo === 'inventario');
@@ -1586,7 +1307,7 @@
                         doc.autoTable({ startY: 48, theme: 'grid', head: headRows, body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: colStyles });
                         
                         let filename = 'Reporte_General.pdf';
-                        if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
+                        doc.save(filename);
                     }
                     btn.innerText = textoOriginal;
                 } catch (error) { console.error(error); alert("Error al generar el PDF: " + error.message); btn.innerText = textoOriginal; }
@@ -1605,7 +1326,7 @@
             document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
             let elBajas = document.getElementById('dash-bajas'); if(elBajas) elBajas.innerText = cantBajas;
 
-            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos-dinamicos').innerHTML = "<p style='color:var(--muted); text-align:center; padding:20px;'>Inventario vacío.</p>"; return; }
+            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos').innerHTML = "<p style='color:var(--text-main);'>Inventario vacío.</p>"; return; }
             
             let g1={p:0,v:0}, g2={v:0,t:0,o:0}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}, g11={}; let alertasHTML = "";
             datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; if(r.accion === 'Baja') { let causa = String(r.valor).trim(); g11[causa] = (g11[causa] || 0) + 1; } });
@@ -1615,189 +1336,139 @@
                 if(uC) { let v=String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : ""; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
                 cat = cat.toLowerCase(); const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
                 
-                if(uDx) { if(String(uDx.valor||"").includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } } if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--texto);">${car}</strong> diagnosticada Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } } }
+                if(uDx) { if(String(uDx.valor||"").includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } } if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--text-main);">${car}</strong> diagnosticada Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } } }
                 if(cat.includes('vaca') || cat.includes('vaquilla')) g2.v++; else if(cat.includes('terne') || cat.includes('desmamante')) g2.t++; else g2.o++; g3[lote] = (g3[lote] || 0) + 1;
-                if(uPeso) { if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--texto);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; else g4.opt++; let pVal = parseFloat(uPeso.valor); if(!isNaN(pVal)) { if(cat.includes('vaca') || cat.includes('vaquilla')) { g9.vw += pVal; g9.vc++; } if(cat.includes('terne') || cat.includes('desmamante')) { g9.tw += pVal; g9.tc++; } } } 
+                if(uPeso) { if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--text-main);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; else g4.opt++; let pVal = parseFloat(uPeso.valor); if(!isNaN(pVal)) { if(cat.includes('vaca') || cat.includes('vaquilla')) { g9.vw += pVal; g9.vc++; } if(cat.includes('terne') || cat.includes('desmamante')) { g9.tw += pVal; g9.tc++; } } } 
                 if(uSan) g6.con++; else g6.sin++;
             });
             
             const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
-            const prefs = lsGet('tc_prefs', ['1', '3']); let htmlGraficos = ""; const makeBar = (lbl, val, total, col) => { let p = total>0 ? Math.round((val/total)*100) : 0; return `<div class="barra-categoria"><div class="barra-header"><span style="color:var(--texto);">${lbl} (${val})</span><span style="color:var(--texto);">${p}%</span></div><div class="barra-fondo"><div class="barra-relleno" style="background:${col}; width:${p}%;"></div></div></div>`; };
+            const prefs = lsGet('tc_prefs', ['1', '3']); let htmlGraficos = ""; const makeBar = (lbl, val, total, col) => { let p = total>0 ? Math.round((val/total)*100) : 0; return `<div class="barra-cat"><div class="barra-head"><span style="color:var(--text-main);">${lbl} (${val})</span><span style="color:var(--text-main);">${p}%</span></div><div class="barra-bg"><div class="barra-fill" style="background:${col}; width:${p}%;"></div></div></div>`; };
             
             prefs.forEach(g => {
-                let html = `<div class="tarjeta">`;
-                if(g === '1') { let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; html += `<div class="tarjeta-titulo">Tasa de Preñez Dinámica</div><div class="grafico-flex"><div class="torta-container"><div class="torta" style="background: conic-gradient(var(--exito) 0% ${pp}%, var(--peligro) ${pp}% 100%);"></div><div class="torta-centro">${pp}%</div></div><div class="leyenda-torta"><div><span class="punto" style="background: var(--exito);"></span> Preñadas (${g1.p})</div><div><span class="punto" style="background: var(--peligro);"></span> Vacías (${g1.v})</div></div></div></div>`; } 
-                else if(g === '2') { let t = g2.v + g2.t + g2.o || 1; html += `<div class="tarjeta-titulo">Composición de Hacienda</div>${makeBar('Vacas/Vaquillas', g2.v, t, 'var(--secundario)')}${makeBar('Terneros/as', g2.t, t, 'var(--alerta)')}${makeBar('Toros/Otros', g2.o, t, '#8b5cf6')}</div>`; } 
-                else if(g === '3') { html += `<div class="tarjeta-titulo">Distribución por Lotes</div>`; let lKeys = Object.keys(g3).sort((a,b)=>g3[b]-g3[a]).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--secundario)':i===1?'var(--alerta)':'var(--exito)'; html += makeBar(k, g3[k], unicas.length, col); }); html+=`</div>`;} 
-                else if(g === '4') { let t = g4.opt + g4.bp + g4.sp || 1; html += `<div class="tarjeta-titulo">Condición Corporal</div>${makeBar('Óptima', g4.opt, t, 'var(--exito)')}${makeBar('Bajo Peso', g4.bp, t, 'var(--peligro)')}${makeBar('Sobrepeso', g4.sp, t, 'var(--alerta)')}</div>`; } 
-                else if(g === '5') { let t = g5.norm + g5.san || 1; html += `<div class="tarjeta-titulo">Causas Vientre Vacío</div>${makeBar('Normal', g5.norm, t, 'var(--alerta)')}${makeBar('Sangre/Problema', g5.san, t, 'var(--peligro)')}</div>`; } 
-                else if(g === '6') { let t = unicas.length; html += `<div class="tarjeta-titulo">Sanidad Global</div>${makeBar('Con Registro', g6.con, t, 'var(--exito)')}${makeBar('Sin Registros', g6.sin, t, '#64748b')}</div>`; } 
-                else if(g === '7') { html += `<div class="tarjeta-titulo">Preñez por Lote</div>`; let lKeys = Object.keys(g7).sort((a,b)=>g7[b].p-g7[a].p).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--exito)':i===1?'var(--secundario)':'var(--alerta)'; html += makeBar(k, g7[k].p, g7[k].t, col); }); html+=`</div>`;} 
-                else if(g === '8') { html += `<div class="tarjeta-titulo">Eficacia de Toros</div>`; let lKeys = Object.keys(g8).sort((a,b)=>g8[b].p-g8[a].p).slice(0,3); if(lKeys.length===0) html += `<p style="color:var(--muted); font-size:12px;">Sin cruces.</p>`; lKeys.forEach((k, i) => { html += makeBar(k, g8[k].p, g8[k].t, '#be185d'); }); html+=`</div>`;} 
-                else if(g === '9') { let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; html += `<div class="tarjeta-titulo">Promedio de Pesos</div><div class="grid-kpis"><div class="kpi-caja"><strong style="font-size:20px; color:var(--secundario); display:block;">${pv} Kg</strong><span style="font-size:11px; color:var(--muted); font-weight:bold; text-transform:uppercase;">Vacas</span></div><div class="kpi-caja"><strong style="font-size:20px; color:var(--secundario); display:block;">${pt} Kg</strong><span style="font-size:11px; color:var(--muted); font-weight:bold; text-transform:uppercase;">Terneros</span></div></div></div>`; } 
-                else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1; html += `<div class="tarjeta-titulo">Volumen Clínico</div>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Nutrición', g10.nut, t, '#84cc16')}${makeBar('Sanidad', g10.san, t, '#c2410c')}</div>`; } 
-                else if(g === '11') { let t = cantBajas || 1; html += `<div class="tarjeta-titulo">Causas de Baja / Mortalidad</div>`; let lKeys = Object.keys(g11).sort((a,b)=>g11[b]-g11[a]).slice(0,4); if(lKeys.length === 0) html += `<p style="color:var(--muted); font-size:12px;">Sin registros de bajas.</p>`; lKeys.forEach((k, i) => { let col = i===0?'var(--peligro)':i===1?'var(--alerta)':'#be185d'; html += makeBar(k, g11[k], t, col); }); html+=`</div>`; }
+                let html = `<div>`;
+                if(g === '1') { let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Tasa de Preñez Dinámica</h4><div style="display:flex; gap:20px; align-items:center;"><div class="torta-container"><div class="torta" style="background: conic-gradient(var(--success) 0% ${pp}%, var(--danger) ${pp}% 100%);"></div><div class="torta-centro">${pp}%</div></div><div class="leyenda-torta"><div><span class="punto" style="background: var(--success);"></span> Preñadas (${g1.p})</div><div><span class="punto" style="background: var(--danger);"></span> Vacías (${g1.v})</div></div></div></div>`; } 
+                else if(g === '2') { let t = g2.v + g2.t + g2.o || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Composición de Hacienda</h4>${makeBar('Vacas/Vaquillas', g2.v, t, 'var(--primary)')}${makeBar('Terneros/as', g2.t, t, 'var(--warning)')}${makeBar('Toros/Otros', g2.o, t, '#8b5cf6')}</div>`; } 
+                else if(g === '3') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Distribución por Lotes</h4>`; let lKeys = Object.keys(g3).sort((a,b)=>g3[b]-g3[a]).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--primary)':i===1?'var(--warning)':'var(--success)'; html += makeBar(k, g3[k], unicas.length, col); }); html+=`</div>`;} 
+                else if(g === '4') { let t = g4.opt + g4.bp + g4.sp || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Condición Corporal</h4>${makeBar('Óptima', g4.opt, t, 'var(--success)')}${makeBar('Bajo Peso', g4.bp, t, 'var(--danger)')}${makeBar('Sobrepeso', g4.sp, t, 'var(--warning)')}</div>`; } 
+                else if(g === '5') { let t = g5.norm + g5.san || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Causas Vientre Vacío</h4>${makeBar('Normal', g5.norm, t, 'var(--warning)')}${makeBar('Sangre/Problema', g5.san, t, 'var(--danger)')}</div>`; } 
+                else if(g === '6') { let t = unicas.length; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Sanidad Global</h4>${makeBar('Con Registro', g6.con, t, 'var(--success)')}${makeBar('Sin Registros', g6.sin, t, '#64748b')}</div>`; } 
+                else if(g === '7') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Preñez por Lote</h4>`; let lKeys = Object.keys(g7).sort((a,b)=>g7[b].p-g7[a].p).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--success)':i===1?'var(--primary)':'var(--warning)'; html += makeBar(k, g7[k].p, g7[k].t, col); }); html+=`</div>`;} 
+                else if(g === '8') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Eficacia de Toros</h4>`; let lKeys = Object.keys(g8).sort((a,b)=>g8[b].p-g8[a].p).slice(0,3); if(lKeys.length===0) html += `<p style="color:var(--text-muted); font-size:12px;">Sin cruces.</p>`; lKeys.forEach((k, i) => { html += makeBar(k, g8[k].p, g8[k].t, '#be185d'); }); html+=`</div>`;} 
+                else if(g === '9') { let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Promedio de Pesos</h4><div class="grid-2"><div class="kpi-box" style="padding:10px;"><strong style="font-size:20px; color:var(--text-main);">${pv} Kg</strong><span>Vacas</span></div><div class="kpi-box" style="padding:10px;"><strong style="font-size:20px; color:var(--text-main);">${pt} Kg</strong><span>Terneros</span></div></div></div>`; } 
+                else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Volumen Clínico</h4>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Nutrición', g10.nut, t, '#84cc16')}${makeBar('Sanidad', g10.san, t, '#c2410c')}`; } 
+                else if(g === '11') { let t = cantBajas || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Causas de Baja / Mortalidad</h4>`; let lKeys = Object.keys(g11).sort((a,b)=>g11[b]-g11[a]).slice(0,4); if(lKeys.length === 0) html += `<p style="color:var(--text-muted); font-size:12px;">Sin registros de bajas.</p>`; lKeys.forEach((k, i) => { let col = i===0?'var(--danger)':i===1?'var(--warning)':'#be185d'; html += makeBar(k, g11[k], t, col); }); html+=`</div>`; }
                 htmlGraficos += html;
-            }); document.getElementById('contenedor-graficos-dinamicos').innerHTML = htmlGraficos;
+            }); document.getElementById('contenedor-graficos').innerHTML = htmlGraficos;
         }
 
-        function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
+        function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.sidebar-nav li').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
         function abrirModal(id) { document.getElementById(id).style.display = 'flex'; } function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
-        
-        function cargarListaRegistro() { const datosActivos = obtenerRegistrosActivos(); let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja')); const ul = document.getElementById('tb-registro'); ul.innerHTML = ""; vivas.forEach(car => { const regs = obtenerHistorial(car); let info = "-", dxText = "-", loteText = "-"; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { let vals = String(c.valor||"").split('|'); info = vals[0] ? vals[0].replace('Cat:','').trim() : info; loteText = (String(c.detalles||"").split('|')[0] ? String(c.detalles||"").split('|')[0].replace('Lote:','').trim() : ""); } else if(p) { info = String(p.detalles||"").split('|')[0] || "-"; } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = d.valor || "-"; ul.innerHTML += `<li onclick="navegarDesdeLista('${car}')"><div style="display:flex; flex-direction:column; gap:4px;"><strong style="font-size:18px; color:var(--texto);">${car}</strong><span style="font-size:12px; color:var(--muted);">${info} | ${loteText} | ${dxText}</span></div><span style="font-size:20px; color:var(--texto);">›</span></li>`; }); }
-        function filtrarLista(t) { const lis = document.getElementById('tb-registro').getElementsByTagName('li'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "flex" : "none"; }
-        function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); buscarCaravanaBtn(); }
+        function cargarListaRegistro() { const datosActivos = obtenerRegistrosActivos(); let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja')); const ul = document.getElementById('tb-registro'); ul.innerHTML = ""; vivas.forEach(car => { const regs = obtenerHistorial(car); let info = "-", dxText = "-", loteText = "-"; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { let vals = String(c.valor||"").split('|'); info = vals[0] ? vals[0].replace('Cat:','').trim() : info; loteText = (String(c.detalles||"").split('|')[0] ? String(c.detalles||"").split('|')[0].replace('Lote:','').trim() : ""); } else if(p) { info = String(p.detalles||"").split('|')[0] || "-"; } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = d.valor || "-"; ul.innerHTML += `<tr onclick="navegarDesdeLista('${car}')"><td style="color:var(--text-main);"><strong>${car}</strong></td><td style="color:var(--text-main);">${info}</td><td style="color:var(--text-main);">${loteText}</td><td style="color:var(--text-main);">${dxText}</td><td><button class="btn-outline">Abrir Ficha</button></td></tr>`; }); }
+        function filtrarLista(t) { const lis = document.getElementById('tb-registro').getElementsByTagName('tr'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "" : "none"; }
+        function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.sidebar-nav li')[1].click(); buscarCaravanaBtn(); }
         
         function guardarDisenoServidor() { 
             const n = document.getElementById('cfg-nom').value.trim(); 
             const f = document.getElementById('cfg-logo'); 
             
             let p = (b64) => { 
-                lsSet('tc_hacienda', {nombre: n, logo: b64}); 
-                aplicarDisenoEnPantalla(n, b64); 
-                
-                db.collection("usuarios").doc(usActivo).update({
-                    hacienda: n,
-                    logo: b64
+                db.collection('estancias').doc(maestroId).set({ nombre_hacienda: n, logo_hacienda: b64 }, { merge: true }).then(() => {
+                    alert("Membrete y nombre actualizados. Se sincronizarán en todos sus dispositivos al instante.");
                 });
-                alert("Membrete oficial de PDF actualizado."); 
             }; 
             
             if(f.files && f.files[0]) { 
-                const r = new FileReader(); r.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const maxW = 200, maxH = 200; if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); p(canvas.toDataURL('image/png')); }; img.src = e.target.result; }; r.readAsDataURL(f.files[0]); 
+                const r = new FileReader(); 
+                r.onload = function(e) { 
+                    const img = new Image(); 
+                    img.onload = function() { 
+                        const canvas = document.createElement('canvas'); 
+                        let w = img.width, h = img.height; 
+                        const maxW = 200, maxH = 200; 
+                        if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } 
+                        else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } 
+                        canvas.width = w; canvas.height = h; 
+                        const ctx = canvas.getContext('2d'); 
+                        ctx.drawImage(img, 0, 0, w, h); 
+                        p(canvas.toDataURL('image/png')); 
+                    }; 
+                    img.src = e.target.result; 
+                }; 
+                r.readAsDataURL(f.files[0]); 
             } else { 
-                const logoGuardado = lsGet('tc_hacienda', {}).logo || ""; p(logoGuardado); 
+                const logoGuardado = lsGet('tc_hacienda', {}).logo || ""; 
+                p(logoGuardado); 
             } 
         }
         
-        // ==========================================
-        // 9. GESTIÓN DE PEONES EN FIREBASE (APP SECUNDARIA)
-        // ==========================================
         async function crearOperador() { 
             if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
             const n = document.getElementById('op-nombre').value.trim();
-            const u = document.getElementById('op-usu').value.trim(); 
-            const pass = document.getElementById('op-pass').value.trim();
+            const u = document.getElementById('op-usu').value.trim().toLowerCase(); 
+            const p = document.getElementById('op-pass').value.trim(); 
             const rolSel = document.getElementById('op-rol').value;
             
-            if(!n || !u || !pass) { alert("Completar Nombre, Correo y Contraseña."); return; } 
-            if(pass.length < 6) { alert("Firebase exige un mínimo de 6 caracteres para la contraseña."); return; }
-
-            const email = u.includes('@') ? u : u + '@taurus.com';
+            if(!n || !u || !p) { alert("Completar Nombre, Usuario y Contraseña."); return; } 
+            if(p.length < 6) { alert("La contraseña debe tener mínimo 6 caracteres por seguridad en Firebase."); return; }
+            
+            let rolFinal = rolSel;
+            if (rolSel === 'Operador') {
+                let permisos = Array.from(document.querySelectorAll('.chk-permiso:checked')).map(c => c.value).join(',');
+                if(!permisos) { alert("Debe seleccionar al menos un permiso de acceso para el operador."); return; }
+                rolFinal = 'Operador|' + permisos;
+            }
             
             const btn = document.getElementById('btn-crear-op');
+            const btnOriginal = btn.innerHTML;
             btn.innerHTML = "⏳ Registrando...";
             btn.disabled = true;
 
+            let email = u.includes('@') ? u : u + '@taurus.com';
+
             try {
-                // 1. VALIDACIÓN INTELIGENTE DE LÍMITES EN FIREBASE
-                const maestroRef = await db.collection('usuarios').doc(maestroId.toLowerCase()).get();
-                if(maestroRef.exists) {
-                    let f = maestroRef.data().features || "";
-                    let limitOps = 999;
-                    let limitOwn = 999;
-                    f.split(',').forEach(p => { 
-                        if(p.startsWith('limitOps:')) limitOps = parseInt(p.split(':')[1]); 
-                        if(p.startsWith('limitOwn:')) limitOwn = parseInt(p.split(':')[1]); 
-                        if(p.startsWith('limit:')) limitOps = parseInt(p.split(':')[1]);
-                    });
-
-                    const opsSnapshot = await db.collection('usuarios').where('maestroId', '==', maestroId).get();
-                    
-                    let countOps = 0;
-                    let countOwns = 0;
-                    opsSnapshot.docs.forEach(doc => {
-                        if(doc.id !== maestroId.toLowerCase()) {
-                            let d = doc.data();
-                            if(d.rol.includes('Propietario') || d.rol.includes('Dueño')) countOwns++;
-                            else countOps++;
-                        }
-                    });
-
-                    if (rolSel === 'Operador' && countOps >= limitOps) {
-                        alert(`❌ LÍMITE ALCANZADO: Tu plan solo permite un máximo de ${limitOps} operador(es).`);
-                        btn.innerHTML = "Registrar Usuario"; btn.disabled = false; return;
-                    }
-                    if (rolSel === 'Propietario' && countOwns >= limitOwn) {
-                        alert(`❌ LÍMITE ALCANZADO: Tu plan permite un máximo de ${limitOwn} dueño(s) extra(s).`);
-                        btn.innerHTML = "Registrar Usuario"; btn.disabled = false; return;
-                    }
-                }
-
-                // 2. CREACIÓN EN FIREBASE (Si pasó la validación)
-                let rolFinal = rolSel;
-                if (rolSel === 'Operador') {
-                    let permisos = Array.from(document.querySelectorAll('.chk-permiso:checked')).map(c => c.value).join(',');
-                    if(!permisos) { alert("Debe seleccionar al menos un permiso de acceso para el operador."); btn.innerHTML = "Registrar Usuario"; btn.disabled = false; return; }
-                    rolFinal = 'Operador|' + permisos;
-                }
-
-                const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryAppMobile");
-                await secondaryApp.auth().createUserWithEmailAndPassword(email, pass);
+                // Ghost App para crear Peón Nativamente en Firebase Auth
+                const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryAppPeon");
+                await secondaryApp.auth().createUserWithEmailAndPassword(email, p);
                 await secondaryApp.auth().signOut();
-                await secondaryApp.delete();
+                await secondaryApp.delete(); 
 
-                await db.collection('usuarios').doc(email.toLowerCase()).set({
+                await db.collection('usuarios').doc(email).set({
                     nombre: n,
                     rol: rolFinal,
                     maestroId: maestroId,
-                    hacienda: usHacienda
+                    hacienda: usHacienda,
+                    vencimiento: 'Heredado',
+                    password: p 
                 });
+                
+                ejecutarAccion('Alta Operador', email, `Nombre: ${n} | Rol: ${rolFinal}`, null);
 
-                document.getElementById('op-nombre').value = ''; 
-                document.getElementById('op-usu').value = '';
-                document.getElementById('op-pass').value = '';
-                
-                cargarListaOperadores(); 
-                mostrarToast("✅ Usuario creado correctamente");
-                
+                document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 
+                btn.innerHTML = btnOriginal; btn.disabled = false;
+                alert("Usuario Registrado Exitosamente.");
             } catch(e) {
-                console.error(e);
-                if(e.code === 'auth/email-already-in-use') alert("El correo ya está en uso.");
-                else alert("Hubo un error de conexión al registrar al usuario.");
-            } finally {
-                btn.innerHTML = "Registrar Usuario"; btn.disabled = false;
+                alert("Hubo un error al crear la cuenta. Verifique que el usuario/correo no esté ya registrado.");
+                btn.innerHTML = btnOriginal; btn.disabled = false;
             }
         }
 
-        async function cargarListaOperadores() {
-            if (!usRol.includes('Propietario') && !usRol.includes('Dueño')) return;
-            try {
-                const querySnapshot = await db.collection("usuarios").where("maestroId", "==", maestroId).get();
-                const selDel = document.getElementById('op-del-usu-sel');
-                const selEdit = document.getElementById('op-edit-usu-sel');
-                let options = '<option value="">-- Seleccione un usuario --</option>';
-                
-                querySnapshot.forEach((doc) => {
-                    let d = doc.data();
-                    if(doc.id !== usActivo.toLowerCase()) {
-                        options += `<option value="${doc.id}">${doc.id} (${d.nombre})</option>`;
-                    }
-                });
-                
-                if(selDel) selDel.innerHTML = options;
-                if(selEdit) selEdit.innerHTML = options;
-            } catch(e) { console.error("Error al cargar operadores", e); }
-        }
-
-        async function cargarPermisosEdicion() {
+        function cargarPermisosEdicion() {
             let u = document.getElementById('op-edit-usu-sel').value;
             let caja = document.getElementById('caja-edit-permisos');
             if(!u) { caja.classList.add('oculto'); return; }
             caja.classList.remove('oculto');
             
-            let doc = await db.collection("usuarios").doc(u).get();
-            let perms = "dash,ficha,base,reporte"; 
-            
-            if(doc.exists) {
-                let rMatch = doc.data().rol;
-                if(rMatch) {
-                    if(rMatch.includes('|')) perms = rMatch.split('|')[1];
-                    else if(rMatch === 'Propietario') perms = "dash,ficha,base,reporte";
-                    else perms = rMatch; 
+            db.collection('usuarios').doc(u).get().then(doc => {
+                let perms = "dash,ficha,base,reporte"; 
+                if(doc.exists && doc.data().rol) {
+                    let rolFull = doc.data().rol;
+                    if(rolFull.includes('|')) perms = rolFull.split('|')[1];
+                    else if(rolFull === 'Propietario') perms = "dash,ficha,base,reporte";
+                    else perms = rolFull; 
                 }
-            }
-            document.querySelectorAll('.chk-edit-permiso').forEach(chk => { chk.checked = perms.includes(chk.value); });
+                document.querySelectorAll('.chk-edit-permiso').forEach(chk => { chk.checked = perms.includes(chk.value); });
+            });
         }
 
         async function guardarEdicionOperador() {
@@ -1810,115 +1481,110 @@
             let rolFinal = 'Operador|' + permisos;
 
             const btn = document.getElementById('btn-editar-op');
+            const btnOriginal = btn.innerHTML;
             btn.innerHTML = "⏳ Actualizando...";
             btn.disabled = true;
 
             try {
-                await db.collection("usuarios").doc(u).update({ rol: rolFinal });
+                await db.collection('usuarios').doc(u).update({ rol: rolFinal });
+                ejecutarAccion('Edición Operador', u, `Rol: ${rolFinal}`, null);
                 alert("Permisos actualizados con éxito.");
                 document.getElementById('op-edit-usu-sel').value = "";
                 document.getElementById('caja-edit-permisos').classList.add('oculto');
+                btn.innerHTML = btnOriginal;
+                btn.disabled = false;
             } catch(e) {
                 alert("Error de red.");
-            } finally {
-                btn.innerHTML = "Actualizar Permisos";
+                btn.innerHTML = btnOriginal;
                 btn.disabled = false;
             }
         }
 
-        // ==========================================
-        // TRUCO MAESTRO PARA ELIMINAR DE AUTH DESDE EL CELULAR
-        // ==========================================
-        async function gestionarAuthUsuario(email, claveActual, accion) {
-            const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryGhostAppMob");
-            let exito = false;
+        async function gestionarAuthGhostParaBorrado(email, claveActual) {
+            const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryAppGhostDelete");
             try {
                 await secondaryApp.auth().signInWithEmailAndPassword(email, claveActual);
-                if(accion === 'eliminar') {
-                    await secondaryApp.auth().currentUser.delete();
-                    exito = true;
-                }
-            } catch(e) { console.error("Error AuthGhost:", e); } 
+                await secondaryApp.auth().currentUser.delete();
+            } catch(e) { } 
             finally {
                 try { await secondaryApp.auth().signOut(); } catch(e){}
                 try { await secondaryApp.delete(); } catch(e){}
             }
-            return exito;
         }
 
         async function eliminarOperador() {
             if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; }
             const selectEl = document.getElementById('op-del-usu-sel');
             const u = selectEl.value.trim();
-            if(!u) { alert("Seleccione un usuario de la lista."); return; }
+            if(!u) { alert("Seleccione un operador de la lista."); return; }
             
-            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar de raíz al usuario "${u}"?`)) {
+            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso del operador "${u}"? Esta acción no se puede deshacer.`)) {
                 const btn = document.getElementById('btn-eliminar-op');
+                const btnOriginal = btn.innerHTML;
                 btn.innerHTML = "⏳ Eliminando...";
                 btn.disabled = true;
-                
+
                 try {
-                    const doc = await db.collection("usuarios").doc(u).get();
-                    if(doc.exists) {
-                        const clave = doc.data().password;
-                        if(clave) {
-                            await gestionarAuthUsuario(u, clave, 'eliminar');
-                        }
-                        await db.collection("usuarios").doc(u).delete();
+                    const doc = await db.collection('usuarios').doc(u).get();
+                    if(doc.exists && doc.data().password) {
+                        await gestionarAuthGhostParaBorrado(u, doc.data().password);
                     }
-                    
-                    alert(`El usuario "${u}" ha sido eliminado de la base de datos.`); 
+                    await db.collection('usuarios').doc(u).delete();
+                    ejecutarAccion('Baja Operador', u, `Eliminado por el panel PC`, null);
+
+                    alert(`El operador "${u}" ha sido eliminado con éxito.`); 
                     selectEl.value = ''; 
                     cargarListaOperadores(); 
-                } catch(e) {
-                    alert("Hubo un error de conexión.");
-                } finally {
-                    btn.innerHTML = "Eliminar Usuario";
+                    
+                    btn.innerHTML = btnOriginal;
                     btn.disabled = false;
-                }
+                } catch(e) { 
+                    alert("Hubo un error de conexión."); btn.innerHTML = btnOriginal; btn.disabled = false; 
+                } 
             }
         }
 
-        async function cambiarMiContrasena() { 
-            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
-            
-            const nueva = document.getElementById('nueva-clave').value.trim(); 
-            if(!nueva || nueva.length < 6) { 
-                alert("Firebase requiere que la contraseña tenga un mínimo de 6 caracteres."); 
-                return; 
-            } 
+        async function cargarListaOperadores() {
+            if (!usRol.includes('Propietario') && !usRol.includes('Dueño')) return;
+            try {
+                const snapshot = await db.collection('usuarios').where('maestroId', '==', maestroId).get();
+                const ops = snapshot.docs.filter(doc => doc.id !== maestroId).map(doc => doc.id);
+                
+                const selDel = document.getElementById('op-del-usu-sel');
+                const selEdit = document.getElementById('op-edit-usu-sel');
+                let options = '<option value="">-- Seleccione un operador --</option>';
+                ops.forEach(o => { options += `<option value="${o}">${o}</option>`; });
+                if(selDel) selDel.innerHTML = options;
+                if(selEdit) selEdit.innerHTML = options;
+            } catch(e) { console.error("Error al cargar operadores", e); }
+        }
 
+        function cambiarMiContrasena() { 
+            if(!navigator.onLine) { alert("Necesitas conexión."); return; } 
+            const nueva = document.getElementById('nueva-clave').value.trim(); 
+            if(!nueva || nueva.length < 6) { alert("Mínimo 6 caracteres para Firebase."); return; } 
+            
+            // Siendo el propio usuario autenticado, podemos cambiar la clave directamente
             const user = firebase.auth().currentUser;
             if(user) {
-                try {
-                    await user.updatePassword(nueva);
-                    alert("✅ Contraseña actualizada con éxito.");
-                    document.getElementById('nueva-clave').value = ''; 
-                    
-                    if(usActivo) {
-                        db.collection("usuarios").doc(usActivo).update({ password: nueva }).catch(()=>{});
-                    }
-                } catch(error) {
-                    console.error(error);
-                    if(error.code === 'auth/requires-recent-login') {
-                        alert("⚠️ Por seguridad, Firebase requiere que cierres sesión y vuelvas a ingresar con tu clave actual antes de poder cambiarla.");
-                    } else {
-                        alert("❌ Error al cambiar la contraseña: " + error.message);
-                    }
-                }
-            } else {
-                alert("No hay una sesión activa.");
+                user.updatePassword(nueva).then(() => {
+                    db.collection('usuarios').doc(user.email).update({ password: nueva }).then(() => {
+                        alert("Contraseña actualizada con éxito."); document.getElementById('nueva-clave').value = '';
+                    });
+                }).catch(e => { alert("Error: Es probable que necesites cerrar e iniciar sesión de nuevo antes de cambiar la clave."); });
             }
         }
         
         function cerrarSesion() { 
+            // Rescatar preferencias que no queremos borrar en la PC
             let leidas = localStorage.getItem('tc_alertas_leidas');
             let mostradas = localStorage.getItem('tc_alertas_mostradas');
             let prefs = localStorage.getItem('tc_prefs');
             let tema = localStorage.getItem('tc_tema');
             
-            auth.signOut().then(() => {
+            firebase.auth().signOut().then(() => {
                 localStorage.clear(); 
+                
                 if(leidas) localStorage.setItem('tc_alertas_leidas', leidas);
                 if(mostradas) localStorage.setItem('tc_alertas_mostradas', mostradas);
                 if(prefs) localStorage.setItem('tc_prefs', prefs);
@@ -1929,12 +1595,12 @@
         }
 
         // ==========================================
-        // 10. LECTOR HID / TECLADO AUTOMÁTICO
+        // LECTOR HID / TECLADO AUTOMÁTICO (PC)
         // ==========================================
         function forzarSaltoAFicha() {
-            let tabFicha = document.querySelectorAll('.nav-item')[1];
-            if (typeof cambiarVista === "function" && tabFicha && tabFicha.style.display !== 'none') {
-                cambiarVista('vista-manga', tabFicha);
+            let tabFichaPC = document.querySelectorAll('.sidebar-nav li')[1];
+            if (typeof cambiarVista === "function" && tabFichaPC && tabFichaPC.style.display !== 'none') {
+                cambiarVista('v-ficha', tabFichaPC);
             }
         }
 
@@ -1953,7 +1619,7 @@
                 if (inputVincular) inputVincular.value = '';
                 let lblScaneado = document.getElementById('lbl-rfid-scaneado');
                 if (lblScaneado) lblScaneado.innerText = tagHex;
-                if (typeof abrirModal === "function") abrirModal('modal-rfid');
+                if (typeof abrirModal === "function") abrirModal('m-rfid');
                 setTimeout(() => { if(inputVincular) inputVincular.focus(); }, 500);
             }
         };
@@ -1962,19 +1628,18 @@
         let timeoutTeclado;
 
         document.addEventListener('keydown', function(event) {
-            // 🛡️ ESCUDO: Si el teclado móvil dispara un evento fantasma sin tecla, lo ignoramos para evitar el Crash.
-            if (!event.key) return; 
-
             if(event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'CapsLock') return;
 
             if (event.key === 'Enter') {
                 if (bufferTeclado.length > 2) {
                     event.preventDefault(); 
+                    
                     let dataLimpia = bufferTeclado.replace(/[^a-zA-Z0-9.-]/g, '').trim().toUpperCase(); 
                     let esPeso = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
                     
                     if (esPeso) {
                         if (typeof rpActivo !== 'undefined' && rpActivo && rpActivo !== "---") {
+                            
                             if(typeof rafagaActiva !== 'undefined' && rafagaActiva) {
                                 let sel = document.getElementById('rafaga-accion').value;
                                 let notas = document.getElementById('rafaga-detalles').value.trim();
@@ -1988,20 +1653,24 @@
                                     if (recordatorioRafaga !== "0") { detCompleto += ` | [RECORDATORIO:${recordatorioRafaga}]`; }
                                     ejecutarAccion('Sanidad', producto, detCompleto, null);
                                 }
+                                
                                 if(typeof mostrarToast === 'function') mostrarToast("✅ ¡Guardado!");
+                                
                             } else {
                                 forzarSaltoAFicha();
-                                if (typeof abrirModal === "function") abrirModal('modal-peso');
+                                if (typeof abrirModal === "function") abrirModal('m-peso');
                                 let inputPeso = document.getElementById('i-peso-val');
                                 if (inputPeso) inputPeso.value = dataLimpia;
                             }
                         } else {
-                            alert("⚖ Peso recibido: " + dataLimpia + " Kg. ¡Debes leer la caravana de un animal primero!");
+                            alert("⚖️ Peso recibido: " + dataLimpia + " Kg. ¡Debes leer la caravana de un animal primero!");
                         }
                     } else {
                         let tagLimpio = dataLimpia.replace(/TAG/gi, '');
                         forzarSaltoAFicha();
-                        if (typeof window.recibirTagNFC === "function") { window.recibirTagNFC(tagLimpio); }
+                        if (typeof window.recibirTagNFC === "function") {
+                            window.recibirTagNFC(tagLimpio);
+                        }
                     }
                 }
                 bufferTeclado = "";
