@@ -116,24 +116,6 @@
 </head>
 <body>
 
-    <script>
-        // INICIALIZACIÓN DE FIREBASE
-        const firebaseConfig = {
-            apiKey: "AIzaSyDTXUYwYYkQ_pKDhui9H3cFmecgAPQ9eqA",
-            authDomain: "taurus-cbd59.firebaseapp.com",
-            projectId: "taurus-cbd59",
-            storageBucket: "taurus-cbd59.firebasestorage.app",
-            messagingSenderId: "250280835981",
-            appId: "1:250280835981:web:b95bc0a7ec9f7da2b75bc4"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
-        let clientesCache = [];
-        let datosArchivoCrudo = [];
-        let unsubscribeConfig = null;
-    </script>
-
     <!-- PANTALLA LOGIN -->
     <div id="pantalla-login">
         <div class="login-box">
@@ -196,7 +178,7 @@
             </div>
             
             <div style="display:flex; gap:15px; margin-top:30px;">
-                <button class="btn" style="flex:1; background:var(--bg-card); color:var(--text-main);" onclick="document.getElementById('modal-editar').classList.add('oculto')">Cancelar</button>
+                <button class="btn" style="flex:1; background:var(--bg-card); color:var(--text-main);" onclick="cerrarModal('modal-editar')">Cancelar</button>
                 <button class="btn btn-success" style="flex:1;" onclick="guardarEdicion()">Guardar Cambios</button>
             </div>
         </div>
@@ -207,7 +189,7 @@
         <div class="modal-body large">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 15px;">
                 <h3 style="margin:0; color:var(--info); font-size:20px;">👥 Equipo de Trabajo (Operadores)</h3>
-                <button class="btn" style="background:transparent; color:var(--text-muted); font-size:20px; padding:0;" onclick="document.getElementById('modal-equipo').classList.add('oculto')">&times;</button>
+                <button class="btn" style="background:transparent; color:var(--text-muted); font-size:20px; padding:0;" onclick="cerrarModal('modal-equipo')">&times;</button>
             </div>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Hacienda seleccionada: <strong id="lbl-equipo-hacienda" style="color:var(--text-main);">...</strong></p>
             
@@ -419,10 +401,25 @@
 
     </div>
 
+    <!-- CÓDIGO JS PRINCIPAL -->
     <script>
-        // ==========================================
+        // INICIALIZACIÓN DE FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyDTXUYwYYkQ_pKDhui9H3cFmecgAPQ9eqA",
+            authDomain: "taurus-cbd59.firebaseapp.com",
+            projectId: "taurus-cbd59",
+            storageBucket: "taurus-cbd59.firebasestorage.app",
+            messagingSenderId: "250280835981",
+            appId: "1:250280835981:web:b95bc0a7ec9f7da2b75bc4"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let clientesCache = [];
+        let datosArchivoCrudo = [];
+        let unsubscribeConfig = null;
+
         // AUTO-LOGIN Y SESIÓN FIREBASE
-        // ==========================================
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
                 document.getElementById('pantalla-login').classList.add('oculto');
@@ -481,13 +478,9 @@
         });
 
         function cambiarVista(id, btn) { document.querySelectorAll('.vista').forEach(v => v.classList.add('oculto')); document.getElementById(id).classList.remove('oculto'); document.querySelectorAll('.sidebar-nav li').forEach(l => l.classList.remove('activo')); btn.classList.add('activo'); }
+        function cerrarModal(id) { document.getElementById(id).classList.add('oculto'); }
         function toggleLoading(show, text="Procesando...") { document.getElementById('loading-text').innerText = text; document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; }
         function mostrarToast(mensaje, esError = false) { const toast = document.getElementById('toast-msg'); toast.innerText = mensaje; if(esError) toast.classList.add('error'); else toast.classList.remove('error'); toast.classList.add('mostrar'); setTimeout(() => { toast.classList.remove('mostrar'); }, 3000); }
-
-        // ==========================================
-        // FUNCIONES KILL SWITCH (FIREBASE)
-        // ==========================================
-        let unsubscribeConfig = null;
 
         function checkStatusInicial() {
             if(unsubscribeConfig) unsubscribeConfig();
@@ -551,9 +544,6 @@
             }
         }
 
-        // ==========================================
-        // ALTA Y EDICIÓN DE CLIENTES SaaS (FIREBASE)
-        // ==========================================
         function getFeatures(prefijo) {
             let features = [];
             if(document.getElementById(`${prefijo}-feat-rafaga`).checked) features.push('rafaga');
@@ -687,7 +677,7 @@
                     <tr>
                         <td>
                             <strong style="color:var(--text-main); font-size:14px;">${c.nombre || "Sin Nombre"}</strong><br>
-                            <span style="color:var(--primary); font-size:11px;">${c.usuario}</span>
+                            <span style="color:var(--primary); font-size:11px;">@${c.usuario}</span>
                         </td>
                         <td style="font-weight:bold;">${c.hacienda}</td>
                         <td>
@@ -786,9 +776,6 @@
             }
         }
 
-        // ==========================================
-        // CONTROL MAESTRO DE OPERADORES Y CONTRASEÑAS
-        // ==========================================
         async function verEquipo(maestroId, haciendaName) {
             document.getElementById('lbl-equipo-hacienda').innerText = haciendaName;
             document.getElementById('tb-equipo').innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:15px;">Buscando operadores...</td></tr>';
@@ -836,9 +823,6 @@
             }
         }
 
-        // ==========================================
-        // IMPORTACIÓN MASIVA INTELIGENTE POR BATCHES
-        // ==========================================
         function cargarClientesMasiva() { 
             if(clientesCache.length === 0) cargarClientes(); 
             else renderizarSelectMasiva(); 
@@ -957,6 +941,26 @@
             document.getElementById('archivo-excel').value = ''; 
             datosArchivoCrudo = [];
         }
+
+        // Anclaje explícito para Electron CSP
+        window.ingresarAdmin = ingresarAdmin;
+        window.cerrarSesion = cerrarSesion;
+        window.cambiarVista = cambiarVista;
+        window.cerrarModal = cerrarModal;
+        window.toggleMantenimiento = toggleMantenimiento;
+        window.enviarAvisoMantenimiento = enviarAvisoMantenimiento;
+        window.crearCliente = crearCliente;
+        window.cargarClientes = cargarClientes;
+        window.actualizarVencimiento = actualizarVencimiento;
+        window.cambiarClaveCliente = cambiarClaveCliente;
+        window.borrarCliente = borrarCliente;
+        window.abrirEdicion = abrirEdicion;
+        window.guardarEdicion = guardarEdicion;
+        window.verEquipo = verEquipo;
+        window.eliminarOpAdmin = eliminarOpAdmin;
+        window.cargarClientesMasiva = cargarClientesMasiva;
+        window.leerArchivoInteligente = leerArchivoInteligente;
+        window.procesarMapeoEInyectar = procesarMapeoEInyectar;
     </script>
 </body>
 </html>
