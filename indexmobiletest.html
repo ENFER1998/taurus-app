@@ -94,6 +94,25 @@
 
         .contenedor-scroll-analitica { max-height: 130px; overflow-y: auto; padding-right: 5px; flex: 1; }
 
+        /* RECUADRO DE FILTROS RÁPIDOS DINÁMICOS */
+        .caja-filtros-rapidos { background: #1e293b; padding: 12px; border-radius: 8px; border: 1px solid var(--borde); margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; }
+        body.tema-claro .caja-filtros-rapidos { background: #ffffff !important; border-color: var(--borde) !important; }
+
+        /* CONTENEDOR DE PERMISOS DINÁMICOS */
+        .contenedor-permisos { display: flex; flex-direction: column; gap: 8px; background: #1e293b; padding: 10px; border: 1px solid var(--borde); border-radius: 8px; }
+        body.tema-claro .contenedor-permisos { background: #ffffff !important; border-color: var(--borde) !important; }
+
+        /* TABLA DE PREVIEW DEL REPORTE CON TEMA DINÁMICO */
+        .tabla-informe { width: 100%; border-collapse: collapse; font-size: 13px; background: #0f172a; color: var(--texto); min-width: 400px; border: 1px solid var(--borde);}
+        .tabla-informe th { background: #1e293b; padding: 10px; text-align: left; border: 1px solid var(--borde); color: var(--secundario); font-size: 11px; text-transform: uppercase; font-weight: bold;}
+        .tabla-informe td { padding: 10px; border: 1px solid var(--borde); color: var(--texto);}
+        .tabla-informe tr:hover td { background: rgba(59, 130, 246, 0.08); }
+        
+        body.tema-claro .tabla-informe { background: #ffffff; color: #0f172a; border-color: var(--borde); }
+        body.tema-claro .tabla-informe th { background: #f1f5f9; color: var(--secundario); border-color: var(--borde); }
+        body.tema-claro .tabla-informe td { border-color: var(--borde); color: #0f172a; }
+        body.tema-claro .tabla-informe tr:hover td { background: #f8fafc; }
+
         #lista-alertas { max-height: 160px; overflow-y: auto; padding-right: 5px; }
         .alerta-item { display: flex; align-items: center; gap: 10px; background: rgba(245,158,11,0.1); padding: 12px; border-radius: 8px; border-left: 4px solid var(--alerta); margin-bottom: 10px; font-size: 14px; border: 1px solid rgba(245,158,11,0.3); color: var(--texto); cursor: pointer;}
         .alerta-item.peligro { background: rgba(239,68,68,0.1); border-left-color: var(--peligro); border-color: rgba(239,68,68,0.3);}
@@ -128,21 +147,6 @@
         .btn-descargar { width: 100%; background: var(--exito); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; margin-bottom: 20px;}
         .tabla-responsive { width: 100%; overflow-x: auto; border-radius: 8px;}
         
-        /* TABLA DE PREVIEW DEL REPORTE CON TEMA DINÁMICO */
-        .tabla-informe { width: 100%; border-collapse: collapse; font-size: 13px; background: #0f172a; color: var(--texto); min-width: 400px; border: 1px solid var(--borde);}
-        .tabla-informe th { background: #1e293b; padding: 10px; text-align: left; border: 1px solid var(--borde); color: var(--secundario); font-size: 11px; text-transform: uppercase; font-weight: bold;}
-        .tabla-informe td { padding: 10px; border: 1px solid var(--borde); color: var(--texto);}
-        .tabla-informe tr:hover td { background: rgba(59, 130, 246, 0.08); }
-        
-        body.tema-claro .tabla-informe { background: #ffffff; color: #0f172a; border-color: var(--borde); }
-        body.tema-claro .tabla-informe th { background: #f1f5f9; color: var(--secundario); border-color: var(--borde); }
-        body.tema-claro .tabla-informe td { border-color: var(--borde); color: #0f172a; }
-        body.tema-claro .tabla-informe tr:hover td { background: #f8fafc; }
-
-        /* CONTENEDORES DE PERMISOS DINÁMICOS */
-        .contenedor-permisos { display: flex; flex-direction: column; gap: 8px; background: #1e293b; padding: 10px; border: 1px solid var(--borde); border-radius: 8px; }
-        body.tema-claro .contenedor-permisos { background: #ffffff; border-color: var(--borde); }
-
         .nav-inferior { position: fixed; bottom: 0; left: 0; width: 100%; background: #0f172a; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid var(--borde); z-index: 100;}
         .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); font-size: 10px; font-weight: bold; width: 20%; cursor: pointer;}
         .nav-item.activo { color: var(--secundario); }
@@ -219,7 +223,7 @@
                     <div class="kpi-caja" style="border-color: var(--peligro);" onclick="filtrarDesdeDashboard('estado', 'bajas')"><div class="kpi-valor" id="dash-bajas" style="color: var(--peligro);">0</div><div class="kpi-label" style="color: var(--peligro);">Mortalidad / Bajas</div></div>
                     <div class="kpi-caja"><div class="kpi-valor" id="dash-acciones">0</div><div class="kpi-label">Registros Procesados</div></div>
                 </div>
-                <div class="tarjeta" id="contenedor-alertas" style="display:none;"><div class="tarjeta-titulo" style="color:var(--alerta);">⚠️️ Alertas (Deslizar)</div><div id="lista-alertas"></div></div>
+                <div class="tarjeta" id="contenedor-alertas" style="display:none;"><div class="tarjeta-titulo" style="color:var(--alerta);">⚠️ Alertas (Deslizar)</div><div id="lista-alertas"></div></div>
                 <div id="contenedor-graficos-dinamicos"></div>
             </div>
 
@@ -317,12 +321,13 @@
                 </div>
             </div>
 
-            <!-- BASE DE DATOS / BUSCAR CON FILTROS INTELIGENTES -->
+            <!-- BASE DE DATOS / BUSCAR CON FILTROS INTELIGENTES DINÁMICOS -->
             <div id="vista-registro" class="vista oculto">
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">📋 Inventario y Búsqueda Avanzada</div>
                     
-                    <div style="background:#1e293b; padding:12px; border-radius:8px; border:1px solid var(--borde); margin-bottom:15px; display:flex; flex-direction:column; gap:10px;">
+                    <!-- RECUADRO DE FILTROS RÁPIDOS DINÁMICOS -->
+                    <div class="caja-filtros-rapidos">
                         <span style="font-size:11px; font-weight:bold; color:var(--muted); text-transform:uppercase;">🔍 Filtros Rápidos de Búsqueda</span>
                         
                         <div style="display:flex; gap:8px;">
@@ -356,9 +361,10 @@
                 </div>
             </div>
 
-            <!-- REPORTES PDF PROFESIONALES -->
+            <!-- REPORTES PDF -->
             <div id="vista-informe" class="vista oculto">
                 
+                <!-- VISTA PREVIA DEL MEMBRETE -->
                 <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid var(--borde);">
                     <img id="preview-logo-reporte" src="gemini-svg.png" style="width:50px; height:50px; object-fit:contain; border-radius:8px; background:white; padding:2px;">
                     <div>
@@ -683,8 +689,13 @@
                     if (doc.exists) {
                         const userData = doc.data();
                         lsSet('tc_user_profile', userData);
-                        if(userData.vencimiento && new Date() > new Date(userData.vencimiento)) {
-                            cerrarSesion(); alert("Su licencia ha vencido."); return;
+                        
+                        // Cálculo de licencia hasta el fin del día (23:59:59)
+                        if(userData.vencimiento) {
+                            let fLimit = new Date(userData.vencimiento.includes('T') ? userData.vencimiento : userData.vencimiento + "T23:59:59");
+                            if(new Date() > fLimit) {
+                                cerrarSesion(); alert("Su licencia ha vencido."); return;
+                            }
                         }
                         arrancarSistemaFirebase(user.email, userData.maestroId, userData.rol, userData.nombre, userData.hacienda, userData.features);
                     }
@@ -864,8 +875,9 @@
                         let mData = docM.data();
                         const lblLic = document.getElementById('lbl-licencia');
                         if(mData.vencimiento) {
-                            const fVenc = new Date(mData.vencimiento); const diffDias = Math.ceil((fVenc - new Date()) / (1000 * 60 * 60 * 24));
-                            lblLic.value = fVenc.toLocaleDateString() + ` (${diffDias} días restantes)`;
+                            let fLimit = new Date(mData.vencimiento.includes('T') ? mData.vencimiento : mData.vencimiento + "T23:59:59");
+                            const diffDias = Math.ceil((fLimit - new Date()) / (1000 * 60 * 60 * 24));
+                            lblLic.value = new Date(mData.vencimiento.includes('T') ? mData.vencimiento : mData.vencimiento + "T00:00:00").toLocaleDateString() + ` (${diffDias} días restantes)`;
                             lblLic.style.color = diffDias <= 7 ? "var(--peligro)" : "var(--texto)";
                         } else { lblLic.value = "Licencia Perpetua / Sin Límite"; }
                     }
@@ -1006,7 +1018,6 @@
                 }
             });
 
-            // Poblar selectores de lotes tanto en búsqueda como en reportes PDF
             ['filtro-reg-lote', 'f-inf-lote'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el) {
@@ -1018,7 +1029,6 @@
                 }
             });
 
-            // Poblar selectores de categorías tanto en búsqueda como en reportes PDF
             ['filtro-reg-cat', 'f-inf-cat'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el) {
@@ -1519,7 +1529,7 @@
                         alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--texto);">${car}</strong> diagnosticada Vacía.</div></div>`; 
                         if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; 
                         if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; 
-                        if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } 
+                        if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } 
                     } 
                 }
                 
@@ -1721,7 +1731,7 @@
                         let w = img.width, h = img.height; 
                         const maxW = 200, maxH = 200; 
                         if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } 
-                        else { if (h > maxH) { w = Math.round(h * maxH / h); h = maxH; } } 
+                        else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } 
                         canvas.width = w; canvas.height = h; 
                         const ctx = canvas.getContext('2d'); 
                         ctx.drawImage(img, 0, 0, w, h); 
@@ -1848,8 +1858,8 @@
                 const selEdit = document.getElementById('op-edit-usu-sel');
                 let options = '<option value="">-- Seleccione un usuario --</option>';
                 ops.forEach(o => { options += `<option value="${o}">${o}</option>`; });
-                if(selDel && selDel.innerHTML !== options) selDel.innerHTML = options;
-                if(selEdit && selEdit.innerHTML !== options) selEdit.innerHTML = options;
+                if(selDel) selDel.innerHTML = options;
+                if(selEdit) selEdit.innerHTML = options;
             } catch(e) { console.error("Error al cargar operadores", e); }
         }
 
