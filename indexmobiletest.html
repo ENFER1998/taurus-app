@@ -7,26 +7,29 @@
     
     <meta name="theme-color" content="#0f172a">
     
-    <!-- Íconos para la aplicación en pantalla de inicio -->
     <link rel="apple-touch-icon" href="gemini-svg.png">
     <link rel="icon" type="image/png" href="gemini-svg.png">
     
-    <!-- LIBRERIAS PROFESIONALES PARA PDF PERFECTO -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     
-<!-- INTEGRACIÓN ONESIGNAL -->
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60",
-      serviceWorkerParam: { scope: "/taurus-app/" },
-      serviceWorkerPath: "/taurus-app/OneSignalSDKWorker.js"
-    });
-  });
-</script>
+    <!-- INTEGRACIÓN ONESIGNAL -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60",
+          serviceWorkerParam: { scope: "/taurus-app/" },
+          serviceWorkerPath: "/taurus-app/OneSignalSDKWorker.js"
+        });
+      });
+    </script>
+
+    <!-- FIREBASE SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
     <style>
         :root { --primario: #0f172a; --secundario: #3b82f6; --exito: #10b981; --alerta: #f59e0b; --peligro: #ef4444; --borde: #334155; --texto: #f8fafc; --muted: #94a3b8; }
@@ -369,7 +372,7 @@
                     <div class="tarjeta-titulo">👤 Mi Perfil</div>
                     <div class="form-grupo"><label>Sesión iniciada como:</label><input type="text" id="usuario-activo-lbl" class="form-control" readonly style="font-weight:bold; color:var(--exito);"></div>
                     <div class="form-grupo" id="panel-licencia"><label>Vencimiento de Licencia:</label><input type="text" id="lbl-licencia" class="form-control" readonly style="font-weight:bold;"></div>
-                    <div class="form-grupo" style="margin-top: 15px;"><label>Cambiar mi Contraseña</label><input type="password" id="nueva-clave" class="form-control" placeholder="Mínimo 4 caracteres"></div>
+                    <div class="form-grupo" style="margin-top: 15px;"><label>Cambiar mi Contraseña</label><input type="password" id="nueva-clave" class="form-control" placeholder="Mínimo 6 caracteres"></div>
                     <button class="btn-guardar" onclick="cambiarMiContrasena()">Actualizar Contraseña</button>
                 </div>
                 
@@ -389,83 +392,11 @@
                     <button class="btn-guardar" onclick="guardarDisenoServidor()">Guardar Diseño PDF</button>
                 </div>
 
-                <div class="tarjeta" id="panel-crear-peones">
-                    <div class="tarjeta-titulo">👷 Control de Operadores</div>
-                    <div class="form-grupo"><label>Nombre y Apellido</label><input type="text" id="op-nombre" class="form-control" autocomplete="off" placeholder="Ej: Juan Ramírez"></div>
-                    <div class="form-grupo"><label>Usuario de Acceso</label><input type="text" id="op-usu" class="form-control" autocomplete="off" placeholder="Ej: jramirez"></div>
-                    <div class="form-grupo"><label>Contraseña</label><input type="password" id="op-pass" class="form-control" autocomplete="new-password"></div>
-                    
-                    <div class="form-grupo">
-                        <label>Rol del Nuevo Usuario</label>
-                        <select id="op-rol" class="form-control" onchange="togglePermisos()">
-                            <option value="Operador">Operador (Acceso Limitado)</option>
-                            <option value="Propietario">Propietario (Acceso Total)</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-grupo" id="caja-permisos">
-                        <label style="font-size:12px; color:var(--muted); margin-bottom:8px; display:block;">Permisos de Menú Inferior:</label>
-                        <div style="display:flex; flex-direction:column; gap:10px; background:var(--primario); padding:12px; border:1px solid var(--borde); border-radius:8px;">
-                            <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="dash" checked> 📊 Panel de Control</label>
-                            <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="ficha" checked> 🐄 Ficha Clínica (Manga)</label>
-                            <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="base" checked> 📋 Base de Datos</label>
-                            <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="reporte"> 📄 Reportes PDF</label>
-                        </div>
-                    </div>
-                    <button id="btn-crear-op" class="btn-guardar" style="background:var(--exito);" onclick="crearOperador()">Registrar Usuario</button>
-                    
-                    <hr style="border-color:var(--borde); margin:20px 0;">
-                    
-                    <div class="tarjeta-titulo" style="font-size: 15px;">✏️ Editar Permisos</div>
-                    <div class="form-grupo">
-                        <select id="op-edit-usu-sel" class="form-control" onchange="cargarPermisosEdicion()">
-                            <option value="">-- Seleccione un operador --</option>
-                        </select>
-                    </div>
-                    <div id="caja-edit-permisos" class="oculto">
-                        <div class="form-grupo">
-                            <label style="font-size:12px; color:var(--muted); margin-bottom:8px; display:block;">Nuevos Permisos:</label>
-                            <div style="display:flex; flex-direction:column; gap:10px; background:var(--primario); padding:12px; border:1px solid var(--borde); border-radius:8px;">
-                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="dash"> 📊 Panel de Control</label>
-                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="ficha"> 🐄 Ficha Clínica (Manga)</label>
-                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="base"> 📋 Base de Datos</label>
-                                <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-edit-permiso" value="reporte"> 📄 Reportes PDF</label>
-                            </div>
-                        </div>
-                        <button id="btn-editar-op" class="btn-guardar" style="background:var(--secundario);" onclick="guardarEdicionOperador()">Actualizar Permisos</button>
-                    </div>
-
-                    <hr style="border-color:var(--borde); margin:20px 0;">
-                    
-                    <div class="form-grupo">
-                        <label>Eliminar Operador Permanentemente</label>
-                        <select id="op-del-usu-sel" class="form-control"><option value="">-- Seleccione --</option></select>
-                    </div>
-                    <button id="btn-eliminar-op" class="btn-guardar" style="background:var(--peligro);" onclick="eliminarOperador()">Eliminar Operador</button>
-                </div>
-
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">🎨 Apariencia de la App</div>
                     <div style="display: flex; align-items: center; justify-content: space-between;">
                         <span style="font-weight: bold; color: var(--texto);">Tema Claro / Oscuro</span>
                         <button class="btn-mini" onclick="toggleTema()">Cambiar Tema</button>
-                    </div>
-                </div>
-                
-                <div class="tarjeta" id="panel-analiticas">
-                    <div class="tarjeta-titulo">📊 Analíticas Dashboard (Máx 3)</div>
-                    <div style="display:flex; flex-direction:column; gap:12px; font-size:14px;">
-                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="1" onchange="verificarLimiteGraficos(this)"> 1. Tasa de Preñez</label>
-                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="2" onchange="verificarLimiteGraficos(this)"> 2. Composición Hacienda</label>
-                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="3" onchange="verificarLimiteGraficos(this)"> 3. Distribución Lotes</label>
-                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="4" onchange="verificarLimiteGraficos(this)"> 4. Condición Corporal</label>
-                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="5" onchange="verificarLimiteGraficos(this)"> 5. Causas Vacías</label>
-                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="6" onchange="verificarLimiteGraficos(this)"> 6. Ratios Sanidad</label>
-                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="7" onchange="verificarLimiteGraficos(this)"> 7. Preñez por Lote</label>
-                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="8" onchange="verificarLimiteGraficos(this)"> 8. Eficacia Toros</label>
-                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="9" onchange="verificarLimiteGraficos(this)"> 9. Promedios Pesos</label>
-                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="10" onchange="verificarLimiteGraficos(this)"> 10. Volumen Trabajo</label>
-                        <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-graf" value="11" onchange="verificarLimiteGraficos(this)"> 11. Causas de Baja</label>
                     </div>
                 </div>
 
@@ -531,37 +462,55 @@
     <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial Clínico</h3><div id="contenido-historial"></div></div></div>
 
     <script>
-        const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzyWvEMlfCCQXGP0-ssUUQ2je4tsFPXd6Yu0C9WwsTa7sgqFkkz3jr0a8CXqrI9ydk/exec";
-        
+        // CONFIGURACIÓN FIREBASE (Autenticación y Base de Datos Nativas)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDTXUYwYYkQ_pKDhui9H3cFmecgAPQ9eqA",
+            authDomain: "taurus-cbd59.firebaseapp.com",
+            projectId: "taurus-cbd59",
+            storageBucket: "taurus-cbd59.firebasestorage.app",
+            messagingSenderId: "250280835981",
+            appId: "1:250280835981:web:b95bc0a7ec9f7da2b75bc4"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 
         let dbCache = []; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
         let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
         let alertaGlobalIdActual = "";
+        let notificadoMantenimiento = false;
+        
+        let unsubscribeEventos = null;
+        let unsubscribeConfig = null;
 
-        window.onload = function() {
-            const cred = lsGet('tc_cred', null);
-            if(cred && cred.u && cred.p) {
-                const db = lsGet('tc_db', []);
-                arrancarSistema(db, cred.u, cred.m, cred.r, cred.n, cred.h);
+        // Auto-inicio de sesión con Firebase Auth
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                db.collection('usuarios').doc(user.email).get().then(doc => {
+                    if (doc.exists) {
+                        const userData = doc.data();
+                        if(userData.vencimiento && new Date() > new Date(userData.vencimiento)) {
+                            cerrarSesion(); alert("Su licencia ha vencido."); return;
+                        }
+                        arrancarSistemaFirebase(user.email, userData.maestroId, userData.rol, userData.nombre, userData.hacienda, userData.features);
+                    }
+                }).catch(e => { console.error("Error al obtener perfil", e); });
             }
-        };
+        });
 
         if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
-        function toggleTema() {
-            document.body.classList.toggle('tema-claro');
-            localStorage.setItem('tc_tema', document.body.classList.contains('tema-claro') ? 'claro' : 'oscuro');
-        }
+        function toggleTema() { document.body.classList.toggle('tema-claro'); localStorage.setItem('tc_tema', document.body.classList.contains('tema-claro') ? 'claro' : 'oscuro'); }
 
-        function mostrarToast(mensaje) {
+        function mostrarToast(mensaje, esError = false) {
             let t = document.createElement('div');
             t.innerText = mensaje;
             t.style.position = 'fixed'; t.style.bottom = '80px'; t.style.left = '50%'; t.style.transform = 'translateX(-50%)';
-            t.style.background = 'var(--exito)'; t.style.color = 'white'; t.style.padding = '12px 24px'; t.style.borderRadius = '30px'; 
-            t.style.zIndex = '9999'; t.style.fontWeight = 'bold'; t.style.boxShadow = '0 4px 15px rgba(0,0,0,0.4)'; t.style.fontSize = '14px';
+            t.style.background = esError ? 'var(--peligro)' : 'var(--exito)'; t.style.color = 'white'; t.style.padding = '12px 24px'; t.style.borderRadius = '30px'; 
+            t.style.zIndex = '9999'; t.style.fontWeight = 'bold'; t.style.boxShadow = '0 4px 15px rgba(0,0,0,0.4)'; t.style.fontSize = '14px'; t.style.textAlign = 'center';
             document.body.appendChild(t);
-            setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() => t.remove(), 500); }, 2000);
+            setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() => t.remove(), 500); }, 3000);
         }
 
         // ==========================================
@@ -571,39 +520,22 @@
             const banner = document.getElementById('banner-alerta-global');
             if (!msg || !id) { banner.classList.add('oculto'); return; }
             
-            let leidas = lsGet('tc_alertas_leidas', []);
-            let mostradas = lsGet('tc_alertas_mostradas', []); 
-            
+            let leidas = lsGet('tc_alertas_leidas', []); let mostradas = lsGet('tc_alertas_mostradas', []); 
             if (!leidas.includes(id)) {
                 alertaGlobalIdActual = id;
                 document.getElementById('txt-alerta-global').innerText = msg;
                 document.getElementById('txt-banner-alerta').innerText = msg;
-                
-                // Mostrar Pop-up en pantalla completa solo si no se ha mostrado
-                if (!mostradas.includes(id)) {
-                    document.getElementById('modal-alerta-global').style.display = 'flex';
-                }
-                
-                // Anclar el banner naranja en el Dashboard
+                if (!mostradas.includes(id)) { document.getElementById('modal-alerta-global').style.display = 'flex'; }
                 banner.classList.remove('oculto');
-            } else {
-                banner.classList.add('oculto');
-            }
+            } else { banner.classList.add('oculto'); }
         }
 
         function cerrarPopUpAlerta() {
             if (alertaGlobalIdActual) {
                 let mostradas = lsGet('tc_alertas_mostradas', []);
-                if (!mostradas.includes(alertaGlobalIdActual)) {
-                    mostradas.push(alertaGlobalIdActual);
-                    lsSet('tc_alertas_mostradas', mostradas);
-                }
-                
+                if (!mostradas.includes(alertaGlobalIdActual)) { mostradas.push(alertaGlobalIdActual); lsSet('tc_alertas_mostradas', mostradas); }
                 let leidas = lsGet('tc_alertas_leidas', []);
-                if (!leidas.includes(alertaGlobalIdActual)) {
-                    leidas.push(alertaGlobalIdActual);
-                    lsSet('tc_alertas_leidas', leidas);
-                }
+                if (!leidas.includes(alertaGlobalIdActual)) { leidas.push(alertaGlobalIdActual); lsSet('tc_alertas_leidas', leidas); }
             }
             document.getElementById('modal-alerta-global').style.display = 'none';
             document.getElementById('banner-alerta-global').classList.add('oculto');
@@ -612,16 +544,10 @@
         window.marcarAlertaLeida = function() {
             if (alertaGlobalIdActual) {
                 let leidas = lsGet('tc_alertas_leidas', []);
-                leidas.push(alertaGlobalIdActual);
-                lsSet('tc_alertas_leidas', leidas);
+                leidas.push(alertaGlobalIdActual); lsSet('tc_alertas_leidas', leidas);
             }
             document.getElementById('modal-alerta-global').style.display = 'none';
             document.getElementById('banner-alerta-global').classList.add('oculto');
-        }
-
-        function togglePermisos() {
-            const rol = document.getElementById('op-rol').value;
-            document.getElementById('caja-permisos').style.display = (rol === 'Propietario') ? 'none' : 'block';
         }
 
         let rafagaActiva = false;
@@ -656,7 +582,7 @@
         window.addEventListener('online', () => setEstadoRed(true)); window.addEventListener('offline', () => setEstadoRed(false));
 
         async function procesarIngreso() {
-            const u = document.getElementById('usuario').value.trim(); 
+            let u = document.getElementById('usuario').value.trim(); 
             const p = document.getElementById('password').value.trim();
             const btn = document.getElementById('btn-ingreso');
             const err = document.getElementById('error-login');
@@ -664,71 +590,77 @@
             if(!u || !p) return; 
             btn.disabled = true; btn.innerText = "Verificando..."; err.style.display = 'none';
 
+            let email = u.includes('@') ? u.toLowerCase() : u.toLowerCase() + '@taurus.com';
+
             try {
                 if(!navigator.onLine) throw new Error("Offline");
-                const url = `${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&t=${Date.now()}`;
-                const response = await fetch(url);
-                if (!response.ok) throw new Error("Error de conexión al servidor.");
-                const res = await response.json();
-                
-                if(res.mantenimiento) { throw new Error(res.mensaje); }
-                if(res.error) throw new Error(res.mensaje);
-                if(res.vencimiento && new Date() > new Date(res.vencimiento)) { throw new Error("Su licencia ha vencido."); }
-                
-                procesarAlertaServidor(res.alerta_global, res.alerta_id);
-
-                let dataLimpia = Array.isArray(res.data) ? res.data : [];
-                
-                // CORRECCIÓN LOGO/HACIENDA
-                let currentHacienda = lsGet('tc_hacienda', {});
-                let finalLogo = res.logo || currentHacienda.logo || "gemini-svg.png";
-                let finalNombre = res.hacienda || currentHacienda.nombre || res.nombre_hacienda || "HACIENDA";
-
-                lsSet('tc_cred', { u: u, p: p, m: res.maestro, r: res.rol, v: res.vencimiento, n: res.nombre_completo, h: finalNombre, f: res.features }); 
-                lsSet('tc_db', dataLimpia); 
-                lsSet('tc_hacienda', { nombre: finalNombre, logo: finalLogo }); 
-                
-                arrancarSistema(dataLimpia, u, res.maestro, res.rol, res.nombre_completo, finalNombre);
+                await firebase.auth().signInWithEmailAndPassword(email, p);
             } catch(error) {
-                const cred = lsGet('tc_cred', null);
-                if(cred && String(cred.u).toLowerCase() === u.toLowerCase() && cred.p === p) { 
-                    if(cred.v && new Date() > new Date(cred.v)) { err.innerText = "Licencia local vencida."; err.style.display = 'block'; } 
-                    else { arrancarSistema(lsGet('tc_db', []), cred.u, cred.m, cred.r, cred.n, cred.h); }
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    err.innerText = "Usuario no registrado en Firebase o clave incorrecta. (Recuerde crearlo desde el panel Taurus Admin).";
                 } else {
-                    let mensajeError = error.message === "Offline" || error.message.includes("Unexpected token") ? "Sin Internet y sin sesión guardada." : error.message;
-                    err.innerText = mensajeError; err.style.display = 'block';
+                    err.innerText = "Error: " + error.message;
                 }
-            } finally { btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
+                err.style.display = 'block';
+                btn.disabled = false; btn.innerText = "Iniciar Sesión";
+            }
         }
 
         function notificarPropietario(mensaje) {
             if(usRol.includes('Propietario') || usRol.includes('Dueño') || !navigator.onLine) return;
-            const fd = new URLSearchParams(); 
-            fd.append('accion', 'notificar_accion'); 
-            fd.append('maestro', maestroId); 
-            fd.append('mensaje', mensaje);
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).catch(e => console.error(e));
+            const fd = new URLSearchParams(); fd.append('accion', 'notificar_accion'); fd.append('maestro', maestroId); fd.append('mensaje', mensaje);
+            fetch("https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec", { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
         }
 
-        function arrancarSistema(datos, u, m, r, nombreCompleto, hacienda) {
+        function arrancarSistemaFirebase(u, m, r, nombreCompleto, hacienda, featuresStr) {
             try {
-                let dbValida = Array.isArray(datos) ? datos.filter(d => d && d.fecha) : [];
-                dbCache = dbValida.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)); 
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
+                
+                // 1. Escuchar Configuración (Kill Switch en tiempo real)
+                if(unsubscribeConfig) unsubscribeConfig();
+                unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot(doc => {
+                    if(doc.exists) {
+                        const conf = doc.data();
+                        procesarAlertaServidor(conf.alerta_global, "alerta_fb");
+                        const pantMant = document.getElementById('pantalla-mantenimiento');
+                        
+                        if(conf.mantenimiento) {
+                            if(pantMant) pantMant.classList.remove('oculto');
+                        } else {
+                            if(pantMant) pantMant.classList.add('oculto');
+                        }
+                    }
+                });
+
+                // 2. Escuchar Sincronización de Base de Datos
+                setEstadoRed(true, '🔄 Sincronizando...');
+                if(unsubscribeEventos) unsubscribeEventos();
+                unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot(snapshot => {
+                    let nuevosDatos = [];
+                    snapshot.forEach(doc => nuevosDatos.push(doc.data()));
+                    dbCache = nuevosDatos.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+                    lsSet('tc_db', dbCache);
+
+                    if(rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
+                    procesarDatosDashboard(); 
+                    if(!document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); 
+                    if(!document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
+                    
+                    setEstadoRed(true);
+                }, err => { setEstadoRed(false, '❌ Error de red'); });
                 
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
                 let displayRol = isPropietario ? 'Propietario' : 'Operador';
                 
                 if (window.AndroidTaurus && window.AndroidTaurus.identificarUsuarioPush) { window.AndroidTaurus.identificarUsuarioPush(usActivo, displayRol, maestroId); }
-                
                 if (window.OneSignalDeferred) { 
                     OneSignalDeferred.push(async function(OneSignal) { 
-                        OneSignal.User.addTags({ rol: displayRol, estancia_id: m }); 
-                        if (isPropietario) { await OneSignal.Slidedown.promptPush(); }
+                        try {
+                            OneSignal.User.addTags({ rol: displayRol, estancia_id: m }); 
+                            if (isPropietario) { await OneSignal.Slidedown.promptPush(); }
+                        } catch (e) {}
                     }); 
                 }
-                
-                document.getElementById('usuario-activo-lbl').value = `${usHacienda.toUpperCase()} - ${usNombre} (${displayRol})`;
                 
                 document.querySelectorAll('.vista').forEach(e => e.classList.add('oculto'));
                 document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('activo'));
@@ -739,10 +671,6 @@
                     document.querySelectorAll('.nav-item').forEach(li => li.style.display = 'flex');
                     tabSeleccionado = document.querySelectorAll('.nav-item')[0];
                 } else {
-                    document.getElementById('panel-crear-peones').style.display = 'none'; 
-                    document.getElementById('panel-membrete').style.display = 'none';
-                    document.getElementById('panel-licencia').style.display = 'none';
-                    
                     let perms = usRol.includes('|') ? usRol.split('|')[1] : "dash,ficha,base,reporte";
                     let foundFirst = false;
                     
@@ -768,28 +696,46 @@
                     if(!perms.includes('dash')) { let pAn = document.getElementById('panel-analiticas'); if(pAn) pAn.style.display = 'none'; }
                 }
                 
-                const cred = lsGet('tc_cred', {});
-                const lblLic = document.getElementById('lbl-licencia');
-                if(cred.v) {
-                    const fVenc = new Date(cred.v); const diffDias = Math.ceil((fVenc - new Date()) / (1000 * 60 * 60 * 24));
-                    if(diffDias < 0) { cerrarSesion(); return; }
-                    lblLic.value = fVenc.toLocaleDateString() + ` (${diffDias} días restantes)`;
-                    lblLic.style.color = diffDias <= 7 ? "var(--peligro)" : "var(--texto)";
-                } else { lblLic.value = "Licencia Perpetua / Sin Límite"; }
-                
-                const featuresActivos = cred.f || "";
-                if(!featuresActivos.includes('rafaga')) {
-                    let bloqueRafaga = document.getElementById('tarjeta-rafaga');
-                    if (bloqueRafaga) bloqueRafaga.style.display = 'none';
-                }
+                db.collection('usuarios').doc(m).get().then(docM => {
+                    if(docM.exists) {
+                        let mData = docM.data();
+                        const lblLic = document.getElementById('lbl-licencia');
+                        if(mData.vencimiento) {
+                            const fVenc = new Date(mData.vencimiento); const diffDias = Math.ceil((fVenc - new Date()) / (1000 * 60 * 60 * 24));
+                            lblLic.value = fVenc.toLocaleDateString() + ` (${diffDias} días restantes)`;
+                            lblLic.style.color = diffDias <= 7 ? "var(--peligro)" : "var(--texto)";
+                        } else { lblLic.value = "Licencia Perpetua / Sin Límite"; }
+                        
+                        const featuresActivos = mData.features || "";
+                        if(!featuresActivos.includes('rafaga')) {
+                            let bloqueRafaga = document.getElementById('tarjeta-rafaga');
+                            if (bloqueRafaga) bloqueRafaga.style.display = 'none';
+                        }
+                    }
+                });
 
                 const prefs = lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
                 
-                // APLICAR DISEÑO VISUAL Y MEMBRETE AL CARGAR
-                const dGuardado = lsGet('tc_hacienda', {}); 
-                aplicarDisenoEnPantalla(dGuardado.nombre || usHacienda, dGuardado.logo);
+                // 3. Escuchar Membrete y Nombre (Sincronización Total)
+                db.collection('estancias').doc(m).onSnapshot(docE => {
+                    let hNombre = usHacienda || "HACIENDA"; 
+                    let hLogo = "gemini-svg.png";
+                    
+                    if (docE.exists) { 
+                        if (docE.data().logo_hacienda) hLogo = docE.data().logo_hacienda; 
+                        if (docE.data().nombre_hacienda) hNombre = docE.data().nombre_hacienda; 
+                    } 
+                    
+                    lsSet('tc_hacienda', { nombre: hNombre, logo: hLogo });
+                    aplicarDisenoEnPantalla(hNombre, hLogo);
+                    
+                    let lblPerfilMob = document.getElementById('usuario-activo-lbl');
+                    if (lblPerfilMob) {
+                        let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
+                        lblPerfilMob.value = `${hNombre.toUpperCase()} - ${usNombre} (${isPropietario ? 'Propietario' : 'Operador'})`;
+                    }
+                });
                 
-                setEstadoRed(navigator.onLine); procesarDatosDashboard(); 
                 document.getElementById('f-inf-rango-fecha').value = "30"; manejarRangoFechas();
                 
                 document.getElementById('pantalla-login').classList.add('oculto'); 
@@ -798,8 +744,7 @@
                 
                 if(tabSeleccionado) { cambiarVista(vistaInicial, tabSeleccionado); } else { cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
                 
-                sincronizarPendientesAuto(); cargarListaOperadores();
-                setTimeout(() => sincronizarFondo(false), 2000);
+                sincronizarPendientesAuto();
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
 
@@ -820,69 +765,16 @@
             if(imgCfg) imgCfg.src = l;
         }
 
-        function fusionarDatos(nuevos) {
-            let mapa = new Map();
-            if(Array.isArray(dbCache)) dbCache.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
-            if(Array.isArray(nuevos)) nuevos.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
-            dbCache = Array.from(mapa.values()).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-            lsSet('tc_db', dbCache);
-        }
-
-        function sincronizarFondo(esManual = false) {
-            if(!usActivo || !navigator.onLine) { if(esManual) alert("No hay conexión a Internet."); return; }
-            const cred = lsGet('tc_cred', null); if(!cred) return;
-            if(esManual) setEstadoRed(true, '🔄 Actualizando...');
-
-            fetch(`${GOOGLE_SHEETS_URL}?usuario=${encodeURIComponent(cred.u)}&password=${encodeURIComponent(cred.p)}&t=${Date.now()}`, { method: 'GET', cache: 'no-store' })
-            .then(r => r.json()).then(res => {
-                
-                const pantMant = document.getElementById('pantalla-mantenimiento');
-                if(res.mantenimiento) {
-                    if(pantMant) pantMant.classList.remove('oculto');
-                    return; 
-                } else {
-                    if(pantMant) pantMant.classList.add('oculto');
-                }
-                
-                procesarAlertaServidor(res.alerta_global, res.alerta_id);
-
-                if(!res.error) {
-                    // CORRECCIÓN SINCRONIZACIÓN LOGO
-                    let dGuardado = lsGet('tc_hacienda', {});
-                    let nombreActualizado = res.hacienda || dGuardado.nombre || usHacienda;
-                    let logoActualizado = res.logo || dGuardado.logo || "gemini-svg.png";
-                    
-                    lsSet('tc_hacienda', { nombre: nombreActualizado, logo: logoActualizado });
-                    aplicarDisenoEnPantalla(nombreActualizado, logoActualizado);
-                    
-                    let lblPerfilMob = document.getElementById('usuario-activo-lbl');
-                    if (lblPerfilMob && usNombre && usRol) {
-                        let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
-                        lblPerfilMob.value = `${nombreActualizado.toUpperCase()} - ${usNombre} (${isPropietario ? 'Propietario' : 'Operador'})`;
-                    }
-
-                    fusionarDatos(Array.isArray(res.data) ? res.data : []);
-                    if(rpActivo && !document.getElementById('vista-manga') && !document.getElementById('v-ficha').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
-                    procesarDatosDashboard(); 
-                    if(document.getElementById('vista-registro') && !document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); 
-                    if(document.getElementById('v-base') && !document.getElementById('v-base').classList.contains('oculto')) cargarListaRegistro(); 
-                    if(esManual) { setEstadoRed(true, '✅ ¡Listo!'); setTimeout(() => setEstadoRed(true), 2000); } else { setEstadoRed(true); }
-                } else { 
-                    if(esManual) { setEstadoRed(true, '❌ Error'); setTimeout(() => setEstadoRed(true), 2000); } 
-                }
-            }).catch(e => { if(esManual) { setEstadoRed(true, '⚠️ Falló'); setTimeout(() => setEstadoRed(true), 2000); } });
-        }
-        setInterval(() => sincronizarFondo(false), 30000);
-
-        function sincronizarPendientesAuto() {
+        async function sincronizarPendientesAuto() {
             let p = lsGet('tc_pendientes', []); if(p.length === 0) return;
-            const fd = new URLSearchParams(); fd.append('accion', 'sync_offline'); fd.append('maestro', maestroId); fd.append('datos', JSON.stringify(p));
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_pendientes', []); sincronizarFondo(false); });
+            if(navigator.onLine) {
+                const batch = db.batch();
+                const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
+                p.forEach(obj => { batch.set(colRef.doc(), obj); });
+                try { await batch.commit(); lsSet('tc_pendientes', []); } catch(e) {}
+            }
         }
 
-        // =========================================================================
-        // MOTOR DE HISTORIAL (EVENT SOURCING)
-        // =========================================================================
         function procesarEventos() {
             let dbAsc = [...dbCache].sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
             let historiaPorRP = {};
@@ -924,7 +816,6 @@
             let hist = historia[String(caravana)] || [];
             return [...hist].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
         }
-        // =========================================================================
 
         function buscarCaravanaBtn(rpForzado = null) {
             try {
@@ -1011,6 +902,7 @@
 
         function ejecutarAccion(tipo, val, det, modalId) {
             const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: rpActivo, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
+            
             dbCache.unshift(obj); buscarCaravanaBtn(rpActivo); procesarDatosDashboard(); 
             if(modalId) cerrarModal(modalId);
             
@@ -1018,7 +910,11 @@
                 notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
             }
 
-            if(navigator.onLine) { const fd = new URLSearchParams(); for(let k in obj) fd.append(k, obj[k]); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { sincronizarFondo(false); }); } 
+            if(navigator.onLine) { 
+                db.collection('estancias').doc(maestroId).collection('eventos').add(obj).catch(e => {
+                    let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); 
+                });
+            } 
             else { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); }
         }
 
@@ -1071,8 +967,8 @@
             }
         }
 
-        function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'm-clasi'); }
-        function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'm-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
+        function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'modal-clasificacion'); }
+        function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'modal-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
         function borrarCaravana() { if(!rpActivo) return; if(confirm(`¿ELIMINAR todo el historial de la caravana ${rpActivo}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null); alert("Historial eliminado. El número quedó libre."); cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); } }
         function verHistorial() { abrirModal('modal-historial'); let h = "<ul style='list-style:none; padding:0; margin:0;'>"; obtenerHistorial(rpActivo).forEach(r => { if(!r.accion.includes('Vinculacion')) { h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px;"><span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span><br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span></li>`; }}); document.getElementById('contenido-historial').innerHTML = h + "</ul>"; }
 
@@ -1298,21 +1194,8 @@
             const n = document.getElementById('cfg-nom').value.trim(); 
             const f = document.getElementById('cfg-logo'); 
             let p = (b64) => { 
-                const fd = new URLSearchParams(); 
-                fd.append('accion', 'guardar_diseno'); 
-                fd.append('maestro', maestroId); 
-                fd.append('nombre_hacienda', n); 
-                fd.append('logo_hacienda', b64); 
-                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
-                    lsSet('tc_hacienda', {nombre: n, logo: b64}); 
-                    aplicarDisenoEnPantalla(n, b64); 
-                    
-                    let lblPerfilMob = document.getElementById('usuario-activo-lbl');
-                    if (lblPerfilMob && usNombre && usRol) {
-                        let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
-                        lblPerfilMob.value = `${n.toUpperCase()} - ${usNombre} (${isPropietario ? 'Propietario' : 'Operador'})`;
-                    }
-                    alert("Membrete oficial de PDF actualizado. Se sincronizará en otros dispositivos."); 
+                db.collection('estancias').doc(maestroId).set({ nombre_hacienda: n, logo_hacienda: b64 }, { merge: true }).then(() => {
+                    mostrarToast("Membrete oficial de PDF actualizado."); 
                 }); 
             }; 
             if(f.files && f.files[0]) { 
@@ -1345,6 +1228,7 @@
             const rolSel = document.getElementById('op-rol').value;
             
             if(!n || !u || !p) { alert("Completar Nombre, Usuario y Contraseña."); return; } 
+            if(p.length < 6) { alert("La contraseña debe tener mínimo 6 caracteres."); return; }
             
             let rolFinal = rolSel;
             if (rolSel === 'Operador') {
@@ -1355,47 +1239,28 @@
             
             const btn = document.getElementById('btn-crear-op');
             const btnOriginal = btn.innerHTML;
-            btn.innerHTML = "⏳ Verificando Disponibilidad...";
+            btn.innerHTML = "⏳ Registrando...";
             btn.disabled = true;
 
+            let email = u.includes('@') ? u : u + '@taurus.com';
+
             try {
-                let checkFetch = await fetch(`${GOOGLE_SHEETS_URL}?accion=verificar_usuario&usuario=${encodeURIComponent(u)}&maestro=${maestroId}`);
-                let checkResult = await checkFetch.json();
-                
-                if(checkResult.existe) {
-                    alert(`⚠️️ El usuario de acceso "${u}" ya existe. Por favor, elija uno diferente.`);
-                    btn.innerHTML = btnOriginal; btn.disabled = false; return;
-                }
+                const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryAppPeon");
+                await secondaryApp.auth().createUserWithEmailAndPassword(email, p);
+                await secondaryApp.auth().signOut();
+                await secondaryApp.delete(); 
 
-                if(checkResult.limite_alcanzado) {
-                    alert(`⛔ LÍMITE ALCANZADO: Su plan actual no le permite crear más operadores. Por favor, contacte a Administración para hacer un upgrade de su licencia.`);
-                    btn.innerHTML = btnOriginal; btn.disabled = false; return;
-                }
-
-                btn.innerHTML = "⏳ Registrando...";
-                const fd = new URLSearchParams(); 
-                fd.append('accion', 'crear_peon'); fd.append('maestro', maestroId); fd.append('usuario', usActivo); 
-                fd.append('peon_usu', u); fd.append('peon_pass', p); fd.append('peon_nombre', n); 
-                fd.append('vencimiento', 'Heredado'); fd.append('peon_rol', rolFinal); 
+                await db.collection('usuarios').doc(email).set({
+                    nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', password: p 
+                });
                 
-                await fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' });
-                
-                const objEvt = { fecha: new Date().toISOString(), accion: 'Alta Operador', caravana: '---', valor: u, detalles: `Nombre: ${n} | Rol: ${rolFinal} | Op: ${usNombre}`, maestro: maestroId };
-                dbCache.unshift(objEvt);
-                lsSet('tc_db', dbCache);
-                
-                const fd2 = new URLSearchParams();
-                for(let key in objEvt) fd2.append(key, objEvt[key]);
-                fd2.append('usuario', usActivo);
-                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd2, mode: 'no-cors' });
+                ejecutarAccion('Alta Operador', email, `Nombre: ${n} | Rol: ${rolFinal}`, null);
 
                 document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 
-                
                 btn.innerHTML = btnOriginal; btn.disabled = false;
-                cargarListaOperadores(); alert("Usuario Registrado Exitosamente.");
-                setTimeout(() => { sincronizarFondo(false); }, 1500);
+                mostrarToast("Usuario Registrado.");
             } catch(e) {
-                alert("Hubo un error de conexión al verificar el usuario.");
+                alert("Error al crear la cuenta. Verifique que no esté ya registrado.");
                 btn.innerHTML = btnOriginal; btn.disabled = false;
             }
         }
@@ -1406,18 +1271,16 @@
             if(!u) { caja.classList.add('oculto'); return; }
             caja.classList.remove('oculto');
             
-            let ev = dbCache.find(d => (d.accion === 'Alta Operador' || d.accion === 'Edición Operador') && d.valor === u);
-            let perms = "dash,ficha,base,reporte"; 
-            if(ev && ev.detalles) {
-                let rMatch = ev.detalles.match(/Rol: ([^|]+)/);
-                if(rMatch) {
-                    let rolFull = rMatch[1].trim();
+            db.collection('usuarios').doc(u).get().then(doc => {
+                let perms = "dash,ficha,base,reporte"; 
+                if(doc.exists && doc.data().rol) {
+                    let rolFull = doc.data().rol;
                     if(rolFull.includes('|')) perms = rolFull.split('|')[1];
                     else if(rolFull === 'Propietario') perms = "dash,ficha,base,reporte";
                     else perms = rolFull; 
                 }
-            }
-            document.querySelectorAll('.chk-edit-permiso').forEach(chk => { chk.checked = perms.includes(chk.value); });
+                document.querySelectorAll('.chk-edit-permiso').forEach(chk => { chk.checked = perms.includes(chk.value); });
+            });
         }
 
         async function guardarEdicionOperador() {
@@ -1434,118 +1297,100 @@
             btn.innerHTML = "⏳ Actualizando...";
             btn.disabled = true;
 
-            const fd = new URLSearchParams();
-            fd.append('accion', 'editar_peon');
-            fd.append('maestro', maestroId);
-            fd.append('peon_usu', u);
-            fd.append('peon_rol', rolFinal);
-
-            fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => {
-                const objEvt = { fecha: new Date().toISOString(), accion: 'Edición Operador', caravana: '---', valor: u, detalles: `Rol: ${rolFinal} | Modificado por: ${usNombre}`, maestro: maestroId };
-                dbCache.unshift(objEvt);
-                lsSet('tc_db', dbCache);
-
-                const fd2 = new URLSearchParams();
-                for(let key in objEvt) fd2.append(key, objEvt[key]);
-                fd2.append('usuario', usActivo);
-                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd2, mode: 'no-cors' });
-
-                alert("Permisos actualizados con éxito.");
+            try {
+                await db.collection('usuarios').doc(u).update({ rol: rolFinal });
+                ejecutarAccion('Edición Operador', u, `Rol: ${rolFinal}`, null);
+                mostrarToast("Permisos actualizados.");
                 document.getElementById('op-edit-usu-sel').value = "";
                 document.getElementById('caja-edit-permisos').classList.add('oculto');
-                btn.innerHTML = btnOriginal;
-                btn.disabled = false;
-            }).catch(() => {
-                alert("Error de red.");
-                btn.innerHTML = btnOriginal;
-                btn.disabled = false;
-            });
+                btn.innerHTML = btnOriginal; btn.disabled = false;
+            } catch(e) { alert("Error de red."); btn.innerHTML = btnOriginal; btn.disabled = false; }
         }
 
-        function eliminarOperador() {
+        async function gestionarAuthGhostParaBorrado(email, claveActual) {
+            const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryAppGhostDelete");
+            try {
+                await secondaryApp.auth().signInWithEmailAndPassword(email, claveActual);
+                await secondaryApp.auth().currentUser.delete();
+            } catch(e) { } 
+            finally {
+                try { await secondaryApp.auth().signOut(); } catch(e){}
+                try { await secondaryApp.delete(); } catch(e){}
+            }
+        }
+
+        async function eliminarOperador() {
             if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; }
             const selectEl = document.getElementById('op-del-usu-sel');
             const u = selectEl.value.trim();
             if(!u) { alert("Seleccione un operador de la lista."); return; }
             
-            if(confirm(`⚠️️ ATENCIÓN: ¿Está seguro de eliminar el acceso del operador "${u}"? Esta acción no se puede deshacer.`)) {
+            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso del operador "${u}"?`)) {
                 const btn = document.getElementById('btn-eliminar-op');
                 const btnOriginal = btn.innerHTML;
-                btn.innerHTML = "⏳ Eliminando...";
-                btn.disabled = true;
+                btn.innerHTML = "⏳ Eliminando..."; btn.disabled = true;
 
-                const fd = new URLSearchParams(); 
-                fd.append('accion', 'eliminar_peon'); 
-                fd.append('maestro', maestroId); 
-                fd.append('usuario', usActivo); 
-                fd.append('peon_usu', u); 
-                
-                fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { 
-                    alert(`El operador "${u}" ha sido eliminado con éxito.`); 
-                    
-                    const objEvt = { fecha: new Date().toISOString(), accion: 'Baja Operador', caravana: '---', valor: u, detalles: `Eliminado por: ${usNombre}`, maestro: maestroId };
-                    dbCache.unshift(objEvt);
-                    lsSet('tc_db', dbCache);
-                    
-                    const fd2 = new URLSearchParams();
-                    for(let key in objEvt) fd2.append(key, objEvt[key]);
-                    fd2.append('usuario', usActivo);
-                    fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd2, mode: 'no-cors' });
+                try {
+                    const doc = await db.collection('usuarios').doc(u).get();
+                    if(doc.exists && doc.data().password) { await gestionarAuthGhostParaBorrado(u, doc.data().password); }
+                    await db.collection('usuarios').doc(u).delete();
+                    ejecutarAccion('Baja Operador', u, `Eliminado por el panel PC`, null);
 
-                    let eliminados = lsGet('tc_op_eliminados', []);
-                    if(!eliminados.includes(u.toLowerCase())) eliminados.push(u.toLowerCase());
-                    lsSet('tc_op_eliminados', eliminados);
-                    
-                    selectEl.value = ''; 
-                    cargarListaOperadores(); 
-                    
-                    btn.innerHTML = btnOriginal;
-                    btn.disabled = false;
-                }).catch(() => { alert("Hubo un error de conexión."); btn.innerHTML = btnOriginal; btn.disabled = false; }); 
+                    alert(`El operador ha sido eliminado con éxito.`); 
+                    selectEl.value = ''; cargarListaOperadores(); 
+                    btn.innerHTML = btnOriginal; btn.disabled = false;
+                } catch(e) { alert("Hubo un error de conexión."); btn.innerHTML = btnOriginal; btn.disabled = false; } 
             }
         }
 
         async function cargarListaOperadores() {
             if (!usRol.includes('Propietario') && !usRol.includes('Dueño')) return;
             try {
-                let response = await fetch(`${GOOGLE_SHEETS_URL}?accion=listar_operadores&maestro=${encodeURIComponent(maestroId)}`);
-                let result = await response.json();
-                if(!result.error) {
-                    let ops = result.data || [];
-                    const selDel = document.getElementById('op-del-usu-sel');
-                    const selEdit = document.getElementById('op-edit-usu-sel');
-                    let options = '<option value="">-- Seleccione un operador --</option>';
-                    ops.forEach(o => { options += `<option value="${o}">${o}</option>`; });
-                    if(selDel) selDel.innerHTML = options;
-                    if(selEdit) selEdit.innerHTML = options;
-                }
+                const snapshot = await db.collection('usuarios').where('maestroId', '==', maestroId).get();
+                const ops = snapshot.docs.filter(doc => doc.id !== maestroId).map(doc => doc.id);
+                
+                const selDel = document.getElementById('op-del-usu-sel');
+                const selEdit = document.getElementById('op-edit-usu-sel');
+                let options = '<option value="">-- Seleccione un operador --</option>';
+                ops.forEach(o => { options += `<option value="${o}">${o}</option>`; });
+                if(selDel) selDel.innerHTML = options;
+                if(selEdit) selEdit.innerHTML = options;
             } catch(e) { console.error("Error al cargar operadores", e); }
         }
 
-        function cambiarMiContrasena() { if(!navigator.onLine) { alert("Necesitas conexión."); return; } const nueva = document.getElementById('nueva-clave').value.trim(); if(!nueva || nueva.length < 4) { alert("Mínimo 4 caracteres."); return; } const fd = new URLSearchParams(); fd.append('accion', 'cambiar_pass'); fd.append('usuario', usActivo); fd.append('nuevo_pass', nueva); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { alert("Contraseña actualizada con éxito."); document.getElementById('nueva-clave').value = ''; let cred = lsGet('tc_cred', {}); cred.p = nueva; lsSet('tc_cred', cred); }); }
+        function cambiarMiContrasena() { 
+            if(!navigator.onLine) { alert("Necesitas conexión."); return; } 
+            const nueva = document.getElementById('nueva-clave').value.trim(); 
+            if(!nueva || nueva.length < 6) { alert("Mínimo 6 caracteres para Firebase."); return; } 
+            
+            const user = firebase.auth().currentUser;
+            if(user) {
+                user.updatePassword(nueva).then(() => {
+                    db.collection('usuarios').doc(user.email).update({ password: nueva }).then(() => {
+                        alert("Contraseña actualizada con éxito."); document.getElementById('nueva-clave').value = '';
+                    });
+                }).catch(e => { alert("Error: Es probable que necesites cerrar e iniciar sesión de nuevo antes de cambiar la clave."); });
+            }
+        }
         
         function cerrarSesion() { 
-            // 1. Rescatar preferencias que no queremos borrar
             let leidas = localStorage.getItem('tc_alertas_leidas');
             let mostradas = localStorage.getItem('tc_alertas_mostradas');
             let prefs = localStorage.getItem('tc_prefs');
             let tema = localStorage.getItem('tc_tema');
             
-            // 2. Limpiar la sesión del usuario
-            localStorage.clear(); 
-            
-            // 3. Restaurar las preferencias
-            if(leidas) localStorage.setItem('tc_alertas_leidas', leidas);
-            if(mostradas) localStorage.setItem('tc_alertas_mostradas', mostradas);
-            if(prefs) localStorage.setItem('tc_prefs', prefs);
-            if(tema) localStorage.setItem('tc_tema', tema);
-            
-            window.location.reload(); 
+            firebase.auth().signOut().then(() => {
+                localStorage.clear(); 
+                
+                if(leidas) localStorage.setItem('tc_alertas_leidas', leidas);
+                if(mostradas) localStorage.setItem('tc_alertas_mostradas', mostradas);
+                if(prefs) localStorage.setItem('tc_prefs', prefs);
+                if(tema) localStorage.setItem('tc_tema', tema);
+                
+                window.location.reload(); 
+            });
         }
 
-        // ==========================================
-        // LECTOR HID / TECLADO AUTOMÁTICO (APP MÓVIL)
-        // ==========================================
         function forzarSaltoAFicha() {
             let tabFicha = document.querySelectorAll('.nav-item')[1];
             if (typeof cambiarVista === "function" && tabFicha && tabFicha.style.display !== 'none') {
