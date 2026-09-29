@@ -151,12 +151,12 @@
     <div id="pantalla-login">
         <div class="login-contenedor">
             <div class="logo-icono"><img src="gemini-svg.png" alt="Logo Taurus"></div>
-            <div class="titulo-login">Taurus Control &copy; 2026</div>
+            <div class="titulo-login">Taurus Control</div>
             <input type="text" id="usuario" class="form-control-login" placeholder="Usuario de Acceso" autocomplete="off">
             <input type="password" id="password" class="form-control-login" placeholder="Contraseña">
             <div id="error-login" class="error-msj"></div>
             <button id="btn-ingreso" class="btn-ingresar" onclick="procesarIngreso()">Iniciar Sesión</button>
-            <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">Taurus Control<br><strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">Desarrollado por Fernando Rodriguez</strong></div>
+            <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">Taurus Control &copy; 2026<br><strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">Desarrollado por Fernando Rodriguez</strong></div>
         </div>
     </div>
 
@@ -390,7 +390,7 @@
                 </div>
                 
                 <div class="tarjeta" id="panel-membrete">
-                    <div class="tarjeta-titulo">🖨️ Membrete Documentos PDF</div>
+                    <div class="tarjeta-titulo">🖨️️ Membrete Documentos PDF</div>
                     
                     <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
                         <img id="preview-logo-config" src="gemini-svg.png" style="width:60px; height:60px; object-fit:contain; border-radius:8px; border:1px solid var(--borde); background:white; padding:2px;">
@@ -612,7 +612,7 @@
             <h3>🩺 Clínica / Diagnóstico</h3>
             <div class="form-grupo">
                 <label>Tipo de Diagnóstico</label>
-                <select class="form-control" id="i-dx-sel" style="font-weight:bold; font-size:16px;">
+                <select class="form-control" id="i-dx-sel" style="font-weight:bold; font-size:16px;" onchange="verificarSelectCustom('i-dx-sel', 'i-dx-sel-custom')">
                     <optgroup label="Reproductivo (Hembras)">
                         <option value="Preñada">✅ Preñada</option>
                         <option value="Vacía">❌ Vacía</option>
@@ -623,8 +623,10 @@
                         <option value="Lesión">🩹 Lesión / Herida</option>
                         <option value="Problema Podal">🪨 Problema Podal (Pezuñas)</option>
                         <option value="Sano / Alta">✅ Sano / Alta Médica</option>
+                        <option value="OTRO">✏️ Otro diagnóstico...</option>
                     </optgroup>
                 </select>
+                <input type="text" id="i-dx-sel-custom" class="form-control oculto" placeholder="Especifique diagnóstico..." style="margin-top:8px;">
             </div>
             <div class="form-grupo">
                 <label>Observaciones o Tratamiento</label>
@@ -643,11 +645,13 @@
             </div>
             <div class="form-grupo">
                 <label>Condición Corporal</label>
-                <select class="form-control" id="i-peso-cond">
+                <select class="form-control" id="i-peso-cond" onchange="verificarSelectCustom('i-peso-cond', 'i-peso-cond-custom')">
                     <option value="Óptima">🟢 Óptima</option>
                     <option value="Bajo Peso">🟡 Bajo Peso</option>
                     <option value="Sobrepeso">🔴 Sobrepeso</option>
+                    <option value="OTRO">✏️ Otra condición...</option>
                 </select>
+                <input type="text" id="i-peso-cond-custom" class="form-control oculto" placeholder="Especifique..." style="margin-top:8px;">
             </div>
             <div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-peso-txt"></textarea></div>
             <button class="btn-guardar" onclick="prepararGuardado('modal-peso', 'Peso')">Registrar Peso</button>
@@ -784,6 +788,7 @@
         let unsubscribeConfig = null;
         let pendingCount = 0; 
         let ultimaNotificacionRafaga = 0;
+        let usFeatures = ""; 
 
         function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
@@ -807,11 +812,13 @@
         window.verificarSelectCustom = function(selId, custId) {
             let val = document.getElementById(selId).value;
             let cust = document.getElementById(custId);
-            if(val === 'OTRO') {
-                cust.classList.remove('oculto');
-                cust.focus();
-            } else {
-                cust.classList.add('oculto');
+            if(cust) {
+                if(val === 'OTRO') {
+                    cust.classList.remove('oculto');
+                    cust.focus();
+                } else {
+                    cust.classList.add('oculto');
+                }
             }
         };
 
@@ -860,11 +867,11 @@
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 try {
-                    const userDoc = await db.collection("usuarios").doc(user.email).get();
+                    const userDoc = await db.collection("usuarios").doc(user.email.toLowerCase()).get();
                     if(userDoc.exists) {
                         const ud = userDoc.data();
                         iniciarKillSwitch();
-                        arrancarSistemaFirebase(ud.maestroId, user.email, ud.rol, ud.nombre, ud.hacienda);
+                        arrancarSistemaFirebase(ud.maestroId, user.email, ud.rol, ud.nombre, ud.hacienda, ud.features);
                     } else {
                         mostrarToast("Error: Su perfil no está configurado en la base de datos.");
                         auth.signOut();
@@ -999,9 +1006,20 @@
         // ==========================================
         // 5. ARRANQUE DEL SISTEMA Y LECTURA EN TIEMPO REAL
         // ==========================================
-        function arrancarSistemaFirebase(mId, uEmail, rolStr, nomCompleto, haciendaNom) {
+        function arrancarSistemaFirebase(mId, uEmail, rolStr, nomCompleto, haciendaNom, featuresCargados) {
             maestroId = mId; usActivo = uEmail; usRol = rolStr; usNombre = nomCompleto; usHacienda = haciendaNom;
-            
+            usFeatures = featuresCargados || ""; 
+
+            // MAGIA DE LA UI: Ocultar Modo Ráfaga si no está habilitado en Firebase
+            let tarjetaRafaga = document.getElementById('tarjeta-rafaga');
+            if (tarjetaRafaga) {
+                if (!usFeatures.includes('rafaga')) {
+                    tarjetaRafaga.style.display = 'none'; 
+                } else {
+                    tarjetaRafaga.style.display = 'block'; 
+                }
+            }
+
             let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
             let displayRol = isPropietario ? 'Propietario' : 'Operador';
             
@@ -1310,7 +1328,7 @@
             if(!el) return "";
             if(el.value === "OTRO") {
                 let cust = document.getElementById(baseId + "-custom");
-                return cust ? cust.value.trim() : "OTRO";
+                return cust && cust.value.trim() !== "" ? cust.value.trim() : "OTRO";
             }
             return el.value.trim();
         }
@@ -1325,9 +1343,10 @@
             } 
             else if(t === 'Peso') { 
                 v = document.getElementById('i-peso-val').value + " Kg"; 
-                d = `Cond: ${document.getElementById('i-peso-cond').value}. Notas: ${document.getElementById('i-peso-txt').value}`; 
+                d = `Cond: ${getVal('i-peso-cond')}. Notas: ${document.getElementById('i-peso-txt').value}`; 
                 document.getElementById('i-peso-val').value = '';
                 document.getElementById('i-peso-txt').value = '';
+                if(document.getElementById('i-peso-cond-custom')) document.getElementById('i-peso-cond-custom').value = '';
             } 
             else if(t === 'Sanidad') { 
                 let recordatorio = document.getElementById('i-sani-recordatorio').value; 
@@ -1339,9 +1358,10 @@
                 if(document.getElementById('i-sani-sel-custom')) document.getElementById('i-sani-sel-custom').value = '';
             } 
             else if(t === 'Diagnóstico') { 
-                v = "Dx: " + document.getElementById('i-dx-sel').value; 
+                v = "Dx: " + getVal('i-dx-sel'); 
                 d = document.getElementById('i-dx-txt').value || "-"; 
                 document.getElementById('i-dx-txt').value = '';
+                if(document.getElementById('i-dx-sel-custom')) document.getElementById('i-dx-sel-custom').value = '';
             } 
             else if(t === 'Inseminación') { 
                 v = "Toro: " + getVal('i-ins-toro'); 
@@ -1491,7 +1511,7 @@
 
         function cleanPDFText(text) {
             if (!text) return ''; let str = String(text);
-            str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️|✏️️|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️|🚪/g, '');
+            str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️|✏|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️|🚪/g, '');
             str = str.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
             return str.trim();
         }
@@ -1665,19 +1685,37 @@
 
             const email = u.includes('@') ? u : u + '@taurus.com';
             
-            let rolFinal = rolSel;
-            if (rolSel === 'Operador') {
-                let permisos = Array.from(document.querySelectorAll('.chk-permiso:checked')).map(c => c.value).join(',');
-                if(!permisos) { alert("Debe seleccionar al menos un permiso de acceso para el operador."); return; }
-                rolFinal = 'Operador|' + permisos;
-            }
-            
             const btn = document.getElementById('btn-crear-op');
             btn.innerHTML = "⏳ Registrando...";
             btn.disabled = true;
 
             try {
-                // Truco de la App Secundaria para no cerrar la sesión del dueño
+                // 1. VALIDACIÓN INTELIGENTE DE LÍMITES EN FIREBASE
+                const maestroRef = await db.collection('usuarios').doc(maestroId.toLowerCase()).get();
+                if(maestroRef.exists) {
+                    let f = maestroRef.data().features || "";
+                    let limitVal = 999; // Ilimitado por defecto
+                    f.split(',').forEach(p => { if(p.startsWith('limit:')) limitVal = parseInt(p.split(':')[1]); });
+
+                    const opsSnapshot = await db.collection('usuarios').where('maestroId', '==', maestroId).get();
+                    // Contamos los operadores, excluyendo al maestro (dueño)
+                    const currentOps = opsSnapshot.docs.filter(doc => doc.id !== maestroId.toLowerCase()).length;
+
+                    if(currentOps >= limitVal) {
+                        alert(`❌ LÍMITE ALCANZADO: Tu plan solo permite un máximo de ${limitVal} operador(es). Debes eliminar uno existente o solicitar ampliación.`);
+                        btn.innerHTML = "Registrar Operador"; btn.disabled = false;
+                        return; // Detenemos la creación
+                    }
+                }
+
+                // 2. CREACIÓN EN FIREBASE (Si pasó la validación)
+                let rolFinal = rolSel;
+                if (rolSel === 'Operador') {
+                    let permisos = Array.from(document.querySelectorAll('.chk-permiso:checked')).map(c => c.value).join(',');
+                    if(!permisos) { alert("Debe seleccionar al menos un permiso de acceso para el operador."); btn.innerHTML = "Registrar Operador"; btn.disabled = false; return; }
+                    rolFinal = 'Operador|' + permisos;
+                }
+
                 const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryAppMobile");
                 await secondaryApp.auth().createUserWithEmailAndPassword(email, pass);
                 await secondaryApp.auth().signOut();
@@ -1914,7 +1952,7 @@
                                 if (inputPeso) inputPeso.value = dataLimpia;
                             }
                         } else {
-                            alert("⚖️ Peso recibido: " + dataLimpia + " Kg. ¡Debes leer la caravana de un animal primero!");
+                            alert("⚖ Peso recibido: " + dataLimpia + " Kg. ¡Debes leer la caravana de un animal primero!");
                         }
                     } else {
                         let tagLimpio = dataLimpia.replace(/TAG/gi, '');
