@@ -119,7 +119,7 @@
         .btn-accion { background: #1e293b; border: 1px solid var(--borde); padding: 10px; border-radius: 12px; font-weight: bold; color: var(--texto); display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; text-align: center;}
         .btn-accion span { font-size: 22px; }
         
-        .filtros-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;}
+        .filtros-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;}
         .filtro-sel { background: #1e293b; color: var(--texto); border: 1px solid var(--borde); padding: 12px; border-radius: 8px; font-size: 14px; outline: none; font-family: inherit;}
         .lista-animales { list-style: none; padding: 0; margin: 0; }
         .lista-animales li { padding: 15px; border-bottom: 1px solid var(--borde); display: flex; justify-content: space-between; align-items: center; cursor: pointer;}
@@ -127,10 +127,22 @@
         
         .btn-descargar { width: 100%; background: var(--exito); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; margin-bottom: 20px;}
         .tabla-responsive { width: 100%; overflow-x: auto; border-radius: 8px;}
-        .tabla-informe { width: 100%; border-collapse: collapse; font-size: 13px; background: white; color: black; min-width: 400px;}
-        .tabla-informe th { background: #e2e8f0; padding: 10px; text-align: left; border: 1px solid #cbd5e1; color: black;}
-        .tabla-informe td { padding: 10px; border: 1px solid #cbd5e1; color: black;}
         
+        /* TABLA DE PREVIEW DEL REPORTE CON TEMA DINÁMICO */
+        .tabla-informe { width: 100%; border-collapse: collapse; font-size: 13px; background: #0f172a; color: var(--texto); min-width: 400px; border: 1px solid var(--borde);}
+        .tabla-informe th { background: #1e293b; padding: 10px; text-align: left; border: 1px solid var(--borde); color: var(--secundario); font-size: 11px; text-transform: uppercase; font-weight: bold;}
+        .tabla-informe td { padding: 10px; border: 1px solid var(--borde); color: var(--texto);}
+        .tabla-informe tr:hover td { background: rgba(59, 130, 246, 0.08); }
+        
+        body.tema-claro .tabla-informe { background: #ffffff; color: #0f172a; border-color: var(--borde); }
+        body.tema-claro .tabla-informe th { background: #f1f5f9; color: var(--secundario); border-color: var(--borde); }
+        body.tema-claro .tabla-informe td { border-color: var(--borde); color: #0f172a; }
+        body.tema-claro .tabla-informe tr:hover td { background: #f8fafc; }
+
+        /* CONTENEDORES DE PERMISOS DINÁMICOS */
+        .contenedor-permisos { display: flex; flex-direction: column; gap: 8px; background: #1e293b; padding: 10px; border: 1px solid var(--borde); border-radius: 8px; }
+        body.tema-claro .contenedor-permisos { background: #ffffff; border-color: var(--borde); }
+
         .nav-inferior { position: fixed; bottom: 0; left: 0; width: 100%; background: #0f172a; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid var(--borde); z-index: 100;}
         .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); font-size: 10px; font-weight: bold; width: 20%; cursor: pointer;}
         .nav-item.activo { color: var(--secundario); }
@@ -195,7 +207,7 @@
                 <div id="banner-alerta-global" class="tarjeta oculto" style="border-color: var(--alerta); background: rgba(245, 158, 11, 0.1);">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div style="flex:1;">
-                            <strong style="color:var(--alerta); display:flex; align-items:center; gap:5px; margin-bottom:5px; font-size:15px;">⚠️️ Mensaje de Administración</strong>
+                            <strong style="color:var(--alerta); display:flex; align-items:center; gap:5px; margin-bottom:5px; font-size:15px;">⚠️ Mensaje de Administración</strong>
                             <span id="txt-banner-alerta" style="font-size:13px; color:var(--texto); line-height: 1.4;"></span>
                         </div>
                         <button class="btn-mini" style="background:var(--alerta); color:white; border:none; padding: 6px 12px; margin-left:10px;" onclick="marcarAlertaLeida()">Ocultar</button>
@@ -207,7 +219,7 @@
                     <div class="kpi-caja" style="border-color: var(--peligro);" onclick="filtrarDesdeDashboard('estado', 'bajas')"><div class="kpi-valor" id="dash-bajas" style="color: var(--peligro);">0</div><div class="kpi-label" style="color: var(--peligro);">Mortalidad / Bajas</div></div>
                     <div class="kpi-caja"><div class="kpi-valor" id="dash-acciones">0</div><div class="kpi-label">Registros Procesados</div></div>
                 </div>
-                <div class="tarjeta" id="contenedor-alertas" style="display:none;"><div class="tarjeta-titulo" style="color:var(--alerta);">⚠️ Alertas (Deslizar)</div><div id="lista-alertas"></div></div>
+                <div class="tarjeta" id="contenedor-alertas" style="display:none;"><div class="tarjeta-titulo" style="color:var(--alerta);">⚠️️ Alertas (Deslizar)</div><div id="lista-alertas"></div></div>
                 <div id="contenedor-graficos-dinamicos"></div>
             </div>
 
@@ -310,7 +322,6 @@
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">📋 Inventario y Búsqueda Avanzada</div>
                     
-                    <!-- FILTROS INTELIGENTES INTEGRADOS -->
                     <div style="background:#1e293b; padding:12px; border-radius:8px; border:1px solid var(--borde); margin-bottom:15px; display:flex; flex-direction:column; gap:10px;">
                         <span style="font-size:11px; font-weight:bold; color:var(--muted); text-transform:uppercase;">🔍 Filtros Rápidos de Búsqueda</span>
                         
@@ -345,10 +356,9 @@
                 </div>
             </div>
 
-            <!-- REPORTES -->
+            <!-- REPORTES PDF PROFESIONALES -->
             <div id="vista-informe" class="vista oculto">
                 
-                <!-- VISTA PREVIA DEL MEMBRETE -->
                 <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid var(--borde);">
                     <img id="preview-logo-reporte" src="gemini-svg.png" style="width:50px; height:50px; object-fit:contain; border-radius:8px; background:white; padding:2px;">
                     <div>
@@ -358,43 +368,104 @@
                 </div>
 
                 <div class="tarjeta">
+                    <label style="font-size:12px; font-weight:bold; color:var(--muted); margin-bottom:6px; display:block;">SELECCIONA EL TIPO DE REPORTE:</label>
                     <select class="filtro-sel" id="f-inf-modo" onchange="cambiarModoReporte()" style="width:100%; margin-bottom:15px; border-color: var(--secundario); font-weight: bold; background-color: var(--secundario); color: white;">
-                        <option value="eventos">📋 TRATAMIENTOS (Historial)</option>
-                        <option value="inventario">📊 INVENTARIO GENERAL</option>
+                        <option value="inventario">📊 INVENTARIO (Por Lote y Categorías de Hacienda)</option>
+                        <option value="bajas">💀 REPORTE DE BAJAS Y MORTALIDAD</option>
+                        <option value="eventos">📋 TRATAMIENTOS Y SANIDAD (Historial)</option>
                     </select>
 
-                    <div id="filtros-eventos" class="filtros-grid">
+                    <!-- FILTROS DE INVENTARIO (LOTES, CATEGORÍAS REALES, DX) -->
+                    <div id="filtros-inventario" class="filtros-grid">
+                        <div style="display:flex; gap:10px;">
+                            <select class="filtro-sel" style="flex:1;" id="f-inf-lote" onchange="actualizarInformeAvanzado()">
+                                <option value="ALL">🏷️ Todos los Lotes</option>
+                                <option value="Hacienda General">Hacienda General</option>
+                                <option value="Preñadas">Preñadas</option>
+                                <option value="Lecheras">Lecheras</option>
+                                <option value="Inseminadas">Inseminadas</option>
+                                <option value="Destete">Destete</option>
+                                <option value="Enfermería">Enfermería</option>
+                            </select>
+                            
+                            <select class="filtro-sel" style="flex:1;" id="f-inf-cat" onchange="actualizarInformeAvanzado()">
+                                <option value="ALL">🐄 Todas las Categorías</option>
+                                <option value="Vaca / Vaquilla">Vaca / Vaquilla</option>
+                                <option value="Vaca Vieja">Vaca Vieja</option>
+                                <option value="Ternera Hembra">Ternera Hembra</option>
+                                <option value="Ternero Macho">Ternero Macho</option>
+                                <option value="Desmamante Hembra">Desmamante Hembra</option>
+                                <option value="Desmamante Macho">Desmamante Macho</option>
+                                <option value="Toros">Toros</option>
+                                <option value="Novillos">Novillos</option>
+                                <option value="Bueyes">Bueyes / Señuelos</option>
+                            </select>
+                        </div>
+                        
+                        <div style="display:flex; gap:10px;">
+                            <select class="filtro-sel" style="flex:1;" id="f-inf-carimbo" onchange="actualizarInformeAvanzado()">
+                                <option value="ALL">🎯 Carimbos (Todos)</option>
+                                <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+                                <option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                            </select>
+                            <select class="filtro-sel" style="flex:1;" id="f-inf-dx" onchange="actualizarInformeAvanzado()">
+                                <option value="ALL">🩺 Diagnóstico (Todos)</option>
+                                <option value="Preñada">✅ Solo Preñadas</option>
+                                <option value="Vacía">❌ Solo Vacías</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- FILTROS DE BAJAS Y MORTALIDAD -->
+                    <div id="filtros-bajas" class="filtros-grid oculto" style="display:none;">
+                        <div style="display:flex; gap:10px;">
+                            <select class="filtro-sel" style="flex:1;" id="f-inf-baja-causa" onchange="actualizarInformeAvanzado()">
+                                <option value="ALL">💀 Todas las Causas</option>
+                                <option value="Enfermedad">Enfermedad</option>
+                                <option value="Accidente">Accidente</option>
+                                <option value="Depredador">Depredador</option>
+                                <option value="Natural">Natural / Desconocida</option>
+                                <option value="Venta">Venta / Faena</option>
+                            </select>
+                            <select class="filtro-sel" style="flex:1;" id="f-inf-baja-rango" onchange="manejarRangoFechasBajas()">
+                                <option value="todo">Ver Todo el Historial</option>
+                                <option value="30">Últimos 30 Días</option>
+                                <option value="90">Últimos 3 Meses</option>
+                                <option value="365">Último Año</option>
+                                <option value="custom">📅 Rango Manual...</option>
+                            </select>
+                        </div>
+                        <div id="caja-fechas-bajas" style="display:none; gap:10px;">
+                            <input type="date" id="f-inf-baja-desde" class="filtro-sel" style="flex:1;" onchange="actualizarInformeAvanzado()">
+                            <input type="date" id="f-inf-baja-hasta" class="filtro-sel" style="flex:1;" onchange="actualizarInformeAvanzado()">
+                        </div>
+                    </div>
+
+                    <!-- FILTROS DE TRATAMIENTOS / HISTORIAL -->
+                    <div id="filtros-eventos" class="filtros-grid oculto" style="display: none;">
                         <select class="filtro-sel" id="f-inf-rango-fecha" onchange="manejarRangoFechas()"><option value="30">Últimos 30 Días</option><option value="hoy">Trabajos de Hoy</option><option value="7">Últimos 7 Días</option><option value="todo">Ver Todo</option><option value="custom">📅 Rango Manual...</option></select>
                         <div id="caja-fechas-custom" style="display:none; gap:10px;">
                             <input type="date" id="f-inf-desde" class="filtro-sel" style="flex:1;" onchange="actualizarInformeAvanzado()">
                             <input type="date" id="f-inf-hasta" class="filtro-sel" style="flex:1;" onchange="actualizarInformeAvanzado()">
                         </div>
-                        <select class="filtro-sel" id="f-inf-accion-oculto" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Trabajos</option><option value="Sanidad">💉 Sanidad</option><option value="Peso">⚖️ Pesos</option><option value="Diagnóstico">🩺 Tactos</option><option value="Inseminación">🧬 Reproducción</option><option value="Nutrición">🌾 Nutrición</option><option value="Baja">💀 Bajas</option></select>
+                        <select class="filtro-sel" id="f-inf-accion-oculto" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Trabajos</option><option value="Sanidad">💉 Sanidad</option><option value="Peso">⚖️ Pesos</option><option value="Diagnóstico">🩺 Tactos</option><option value="Inseminación">🧬 Reproducción</option><option value="Nutrición">🌾 Nutrición</option></select>
                         <input type="text" id="f-inf-keyword" class="filtro-sel" placeholder="🔍 Buscar producto..." onkeyup="actualizarInformeAvanzado()">
-                    </div>
-
-                    <div id="filtros-inventario" class="filtros-grid oculto" style="display: none;">
-                        <select class="filtro-sel" id="f-inf-lote" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Lotes</option><option value="Hacienda General">Hacienda General</option><option value="Lecheras">Lecheras</option><option value="Preñadas">Preñadas</option><option value="Inseminadas">Inseminadas</option><option value="Destete">Destete</option><option value="Enfermería">Enfermería</option></select>
-                        <select class="form-control" id="f-inf-cat" onchange="actualizarInformeAvanzado()"><option value="ALL">Todas las Categorías</option><option value="Vaca / Vaquilla">Vaca / Vaquilla</option><option value="Vaca Vieja">Vaca Vieja</option><option value="Ternera Hembra">Ternera Hembra</option><option value="Ternero Macho">Ternero Macho</option><option value="Desmamante Hembra">Desmamante Hembra</option><option value="Desmamante Macho">Desmamante Macho</option><option value="Toros">Toros</option><option value="Novillos">Novillos</option><option value="Bueyes">Bueyes</option></select>
-                        <div style="display:flex; gap:10px;">
-                            <select class="form-control" style="flex:1;" id="f-inf-carimbo" onchange="actualizarInformeAvanzado()"><option value="ALL">Carimbos</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option></select>
-                            <select class="form-control" style="flex:1;" id="f-inf-dx" onchange="actualizarInformeAvanzado()"><option value="ALL">Estado</option><option value="Preñada">Preñadas</option><option value="Vacía">Vacías</option></select>
-                        </div>
                     </div>
 
                     <input type="text" id="f-inf-rp" class="filtro-sel" style="width:100%; margin-bottom:15px; border-color:var(--exito);" placeholder="🔍 Dossier Individual (Nº RP)" onkeyup="actualizarInformeAvanzado()">
                     
                     <div class="grid-kpis" style="margin-bottom:15px;">
-                        <div class="kpi-caja" style="padding:10px;"><div class="kpi-valor" id="inf-total" style="font-size:20px;">0</div><div class="kpi-label">Registros</div></div>
-                        <div class="kpi-caja" style="padding:10px;"><div class="kpi-valor" id="inf-prenadas" style="font-size:20px; color:var(--exito);">0</div><div class="kpi-label">Preñadas</div></div>
+                        <div class="kpi-caja" style="padding:10px;"><div class="kpi-valor" id="inf-total" style="font-size:20px;">0</div><div class="kpi-label" id="lbl-inf-total">Animales</div></div>
+                        <div class="kpi-caja" style="padding:10px;" id="caja-kpi-prenadas"><div class="kpi-valor" id="inf-prenadas" style="font-size:20px; color:var(--exito);">0</div><div class="kpi-label">Preñadas</div></div>
                     </div>
                     
                     <button class="btn-descargar" id="btn-print-magico" onclick="ejecutarDescargaPDF()">🖨️ Descargar PDF</button>
 
                     <div class="tabla-responsive">
-                        <table class="tabla-informe" id="tabla-eventos"><thead><tr><th>Fecha</th><th>RP</th><th>Trabajo Realizado</th><th>Detalles Extras</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
-                        <table class="tabla-informe oculto" id="tabla-masiva"><thead><tr><th>RP y Carimbo</th><th>Categoría / Lote</th><th>Últ. Peso</th><th>Dx Actual</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
-                        <table class="tabla-informe oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Trabajo Realizado</th><th>Valor Principal</th><th>Observaciones Adicionales</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
+                        <table class="tabla-informe" id="tabla-masiva"><thead><tr><th>RP y Carimbo</th><th>Categoría</th><th>Lote</th><th>Últ. Peso</th><th>Dx</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
+                        <table class="tabla-informe oculto" id="tabla-bajas"><thead><tr><th>Fecha</th><th>Caravana / RP</th><th>Causa de Baja</th><th>Observaciones</th></tr></thead><tbody id="tb-informe-bajas"></tbody></table>
+                        <table class="tabla-informe oculto" id="tabla-eventos"><thead><tr><th>Fecha</th><th>RP</th><th>Trabajo Realizado</th><th>Detalles Extras</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
+                        <table class="tabla-informe oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Trabajo Realizado</th><th>Valor Principal</th><th>Observaciones</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
                     </div>
                 </div>
             </div>
@@ -452,7 +523,7 @@
                     
                     <div class="form-grupo" id="caja-permisos">
                         <label style="font-size:12px; color:var(--muted); margin-bottom:8px; display:block;">Permisos de Acceso al Menú:</label>
-                        <div style="display:flex; flex-direction:column; gap:8px; background:#1e293b; padding:10px; border:1px solid var(--borde); border-radius:8px;">
+                        <div class="contenedor-permisos">
                             <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-permiso" value="dash" checked> <span>📊 Panel de Control</span></label>
                             <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-permiso" value="ficha" checked> <span>🐄 Ficha Clínica (Manga)</span></label>
                             <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-permiso" value="base" checked> <span>📋 Base de Datos</span></label>
@@ -472,7 +543,7 @@
                     <div id="caja-edit-permisos" class="oculto">
                         <div class="form-grupo">
                             <label style="font-size:12px; color:var(--muted); margin-bottom:8px; display:block;">Nuevos Permisos:</label>
-                            <div style="display:flex; flex-direction:column; gap:8px; background:#1e293b; padding:10px; border:1px solid var(--borde); border-radius:8px;">
+                            <div class="contenedor-permisos">
                                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-edit-permiso" value="dash"> <span>📊 Panel de Control</span></label>
                                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-edit-permiso" value="ficha"> <span>🐄 Ficha Clínica (Manga)</span></label>
                                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-edit-permiso" value="base"> <span>📋 Base de Datos</span></label>
@@ -712,7 +783,6 @@
             btn.disabled = true; btn.innerText = "Verificando..."; err.style.display = 'none';
             let email = u.includes('@') ? u.toLowerCase() : u.toLowerCase() + '@taurus.com';
             try {
-                if(!navigator.onLine) throw new Error("Offline");
                 await firebase.auth().signInWithEmailAndPassword(email, p);
             } catch(error) {
                 err.innerText = "Usuario no registrado en Firebase o clave incorrecta.";
@@ -936,24 +1006,32 @@
                 }
             });
 
-            const selLote = document.getElementById('filtro-reg-lote');
-            if(selLote) {
-                let currLote = selLote.value;
-                let optLotes = '<option value="ALL">🏷️ Lote (Todos)</option>';
-                lotesSet.forEach(l => { optLotes += `<option value="${l}">${l}</option>`; });
-                selLote.innerHTML = optLotes;
-                selLote.value = currLote;
-            }
+            // Poblar selectores de lotes tanto en búsqueda como en reportes PDF
+            ['filtro-reg-lote', 'f-inf-lote'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                    let curr = el.value;
+                    let opts = '<option value="ALL">🏷️ Todos los Lotes</option>';
+                    lotesSet.forEach(l => { opts += `<option value="${l}">${l}</option>`; });
+                    el.innerHTML = opts;
+                    if(curr && curr !== "") el.value = curr;
+                }
+            });
 
-            const selCat = document.getElementById('filtro-reg-cat');
-            if(selCat) {
-                let currCat = selCat.value;
-                let optCats = '<option value="ALL">🐄 Categoría (Todas)</option>';
-                catsSet.add("Vaca / Vaquilla"); catsSet.add("Ternera Hembra"); catsSet.add("Ternero Macho"); catsSet.add("Toros");
-                Array.from(catsSet).sort().forEach(c => { optCats += `<option value="${c}">${c}</option>`; });
-                selCat.innerHTML = optCats;
-                selCat.value = currCat;
-            }
+            // Poblar selectores de categorías tanto en búsqueda como en reportes PDF
+            ['filtro-reg-cat', 'f-inf-cat'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                    let curr = el.value;
+                    let opts = '<option value="ALL">🐄 Todas las Categorías</option>';
+                    catsSet.add("Vaca / Vaquilla"); catsSet.add("Vaca Vieja"); catsSet.add("Ternera Hembra"); 
+                    catsSet.add("Ternero Macho"); catsSet.add("Desmamante Hembra"); catsSet.add("Desmamante Macho"); 
+                    catsSet.add("Toros"); catsSet.add("Novillos"); catsSet.add("Bueyes / Señuelos");
+                    Array.from(catsSet).sort().forEach(c => { opts += `<option value="${c}">${c}</option>`; });
+                    el.innerHTML = opts;
+                    if(curr && curr !== "") el.value = curr;
+                }
+            });
         }
 
         function buscarCaravanaBtn(rpForzado = null) {
@@ -1107,8 +1185,14 @@
 
         function cambiarModoReporte() {
             const modo = document.getElementById('f-inf-modo').value;
-            if(modo === 'inventario') { document.getElementById('filtros-inventario').style.display = 'flex'; document.getElementById('filtros-eventos').style.display = 'none'; } 
-            else { document.getElementById('filtros-inventario').style.display = 'none'; document.getElementById('filtros-eventos').style.display = 'flex'; }
+            const fInv = document.getElementById('filtros-inventario');
+            const fBajas = document.getElementById('filtros-bajas');
+            const fEvt = document.getElementById('filtros-eventos');
+            
+            if (fInv) fInv.style.display = (modo === 'inventario') ? 'flex' : 'none';
+            if (fBajas) fBajas.style.display = (modo === 'bajas') ? 'flex' : 'none';
+            if (fEvt) fEvt.style.display = (modo === 'eventos') ? 'flex' : 'none';
+            
             actualizarInformeAvanzado();
         }
 
@@ -1124,6 +1208,23 @@
             actualizarInformeAvanzado();
         }
 
+        function manejarRangoFechasBajas() {
+            const rango = document.getElementById('f-inf-baja-rango').value;
+            const cajaManual = document.getElementById('caja-fechas-bajas');
+            const dDesde = document.getElementById('f-inf-baja-desde');
+            const dHasta = document.getElementById('f-inf-baja-hasta');
+            let hoy = new Date(); let desde = new Date();
+            if (rango === 'custom') { cajaManual.style.display = 'flex'; } else {
+                cajaManual.style.display = 'none';
+                if(rango === '30') { desde.setDate(hoy.getDate() - 30); }
+                else if (rango === '90') { desde.setDate(hoy.getDate() - 90); }
+                else if (rango === '365') { desde.setDate(hoy.getDate() - 365); }
+                else if (rango === 'todo') { desde = new Date('2000-01-01'); }
+                dDesde.value = desde.toISOString().split('T')[0]; dHasta.value = hoy.toISOString().split('T')[0];
+            }
+            actualizarInformeAvanzado();
+        }
+
         function obtenerBadgeAccion(accion) {
             if(accion === 'Sanidad') return `Sanidad`; if(accion === 'Peso') return `Peso`; if(accion === 'Diagnóstico') return `Tacto`; if(accion === 'Inseminación') return `Reproducción`; if(accion === 'Nutrición') return `Nutrición`; if(accion === 'Baja') return `Baja / Muerte`;
             return `${accion}`;
@@ -1133,18 +1234,29 @@
             const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
             const datosActivos = obtenerRegistrosActivos(); 
             const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; 
-            const tbodyMasivo = document.getElementById('tb-informe-masivo'); const tbodyEventos = document.getElementById('tb-informe-eventos'); const tbodyIndiv = document.getElementById('tb-informe-individual');
-            document.getElementById('tabla-masiva').classList.add('oculto'); document.getElementById('tabla-eventos').classList.add('oculto'); document.getElementById('tabla-individual').classList.add('oculto');
+            
+            const tbodyMasivo = document.getElementById('tb-informe-masivo');
+            const tbodyBajas = document.getElementById('tb-informe-bajas');
+            const tbodyEventos = document.getElementById('tb-informe-eventos');
+            const tbodyIndiv = document.getElementById('tb-informe-individual');
+            
+            document.getElementById('tabla-masiva').classList.add('oculto');
+            document.getElementById('tabla-bajas').classList.add('oculto');
+            document.getElementById('tabla-eventos').classList.add('oculto');
+            document.getElementById('tabla-individual').classList.add('oculto');
             
             let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja'));
             let tPreGlobal = 0; vivas.forEach(car => { const regs = obtenerHistorial(car); const uDx = regs.find(d => d.accion === 'Diagnóstico'); if (uDx && String(uDx.valor).includes('Preñada')) tPreGlobal++; });
-            document.getElementById('inf-prenadas').innerText = tPreGlobal;
+            
+            const cajaKpiPre = document.getElementById('caja-kpi-prenadas');
+            const lblTotal = document.getElementById('lbl-inf-total');
 
             if(fRp !== "") {
                 rpPrint = fRp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Dossier: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
                 const regs = obtenerHistorial(fRp); let hInd = ""; 
-                regs.forEach(r => { if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') hInd+=`<tr><td>${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${obtenerBadgeAccion(r.accion)}</strong></td><td>${r.valor}</td><td style="font-size:11px; color:var(--muted);">${r.detalles}</td></tr>`; });
+                regs.forEach(r => { if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') hInd+=`<tr><td>${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${obtenerBadgeAccion(r.accion)}</strong></td><td>${r.valor}</td><td>${r.detalles}</td></tr>`; });
                 tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.filter(r => !r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master').length; document.getElementById('inf-prenadas').innerText = "-"; 
+                if(lblTotal) lblTotal.innerText = "Registros";
                 return;
             }
 
@@ -1152,8 +1264,16 @@
 
             if(modo === 'inventario') {
                 document.getElementById('tabla-masiva').classList.remove('oculto');
-                const fLote = document.getElementById('f-inf-lote').value; const fCat = document.getElementById('f-inf-cat').value; const fDx = document.getElementById('f-inf-dx').value; const fCarimbo = document.getElementById('f-inf-carimbo').value;
-                tbodyMasivo.innerHTML = ""; let countTotal = 0;
+                if (cajaKpiPre) cajaKpiPre.style.display = 'block';
+                if (lblTotal) lblTotal.innerText = "Animales";
+
+                const fLote = document.getElementById('f-inf-lote').value;
+                const fCat = document.getElementById('f-inf-cat').value;
+                const fDx = document.getElementById('f-inf-dx').value;
+                const fCarimbo = document.getElementById('f-inf-carimbo').value;
+                
+                tbodyMasivo.innerHTML = ""; let countTotal = 0; let countPre = 0;
+                
                 vivas.forEach(car => {
                     const regs = obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
@@ -1161,22 +1281,63 @@
                     if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles||"split('|')[0]") ? String(uC.detalles||"split('|')[0]").replace('Lote:','').trim() : "-"; }
                     let catLegible = obtenerNombreCategoriaLegible(cat);
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-";
+                    
                     let pasaFiltro = true; 
                     if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; 
                     if(fCat !== "ALL" && !catLegible.includes(fCat)) pasaFiltro = false; 
                     if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false; 
                     if(fCarimbo !== "ALL" && carimbo !== fCarimbo) pasaFiltro = false; 
-                    if(pasaFiltro) { countTotal++; tbodyMasivo.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:15px;">${car}<br><span style="font-size:11px; color:gray;">Cb: ${carimbo}</span></td><td style="color:#000; border-color:#cbd5e1;">${catLegible}<br><span style="font-size:11px; color:gray;">${lote}</span></td><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${peso}</td><td style="color:#000; border-color:#cbd5e1;">${dx}</td></tr>`; }
+                    
+                    if(pasaFiltro) { 
+                        countTotal++; 
+                        if(String(dx).includes('Preñada')) countPre++;
+                        tbodyMasivo.innerHTML += `<tr><td><strong>${car}</strong><br><span style="font-size:11px; color:var(--muted);">Cb: ${carimbo}</span></td><td>${catLegible}</td><td>${lote}</td><td><strong>${peso}</strong></td><td>${dx}</td></tr>`; 
+                    }
                 });
                 document.getElementById('inf-total').innerText = countTotal; 
+                document.getElementById('inf-prenadas').innerText = countPre;
+                
+            } else if(modo === 'bajas') {
+                document.getElementById('tabla-bajas').classList.remove('oculto');
+                if (cajaKpiPre) cajaKpiPre.style.display = 'none';
+                if (lblTotal) lblTotal.innerText = "Bajas / Muertes";
+
+                const fCausa = document.getElementById('f-inf-baja-causa').value;
+                const fDesde = document.getElementById('f-inf-baja-desde').value;
+                const fHasta = document.getElementById('f-inf-baja-hasta').value;
+
+                tbodyBajas.innerHTML = "";
+                let countBajas = 0;
+
+                unicas.forEach(car => {
+                    const regs = obtenerHistorial(car);
+                    const rBaja = regs.find(r => r.accion === 'Baja');
+                    if (!rBaja) return;
+
+                    let pasa = true;
+                    if (fCausa !== "ALL" && !String(rBaja.valor).toLowerCase().includes(fCausa.toLowerCase())) pasa = false;
+                    if (fDesde && new Date(rBaja.fecha) < new Date(fDesde + 'T00:00:00')) pasa = false;
+                    if (fHasta && new Date(rBaja.fecha) > new Date(fHasta + 'T23:59:59')) pasa = false;
+
+                    if (pasa) {
+                        countBajas++;
+                        tbodyBajas.innerHTML += `<tr><td>${new Date(rBaja.fecha).toLocaleDateString()}</td><td><strong>${car}</strong></td><td style="color:var(--peligro); font-weight:bold;">${rBaja.valor}</td><td>${rBaja.detalles||'-'}</td></tr>`;
+                    }
+                });
+                document.getElementById('inf-total').innerText = countBajas;
+
             } else {
                 document.getElementById('tabla-eventos').classList.remove('oculto');
+                if (cajaKpiPre) cajaKpiPre.style.display = 'none';
+                if (lblTotal) lblTotal.innerText = "Tratamientos";
+
                 const fAcc = document.getElementById('f-inf-accion-oculto').value; const fDesde = document.getElementById('f-inf-desde').value; const fHasta = document.getElementById('f-inf-hasta').value; const fKey = document.getElementById('f-inf-keyword').value.trim().toLowerCase();
-                let eventos = datosActivos.filter(d => !d.accion.includes('Vinculacion') && d.accion !== 'Perfil Master' && d.accion !== 'Actualización de Datos' && d.caravana !== "---" && d.accion !== 'Baja Operador');
+                let eventos = datosActivos.filter(d => !d.accion.includes('Vinculacion') && d.accion !== 'Perfil Master' && d.accion !== 'Actualización de Datos' && d.caravana !== "---" && d.accion !== 'Baja' && d.accion !== 'Baja Operador');
                 if(fAcc !== "ALL") eventos = eventos.filter(d => d.accion === fAcc); if(fDesde) eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00'));
                 if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); if(fKey) eventos = eventos.filter(d => (String(d.valor) + String(d.detalles)).toLowerCase().includes(fKey));
+                
                 tbodyEventos.innerHTML = "";
-                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { tbodyEventos.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:15px;">${r.caravana}</td><td style="color:#000; border-color:#cbd5e1;">${obtenerBadgeAccion(r.accion)}</td><td style="font-size:11px; color:#000; border-color:#cbd5e1;"><strong>${r.valor}</strong><br><span style="color:gray;">${r.detalles}</span></td></tr>`; });
+                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { tbodyEventos.innerHTML += `<tr><td style="white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${r.caravana}</strong></td><td>${obtenerBadgeAccion(r.accion)}</td><td><strong>${r.valor}</strong><br><span style="color:var(--muted);">${r.detalles}</span></td></tr>`; });
                 document.getElementById('inf-total').innerText = eventos.length; 
             }
         }
@@ -1195,6 +1356,7 @@
                 try {
                     const hd = lsGet('tc_hacienda', {}); const h_nom = hd.nombre || 'TAURUS CONTROL'; const h_log = hd.logo || "";
                     const modo = document.getElementById('f-inf-modo').value; const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4');
+                    
                     const addMembrete = (tituloReporte) => {
                         doc.setFontSize(20); doc.setFont("helvetica", "bold"); doc.text(cleanPDFText(h_nom).toUpperCase(), 14, 20);
                         doc.setFontSize(11); doc.setFont("helvetica", "normal"); doc.text(cleanPDFText(tituloReporte), 14, 27);
@@ -1232,26 +1394,54 @@
                         doc.autoTable({ startY: doc.lastAutoTable.finalY + 13, theme: 'grid', head: [['Fecha', 'Procedimiento', 'Valor Principal', 'Observaciones Adicionales']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 40 }, 2: { cellWidth: 40, fontStyle: 'bold' }, 3: { cellWidth: 'auto' } } });
                         let filename = `Dossier_RP_${rpPrint.toUpperCase()}.pdf`;
                         if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
-                    } else {
-                        const isInventario = (modo === 'inventario');
-                        const titulo = isInventario ? "Reporte Analítico de Inventario General" : "Reporte Analítico de Trabajos y Procedimientos";
+
+                    } else if (modo === 'bajas') {
+                        let fCausa = document.getElementById('f-inf-baja-causa').value;
+                        let titulo = (fCausa !== "ALL") ? `Reporte de Bajas - Causa: ${fCausa}` : "Reporte Oficial de Bajas y Mortalidad";
+                        addMembrete(titulo);
+                        const totalBajas = document.getElementById('inf-total').innerText;
+                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Bajas / Muertes Registradas: ${cleanPDFText(totalBajas)}`, 14, 43);
+
+                        const tableData = [];
+                        const rows = document.getElementById('tb-informe-bajas').querySelectorAll('tr');
+                        rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText).replace(/\n/g, ' ') ]); } });
+                        doc.autoTable({ startY: 48, theme: 'grid', head: [['Fecha de Baja', 'Caravana / RP', 'Causa', 'Observaciones']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [239, 68, 68], textColor: 255, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 35, fontStyle: 'bold', halign: 'center' }, 2: { cellWidth: 40 }, 3: { cellWidth: 'auto' } } });
+                        
+                        let filename = 'Reporte_Bajas_Mortalidad.pdf';
+                        if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
+
+                    } else if (modo === 'inventario') {
+                        const fLote = document.getElementById('f-inf-lote').value;
+                        const fCat = document.getElementById('f-inf-cat').value;
+                        
+                        let titulo = "Reporte Analítico de Inventario General";
+                        if (fCat !== "ALL" && fLote !== "ALL") titulo = `Inventario - ${fCat} (Lote: ${fLote})`;
+                        else if (fCat !== "ALL") titulo = `Inventario de Hacienda - ${fCat}`;
+                        else if (fLote !== "ALL") titulo = `Inventario de Hacienda - Lote: ${fLote}`;
+
                         addMembrete(titulo);
                         const totalReg = document.getElementById('inf-total').innerText; const totalPre = document.getElementById('inf-prenadas').innerText;
-                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Registros Listados: ${cleanPDFText(totalReg)}`, 14, 43); doc.text(`Total Preñadas Global: ${cleanPDFText(totalPre)}`, 130, 43);
-                        const tableData = []; let headRows = []; let colStyles = {};
-                        if (isInventario) {
-                            headRows = [['RP y Carimbo', 'Categoría y Ubicación', 'Último Peso', 'Diagnóstico Actual']];
-                            colStyles = { 0: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 1: { cellWidth: 80 }, 2: { cellWidth: 30, halign: 'center' }, 3: { cellWidth: 40, halign: 'center' } };
-                            const rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr');
-                            rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText).replace(/\n/g, ' - '), cleanPDFText(tds[1].innerText).replace(/\n/g, ' - '), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText) ]); } });
-                        } else {
-                            headRows = [['Fecha', 'Caravana', 'Trabajo Realizado', 'Detalles Extras']];
-                            colStyles = { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 2: { cellWidth: 40 }, 3: { cellWidth: 'auto' } };
-                            const rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr');
-                            rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText).replace(/\n/g, ' ') ]); } });
-                        }
-                        doc.autoTable({ startY: 48, theme: 'grid', head: headRows, body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: colStyles });
-                        let filename = 'Reporte_General.pdf';
+                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Cabezas Listadas: ${cleanPDFText(totalReg)}`, 14, 43); doc.text(`Total Preñadas: ${cleanPDFText(totalPre)}`, 130, 43);
+
+                        const tableData = [];
+                        const rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr');
+                        rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 5) { tableData.push([ cleanPDFText(tds[0].innerText).replace(/\n/g, ' - '), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText), cleanPDFText(tds[4].innerText) ]); } });
+                        doc.autoTable({ startY: 48, theme: 'grid', head: [['RP y Carimbo', 'Categoría', 'Lote / Ubicación', 'Último Peso', 'Diagnóstico']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 1: { cellWidth: 45 }, 2: { cellWidth: 45 }, 3: { cellWidth: 25, halign: 'center' }, 4: { cellWidth: 30, halign: 'center' } } });
+                        
+                        let filename = (fCat !== "ALL") ? `Reporte_${fCat.replace(/[^a-zA-Z0-9]/g, '_')}.pdf` : ((fLote !== "ALL") ? `Reporte_Lote_${fLote.replace(/[^a-zA-Z0-9]/g, '_')}.pdf` : 'Reporte_Inventario.pdf');
+                        if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
+
+                    } else {
+                        addMembrete("Reporte de Trabajos y Procedimientos");
+                        const totalReg = document.getElementById('inf-total').innerText;
+                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Procedimientos Listados: ${cleanPDFText(totalReg)}`, 14, 43);
+
+                        const tableData = [];
+                        const rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr');
+                        rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText).replace(/\n/g, ' ') ]); } });
+                        doc.autoTable({ startY: 48, theme: 'grid', head: [['Fecha', 'Caravana', 'Trabajo Realizado', 'Detalles Extras']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 2: { cellWidth: 40 }, 3: { cellWidth: 'auto' } } });
+                        
+                        let filename = 'Reporte_Tratamientos.pdf';
                         if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
                     }
                     btn.innerText = textoOriginal;
@@ -1261,9 +1451,6 @@
 
         function verificarLimiteGraficos(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { alert('Solo puede fijar 3 gráficas simultáneas.'); checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); lsSet('tc_prefs', prefs); if(dbCache.length > 0) procesarDatosDashboard(); } }
 
-        // ==========================================
-        // FILTRADO INTERACTIVO DESDE EL DASHBOARD
-        // ==========================================
         function filtrarDesdeDashboard(tipo, valor) {
             cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]);
             document.getElementById('buscador-lista').value = "";
