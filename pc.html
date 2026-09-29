@@ -217,7 +217,7 @@
                         <strong style="color:var(--warning); display:flex; align-items:center; gap:8px; margin-bottom:5px; font-size:14px;">⚠️ Mensaje de Administración</strong>
                         <span id="txt-banner-alerta" style="font-size:13px; color:var(--text-main);"></span>
                     </div>
-                    <button class="btn-outline" style="border-color:var(--warning); color:var(--warning); padding: 6px 15px; font-size:12px; margin-left:20px;" onclick="marcarAlertaLeida()">Marcar como Leído (Ocultar)</button>
+                    <button type="button" class="btn-outline" style="border-color:var(--warning); color:var(--warning); padding: 6px 15px; font-size:12px; margin-left:20px;" onclick="marcarAlertaLeida()">Marcar como Leído (Ocultar)</button>
                 </div>
             </div>
 
@@ -385,7 +385,7 @@
 
                 <div id="filtros-eventos" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
                     <select class="form-control" style="width:auto;" id="f-inf-rango-fecha" onchange="manejarRangoFechas()"><option value="30">Últimos 30 Días</option><option value="hoy">Trabajos de Hoy</option><option value="7">Últimos 7 Días</option><option value="todo">Ver Todo</option><option value="custom">📅 Rango Manual...</option></select>
-                    <select class="form-control" style="width:auto;" onchange="document.getElementById('f-inf-accion-oculto').value = this.value; actualizarInformeAvanzado();"><option value="ALL">Todos los Trabajos</option><option value="Sanidad">💉 Sanidad</option><option value="Peso">⚖️️ Pesos</option><option value="Diagnóstico">🩺 Tactos</option><option value="Inseminación">🧬 Reproducción</option><option value="Nutrición">🌾 Nutrición</option><option value="Baja">💀 Mortalidad y Bajas</option></select>
+                    <select class="form-control" style="width:auto;" onchange="document.getElementById('f-inf-accion-oculto').value = this.value; actualizarInformeAvanzado();"><option value="ALL">Todos los Trabajos</option><option value="Sanidad">💉 Sanidad</option><option value="Peso">⚖ Pesos</option><option value="Diagnóstico">🩺 Tactos</option><option value="Inseminación">🧬 Reproducción</option><option value="Nutrición">🌾 Nutrición</option><option value="Baja">💀 Mortalidad y Bajas</option></select>
                     <input type="hidden" id="f-inf-accion-oculto" value="ALL">
                     <input type="text" id="f-inf-keyword" class="form-control" style="width:auto; flex:1;" placeholder="Buscar producto..." onkeyup="actualizarInformeAvanzado()">
                 </div>
@@ -466,7 +466,7 @@
                             <strong id="lbl-licencia">-</strong>
                         </div>
                         <div class="form-grupo" style="margin-top: 15px;">
-                            <label>Cambiar mi Contraseña (Mín. 4 caracteres)</label>
+                            <label>Cambiar mi Contraseña (Mín. 6 caracteres)</label>
                             <input type="password" id="nueva-clave" class="form-control" autocomplete="new-password">
                         </div>
                         <button type="button" class="btn-primary" style="background:var(--success);" onclick="cambiarMiContrasena()">Actualizar Contraseña</button>
@@ -489,7 +489,7 @@
                     </div>
 
                     <div class="tarjeta" id="panel-crear-peones">
-                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">👷 Control de Operadores</h3>
+                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">👷 Control de Operadores y Dueños</h3>
                         
                         <div class="form-grupo">
                             <label>Nombre y Apellido</label>
@@ -497,20 +497,20 @@
                         </div>
                         
                         <div class="form-grupo">
-                            <label>Usuario de Acceso</label>
-                            <input type="text" id="op-usu" class="form-control" placeholder="Nombre corto (ej: jramirez)" autocomplete="off">
+                            <label>Usuario / Correo de Acceso</label>
+                            <input type="text" id="op-usu" class="form-control" placeholder="Correo o usuario" autocomplete="off">
                         </div>
 
                         <div class="form-grupo">
-                            <label>Contraseña de Acceso</label>
-                            <input type="password" id="op-pass" class="form-control" placeholder="Clave" autocomplete="new-password">
+                            <label>Contraseña de Acceso (Mín. 6 caracteres)</label>
+                            <input type="password" id="op-pass" class="form-control" placeholder="Clave segura" autocomplete="new-password">
                         </div>
 
                         <div class="form-grupo">
                             <label>Rol del Nuevo Usuario</label>
                             <select id="op-rol" class="form-control" onchange="togglePermisos()">
                                 <option value="Operador">Operador (Acceso Limitado)</option>
-                                <option value="Propietario">Propietario (Acceso Total)</option>
+                                <option value="Propietario">Propietario / Dueño Extra (Acceso Total)</option>
                             </select>
                         </div>
                         
@@ -523,7 +523,7 @@
                                 <label class="check-container"><input type="checkbox" class="chk-permiso" value="reporte"> <span>📄 Reportes PDF</span></label>
                             </div>
                         </div>
-                        <button type="button" id="btn-crear-op" class="btn-primary" style="background:#10b981;" onclick="crearOperador()">Registrar Usuario</button>
+                        <button type="button" id="btn-crear-op" class="btn-primary" style="background:#10b981;" onclick="crearOperador()">Registrar Usuario en Nube</button>
                         
                         <hr style="border-color:var(--border); margin:20px 0;">
                         
@@ -549,13 +549,13 @@
                         <hr style="border-color:var(--border); margin:20px 0;">
                         
                         <div class="form-grupo">
-                            <label>Eliminar Operador Permanentemente</label>
+                            <label>Eliminar Operador o Dueño Permanentemente</label>
                             <select id="op-del-usu-sel" class="form-control">
-                                <option value="">-- Seleccione un operador --</option>
+                                <option value="">-- Seleccione un usuario --</option>
                             </select>
-                            <span style="font-size:11px; color:var(--text-muted); display:block; margin-top:5px;">El sistema sincronizará la baja para que el operador pierda acceso.</span>
+                            <span style="font-size:11px; color:var(--text-muted); display:block; margin-top:5px;">El sistema borrará sus credenciales de Firebase Auth y su perfil de acceso.</span>
                         </div>
-                        <button type="button" id="btn-eliminar-op" class="btn-primary" style="background:var(--danger);" onclick="eliminarOperador()">Eliminar Operador</button>
+                        <button type="button" id="btn-eliminar-op" class="btn-primary" style="background:var(--danger);" onclick="eliminarOperador()">Eliminar Operador / Usuario</button>
                     </div>
                 </div>
 
@@ -642,7 +642,6 @@
     <script>
         const APPS_SCRIPT_NOTIFICACIONES = "https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec";
         
-        // CONFIGURACIÓN FIREBASE (Autenticación y Base de Datos Nativas)
         const firebaseConfig = {
             apiKey: "AIzaSyDTXUYwYYkQ_pKDhui9H3cFmecgAPQ9eqA",
             authDomain: "taurus-cbd59.firebaseapp.com",
@@ -660,27 +659,22 @@
         let dbCache = []; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
         let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
         let alertaGlobalIdActual = "";
-        let notificadoMantenimiento = false;
         
         let unsubscribeEventos = null;
         let unsubscribeConfig = null;
 
-        // Auto-inicio de sesión con Firebase Auth
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
                 db.collection('usuarios').doc(user.email).get().then(doc => {
                     if (doc.exists) {
                         const userData = doc.data();
-                        // Reviso licencias localmente, aunque el admin manda el aviso
                         if(userData.vencimiento && new Date() > new Date(userData.vencimiento)) {
                             cerrarSesion(); alert("Su licencia ha vencido.");
                             return;
                         }
                         arrancarSistemaFirebase(user.email, userData.maestroId, userData.rol, userData.nombre, userData.hacienda, userData.features);
                     }
-                }).catch(e => {
-                    console.error("Error al obtener perfil", e);
-                });
+                }).catch(e => { console.error("Error al obtener perfil", e); });
             }
         });
 
@@ -700,9 +694,6 @@
             setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() => t.remove(), 500); }, 2000);
         }
 
-        // ==========================================
-        // NOTIFICACIONES NATIVAS EN ESCRITORIO (ELECTRON)
-        // ==========================================
         function solicitarPermisoNotificaciones() {
             if (!("Notification" in window)) return;
             if (Notification.permission !== "granted" && Notification.permission !== "denied") {
@@ -723,44 +714,29 @@
             }
         }
 
-        // ==========================================
-        // PROCESADOR DE AVISOS Y POP-UPS GLOBALES
-        // ==========================================
         function procesarAlertaServidor(msg, id) {
             const banner = document.getElementById('banner-alerta-global');
             if (!msg || !id) { banner.classList.add('oculto'); return; }
-            
             let leidas = lsGet('tc_alertas_leidas', []);
             let mostradas = lsGet('tc_alertas_mostradas', []); 
-            
             if (!leidas.includes(id)) {
                 alertaGlobalIdActual = id;
                 document.getElementById('txt-alerta-global').innerText = msg;
                 document.getElementById('txt-banner-alerta').innerText = msg;
-                
                 if (!mostradas.includes(id)) {
                     document.getElementById('modal-alerta-global').style.display = 'flex';
                     lanzarNotificacionEscritorio("Aviso Importante", msg);
                 }
                 banner.classList.remove('oculto');
-            } else {
-                banner.classList.add('oculto');
-            }
+            } else { banner.classList.add('oculto'); }
         }
 
         function cerrarPopUpAlerta() {
             if (alertaGlobalIdActual) {
                 let mostradas = lsGet('tc_alertas_mostradas', []);
-                if (!mostradas.includes(alertaGlobalIdActual)) {
-                    mostradas.push(alertaGlobalIdActual);
-                    lsSet('tc_alertas_mostradas', mostradas);
-                }
-                
+                if (!mostradas.includes(alertaGlobalIdActual)) { mostradas.push(alertaGlobalIdActual); lsSet('tc_alertas_mostradas', mostradas); }
                 let leidas = lsGet('tc_alertas_leidas', []);
-                if (!leidas.includes(alertaGlobalIdActual)) {
-                    leidas.push(alertaGlobalIdActual);
-                    lsSet('tc_alertas_leidas', leidas);
-                }
+                if (!leidas.includes(alertaGlobalIdActual)) { leidas.push(alertaGlobalIdActual); lsSet('tc_alertas_leidas', leidas); }
             }
             document.getElementById('modal-alerta-global').style.display = 'none';
             document.getElementById('banner-alerta-global').classList.add('oculto');
@@ -817,19 +793,14 @@
             const p = document.getElementById('password').value.trim();
             const btn = document.getElementById('btn-ingreso');
             const err = document.getElementById('error-login');
-            
             if(!u || !p) return; 
             btn.disabled = true; btn.innerText = "Verificando Credenciales..."; err.style.display = 'none';
-
             let email = u.includes('@') ? u.toLowerCase() : u.toLowerCase() + '@taurus.com';
-
             try {
                 if(!navigator.onLine) throw new Error("Offline");
                 await firebase.auth().signInWithEmailAndPassword(email, p);
                 solicitarPermisoNotificaciones();
-                // El onAuthStateChanged se encarga de lo demás.
             } catch(error) {
-                console.error("Detalle del error:", error);
                 err.innerText = "Credenciales incorrectas o error de red."; 
                 err.style.display = 'block';
                 btn.disabled = false; btn.innerText = "Ingresar al Sistema";
@@ -846,14 +817,12 @@
             try {
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
                 
-                // 1. Escuchar Configuración (Kill Switch)
                 if(unsubscribeConfig) unsubscribeConfig();
                 unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot(doc => {
                     if(doc.exists) {
                         const conf = doc.data();
                         procesarAlertaServidor(conf.alerta_global, "alerta_fb");
                         const pantMant = document.getElementById('pantalla-mantenimiento');
-                        
                         if(conf.mantenimiento) {
                             if(pantMant) pantMant.classList.remove('oculto');
                             if(!window.notificadoMantenimiento) {
@@ -870,27 +839,21 @@
                     }
                 });
 
-                // 2. Escuchar Colección en Tiempo Real
                 setEstadoRed(true, '🔄 Sincronizando...');
                 if(unsubscribeEventos) unsubscribeEventos();
                 unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot(snapshot => {
                     let nuevosDatos = [];
                     snapshot.forEach(doc => nuevosDatos.push(doc.data()));
-                    
                     let mapAnterior = new Set(dbCache.map(d => d.fecha + '_' + d.caravana + '_' + d.accion));
                     let notificar = nuevosDatos.filter(d => d && d.fecha && !mapAnterior.has(d.fecha + '_' + d.caravana + '_' + d.accion));
 
-                    dbCache = nuevosDatos.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
-                    lsSet('tc_db', dbCache);
+                    fusionarDatos(nuevosDatos);
 
-                    // Sistema de notificación interno para registros nuevos en PC
                     if (notificar.length > 0 && mapAnterior.size > 0) {
                         if (notificar.length <= 3) {
                             notificar.forEach(n => {
                                 let op = n.usuario || "Un operador";
-                                if (n.detalles && n.detalles.includes("Op: ")) {
-                                    op = n.detalles.split("Op: ")[1].trim();
-                                }
+                                if (n.detalles && n.detalles.includes("Op: ")) { op = n.detalles.split("Op: ")[1].trim(); }
                                 if(op.toLowerCase() !== usNombre.toLowerCase() && n.caravana !== '---') {
                                     lanzarNotificacionEscritorio("Alerta Taurus", `${op} registró [${n.accion}] al RP ${n.caravana}`);
                                 }
@@ -903,12 +866,8 @@
                     if(!document.getElementById('v-base').classList.contains('oculto')) cargarListaRegistro(); 
                     if(!document.getElementById('v-reporte').classList.contains('oculto')) actualizarInformeAvanzado();
                     cargarListaOperadores();
-                    
                     setEstadoRed(true);
-                }, err => {
-                    console.error("Error fetching data: ", err);
-                    setEstadoRed(false, '❌ Error de red');
-                });
+                }, err => { setEstadoRed(false, '❌ Error de red'); });
                 
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
                 let displayRol = isPropietario ? 'Propietario' : 'Operador';
@@ -935,38 +894,31 @@
                     document.querySelectorAll('.sidebar-nav li').forEach(li => li.style.display = 'flex');
                     tabSeleccionado = document.querySelectorAll('.sidebar-nav li')[0];
                 } else {
-                    document.getElementById('panel-crear-peones').style.display = 'none'; 
+                    document.getElementById('panel-crear-peones').style.display = 'block'; 
                     document.getElementById('panel-membrete').style.display = 'none';
                     document.getElementById('panel-licencia').style.display = 'none';
                     
                     let perms = usRol.includes('|') ? usRol.split('|')[1] : "dash,ficha,base,reporte";
                     let foundFirst = false;
-                    
                     document.querySelectorAll('.sidebar-nav li').forEach(li => {
                         let target = li.getAttribute('onclick');
                         if(target && target.includes('cambiarVista')) {
                             let viewId = target.match(/'([^']+)'/)[1];
                             let esConfig = viewId.includes('config');
                             let isAllowed = false;
-                            
                             if(viewId.includes('dash') && perms.includes('dash')) isAllowed = true;
                             if(viewId.includes('ficha') && perms.includes('ficha')) isAllowed = true;
                             if(viewId.includes('base') && perms.includes('base')) isAllowed = true;
                             if(viewId.includes('reporte') && perms.includes('reporte')) isAllowed = true;
-                            
-                            if (!esConfig && !isAllowed) {
-                                li.style.display = 'none'; 
-                            } else {
+                            if (!esConfig && !isAllowed) { li.style.display = 'none'; } else {
                                 li.style.display = 'flex';
                                 if (!foundFirst && !esConfig) { vistaInicial = viewId; tabSeleccionado = li; foundFirst = true; }
                             }
                         }
                     });
-
                     if(!perms.includes('dash')) { let pAn = document.getElementById('panel-analiticas'); if(pAn) pAn.style.display = 'none'; }
                 }
                 
-                // Mostrar vencimiento y configuraciones
                 db.collection('usuarios').doc(m).get().then(docM => {
                     if(docM.exists) {
                         let mData = docM.data();
@@ -987,26 +939,17 @@
 
                 const prefs = lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
                 
-             // APLICAR DISEÑO VISUAL Y MEMBRETE (SINCRONIZACIÓN EN TIEMPO REAL)
                 db.collection('estancias').doc(m).onSnapshot(docE => {
                     let hNombre = hacienda || "HACIENDA"; 
                     let hLogo = "gemini-svg.png";
-                    
                     if (docE.exists) { 
                         if (docE.data().logo_hacienda) hLogo = docE.data().logo_hacienda; 
                         if (docE.data().nombre_hacienda) hNombre = docE.data().nombre_hacienda; 
                     } 
-                    
-                    // Guardado local limpio y aplicación visual
                     lsSet('tc_hacienda', { nombre: hNombre, logo: hLogo });
                     aplicarDisenoEnPantalla(hNombre, hLogo);
-                    
-                    // Actualización de textos en UI (Diferenciado para PC y Móvil)
                     let topbarPC = document.getElementById('topbar-estancia');
-                    if (topbarPC) {
-                        topbarPC.innerText = `ESTANCIA: ${hNombre.toUpperCase()} | Operador: ${usNombre}`;
-                    }
-                    
+                    if (topbarPC) { topbarPC.innerText = `ESTANCIA: ${hNombre.toUpperCase()} | Operador: ${usNombre}`; }
                     let lblPerfilMob = document.getElementById('usuario-activo-lbl');
                     if (lblPerfilMob) {
                         let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
@@ -1015,30 +958,35 @@
                 });
                 
                 document.getElementById('f-inf-rango-fecha').value = "30"; manejarRangoFechas();
-                
                 document.getElementById('pantalla-login').classList.add('oculto'); 
                 document.getElementById('sidebar').classList.remove('oculto'); 
                 document.getElementById('main-content').classList.remove('oculto');
                 document.getElementById('pantalla-mantenimiento').classList.add('oculto');
-                
                 if(tabSeleccionado) { cambiarVista(vistaInicial, tabSeleccionado); } else { cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4]); }
                 sincronizarPendientesAuto(); cargarListaOperadores();
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
 
-        // ==========================================
-        // VISTA PREVIA DEL MEMBRETE 
-        // ==========================================
+        function fusionarDatos(nuevos) {
+            let pendientes = lsGet('tc_pendientes', []);
+            let mapa = new Map();
+            if(Array.isArray(nuevos)) {
+                nuevos.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
+            }
+            if(Array.isArray(pendientes)) {
+                pendientes.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
+            }
+            dbCache = Array.from(mapa.values()).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            lsSet('tc_db', dbCache);
+        }
+
         function aplicarDisenoEnPantalla(nombre, logo) { 
             let n = nombre || 'Taurus Control';
             let l = logo || 'gemini-svg.png';
-            
             document.getElementById('cfg-nom').value = nombre || ''; 
             document.getElementById('preview-nombre-reporte').innerText = n;
-            
             const imgRep = document.getElementById('preview-logo-reporte');
             if(imgRep) imgRep.src = l;
-            
             const imgCfg = document.getElementById('preview-logo-config');
             if(imgCfg) imgCfg.src = l;
         }
@@ -1049,35 +997,24 @@
                 const batch = db.batch();
                 const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
                 p.forEach(obj => { batch.set(colRef.doc(), obj); });
-                try {
-                    await batch.commit();
-                    lsSet('tc_pendientes', []);
-                } catch(e) {}
+                try { await batch.commit(); lsSet('tc_pendientes', []); } catch(e) {}
             }
         }
 
-        // =========================================================================
-        // MOTOR DE HISTORIAL (EVENT SOURCING)
-        // =========================================================================
         function procesarEventos() {
             let dbAsc = [...dbCache].sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
             let historiaPorRP = {};
-            
             dbAsc.forEach(evt => {
                 let rp = String(evt.caravana);
                 if(rp === "---" || !rp) return;
-                
                 if(!historiaPorRP[rp]) historiaPorRP[rp] = [];
-                
                 if(evt.accion === 'Borrar_Caravana') {
                     historiaPorRP[rp] = []; 
                 } else if(evt.accion === 'Cambio de Caravana') {
                     let nuevoRP = String(evt.valor);
                     if(!historiaPorRP[nuevoRP]) historiaPorRP[nuevoRP] = [];
-                    
                     let eventosTraspasados = historiaPorRP[rp].map(e => ({...e, caravana: nuevoRP}));
                     historiaPorRP[nuevoRP] = historiaPorRP[nuevoRP].concat(eventosTraspasados);
-                    
                     historiaPorRP[nuevoRP].push({...evt, caravana: nuevoRP}); 
                     historiaPorRP[rp] = []; 
                 } else {
@@ -1100,7 +1037,6 @@
             let hist = historia[String(caravana)] || [];
             return [...hist].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
         }
-        // =========================================================================
 
         function buscarCaravanaBtn(rpForzado = null) {
             try {
@@ -1187,21 +1123,16 @@
 
         function ejecutarAccion(tipo, val, det, modalId) {
             const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: rpActivo, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
-            
-            // Actualización optimista local
             dbCache.unshift(obj); buscarCaravanaBtn(rpActivo); procesarDatosDashboard(); 
             if(modalId) cerrarModal(modalId);
-            
             if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador') {
                 notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
             }
-
             if(navigator.onLine) { 
                 db.collection('estancias').doc(maestroId).collection('eventos').add(obj).catch(e => {
                     let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); 
                 });
-            } 
-            else { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); }
+            } else { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); }
         }
 
         function prepararGuardado(mId, t) { 
@@ -1242,9 +1173,7 @@
             const fPadre = document.getElementById('f-padre') ? document.getElementById('f-padre').value : "-";
             const fMadre = document.getElementById('f-madre') ? document.getElementById('f-madre').value : "-";
             const catValor = document.getElementById('val-categoria') ? document.getElementById('val-categoria').innerText : "-";
-            
             ejecutarAccion('Perfil Master', `${fRaza||"-"}|${fNacimiento||"-"}|${fPadre||"-"}|${fMadre||"-"}`, catValor, 'm-perfil'); 
-            
             if (fNacimiento && fNacimiento !== "-") {
                 const partes = fNacimiento.split('-'); let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
                 if (mes >= 7) anio += 1;
@@ -1286,12 +1215,10 @@
             const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
             const datosActivos = obtenerRegistrosActivos(); 
             const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; 
-            
             const tbodyMasivo = document.getElementById('tb-informe-masivo'); const tbodyEventos = document.getElementById('tb-informe-eventos'); const tbodyIndiv = document.getElementById('tb-informe-individual');
             document.getElementById('tabla-masiva').classList.add('oculto'); document.getElementById('tabla-eventos').classList.add('oculto'); document.getElementById('tabla-individual').classList.add('oculto');
             
             let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja'));
-            
             let tPreGlobal = 0; vivas.forEach(car => { const regs = obtenerHistorial(car); const uDx = regs.find(d => d.accion === 'Diagnóstico'); if (uDx && String(uDx.valor).includes('Preñada')) tPreGlobal++; });
             document.getElementById('inf-prenadas').innerText = tPreGlobal;
 
@@ -1309,20 +1236,17 @@
                 document.getElementById('tabla-masiva').classList.remove('oculto');
                 const fLote = document.getElementById('f-inf-lote').value; const fCat = document.getElementById('f-inf-cat').value; const fDx = document.getElementById('f-inf-dx').value; const fCarimbo = document.getElementById('f-inf-carimbo').value;
                 tbodyMasivo.innerHTML = ""; let countTotal = 0;
-                
                 vivas.forEach(car => {
                     const regs = obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
                     const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
                     if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles||"split('|')[0]") ? String(uC.detalles||"split('|')[0]").replace('Lote:','').trim() : "-"; }
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-";
-                    
                     let pasaFiltro = true; 
                     if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; 
                     if(fCat !== "ALL" && !cat.includes(fCat)) pasaFiltro = false; 
                     if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false; 
                     if(fCarimbo !== "ALL" && carimbo !== fCarimbo) pasaFiltro = false; 
-                    
                     if(pasaFiltro) { countTotal++; tbodyMasivo.innerHTML += `<tr><td><strong>${car}</strong><br><span style="font-size:11px; color:var(--text-muted);">Cb: ${carimbo}</span></td><td>${cat}<br><span style="font-size:11px; color:var(--text-muted);">${lote}</span></td><td>${peso}</td><td>${dx}</td></tr>`; }
                 });
                 document.getElementById('inf-total').innerText = countTotal; 
@@ -1348,12 +1272,10 @@
         function ejecutarDescargaPDF() {
             const btn = document.getElementById('btn-print-magico');
             const textoOriginal = btn.innerText; btn.innerText = "⏳ Generando Archivo PDF...";
-
             setTimeout(() => {
                 try {
                     const hd = lsGet('tc_hacienda', {}); const h_nom = hd.nombre || 'TAURUS CONTROL'; const h_log = hd.logo || "";
                     const modo = document.getElementById('f-inf-modo').value; const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4');
-                    
                     const addMembrete = (tituloReporte) => {
                         doc.setFontSize(20); doc.setFont("helvetica", "bold"); doc.text(cleanPDFText(h_nom).toUpperCase(), 14, 20);
                         doc.setFontSize(11); doc.setFont("helvetica", "normal"); doc.text(cleanPDFText(tituloReporte), 14, 27);
@@ -1376,7 +1298,6 @@
 
                         addMembrete(`Dossier Clínico Histórico - RP: ${rpPrint.toUpperCase()}`);
                         doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.text("Resumen del Perfil", 14, 43);
-
                         doc.autoTable({ startY: 46, theme: 'grid', styles: { fontSize: 9, cellPadding: 3, textColor: 20 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold' },
                             body: [
                                 [`Categoría: ${cleanPDFText(cat)}`, `Lote: ${cleanPDFText(lote)}`, `Carimbo: ${cleanPDFText(carimbo)}`],
@@ -1389,17 +1310,14 @@
                         const tableData = []; const rows = document.getElementById('tb-informe-individual').querySelectorAll('tr');
                         rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText).replace(/\n/g, ' ') ]); } });
                         doc.autoTable({ startY: doc.lastAutoTable.finalY + 13, theme: 'grid', head: [['Fecha', 'Procedimiento', 'Valor Principal', 'Observaciones Adicionales']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 40 }, 2: { cellWidth: 40, fontStyle: 'bold' }, 3: { cellWidth: 'auto' } } });
-                        
                         let filename = `Dossier_RP_${rpPrint.toUpperCase()}.pdf`;
                         doc.save(filename);
-
                     } else {
                         const isInventario = (modo === 'inventario');
                         const titulo = isInventario ? "Reporte Analítico de Inventario General" : "Reporte Analítico de Trabajos y Procedimientos";
                         addMembrete(titulo);
                         const totalReg = document.getElementById('inf-total').innerText; const totalPre = document.getElementById('inf-prenadas').innerText;
                         doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Registros Listados: ${cleanPDFText(totalReg)}`, 14, 43); doc.text(`Total Preñadas Global: ${cleanPDFText(totalPre)}`, 130, 43);
-
                         const tableData = []; let headRows = []; let colStyles = {};
                         if (isInventario) {
                             headRows = [['RP y Carimbo', 'Categoría y Ubicación', 'Último Peso', 'Diagnóstico Actual']];
@@ -1413,7 +1331,6 @@
                             rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText).replace(/\n/g, ' ') ]); } });
                         }
                         doc.autoTable({ startY: 48, theme: 'grid', head: headRows, body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: colStyles });
-                        
                         let filename = 'Reporte_General.pdf';
                         doc.save(filename);
                     }
@@ -1427,7 +1344,6 @@
         function procesarDatosDashboard() {
             const datosActivos = obtenerRegistrosActivos(); 
             let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
-            
             let vivas = []; let cantBajas = datosActivos.filter(r => r.accion === 'Baja').length;
             unicas.forEach(car => { if(!obtenerHistorial(car).some(x => x.accion === 'Baja')) { vivas.push(car); } }); unicas = vivas; 
             
@@ -1444,9 +1360,23 @@
                 if(uC) { let v=String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : ""; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
                 cat = cat.toLowerCase(); const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
                 
+                let esVaca = cat.includes('vaca') || cat.includes('vaquilla') || cat.startsWith('v:') || cat.startsWith('vv:');
+                let esTernero = cat.includes('terne') || cat.includes('desmamante') || cat.startsWith('th:') || cat.startsWith('tm:') || cat.startsWith('dh:') || cat.startsWith('dm:');
+
                 if(uDx) { if(String(uDx.valor||"").includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } } if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--text-main);">${car}</strong> diagnosticada Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } } }
-                if(cat.includes('vaca') || cat.includes('vaquilla')) g2.v++; else if(cat.includes('terne') || cat.includes('desmamante')) g2.t++; else g2.o++; g3[lote] = (g3[lote] || 0) + 1;
-                if(uPeso) { if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--text-main);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; else g4.opt++; let pVal = parseFloat(uPeso.valor); if(!isNaN(pVal)) { if(cat.includes('vaca') || cat.includes('vaquilla')) { g9.vw += pVal; g9.vc++; } if(cat.includes('terne') || cat.includes('desmamante')) { g9.tw += pVal; g9.tc++; } } } 
+                
+                if(esVaca) g2.v++; else if(esTernero) g2.t++; else g2.o++; g3[lote] = (g3[lote] || 0) + 1;
+                
+                if(uPeso) { 
+                    if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--text-main);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } 
+                    else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; 
+                    else g4.opt++; 
+                    let pVal = parseFloat(uPeso.valor); 
+                    if(!isNaN(pVal)) { 
+                        if(esVaca) { g9.vw += pVal; g9.vc++; } 
+                        if(esTernero) { g9.tw += pVal; g9.tc++; } 
+                    } 
+                } 
                 if(uSan) g6.con++; else g6.sin++;
             });
             
@@ -1479,15 +1409,11 @@
         function guardarDisenoServidor() { 
             const n = document.getElementById('cfg-nom').value.trim(); 
             const f = document.getElementById('cfg-logo'); 
-            
             let p = (b64) => { 
                 db.collection('estancias').doc(maestroId).set({ nombre_hacienda: n, logo_hacienda: b64 }, { merge: true }).then(() => {
-                    // Ya no aplicamos manualmente acá. El onSnapshot (Paso 1) lo detectará en milisegundos 
-                    // y actualizará tu teléfono, la PC y cualquier otro dispositivo conectado.
                     alert("Membrete y nombre actualizados. Se sincronizarán en todos sus dispositivos al instante.");
                 });
             }; 
-            
             if(f.files && f.files[0]) { 
                 const r = new FileReader(); 
                 r.onload = function(e) { 
@@ -1497,7 +1423,7 @@
                         let w = img.width, h = img.height; 
                         const maxW = 200, maxH = 200; 
                         if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } 
-                        else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } 
+                        else { if (h > maxH) { w = Math.round(h * maxH / h); h = maxH; } } 
                         canvas.width = w; canvas.height = h; 
                         const ctx = canvas.getContext('2d'); 
                         ctx.drawImage(img, 0, 0, w, h); 
@@ -1518,45 +1444,29 @@
             const u = document.getElementById('op-usu').value.trim().toLowerCase(); 
             const p = document.getElementById('op-pass').value.trim(); 
             const rolSel = document.getElementById('op-rol').value;
-            
             if(!n || !u || !p) { alert("Completar Nombre, Usuario y Contraseña."); return; } 
             if(p.length < 6) { alert("La contraseña debe tener mínimo 6 caracteres por seguridad en Firebase."); return; }
-            
             let rolFinal = rolSel;
             if (rolSel === 'Operador') {
                 let permisos = Array.from(document.querySelectorAll('.chk-permiso:checked')).map(c => c.value).join(',');
                 if(!permisos) { alert("Debe seleccionar al menos un permiso de acceso para el operador."); return; }
                 rolFinal = 'Operador|' + permisos;
             }
-            
-            const btn = document.getElementById('btn-crear-op');
-            const btnOriginal = btn.innerHTML;
-            btn.innerHTML = "⏳ Registrando...";
-            btn.disabled = true;
-
+            const btn = document.getElementById('btn-crear-op'); const btnOriginal = btn.innerHTML;
+            btn.innerHTML = "⏳ Registrando..."; btn.disabled = true;
             let email = u.includes('@') ? u : u + '@taurus.com';
-
             try {
-                // Ghost App para crear Peón Nativamente en Firebase Auth
                 const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryAppPeon");
                 await secondaryApp.auth().createUserWithEmailAndPassword(email, p);
                 await secondaryApp.auth().signOut();
                 await secondaryApp.delete(); 
-
                 await db.collection('usuarios').doc(email).set({
-                    nombre: n,
-                    rol: rolFinal,
-                    maestroId: maestroId,
-                    hacienda: usHacienda,
-                    vencimiento: 'Heredado',
-                    password: p 
+                    nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', password: p 
                 });
-                
                 ejecutarAccion('Alta Operador', email, `Nombre: ${n} | Rol: ${rolFinal}`, null);
-
                 document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 
                 btn.innerHTML = btnOriginal; btn.disabled = false;
-                alert("Usuario Registrado Exitosamente.");
+                alert("Usuario Registrado Exitosamente."); cargarListaOperadores();
             } catch(e) {
                 alert("Hubo un error al crear la cuenta. Verifique que el usuario/correo no esté ya registrado.");
                 btn.innerHTML = btnOriginal; btn.disabled = false;
@@ -1568,7 +1478,6 @@
             let caja = document.getElementById('caja-edit-permisos');
             if(!u) { caja.classList.add('oculto'); return; }
             caja.classList.remove('oculto');
-            
             db.collection('usuarios').doc(u).get().then(doc => {
                 let perms = "dash,ficha,base,reporte"; 
                 if(doc.exists && doc.data().rol) {
@@ -1585,29 +1494,19 @@
             if(!navigator.onLine) { alert("Necesitas conexión."); return; }
             let u = document.getElementById('op-edit-usu-sel').value;
             if(!u) return;
-
             let permisos = Array.from(document.querySelectorAll('.chk-edit-permiso:checked')).map(c => c.value).join(',');
             if(!permisos) { alert("Seleccione al menos un permiso."); return; }
             let rolFinal = 'Operador|' + permisos;
-
-            const btn = document.getElementById('btn-editar-op');
-            const btnOriginal = btn.innerHTML;
-            btn.innerHTML = "⏳ Actualizando...";
-            btn.disabled = true;
-
+            const btn = document.getElementById('btn-editar-op'); const btnOriginal = btn.innerHTML;
+            btn.innerHTML = "⏳ Actualizando..."; btn.disabled = true;
             try {
                 await db.collection('usuarios').doc(u).update({ rol: rolFinal });
                 ejecutarAccion('Edición Operador', u, `Rol: ${rolFinal}`, null);
                 alert("Permisos actualizados con éxito.");
                 document.getElementById('op-edit-usu-sel').value = "";
                 document.getElementById('caja-edit-permisos').classList.add('oculto');
-                btn.innerHTML = btnOriginal;
-                btn.disabled = false;
-            } catch(e) {
-                alert("Error de red.");
-                btn.innerHTML = btnOriginal;
-                btn.disabled = false;
-            }
+                btn.innerHTML = btnOriginal; btn.disabled = false;
+            } catch(e) { alert("Error de red."); btn.innerHTML = btnOriginal; btn.disabled = false; }
         }
 
         async function gestionarAuthGhostParaBorrado(email, claveActual) {
@@ -1626,31 +1525,19 @@
             if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; }
             const selectEl = document.getElementById('op-del-usu-sel');
             const u = selectEl.value.trim();
-            if(!u) { alert("Seleccione un operador de la lista."); return; }
-            
-            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso del operador "${u}"? Esta acción no se puede deshacer.`)) {
-                const btn = document.getElementById('btn-eliminar-op');
-                const btnOriginal = btn.innerHTML;
-                btn.innerHTML = "⏳ Eliminando...";
-                btn.disabled = true;
-
+            if(!u) { alert("Seleccione un usuario de la lista."); return; }
+            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso de "${u}"? Esta acción no se puede deshacer.`)) {
+                const btn = document.getElementById('btn-eliminar-op'); const btnOriginal = btn.innerHTML;
+                btn.innerHTML = "⏳ Eliminando..."; btn.disabled = true;
                 try {
                     const doc = await db.collection('usuarios').doc(u).get();
-                    if(doc.exists && doc.data().password) {
-                        await gestionarAuthGhostParaBorrado(u, doc.data().password);
-                    }
+                    if(doc.exists && doc.data().password) { await gestionarAuthGhostParaBorrado(u, doc.data().password); }
                     await db.collection('usuarios').doc(u).delete();
                     ejecutarAccion('Baja Operador', u, `Eliminado por el panel PC`, null);
-
-                    alert(`El operador "${u}" ha sido eliminado con éxito.`); 
-                    selectEl.value = ''; 
-                    cargarListaOperadores(); 
-                    
-                    btn.innerHTML = btnOriginal;
-                    btn.disabled = false;
-                } catch(e) { 
-                    alert("Hubo un error de conexión."); btn.innerHTML = btnOriginal; btn.disabled = false; 
-                } 
+                    alert(`El usuario "${u}" ha sido eliminado con éxito.`); 
+                    selectEl.value = ''; cargarListaOperadores(); 
+                    btn.innerHTML = btnOriginal; btn.disabled = false;
+                } catch(e) { alert("Hubo un error de conexión."); btn.innerHTML = btnOriginal; btn.disabled = false; } 
             }
         }
 
@@ -1659,10 +1546,9 @@
             try {
                 const snapshot = await db.collection('usuarios').where('maestroId', '==', maestroId).get();
                 const ops = snapshot.docs.filter(doc => doc.id !== maestroId).map(doc => doc.id);
-                
                 const selDel = document.getElementById('op-del-usu-sel');
                 const selEdit = document.getElementById('op-edit-usu-sel');
-                let options = '<option value="">-- Seleccione un operador --</option>';
+                let options = '<option value="">-- Seleccione un usuario --</option>';
                 ops.forEach(o => { options += `<option value="${o}">${o}</option>`; });
                 if(selDel) selDel.innerHTML = options;
                 if(selEdit) selEdit.innerHTML = options;
@@ -1672,9 +1558,7 @@
         function cambiarMiContrasena() { 
             if(!navigator.onLine) { alert("Necesitas conexión."); return; } 
             const nueva = document.getElementById('nueva-clave').value.trim(); 
-            if(!nueva || nueva.length < 6) { alert("Mínimo 6 caracteres para Firebase."); return; } 
-            
-            // Siendo el propio usuario autenticado, podemos cambiar la clave directamente
+            if(!nueva || nueva.length < 6) { alert("Mínimo 6 caracteres de contraseña requeridos."); return; } 
             const user = firebase.auth().currentUser;
             if(user) {
                 user.updatePassword(nueva).then(() => {
@@ -1686,27 +1570,20 @@
         }
         
         function cerrarSesion() { 
-            // Rescatar preferencias que no queremos borrar en la PC
             let leidas = localStorage.getItem('tc_alertas_leidas');
             let mostradas = localStorage.getItem('tc_alertas_mostradas');
             let prefs = localStorage.getItem('tc_prefs');
             let tema = localStorage.getItem('tc_tema');
-            
             firebase.auth().signOut().then(() => {
                 localStorage.clear(); 
-                
                 if(leidas) localStorage.setItem('tc_alertas_leidas', leidas);
                 if(mostradas) localStorage.setItem('tc_alertas_mostradas', mostradas);
                 if(prefs) localStorage.setItem('tc_prefs', prefs);
                 if(tema) localStorage.setItem('tc_tema', tema);
-                
                 window.location.reload(); 
             });
         }
 
-        // ==========================================
-        // LECTOR HID / TECLADO AUTOMÁTICO (PC)
-        // ==========================================
         function forzarSaltoAFicha() {
             let tabFichaPC = document.querySelectorAll('.sidebar-nav li')[1];
             if (typeof cambiarVista === "function" && tabFichaPC && tabFichaPC.style.display !== 'none') {
@@ -1717,7 +1594,6 @@
         window.recibirTagNFC = function(tagHex) {
             let dataMinuscula = String(tagHex).trim().toLowerCase();
             let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === dataMinuscula);
-            
             if(esRFIDRegistrado) {
                 forzarSaltoAFicha();
                 let buscador = document.getElementById('buscador-caravana');
@@ -1736,36 +1612,27 @@
 
         let bufferTeclado = "";
         let timeoutTeclado;
-
         document.addEventListener('keydown', function(event) {
             if(event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'CapsLock') return;
-
             if (event.key === 'Enter') {
                 if (bufferTeclado.length > 2) {
                     event.preventDefault(); 
-                    
                     let dataLimpia = bufferTeclado.replace(/[^a-zA-Z0-9.-]/g, '').trim().toUpperCase(); 
                     let esPeso = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
-                    
                     if (esPeso) {
                         if (typeof rpActivo !== 'undefined' && rpActivo && rpActivo !== "---") {
-                            
                             if(typeof rafagaActiva !== 'undefined' && rafagaActiva) {
                                 let sel = document.getElementById('rafaga-accion').value;
                                 let notas = document.getElementById('rafaga-detalles').value.trim();
                                 let recordatorioRafaga = document.getElementById('rafaga-recordatorio').value; 
-                                
                                 ejecutarAccion('Peso', dataLimpia + " Kg", "Automático (Ráfaga)", null);
-                                
                                 if(sel !== 'solo_peso') {
                                     let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
                                     let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga";
                                     if (recordatorioRafaga !== "0") { detCompleto += ` | [RECORDATORIO:${recordatorioRafaga}]`; }
                                     ejecutarAccion('Sanidad', producto, detCompleto, null);
                                 }
-                                
                                 if(typeof mostrarToast === 'function') mostrarToast("✅ ¡Guardado!");
-                                
                             } else {
                                 forzarSaltoAFicha();
                                 if (typeof abrirModal === "function") abrirModal('m-peso');
@@ -1778,16 +1645,13 @@
                     } else {
                         let tagLimpio = dataLimpia.replace(/TAG/gi, '');
                         forzarSaltoAFicha();
-                        if (typeof window.recibirTagNFC === "function") {
-                            window.recibirTagNFC(tagLimpio);
-                        }
+                        if (typeof window.recibirTagNFC === "function") { window.recibirTagNFC(tagLimpio); }
                     }
                 }
                 bufferTeclado = "";
                 clearTimeout(timeoutTeclado);
                 return;
             }
-
             if (event.key.length === 1) {
                 bufferTeclado += event.key;
                 clearTimeout(timeoutTeclado);
