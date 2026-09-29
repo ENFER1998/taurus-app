@@ -987,12 +987,19 @@
 
                 const prefs = lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
                 
-                // APLICAR DISEÑO VISUAL Y MEMBRETE
-                const dGuardado = lsGet('tc_hacienda', {}); 
+               // APLICAR DISEÑO VISUAL Y MEMBRETE (CORREGIDO PARA FIREBASE)
                 db.collection('estancias').doc(m).get().then(docE => {
-                    let hNombre = usHacienda; let hLogo = "gemini-svg.png";
-                    if(docE.exists && docE.data().logo_hacienda) { hLogo = docE.data().logo_hacienda; hNombre = docE.data().nombre_hacienda; lsSet('tc_hacienda', {nombre: hNombre, logo: hLogo}); } 
-                    else if (dGuardado.logo) { hLogo = dGuardado.logo; hNombre = dGuardado.nombre; }
+                    let hNombre = usHacienda; 
+                    let hLogo = "gemini-svg.png";
+                    
+                    // Si hay un logo guardado en Firebase, lo usamos
+                    if (docE.exists && docE.data().logo_hacienda) { 
+                        hLogo = docE.data().logo_hacienda; 
+                        hNombre = docE.data().nombre_hacienda || usHacienda; 
+                    } 
+                    
+                    // FORZAMOS LA ACTUALIZACIÓN EN LOCALSTORAGE PARA ELIMINAR EL RASTRO VIEJO DE SHEETS
+                    lsSet('tc_hacienda', { nombre: hNombre, logo: hLogo });
                     aplicarDisenoEnPantalla(hNombre, hLogo);
                 });
                 
