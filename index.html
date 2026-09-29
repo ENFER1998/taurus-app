@@ -800,22 +800,32 @@
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
 
-        // ==========================================
-        // VISTA PREVIA DEL MEMBRETE 
-        // ==========================================
-        function aplicarDisenoEnPantalla(nombre, logo) { 
-            let n = nombre || 'Taurus Control';
-            let l = logo || 'gemini-svg.png';
-            
-            document.getElementById('cfg-nom').value = nombre || ''; 
-            document.getElementById('preview-nombre-reporte').innerText = n;
-            
-            const imgRep = document.getElementById('preview-logo-reporte');
-            if(imgRep) imgRep.src = l;
-            
-            const imgCfg = document.getElementById('preview-logo-config');
-            if(imgCfg) imgCfg.src = l;
-        }
+        // APLICAR DISEÑO VISUAL Y MEMBRETE (SINCRONIZACIÓN EN TIEMPO REAL)
+                db.collection('estancias').doc(m).onSnapshot(docE => {
+                    let hNombre = hacienda || "HACIENDA"; 
+                    let hLogo = "gemini-svg.png";
+                    
+                    if (docE.exists) { 
+                        if (docE.data().logo_hacienda) hLogo = docE.data().logo_hacienda; 
+                        if (docE.data().nombre_hacienda) hNombre = docE.data().nombre_hacienda; 
+                    } 
+                    
+                    // Guardado local limpio y aplicación visual
+                    lsSet('tc_hacienda', { nombre: hNombre, logo: hLogo });
+                    aplicarDisenoEnPantalla(hNombre, hLogo);
+                    
+                    // Actualización de textos en UI (Diferenciado para PC y Móvil)
+                    let topbarPC = document.getElementById('topbar-estancia');
+                    if (topbarPC) {
+                        topbarPC.innerText = `ESTANCIA: ${hNombre.toUpperCase()} | Operador: ${usNombre}`;
+                    }
+                    
+                    let lblPerfilMob = document.getElementById('usuario-activo-lbl');
+                    if (lblPerfilMob) {
+                        let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
+                        lblPerfilMob.value = `${hNombre.toUpperCase()} - ${usNombre} (${isPropietario ? 'Propietario' : 'Operador'})`;
+                    }
+                });
 
         function fusionarDatos(nuevos) {
             let mapa = new Map();
@@ -1278,8 +1288,41 @@
         function filtrarLista(t) { const lis = document.getElementById('tb-registro').getElementsByTagName('li'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "flex" : "none"; }
         function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); buscarCaravanaBtn(); }
         
-        function guardarDisenoServidor() { const n = document.getElementById('cfg-nom').value.trim(); const f = document.getElementById('cfg-logo'); let p = (b64) => { const fd = new URLSearchParams(); fd.append('accion', 'guardar_diseno'); fd.append('maestro', maestroId); fd.append('nombre_hacienda', n); fd.append('logo_hacienda', b64); fetch(GOOGLE_SHEETS_URL, { method: 'POST', body: fd, mode: 'no-cors' }).then(() => { lsSet('tc_hacienda', {nombre: n, logo: b64}); aplicarDisenoEnPantalla(n, b64); alert("Membrete oficial de PDF actualizado."); }); }; if(f.files && f.files[0]) { const r = new FileReader(); r.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const maxW = 200, maxH = 200; if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); p(canvas.toDataURL('image/png')); }; img.src = e.target.result; }; r.readAsDataURL(f.files[0]); } else { const logoGuardado = lsGet('tc_hacienda', {}).logo || ""; p(logoGuardado); } }
-        
+function guardarDisenoServidor() { 
+            const n = document.getElementById('cfg-nom').value.trim(); 
+            const f = document.getElementById('cfg-logo'); 
+            
+            let p = (b64) => { 
+                db.collection('estancias').doc(maestroId).set({ nombre_hacienda: n, logo_hacienda: b64 }, { merge: true }).then(() => {
+                    // Ya no aplicamos manualmente acá. El onSnapshot (Paso 1) lo detectará en milisegundos 
+                    // y actualizará tu teléfono, la PC y cualquier otro dispositivo conectado.
+                    alert("Membrete y nombre actualizados. Se sincronizarán en todos sus dispositivos al instante.");
+                });
+            }; 
+            
+            if(f.files && f.files[0]) { 
+                const r = new FileReader(); 
+                r.onload = function(e) { 
+                    const img = new Image(); 
+                    img.onload = function() { 
+                        const canvas = document.createElement('canvas'); 
+                        let w = img.width, h = img.height; 
+                        const maxW = 200, maxH = 200; 
+                        if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } 
+                        else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } 
+                        canvas.width = w; canvas.height = h; 
+                        const ctx = canvas.getContext('2d'); 
+                        ctx.drawImage(img, 0, 0, w, h); 
+                        p(canvas.toDataURL('image/png')); 
+                    }; 
+                    img.src = e.target.result; 
+                }; 
+                r.readAsDataURL(f.files[0]); 
+            } else { 
+                const logoGuardado = lsGet('tc_hacienda', {}).logo || ""; 
+                p(logoGuardado); 
+            } 
+        }        
         async function crearOperador() { 
             if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
             const n = document.getElementById('op-nombre').value.trim();
