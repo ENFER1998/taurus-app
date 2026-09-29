@@ -261,7 +261,7 @@
                     </div>
                     <div class="form-grupo">
                         <label>Contraseña de Acceso *</label>
-                        <input type="text" id="n-pass" class="form-control" placeholder="Mínimo 4 caracteres">
+                        <input type="text" id="n-pass" class="form-control" placeholder="Mínimo 6 caracteres">
                     </div>
                 </div>
                 
@@ -572,13 +572,18 @@
             const feats = getFeatures('n');
             
             if(!u || !p || !v || !h || !nom) return mostrarToast("⚠️ Complete todos los campos", true);
-            if(p.length < 4) return mostrarToast("⚠️ La contraseña debe tener mínimo 4 caracteres", true);
+            if(p.length < 6) return mostrarToast("⚠️ Firebase exige un mínimo de 6 caracteres", true); 
             
             const email = u.includes('@') ? u : u + '@taurus.com';
 
-            toggleLoading(true, "Registrando cliente...");
+            toggleLoading(true, "Registrando en Auth y Firestore...");
             
             try {
+                const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryApp");
+                await secondaryApp.auth().createUserWithEmailAndPassword(email, p);
+                await secondaryApp.auth().signOut();
+                await secondaryApp.delete(); 
+
                 await db.collection('usuarios').doc(email).set({
                     nombre: nom,
                     rol: 'Propietario',
@@ -590,9 +595,7 @@
                 });
 
                 toggleLoading(false); 
-                mostrarToast("✅ Cuenta creada."); 
-                
-                alert(`⚠️ ¡ATENCIÓN!\n\nSe ha creado el perfil en la base de datos para:\n${email}\n\nRECUERDE: Para que el usuario pueda iniciar sesión, debe crear esta misma cuenta y contraseña en la pestaña 'Authentication' de la consola de Firebase.`);
+                mostrarToast("✅ Cuenta creada y lista para usarse."); 
                 
                 document.getElementById('n-nombre').value = ''; 
                 document.getElementById('n-usu').value = ''; 
@@ -602,8 +605,15 @@
                 
                 cargarClientes(); 
             } catch (e) {
+                console.error(e);
                 toggleLoading(false); 
-                mostrarToast("❌ Error al crear cuenta", true);
+                if(e.code === 'auth/email-already-in-use') {
+                    mostrarToast("❌ Este correo ya está registrado", true);
+                } else if (e.code === 'auth/invalid-email') {
+                    mostrarToast("❌ Formato de correo inválido", true);
+                } else {
+                    mostrarToast("❌ Error al crear cuenta", true);
+                }
             }
         }
 
@@ -712,16 +722,16 @@
         }
 
         async function cambiarClaveCliente(usu) {
-            const nuevaClave = prompt(`Ingrese la nueva contraseña de referencia para el cliente "${usu}":\n(Mínimo 4 caracteres)`);
+            const nuevaClave = prompt(`Ingrese la nueva contraseña de referencia para el cliente "${usu}":\n(Mínimo 6 caracteres)`);
             if(nuevaClave === null || nuevaClave.trim() === "") return; 
-            if(nuevaClave.trim().length < 4) return mostrarToast("⚠️ La contraseña debe tener al menos 4 caracteres", true);
+            if(nuevaClave.trim().length < 6) return mostrarToast("⚠️ La contraseña debe tener al menos 6 caracteres", true);
             
             toggleLoading(true, `Actualizando referencia...`);
             try {
                 await db.collection('usuarios').doc(usu).update({ password: nuevaClave.trim() });
                 toggleLoading(false); 
                 mostrarToast("✅ Contraseña actualizada");
-                alert("Recuerda que debes cambiar la clave real de acceso en la pestaña 'Authentication' de Firebase Console para que surta efecto en el Login.");
+                alert("Recuerda que debes cambiar la clave real de acceso borrando y recreando el usuario en Authentication de Firebase Console o usando la gestión nativa del usuario.");
             } catch (e) {
                 toggleLoading(false); 
                 mostrarToast("❌ Error al guardar", true);
@@ -914,7 +924,7 @@
         }
 
         async function enviarCargaMasivaEnBloques(maestroId, dataArray) {
-            const chunkSize = 450; 
+            const chunkSize = 450; // El límite máximo seguro de Firestore Batch es de 500
             const coleccionEventos = db.collection("estancias").doc(maestroId).collection("eventos");
             
             for (let i = 0; i < dataArray.length; i += chunkSize) {
