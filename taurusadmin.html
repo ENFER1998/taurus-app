@@ -17,61 +17,7 @@
       OneSignalDeferred.push(async function(OneSignal) {
         try { await OneSignal.init({ appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60" }); } catch(e) {}
       });
-        // ==========================================
-        // FUNCIONES KILL SWITCH Y AVISOS (CON NOTIFICACIONES PUSH)
-        // ==========================================
-        const APPS_SCRIPT_NOTIFICACIONES = "https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec";
-
-        async function toggleMantenimiento(nuevoEstado) {
-            if(nuevoEstado === 'ON' && !confirm("⚠️ ¿Estás seguro que deseas desconectar a todos los clientes e inutilizar la plataforma?")) return;
-            
-            toggleLoading(true, "Transmitiendo orden de bloqueo y notificación...");
-            try {
-                // 1. Bloquear o desbloquear en Firebase
-                await db.collection('sistema').doc('config').set({ mantenimiento: nuevoEstado === 'ON' }, { merge: true });
-                
-                // 2. Disparar Notificación Push global a todos los celulares (Solo si se bloquea)
-                if(nuevoEstado === 'ON') {
-                    const fd = new URLSearchParams(); 
-                    fd.append('accion', 'toggle_mantenimiento'); 
-                    fd.append('estado', nuevoEstado);
-                    fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
-                }
-
-                toggleLoading(false); 
-                mostrarToast(`✅ Plataforma cambiada a estado: ${nuevoEstado}`);
-            } catch (e) {
-                toggleLoading(false); 
-                mostrarToast("❌ Error al cambiar estado", true);
-            }
-        }
-
-        async function enviarAvisoMantenimiento() {
-            let msg = document.getElementById('txt-aviso-mant').value.trim();
-            if(!msg) return mostrarToast("⚠️ Escribe el mensaje de aviso", true);
-            if(!confirm("📣 ¿Enviar esta notificación push a TODOS los usuarios ahora mismo?")) return;
-            
-            toggleLoading(true, "Enviando anuncio global...");
-            try {
-                // 1. Mostrar banner naranja en las apps a través de Firebase
-                await db.collection('sistema').doc('config').set({ alerta_global: "⏳ AVISO: " + msg }, { merge: true });
-                
-                // 2. Disparar Notificación Push a todos los celulares
-                const fd = new URLSearchParams(); 
-                fd.append('accion', 'aviso_mantenimiento'); 
-                fd.append('mensaje', "⏳ AVISO: " + msg);
-                fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
-
-                toggleLoading(false); 
-                mostrarToast("✅ Aviso enviado a todos"); 
-                document.getElementById('txt-aviso-mant').value = '';
-            } catch (e) {
-                toggleLoading(false); 
-                mostrarToast("❌ Error al enviar el aviso", true);
-            }
-        }
     </script>
-    
 
     <!-- FIREBASE SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -99,7 +45,7 @@
         #pantalla-login { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-base); display: flex; align-items: center; justify-content: center; z-index: 2000; }
         .login-box { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 40px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
         .login-box img { width: 80px; height: 80px; margin-bottom: 15px; border-radius: 16px; object-fit: contain; background: var(--bg-base); padding: 5px; border: 1px solid var(--border);}
-        .login-box h1 { margin: 0 0 5px 0; font-size: 24px; font-weight: 900; letter-spacing: 1px; color: var(--primary);}
+        .login-box h1 { margin: 0 0 20px 0; font-size: 24px; font-weight: 900; letter-spacing: 1px; color: var(--text-main);}
         .login-box p { color: var(--text-muted); font-size: 13px; margin-bottom: 25px; }
         
         #sidebar { width: 260px; background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 100;}
@@ -174,13 +120,12 @@
     <div id="pantalla-login">
         <div class="login-box">
             <img src="gemini-svg.png" alt="Logo Taurus">
-            <h1>Taurus Admin</h1>
-            <p>Panel Maestro de Gestión</p>
-            <div class="form-grupo">
+            <h1>Taurus Control</h1>
+            <div class="form-grupo" style="margin-top: 20px;">
                 <input type="email" id="admin-email" class="form-control" placeholder="Correo del Administrador" style="text-align: center; margin-bottom: 10px;" autocomplete="off">
-                <input type="password" id="admin-pass" class="form-control" placeholder="Clave de Acceso Maestro" style="text-align: center; font-size: 16px; letter-spacing: 2px;" autocomplete="off">
+                <input type="password" id="admin-pass" class="form-control" placeholder="Clave de Acceso" style="text-align: center; font-size: 16px; letter-spacing: 2px;" autocomplete="off">
             </div>
-            <button class="btn" id="btn-login" style="width: 100%; padding: 15px;" onclick="ingresarAdmin()">Acceder al Panel</button>
+            <button class="btn" id="btn-login" style="width: 100%; padding: 15px; background: #3b82f6;" onclick="ingresarAdmin()">Iniciar Sesión</button>
             <div style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
                 <span style="color: var(--text-muted); font-size: 12px;">Taurus Control &copy; 2026</span><br>
                 <strong style="color: var(--text-main); font-size: 13px;">Desarrollado por Fernando Rodriguez</strong>
@@ -503,7 +448,7 @@
             } catch (error) {
                 console.error("Error de login:", error);
                 mostrarToast("❌ Credenciales Incorrectas o Sin Red", true);
-                btn.innerText = "Acceder al Panel";
+                btn.innerText = "Iniciar Sesión";
                 btn.disabled = false;
             }
         }
@@ -535,6 +480,11 @@
         function cerrarModal(id) { document.getElementById(id).classList.add('oculto'); }
         function toggleLoading(show, text="Procesando...") { document.getElementById('loading-text').innerText = text; document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; }
         function mostrarToast(mensaje, esError = false) { const toast = document.getElementById('toast-msg'); toast.innerText = mensaje; if(esError) toast.classList.add('error'); else toast.classList.remove('error'); toast.classList.add('mostrar'); setTimeout(() => { toast.classList.remove('mostrar'); }, 3000); }
+
+        // ==========================================
+        // FUNCIONES KILL SWITCH Y AVISOS (CON NOTIFICACIONES PUSH)
+        // ==========================================
+        const APPS_SCRIPT_NOTIFICACIONES = "https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec";
 
         function checkStatusInicial() {
             if(unsubscribeConfig) unsubscribeConfig();
@@ -570,9 +520,19 @@
         async function toggleMantenimiento(nuevoEstado) {
             if(nuevoEstado === 'ON' && !confirm("⚠️ ¿Estás seguro que deseas desconectar a todos los clientes e inutilizar la plataforma?")) return;
             
-            toggleLoading(true, "Transmitiendo orden de bloqueo...");
+            toggleLoading(true, "Transmitiendo orden de bloqueo y notificación...");
             try {
+                // 1. Bloquear o desbloquear en Firebase
                 await db.collection('sistema').doc('config').set({ mantenimiento: nuevoEstado === 'ON' }, { merge: true });
+                
+                // 2. Disparar Notificación Push global a todos los celulares (Solo si se bloquea)
+                if(nuevoEstado === 'ON') {
+                    const fd = new URLSearchParams(); 
+                    fd.append('accion', 'toggle_mantenimiento'); 
+                    fd.append('estado', nuevoEstado);
+                    fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
+                }
+
                 toggleLoading(false); 
                 mostrarToast(`✅ Plataforma cambiada a estado: ${nuevoEstado}`);
             } catch (e) {
@@ -588,7 +548,15 @@
             
             toggleLoading(true, "Enviando anuncio global...");
             try {
+                // 1. Mostrar banner naranja en las apps a través de Firebase
                 await db.collection('sistema').doc('config').set({ alerta_global: "⏳ AVISO: " + msg }, { merge: true });
+                
+                // 2. Disparar Notificación Push a todos los celulares
+                const fd = new URLSearchParams(); 
+                fd.append('accion', 'aviso_mantenimiento'); 
+                fd.append('mensaje', "⏳ AVISO: " + msg);
+                fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
+
                 toggleLoading(false); 
                 mostrarToast("✅ Aviso enviado a todos"); 
                 document.getElementById('txt-aviso-mant').value = '';
@@ -598,6 +566,9 @@
             }
         }
 
+        // ==========================================
+        // ALTA Y EDICIÓN DE CLIENTES SaaS (FIREBASE)
+        // ==========================================
         function getFeatures(prefijo) {
             let features = [];
             if(document.getElementById(`${prefijo}-feat-rafaga`).checked) features.push('rafaga');
@@ -630,7 +601,7 @@
             
             const email = u.includes('@') ? u : u + '@taurus.com';
 
-            toggleLoading(true, "Registrando en Auth y Firestore...");
+            toggleLoading(true, "Registrando cliente...");
             
             try {
                 const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryApp");
@@ -978,7 +949,7 @@
         }
 
         async function enviarCargaMasivaEnBloques(maestroId, dataArray) {
-            const chunkSize = 450; // El límite máximo seguro de Firestore Batch es de 500
+            const chunkSize = 450; 
             const coleccionEventos = db.collection("estancias").doc(maestroId).collection("eventos");
             
             for (let i = 0; i < dataArray.length; i += chunkSize) {
