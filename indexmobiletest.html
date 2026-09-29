@@ -169,7 +169,7 @@
     <!-- MODAL POP-UP AVISO GLOBAL -->
     <div id="modal-alerta-global" class="modal">
         <div class="modal-body">
-            <h3 style="color:var(--alerta); margin-top:0; border-bottom: none; font-size:22px; text-align:center;">⚠️️ Aviso Importante</h3>
+            <h3 style="color:var(--alerta); margin-top:0; border-bottom: none; font-size:22px; text-align:center;">⚠️ Aviso Importante</h3>
             <p id="txt-alerta-global" style="font-size:16px; line-height: 1.5; color:var(--texto); margin-bottom: 25px; font-weight:bold; text-align:center;"></p>
             <button class="btn-guardar" style="background:var(--alerta);" onclick="cerrarPopUpAlerta()">Entendido / Cerrar</button>
         </div>
@@ -372,7 +372,7 @@
                     <div class="tarjeta-titulo">👤 Mi Perfil</div>
                     <div class="form-grupo"><label>Sesión iniciada como:</label><input type="text" id="usuario-activo-lbl" class="form-control" readonly style="font-weight:bold; color:var(--exito);"></div>
                     <div class="form-grupo" id="panel-licencia"><label>Vencimiento de Licencia:</label><input type="text" id="lbl-licencia" class="form-control" readonly style="font-weight:bold;"></div>
-                    <div class="form-grupo" style="margin-top: 15px;"><label>Cambiar mi Contraseña</label><input type="password" id="nueva-clave" class="form-control" placeholder="Mínimo 6 caracteres"></div>
+                    <div class="form-grupo" style="margin-top: 15px;"><label>Cambiar mi Contraseña (Mín. 6 caracteres)</label><input type="password" id="nueva-clave" class="form-control" placeholder="Mínimo 6 caracteres"></div>
                     <button class="btn-guardar" onclick="cambiarMiContrasena()">Actualizar Contraseña</button>
                 </div>
                 
@@ -390,6 +390,95 @@
                     
                     <div class="form-grupo"><label>Subir Nuevo Logo Oficial (PNG)</label><input type="file" id="cfg-logo" class="form-control" style="padding:6px;" accept="image/*"></div>
                     <button class="btn-guardar" onclick="guardarDisenoServidor()">Guardar Diseño PDF</button>
+                </div>
+
+                <!-- CONTROL DE OPERADORES Y DUEÑOS (IGUAL QUE EN PC) -->
+                <div class="tarjeta" id="panel-crear-peones">
+                    <div class="tarjeta-titulo">👷 Control de Operadores y Dueños</div>
+                    
+                    <div class="form-grupo">
+                        <label>Nombre y Apellido</label>
+                        <input type="text" id="op-nombre" class="form-control" placeholder="Ej: Juan Ramírez" autocomplete="off">
+                    </div>
+                    
+                    <div class="form-grupo">
+                        <label>Usuario / Correo de Acceso</label>
+                        <input type="text" id="op-usu" class="form-control" placeholder="Correo o usuario" autocomplete="off">
+                    </div>
+
+                    <div class="form-grupo">
+                        <label>Contraseña de Acceso (Mín. 6 caracteres)</label>
+                        <input type="password" id="op-pass" class="form-control" placeholder="Clave segura" autocomplete="new-password">
+                    </div>
+
+                    <div class="form-grupo">
+                        <label>Rol del Nuevo Usuario</label>
+                        <select id="op-rol" class="form-control" onchange="togglePermisos()">
+                            <option value="Operador">Operador (Acceso Limitado)</option>
+                            <option value="Propietario">Propietario / Dueño Extra (Acceso Total)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-grupo" id="caja-permisos">
+                        <label style="font-size:12px; color:var(--muted); margin-bottom:8px; display:block;">Permisos de Acceso al Menú:</label>
+                        <div style="display:flex; flex-direction:column; gap:8px; background:#1e293b; padding:10px; border:1px solid var(--borde); border-radius:8px;">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-permiso" value="dash" checked> <span>📊 Panel de Control</span></label>
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-permiso" value="ficha" checked> <span>🐄 Ficha Clínica (Manga)</span></label>
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-permiso" value="base" checked> <span>📋 Base de Datos</span></label>
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-permiso" value="reporte"> <span>📄 Reportes PDF</span></label>
+                        </div>
+                    </div>
+                    <button class="btn-guardar" id="btn-crear-op" style="background:var(--exito);" onclick="crearOperador()">Registrar Usuario en Nube</button>
+                    
+                    <hr style="border-color:var(--borde); margin:20px 0;">
+                    
+                    <h4 style="margin-top:0; font-size:14px; text-transform:uppercase; color:var(--texto);">✏️ Editar Permisos de Operador</h4>
+                    <div class="form-grupo">
+                        <select id="op-edit-usu-sel" class="form-control" onchange="cargarPermisosEdicion()">
+                            <option value="">-- Seleccione un operador --</option>
+                        </select>
+                    </div>
+                    <div id="caja-edit-permisos" class="oculto">
+                        <div class="form-grupo">
+                            <label style="font-size:12px; color:var(--muted); margin-bottom:8px; display:block;">Nuevos Permisos:</label>
+                            <div style="display:flex; flex-direction:column; gap:8px; background:#1e293b; padding:10px; border:1px solid var(--borde); border-radius:8px;">
+                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-edit-permiso" value="dash"> <span>📊 Panel de Control</span></label>
+                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-edit-permiso" value="ficha"> <span>🐄 Ficha Clínica (Manga)</span></label>
+                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-edit-permiso" value="base"> <span>📋 Base de Datos</span></label>
+                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-edit-permiso" value="reporte"> <span>📄 Reportes PDF</span></label>
+                            </div>
+                        </div>
+                        <button class="btn-guardar" id="btn-editar-op" style="background:var(--secundario);" onclick="guardarEdicionOperador()">Actualizar Permisos</button>
+                    </div>
+
+                    <hr style="border-color:var(--borde); margin:20px 0;">
+                    
+                    <div class="form-grupo">
+                        <label>Eliminar Operador o Dueño Permanentemente</label>
+                        <select id="op-del-usu-sel" class="form-control">
+                            <option value="">-- Seleccione un usuario --</option>
+                        </select>
+                        <span style="font-size:11px; color:var(--muted); display:block; margin-top:5px;">El sistema borrará sus credenciales de Firebase Auth y su perfil de acceso.</span>
+                    </div>
+                    <button class="btn-guardar" id="btn-eliminar-op" style="background:var(--peligro);" onclick="eliminarOperador()">Eliminar Operador / Usuario</button>
+                </div>
+
+                <!-- 11 ANALÍTICAS EN DASHBOARD MÓVIL -->
+                <div class="tarjeta" id="panel-analiticas">
+                    <div class="tarjeta-titulo">📊 Analíticas en Dashboard (Máx 3)</div>
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="1" onchange="verificarLimiteGraficos(this)"> <span>1. Tasa de Preñez Dinámica</span></label>
+                        <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="2" onchange="verificarLimiteGraficos(this)"> <span>2. Composición de Hacienda</span></label>
+                        <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="3" onchange="verificarLimiteGraficos(this)"> <span>3. Distribución por Lotes</span></label>
+                        <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="4" onchange="verificarLimiteGraficos(this)"> <span>4. Condición Corporal General</span></label>
+                        <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="5" onchange="verificarLimiteGraficos(this)"> <span>5. Causas de Vientre Vacío</span></label>
+                        <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="6" onchange="verificarLimiteGraficos(this)"> <span>6. Ratios de Sanidad Global</span></label>
+                        <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="7" onchange="verificarLimiteGraficos(this)"> <span>7. Preñez Eficaz por Lote</span></label>
+                        <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="8" onchange="verificarLimiteGraficos(this)"> <span>8. Eficacia por Toro</span></label>
+                        <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="9" onchange="verificarLimiteGraficos(this)"> <span>9. Promedios</span></label>
+                        <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="10" onchange="verificarLimiteGraficos(this)"> <span>10. Volumen</span></label>
+                        <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="11" onchange="verificarLimiteGraficos(this)"> <span>11. Causas de Baja / Mortalidad</span></label>
+                    </div>
                 </div>
 
                 <div class="tarjeta">
@@ -462,7 +551,6 @@
     <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial Clínico</h3><div id="contenido-historial"></div></div></div>
 
     <script>
-        // CONFIGURACIÓN FIREBASE (Autenticación y Base de Datos Nativas)
         const firebaseConfig = {
             apiKey: "AIzaSyDTXUYwYYkQ_pKDhui9H3cFmecgAPQ9eqA",
             authDomain: "taurus-cbd59.firebaseapp.com",
@@ -480,12 +568,10 @@
         let dbCache = []; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
         let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
         let alertaGlobalIdActual = "";
-        let notificadoMantenimiento = false;
         
         let unsubscribeEventos = null;
         let unsubscribeConfig = null;
 
-        // Auto-inicio de sesión con Firebase Auth
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
                 db.collection('usuarios').doc(user.email).get().then(doc => {
@@ -513,13 +599,9 @@
             setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() => t.remove(), 500); }, 3000);
         }
 
-        // ==========================================
-        // PROCESADOR DE AVISOS Y POP-UPS GLOBALES
-        // ==========================================
         function procesarAlertaServidor(msg, id) {
             const banner = document.getElementById('banner-alerta-global');
             if (!msg || !id) { banner.classList.add('oculto'); return; }
-            
             let leidas = lsGet('tc_alertas_leidas', []); let mostradas = lsGet('tc_alertas_mostradas', []); 
             if (!leidas.includes(id)) {
                 alertaGlobalIdActual = id;
@@ -586,21 +668,14 @@
             const p = document.getElementById('password').value.trim();
             const btn = document.getElementById('btn-ingreso');
             const err = document.getElementById('error-login');
-            
             if(!u || !p) return; 
             btn.disabled = true; btn.innerText = "Verificando..."; err.style.display = 'none';
-
             let email = u.includes('@') ? u.toLowerCase() : u.toLowerCase() + '@taurus.com';
-
             try {
                 if(!navigator.onLine) throw new Error("Offline");
                 await firebase.auth().signInWithEmailAndPassword(email, p);
             } catch(error) {
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                    err.innerText = "Usuario no registrado en Firebase o clave incorrecta. (Recuerde crearlo desde el panel Taurus Admin).";
-                } else {
-                    err.innerText = "Error: " + error.message;
-                }
+                err.innerText = "Usuario no registrado en Firebase o clave incorrecta.";
                 err.style.display = 'block';
                 btn.disabled = false; btn.innerText = "Iniciar Sesión";
             }
@@ -616,52 +691,35 @@
             try {
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
                 
-                // 1. Escuchar Configuración (Kill Switch en tiempo real)
                 if(unsubscribeConfig) unsubscribeConfig();
                 unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot(doc => {
                     if(doc.exists) {
                         const conf = doc.data();
                         procesarAlertaServidor(conf.alerta_global, "alerta_fb");
                         const pantMant = document.getElementById('pantalla-mantenimiento');
-                        
-                        if(conf.mantenimiento) {
-                            if(pantMant) pantMant.classList.remove('oculto');
-                        } else {
-                            if(pantMant) pantMant.classList.add('oculto');
-                        }
+                        if(conf.mantenimiento) { if(pantMant) pantMant.classList.remove('oculto'); } 
+                        else { if(pantMant) pantMant.classList.add('oculto'); }
                     }
                 });
 
-                // 2. Escuchar Sincronización de Base de Datos
                 setEstadoRed(true, '🔄 Sincronizando...');
                 if(unsubscribeEventos) unsubscribeEventos();
                 unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot(snapshot => {
                     let nuevosDatos = [];
                     snapshot.forEach(doc => nuevosDatos.push(doc.data()));
                     
-                    // APLICANDO LA LIMPIEZA TOTAL PARA EVITAR DATOS FANTASMAS AL RECREAR ESTANCIAS
                     fusionarDatos(nuevosDatos);
 
                     if(rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
                     procesarDatosDashboard(); 
                     if(!document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); 
                     if(!document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
-                    
+                    cargarListaOperadores();
                     setEstadoRed(true);
                 }, err => { setEstadoRed(false, '❌ Error de red'); });
                 
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
                 let displayRol = isPropietario ? 'Propietario' : 'Operador';
-                
-                if (window.AndroidTaurus && window.AndroidTaurus.identificarUsuarioPush) { window.AndroidTaurus.identificarUsuarioPush(usActivo, displayRol, maestroId); }
-                if (window.OneSignalDeferred) { 
-                    OneSignalDeferred.push(async function(OneSignal) { 
-                        try {
-                            OneSignal.User.addTags({ rol: displayRol, estancia_id: m }); 
-                            if (isPropietario) { await OneSignal.Slidedown.promptPush(); }
-                        } catch (e) {}
-                    }); 
-                }
                 
                 document.querySelectorAll('.vista').forEach(e => e.classList.add('oculto'));
                 document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('activo'));
@@ -674,26 +732,22 @@
                 } else {
                     let perms = usRol.includes('|') ? usRol.split('|')[1] : "dash,ficha,base,reporte";
                     let foundFirst = false;
-                    
                     document.querySelectorAll('.nav-item').forEach(li => {
                         let target = li.getAttribute('onclick');
                         if(target && target.includes('cambiarVista')) {
                             let viewId = target.match(/'([^']+)'/)[1];
                             let esConfig = viewId.includes('config');
                             let isAllowed = false;
-                            
                             if(viewId.includes('dash') && perms.includes('dash')) isAllowed = true;
                             if((viewId.includes('ficha') || viewId.includes('manga')) && perms.includes('ficha')) isAllowed = true;
                             if((viewId.includes('base') || viewId.includes('registro')) && perms.includes('base')) isAllowed = true;
                             if((viewId.includes('reporte') || viewId.includes('informe')) && perms.includes('reporte')) isAllowed = true;
-                            
                             if (!esConfig && !isAllowed) { li.style.display = 'none'; } else {
                                 li.style.display = 'flex';
                                 if (!foundFirst && !esConfig) { vistaInicial = viewId; tabSeleccionado = li; foundFirst = true; }
                             }
                         }
                     });
-
                     if(!perms.includes('dash')) { let pAn = document.getElementById('panel-analiticas'); if(pAn) pAn.style.display = 'none'; }
                 }
                 
@@ -706,30 +760,20 @@
                             lblLic.value = fVenc.toLocaleDateString() + ` (${diffDias} días restantes)`;
                             lblLic.style.color = diffDias <= 7 ? "var(--peligro)" : "var(--texto)";
                         } else { lblLic.value = "Licencia Perpetua / Sin Límite"; }
-                        
-                        const featuresActivos = mData.features || "";
-                        if(!featuresActivos.includes('rafaga')) {
-                            let bloqueRafaga = document.getElementById('tarjeta-rafaga');
-                            if (bloqueRafaga) bloqueRafaga.style.display = 'none';
-                        }
                     }
                 });
 
                 const prefs = lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
                 
-                // 3. Escuchar Membrete y Nombre (Sincronización Total)
                 db.collection('estancias').doc(m).onSnapshot(docE => {
                     let hNombre = usHacienda || "HACIENDA"; 
                     let hLogo = "gemini-svg.png";
-                    
                     if (docE.exists) { 
                         if (docE.data().logo_hacienda) hLogo = docE.data().logo_hacienda; 
                         if (docE.data().nombre_hacienda) hNombre = docE.data().nombre_hacienda; 
                     } 
-                    
                     lsSet('tc_hacienda', { nombre: hNombre, logo: hLogo });
                     aplicarDisenoEnPantalla(hNombre, hLogo);
-                    
                     let lblPerfilMob = document.getElementById('usuario-activo-lbl');
                     if (lblPerfilMob) {
                         let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
@@ -738,52 +782,34 @@
                 });
                 
                 document.getElementById('f-inf-rango-fecha').value = "30"; manejarRangoFechas();
-                
                 document.getElementById('pantalla-login').classList.add('oculto'); 
                 document.getElementById('pantalla-app').classList.remove('oculto'); 
                 document.getElementById('pantalla-mantenimiento').classList.add('oculto');
-                
                 if(tabSeleccionado) { cambiarVista(vistaInicial, tabSeleccionado); } else { cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
-                
-                sincronizarPendientesAuto();
+                sincronizarPendientesAuto(); cargarListaOperadores();
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
 
-        // ==========================================
-        // FUSIÓN DE DATOS Y LIMPIEZA OFFLINE/NUBE
-        // ==========================================
         function fusionarDatos(nuevos) {
             let pendientes = lsGet('tc_pendientes', []);
             let mapa = new Map();
-            
-            // 1. La nube es la fuente oficial de verdad. Si la estancia fue borrada y 
-            // recreada vacía, 'nuevos' llegará vacío ([]), limpiando los datos viejos.
             if(Array.isArray(nuevos)) {
                 nuevos.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
             }
-            
-            // 2. Mantenemos los cambios locales pendientes hechos offline que aún no se subieron.
             if(Array.isArray(pendientes)) {
                 pendientes.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
             }
-
             dbCache = Array.from(mapa.values()).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
             lsSet('tc_db', dbCache);
         }
 
-        // ==========================================
-        // VISTA PREVIA DEL MEMBRETE 
-        // ==========================================
         function aplicarDisenoEnPantalla(nombre, logo) { 
             let n = nombre || 'Taurus Control';
             let l = logo || 'gemini-svg.png';
-            
             document.getElementById('cfg-nom').value = nombre || ''; 
             document.getElementById('preview-nombre-reporte').innerText = n;
-            
             const imgRep = document.getElementById('preview-logo-reporte');
             if(imgRep) imgRep.src = l;
-            
             const imgCfg = document.getElementById('preview-logo-config');
             if(imgCfg) imgCfg.src = l;
         }
@@ -801,22 +827,17 @@
         function procesarEventos() {
             let dbAsc = [...dbCache].sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
             let historiaPorRP = {};
-            
             dbAsc.forEach(evt => {
                 let rp = String(evt.caravana);
                 if(rp === "---" || !rp) return;
-                
                 if(!historiaPorRP[rp]) historiaPorRP[rp] = [];
-                
                 if(evt.accion === 'Borrar_Caravana') {
                     historiaPorRP[rp] = []; 
                 } else if(evt.accion === 'Cambio de Caravana') {
                     let nuevoRP = String(evt.valor);
                     if(!historiaPorRP[nuevoRP]) historiaPorRP[nuevoRP] = [];
-                    
                     let eventosTraspasados = historiaPorRP[rp].map(e => ({...e, caravana: nuevoRP}));
                     historiaPorRP[nuevoRP] = historiaPorRP[nuevoRP].concat(eventosTraspasados);
-                    
                     historiaPorRP[nuevoRP].push({...evt, caravana: nuevoRP}); 
                     historiaPorRP[rp] = []; 
                 } else {
@@ -925,20 +946,16 @@
 
         function ejecutarAccion(tipo, val, det, modalId) {
             const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: rpActivo, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
-            
             dbCache.unshift(obj); buscarCaravanaBtn(rpActivo); procesarDatosDashboard(); 
             if(modalId) cerrarModal(modalId);
-            
             if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador') {
                 notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
             }
-
             if(navigator.onLine) { 
                 db.collection('estancias').doc(maestroId).collection('eventos').add(obj).catch(e => {
                     let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); 
                 });
-            } 
-            else { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); }
+            } else { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); }
         }
 
         function prepararGuardado(mId, t) { 
@@ -979,9 +996,7 @@
             const fPadre = document.getElementById('f-padre') ? document.getElementById('f-padre').value : "-";
             const fMadre = document.getElementById('f-madre') ? document.getElementById('f-madre').value : "-";
             const catValor = document.getElementById('val-categoria') ? document.getElementById('val-categoria').innerText : "-";
-            
             ejecutarAccion('Perfil Master', `${fRaza||"-"}|${fNacimiento||"-"}|${fPadre||"-"}|${fMadre||"-"}`, catValor, 'm-perfil'); 
-            
             if (fNacimiento && fNacimiento !== "-") {
                 const partes = fNacimiento.split('-'); let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
                 if (mes >= 7) anio += 1;
@@ -1023,12 +1038,10 @@
             const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
             const datosActivos = obtenerRegistrosActivos(); 
             const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; 
-            
             const tbodyMasivo = document.getElementById('tb-informe-masivo'); const tbodyEventos = document.getElementById('tb-informe-eventos'); const tbodyIndiv = document.getElementById('tb-informe-individual');
             document.getElementById('tabla-masiva').classList.add('oculto'); document.getElementById('tabla-eventos').classList.add('oculto'); document.getElementById('tabla-individual').classList.add('oculto');
             
             let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja'));
-            
             let tPreGlobal = 0; vivas.forEach(car => { const regs = obtenerHistorial(car); const uDx = regs.find(d => d.accion === 'Diagnóstico'); if (uDx && String(uDx.valor).includes('Preñada')) tPreGlobal++; });
             document.getElementById('inf-prenadas').innerText = tPreGlobal;
 
@@ -1046,20 +1059,17 @@
                 document.getElementById('tabla-masiva').classList.remove('oculto');
                 const fLote = document.getElementById('f-inf-lote').value; const fCat = document.getElementById('f-inf-cat').value; const fDx = document.getElementById('f-inf-dx').value; const fCarimbo = document.getElementById('f-inf-carimbo').value;
                 tbodyMasivo.innerHTML = ""; let countTotal = 0;
-                
                 vivas.forEach(car => {
                     const regs = obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
                     const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
                     if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles||"split('|')[0]") ? String(uC.detalles||"split('|')[0]").replace('Lote:','').trim() : "-"; }
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-";
-                    
                     let pasaFiltro = true; 
                     if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; 
                     if(fCat !== "ALL" && !cat.includes(fCat)) pasaFiltro = false; 
                     if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false; 
                     if(fCarimbo !== "ALL" && carimbo !== fCarimbo) pasaFiltro = false; 
-                    
                     if(pasaFiltro) { countTotal++; tbodyMasivo.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:15px;">${car}<br><span style="font-size:11px; color:gray;">Cb: ${carimbo}</span></td><td style="color:#000; border-color:#cbd5e1;">${cat}<br><span style="font-size:11px; color:gray;">${lote}</span></td><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${peso}</td><td style="color:#000; border-color:#cbd5e1;">${dx}</td></tr>`; }
                 });
                 document.getElementById('inf-total').innerText = countTotal; 
@@ -1085,12 +1095,10 @@
         function ejecutarDescargaPDF() {
             const btn = document.getElementById('btn-print-magico');
             const textoOriginal = btn.innerText; btn.innerText = "⏳ Generando Archivo PDF...";
-
             setTimeout(() => {
                 try {
                     const hd = lsGet('tc_hacienda', {}); const h_nom = hd.nombre || 'TAURUS CONTROL'; const h_log = hd.logo || "";
                     const modo = document.getElementById('f-inf-modo').value; const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4');
-                    
                     const addMembrete = (tituloReporte) => {
                         doc.setFontSize(20); doc.setFont("helvetica", "bold"); doc.text(cleanPDFText(h_nom).toUpperCase(), 14, 20);
                         doc.setFontSize(11); doc.setFont("helvetica", "normal"); doc.text(cleanPDFText(tituloReporte), 14, 27);
@@ -1113,7 +1121,6 @@
 
                         addMembrete(`Dossier Clínico Histórico - RP: ${rpPrint.toUpperCase()}`);
                         doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.text("Resumen del Perfil", 14, 43);
-
                         doc.autoTable({ startY: 46, theme: 'grid', styles: { fontSize: 9, cellPadding: 3, textColor: 20 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold' },
                             body: [
                                 [`Categoría: ${cleanPDFText(cat)}`, `Lote: ${cleanPDFText(lote)}`, `Carimbo: ${cleanPDFText(carimbo)}`],
@@ -1126,17 +1133,14 @@
                         const tableData = []; const rows = document.getElementById('tb-informe-individual').querySelectorAll('tr');
                         rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText).replace(/\n/g, ' ') ]); } });
                         doc.autoTable({ startY: doc.lastAutoTable.finalY + 13, theme: 'grid', head: [['Fecha', 'Procedimiento', 'Valor Principal', 'Observaciones Adicionales']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 40 }, 2: { cellWidth: 40, fontStyle: 'bold' }, 3: { cellWidth: 'auto' } } });
-                        
                         let filename = `Dossier_RP_${rpPrint.toUpperCase()}.pdf`;
                         if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
-
                     } else {
                         const isInventario = (modo === 'inventario');
                         const titulo = isInventario ? "Reporte Analítico de Inventario General" : "Reporte Analítico de Trabajos y Procedimientos";
                         addMembrete(titulo);
                         const totalReg = document.getElementById('inf-total').innerText; const totalPre = document.getElementById('inf-prenadas').innerText;
                         doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Registros Listados: ${cleanPDFText(totalReg)}`, 14, 43); doc.text(`Total Preñadas Global: ${cleanPDFText(totalPre)}`, 130, 43);
-
                         const tableData = []; let headRows = []; let colStyles = {};
                         if (isInventario) {
                             headRows = [['RP y Carimbo', 'Categoría y Ubicación', 'Último Peso', 'Diagnóstico Actual']];
@@ -1150,7 +1154,6 @@
                             rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText).replace(/\n/g, ' ') ]); } });
                         }
                         doc.autoTable({ startY: 48, theme: 'grid', head: headRows, body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: colStyles });
-                        
                         let filename = 'Reporte_General.pdf';
                         if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
                     }
@@ -1164,7 +1167,6 @@
         function procesarDatosDashboard() {
             const datosActivos = obtenerRegistrosActivos(); 
             let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
-            
             let vivas = []; let cantBajas = datosActivos.filter(r => r.accion === 'Baja').length;
             unicas.forEach(car => { if(!obtenerHistorial(car).some(x => x.accion === 'Baja')) { vivas.push(car); } }); unicas = vivas; 
             
@@ -1181,9 +1183,24 @@
                 if(uC) { let v=String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : ""; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
                 cat = cat.toLowerCase(); const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
                 
+                let esVaca = cat.includes('vaca') || cat.includes('vaquilla') || cat.startsWith('v:') || cat.startsWith('vv:');
+                let esTernero = cat.includes('terne') || cat.includes('desmamante') || cat.startsWith('th:') || cat.startsWith('tm:') || cat.startsWith('dh:') || cat.startsWith('dm:');
+
                 if(uDx) { if(String(uDx.valor||"").includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } } if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--texto);">${car}</strong> diagnosticada Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } } }
-                if(cat.includes('vaca') || cat.includes('vaquilla')) g2.v++; else if(cat.includes('terne') || cat.includes('desmamante')) g2.t++; else g2.o++; g3[lote] = (g3[lote] || 0) + 1;
-                if(uPeso) { if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--texto);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; else g4.opt++; let pVal = parseFloat(uPeso.valor); if(!isNaN(pVal)) { if(cat.includes('vaca') || cat.includes('vaquilla')) { g9.vw += pVal; g9.vc++; } if(cat.includes('terne') || cat.includes('desmamante')) { g9.tw += pVal; g9.tc++; } } } 
+                
+                if(esVaca) g2.v++; else if(esTernero) g2.t++; else g2.o++; g3[lote] = (g3[lote] || 0) + 1;
+                
+                if(uPeso) { 
+                    if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--texto);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } 
+                    else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; 
+                    else g4.opt++; 
+                    
+                    let pVal = parseFloat(uPeso.valor); 
+                    if(!isNaN(pVal)) { 
+                        if(esVaca) { g9.vw += pVal; g9.vc++; } 
+                        if(esTernero) { g9.tw += pVal; g9.tc++; } 
+                    } 
+                } 
                 if(uSan) g6.con++; else g6.sin++;
             });
             
@@ -1246,42 +1263,32 @@
         async function crearOperador() { 
             if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
             const n = document.getElementById('op-nombre').value.trim();
-            const u = document.getElementById('op-usu').value.trim(); 
+            const u = document.getElementById('op-usu').value.trim().toLowerCase(); 
             const p = document.getElementById('op-pass').value.trim(); 
             const rolSel = document.getElementById('op-rol').value;
-            
             if(!n || !u || !p) { alert("Completar Nombre, Usuario y Contraseña."); return; } 
             if(p.length < 6) { alert("La contraseña debe tener mínimo 6 caracteres."); return; }
-            
             let rolFinal = rolSel;
             if (rolSel === 'Operador') {
                 let permisos = Array.from(document.querySelectorAll('.chk-permiso:checked')).map(c => c.value).join(',');
-                if(!permisos) { alert("Debe seleccionar al menos un permiso de acceso para el operador."); return; }
+                if(!permisos) { alert("Debe seleccionar al menos un permiso."); return; }
                 rolFinal = 'Operador|' + permisos;
             }
-            
-            const btn = document.getElementById('btn-crear-op');
-            const btnOriginal = btn.innerHTML;
-            btn.innerHTML = "⏳ Registrando...";
-            btn.disabled = true;
-
+            const btn = document.getElementById('btn-crear-op'); const btnOriginal = btn.innerHTML;
+            btn.innerHTML = "⏳ Registrando..."; btn.disabled = true;
             let email = u.includes('@') ? u : u + '@taurus.com';
-
             try {
                 const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryAppPeon");
                 await secondaryApp.auth().createUserWithEmailAndPassword(email, p);
                 await secondaryApp.auth().signOut();
                 await secondaryApp.delete(); 
-
                 await db.collection('usuarios').doc(email).set({
                     nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', password: p 
                 });
-                
                 ejecutarAccion('Alta Operador', email, `Nombre: ${n} | Rol: ${rolFinal}`, null);
-
                 document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 
                 btn.innerHTML = btnOriginal; btn.disabled = false;
-                mostrarToast("Usuario Registrado.");
+                mostrarToast("Usuario Registrado."); cargarListaOperadores();
             } catch(e) {
                 alert("Error al crear la cuenta. Verifique que no esté ya registrado.");
                 btn.innerHTML = btnOriginal; btn.disabled = false;
@@ -1293,7 +1300,6 @@
             let caja = document.getElementById('caja-edit-permisos');
             if(!u) { caja.classList.add('oculto'); return; }
             caja.classList.remove('oculto');
-            
             db.collection('usuarios').doc(u).get().then(doc => {
                 let perms = "dash,ficha,base,reporte"; 
                 if(doc.exists && doc.data().rol) {
@@ -1310,16 +1316,11 @@
             if(!navigator.onLine) { alert("Necesitas conexión."); return; }
             let u = document.getElementById('op-edit-usu-sel').value;
             if(!u) return;
-
             let permisos = Array.from(document.querySelectorAll('.chk-edit-permiso:checked')).map(c => c.value).join(',');
             if(!permisos) { alert("Seleccione al menos un permiso."); return; }
             let rolFinal = 'Operador|' + permisos;
-
-            const btn = document.getElementById('btn-editar-op');
-            const btnOriginal = btn.innerHTML;
-            btn.innerHTML = "⏳ Actualizando...";
-            btn.disabled = true;
-
+            const btn = document.getElementById('btn-editar-op'); const btnOriginal = btn.innerHTML;
+            btn.innerHTML = "⏳ Actualizando..."; btn.disabled = true;
             try {
                 await db.collection('usuarios').doc(u).update({ rol: rolFinal });
                 ejecutarAccion('Edición Operador', u, `Rol: ${rolFinal}`, null);
@@ -1346,20 +1347,16 @@
             if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; }
             const selectEl = document.getElementById('op-del-usu-sel');
             const u = selectEl.value.trim();
-            if(!u) { alert("Seleccione un operador de la lista."); return; }
-            
-            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso del operador "${u}"?`)) {
-                const btn = document.getElementById('btn-eliminar-op');
-                const btnOriginal = btn.innerHTML;
+            if(!u) { alert("Seleccione un usuario de la lista."); return; }
+            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso de "${u}"?`)) {
+                const btn = document.getElementById('btn-eliminar-op'); const btnOriginal = btn.innerHTML;
                 btn.innerHTML = "⏳ Eliminando..."; btn.disabled = true;
-
                 try {
                     const doc = await db.collection('usuarios').doc(u).get();
                     if(doc.exists && doc.data().password) { await gestionarAuthGhostParaBorrado(u, doc.data().password); }
                     await db.collection('usuarios').doc(u).delete();
-                    ejecutarAccion('Baja Operador', u, `Eliminado por el panel PC`, null);
-
-                    alert(`El operador ha sido eliminado con éxito.`); 
+                    ejecutarAccion('Baja Operador', u, `Eliminado por el panel`, null);
+                    alert(`El usuario ha sido eliminado con éxito.`); 
                     selectEl.value = ''; cargarListaOperadores(); 
                     btn.innerHTML = btnOriginal; btn.disabled = false;
                 } catch(e) { alert("Hubo un error de conexión."); btn.innerHTML = btnOriginal; btn.disabled = false; } 
@@ -1371,10 +1368,9 @@
             try {
                 const snapshot = await db.collection('usuarios').where('maestroId', '==', maestroId).get();
                 const ops = snapshot.docs.filter(doc => doc.id !== maestroId).map(doc => doc.id);
-                
                 const selDel = document.getElementById('op-del-usu-sel');
                 const selEdit = document.getElementById('op-edit-usu-sel');
-                let options = '<option value="">-- Seleccione un operador --</option>';
+                let options = '<option value="">-- Seleccione un usuario --</option>';
                 ops.forEach(o => { options += `<option value="${o}">${o}</option>`; });
                 if(selDel) selDel.innerHTML = options;
                 if(selEdit) selEdit.innerHTML = options;
@@ -1384,15 +1380,14 @@
         function cambiarMiContrasena() { 
             if(!navigator.onLine) { alert("Necesitas conexión."); return; } 
             const nueva = document.getElementById('nueva-clave').value.trim(); 
-            if(!nueva || nueva.length < 6) { alert("Mínimo 6 caracteres para Firebase."); return; } 
-            
+            if(!nueva || nueva.length < 6) { alert("Mínimo 6 caracteres requeridos."); return; } 
             const user = firebase.auth().currentUser;
             if(user) {
                 user.updatePassword(nueva).then(() => {
                     db.collection('usuarios').doc(user.email).update({ password: nueva }).then(() => {
                         alert("Contraseña actualizada con éxito."); document.getElementById('nueva-clave').value = '';
                     });
-                }).catch(e => { alert("Error: Es probable que necesites cerrar e iniciar sesión de nuevo antes de cambiar la clave."); });
+                }).catch(e => { alert("Error: Es probable que necesites cerrar e iniciar sesión de nuevo."); });
             }
         }
         
@@ -1401,15 +1396,12 @@
             let mostradas = localStorage.getItem('tc_alertas_mostradas');
             let prefs = localStorage.getItem('tc_prefs');
             let tema = localStorage.getItem('tc_tema');
-            
             firebase.auth().signOut().then(() => {
                 localStorage.clear(); 
-                
                 if(leidas) localStorage.setItem('tc_alertas_leidas', leidas);
                 if(mostradas) localStorage.setItem('tc_alertas_mostradas', mostradas);
                 if(prefs) localStorage.setItem('tc_prefs', prefs);
                 if(tema) localStorage.setItem('tc_tema', tema);
-                
                 window.location.reload(); 
             });
         }
@@ -1424,7 +1416,6 @@
         window.recibirTagNFC = function(tagHex) {
             let dataMinuscula = String(tagHex).trim().toLowerCase();
             let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === dataMinuscula);
-            
             if(esRFIDRegistrado) {
                 forzarSaltoAFicha();
                 let buscador = document.getElementById('buscador-caravana');
@@ -1443,25 +1434,20 @@
 
         let bufferTeclado = "";
         let timeoutTeclado;
-
         document.addEventListener('keydown', function(event) {
             if(event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'CapsLock') return;
-
             if (event.key === 'Enter') {
                 if (bufferTeclado.length > 2) {
                     event.preventDefault(); 
                     let dataLimpia = bufferTeclado.replace(/[^a-zA-Z0-9.-]/g, '').trim().toUpperCase(); 
                     let esPeso = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
-                    
                     if (esPeso) {
                         if (typeof rpActivo !== 'undefined' && rpActivo && rpActivo !== "---") {
                             if(typeof rafagaActiva !== 'undefined' && rafagaActiva) {
                                 let sel = document.getElementById('rafaga-accion').value;
                                 let notas = document.getElementById('rafaga-detalles').value.trim();
                                 let recordatorioRafaga = document.getElementById('rafaga-recordatorio').value; 
-                                
                                 ejecutarAccion('Peso', dataLimpia + " Kg", "Automático (Ráfaga)", null);
-                                
                                 if(sel !== 'solo_peso') {
                                     let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
                                     let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga";
@@ -1488,7 +1474,6 @@
                 clearTimeout(timeoutTeclado);
                 return;
             }
-
             if (event.key.length === 1) {
                 bufferTeclado += event.key;
                 clearTimeout(timeoutTeclado);
