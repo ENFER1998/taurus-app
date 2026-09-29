@@ -151,12 +151,12 @@
     <div id="pantalla-login">
         <div class="login-contenedor">
             <div class="logo-icono"><img src="gemini-svg.png" alt="Logo Taurus"></div>
-            <div class="titulo-login">Taurus Control</div>
+            <div class="titulo-login">Taurus Control &copy; 2026</div>
             <input type="text" id="usuario" class="form-control-login" placeholder="Usuario de Acceso" autocomplete="off">
             <input type="password" id="password" class="form-control-login" placeholder="Contraseña">
             <div id="error-login" class="error-msj"></div>
             <button id="btn-ingreso" class="btn-ingresar" onclick="procesarIngreso()">Iniciar Sesión</button>
-            <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">Taurus Control &copy; 2026<br><strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">Desarrollado por Fernando Rodriguez</strong></div>
+            <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">Taurus Control<br><strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">Desarrollado por Fernando Rodriguez</strong></div>
         </div>
     </div>
 
@@ -576,6 +576,7 @@
         let unsubscribeSnapshot = null;
         let unsubscribeConfig = null;
         let pendingCount = 0; 
+        let ultimaNotificacionRafaga = 0;
 
         function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
@@ -729,9 +730,24 @@
         function setEstadoRed(online, texto = null) {
             const b = document.getElementById('estado-red');
             if(!b) return;
-            if(texto) { b.innerText = texto; } 
-            else if(navigator.onLine || online) { b.classList.remove('offline'); b.innerText = '🟢 Conectado'; } 
-            else { b.classList.add('offline'); b.innerText = '🔴 Modo Offline'; }
+            
+            // ESCUDO OFFLINE: Si no hay red, no importa qué diga Firebase, forzamos el estado rojo.
+            if(!navigator.onLine) {
+                b.classList.add('offline'); 
+                b.innerText = '🔴 Modo Offline';
+                return;
+            }
+
+            if(texto) { 
+                b.classList.remove('offline'); 
+                b.innerText = texto; 
+            } else if(online) { 
+                b.classList.remove('offline'); 
+                b.innerText = '🟢 Conectado'; 
+            } else {
+                b.classList.add('offline'); 
+                b.innerText = '🔴 Modo Offline'; 
+            }
         }
         window.addEventListener('online', () => setEstadoRed(true)); window.addEventListener('offline', () => setEstadoRed(false));
 
@@ -847,8 +863,12 @@
                 if(document.getElementById('vista-registro') && !document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); 
                 if(rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) buscarCaravanaBtn(rpActivo);
                 
-                setEstadoRed(true, '⚡ Sincronizado');
-                setTimeout(() => setEstadoRed(true), 2000);
+                if (navigator.onLine) {
+                    setEstadoRed(true, '⚡ Sincronizado');
+                    setTimeout(() => setEstadoRed(true), 2000);
+                } else {
+                    setEstadoRed(false, '🔴 Modo Offline');
+                }
             }, (error) => {
                 console.log("Error o Modo Offline en onSnapshot: ", error);
                 setEstadoRed(false, '🔴 Modo Offline');
@@ -1031,9 +1051,19 @@
             procesarDatosDashboard(); 
             if(modalId) cerrarModal(modalId);
 
-            // Disparar Push a OneSignal si es un peón trabajando
-            if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana') {
-                notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
+            // Disparar Push Inteligente (Antispam)
+            if(tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana') {
+                if(typeof rafagaActiva !== 'undefined' && rafagaActiva) {
+                    // Modo ráfaga: Avisar solo una vez cada 10 minutos para no saturar
+                    let ahora = Date.now();
+                    if(ahora - ultimaNotificacionRafaga > 10 * 60 * 1000) {
+                        notificarPropietario(`⚡ ${usNombre} está trabajando masivamente en la manga (Modo Ráfaga)`);
+                        ultimaNotificacionRafaga = ahora;
+                    }
+                } else {
+                    // Modo normal: Avisar por cada animal
+                    notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
+                }
             }
 
             // Sumar al contador de pendientes
@@ -1189,7 +1219,7 @@
 
         function cleanPDFText(text) {
             if (!text) return ''; let str = String(text);
-            str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️|✏️|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️|🚪/g, '');
+            str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️|✏️️|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️|🚪/g, '');
             str = str.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
             return str.trim();
         }
