@@ -344,7 +344,7 @@
 
                     <div id="filtros-inventario" class="filtros-grid oculto" style="display: none;">
                         <select class="filtro-sel" id="f-inf-lote" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Lotes</option><option value="Hacienda General">Hacienda General</option><option value="Lecheras">Lecheras</option><option value="Preñadas">Preñadas</option><option value="Inseminadas">Inseminadas</option><option value="Destete">Destete</option><option value="Enfermería">Enfermería</option></select>
-                        <select class="form-control" id="f-inf-cat" onchange="actualizarInformeAvanzado()"><option value="ALL">Todas las Categorías</option><option value="V:">Vacas / Vaquillas (V)</option><option value="VV:">Vacas Viejas (VV)</option><option value="TH:">Ternera Hembra (TH)</option><option value="TM:">Ternero Macho (TM)</option><option value="DH:">Desmamante Hembra (DH)</option><option value="DM:">Desmamante Macho (DM)</option><option value="Toros">Toros</option><option value="Novillos">Novillos</option><option value="Bueyes">Bueyes</option></select>
+                        <select class="form-control" id="f-inf-cat" onchange="actualizarInformeAvanzado()"><option value="ALL">Todas las Categorías</option><option value="Vaca / Vaquilla">Vaca / Vaquilla</option><option value="Vaca Vieja">Vaca Vieja</option><option value="Ternera Hembra">Ternera Hembra</option><option value="Ternero Macho">Ternero Macho</option><option value="Desmamante Hembra">Desmamante Hembra</option><option value="Desmamante Macho">Desmamante Macho</option><option value="Toros">Toros</option><option value="Novillos">Novillos</option><option value="Bueyes">Bueyes</option></select>
                         <div style="display:flex; gap:10px;">
                             <select class="form-control" style="flex:1;" id="f-inf-carimbo" onchange="actualizarInformeAvanzado()"><option value="ALL">Carimbos</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option></select>
                             <select class="form-control" style="flex:1;" id="f-inf-dx" onchange="actualizarInformeAvanzado()"><option value="ALL">Estado</option><option value="Preñada">Preñadas</option><option value="Vacía">Vacías</option></select>
@@ -379,7 +379,7 @@
                 </div>
                 
                 <div class="tarjeta" id="panel-membrete">
-                    <div class="tarjeta-titulo">🖨️ Membrete Documentos PDF</div>
+                    <div class="tarjeta-titulo">🖨️️ Membrete Documentos PDF</div>
                     
                     <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
                         <img id="preview-logo-config" src="gemini-svg.png" style="width:60px; height:60px; object-fit:contain; border-radius:8px; border:1px solid var(--borde); background:white; padding:2px;">
@@ -561,6 +561,15 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        // Habilitar persistencia offline para que funcione sin internet / luz
+        try {
+            db.enablePersistence().catch((err) => {
+                if (err.code == 'unimplemented') {
+                    console.warn("Persistencia no soportada por el navegador");
+                }
+            });
+        } catch(e) {}
+
         function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 
@@ -571,17 +580,27 @@
         let unsubscribeEventos = null;
         let unsubscribeConfig = null;
 
+        // Auto-inicio de sesión robusto con respaldo Offline / localStorage
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
                 db.collection('usuarios').doc(user.email).get().then(doc => {
                     if (doc.exists) {
                         const userData = doc.data();
+                        lsSet('tc_user_profile', userData);
                         if(userData.vencimiento && new Date() > new Date(userData.vencimiento)) {
                             cerrarSesion(); alert("Su licencia ha vencido."); return;
                         }
                         arrancarSistemaFirebase(user.email, userData.maestroId, userData.rol, userData.nombre, userData.hacienda, userData.features);
                     }
-                }).catch(e => { console.error("Error al obtener perfil", e); });
+                }).catch(e => {
+                    // CATCH OFFLINE: Si no hay internet y falla Firestore, leemos el perfil guardado localmente
+                    let cachedProfile = lsGet('tc_user_profile', null);
+                    if (cachedProfile) {
+                        arrancarSistemaFirebase(user.email, cachedProfile.maestroId, cachedProfile.rol, cachedProfile.nombre, cachedProfile.hacienda, cachedProfile.features);
+                    } else {
+                        console.error("No hay perfil en caché offline", e);
+                    }
+                });
             }
         });
 
@@ -671,7 +690,6 @@
             btn.disabled = true; btn.innerText = "Verificando..."; err.style.display = 'none';
             let email = u.includes('@') ? u.toLowerCase() : u.toLowerCase() + '@taurus.com';
             try {
-                if(!navigator.onLine) throw new Error("Offline");
                 await firebase.auth().signInWithEmailAndPassword(email, p);
             } catch(error) {
                 err.innerText = "Usuario no registrado en Firebase o clave incorrecta.";
@@ -713,10 +731,9 @@
                     if(!document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
                     cargarListaOperadores();
                     setEstadoRed(true);
-                }, err => { setEstadoRed(false, '❌ Error de red'); });
+                }, err => { setEstadoRed(false, '❌ Red Local'); });
                 
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
-                let displayRol = isPropietario ? 'Propietario' : 'Operador';
                 
                 document.querySelectorAll('.vista').forEach(e => e.classList.add('oculto'));
                 document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('activo'));
@@ -758,7 +775,7 @@
                             lblLic.style.color = diffDias <= 7 ? "var(--peligro)" : "var(--texto)";
                         } else { lblLic.value = "Licencia Perpetua / Sin Límite"; }
                     }
-                });
+                }).catch(e => {});
 
                 const prefs = lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
                 
@@ -858,6 +875,22 @@
             return [...hist].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
         }
 
+        // Traductor oficial de siglas de categoría a nombres legibles
+        function obtenerNombreCategoriaLegible(sigla) {
+            if(!sigla) return "Sin Categoría";
+            let s = String(sigla).trim().toUpperCase();
+            if(s.startsWith('V:')) return "Vaca / Vaquilla";
+            if(s.startsWith('VV:')) return "Vaca Vieja";
+            if(s.startsWith('TH:')) return "Ternera Hembra";
+            if(s.startsWith('TM:')) return "Ternero Macho";
+            if(s.startsWith('DH:')) return "Desmamante Hembra";
+            if(s.startsWith('DM:')) return "Desmamante Macho";
+            if(s.includes('TORO')) return "Toros";
+            if(s.includes('NOVILLO')) return "Novillos";
+            if(s.includes('BUEY')) return "Bueyes / Señuelos";
+            return sigla;
+        }
+
         function buscarCaravanaBtn(rpForzado = null) {
             try {
                 let rp = rpForzado ? rpForzado : document.getElementById('buscador-caravana').value.trim(); 
@@ -915,7 +948,7 @@
                     document.getElementById('val-comentario').innerText = "Sin comentarios.";
                 }
                 
-                const elCat = document.getElementById('val-categoria'); if(elCat) elCat.innerText = cat;
+                const elCat = document.getElementById('val-categoria'); if(elCat) elCat.innerText = obtenerNombreCategoriaLegible(cat);
                 const elPeso = document.getElementById('val-peso'); if(elPeso) elPeso.innerText = peso;
                 const elDx = document.getElementById('val-dx'); if(elDx) elDx.innerText = dx;
                 const elLote = document.getElementById('val-lote'); if(elLote) elLote.innerText = lote;
@@ -1061,13 +1094,14 @@
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
                     const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
                     if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles||"split('|')[0]") ? String(uC.detalles||"split('|')[0]").replace('Lote:','').trim() : "-"; }
+                    let catLegible = obtenerNombreCategoriaLegible(cat);
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-";
                     let pasaFiltro = true; 
                     if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; 
-                    if(fCat !== "ALL" && !cat.includes(fCat)) pasaFiltro = false; 
+                    if(fCat !== "ALL" && !catLegible.includes(fCat)) pasaFiltro = false; 
                     if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false; 
                     if(fCarimbo !== "ALL" && carimbo !== fCarimbo) pasaFiltro = false; 
-                    if(pasaFiltro) { countTotal++; tbodyMasivo.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:15px;">${car}<br><span style="font-size:11px; color:gray;">Cb: ${carimbo}</span></td><td style="color:#000; border-color:#cbd5e1;">${cat}<br><span style="font-size:11px; color:gray;">${lote}</span></td><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${peso}</td><td style="color:#000; border-color:#cbd5e1;">${dx}</td></tr>`; }
+                    if(pasaFiltro) { countTotal++; tbodyMasivo.innerHTML += `<tr><td style="color:#000; border-color:#cbd5e1; font-weight:bold; font-size:15px;">${car}<br><span style="font-size:11px; color:gray;">Cb: ${carimbo}</span></td><td style="color:#000; border-color:#cbd5e1;">${catLegible}<br><span style="font-size:11px; color:gray;">${lote}</span></td><td style="color:#000; border-color:#cbd5e1; font-weight:bold;">${peso}</td><td style="color:#000; border-color:#cbd5e1;">${dx}</td></tr>`; }
                 });
                 document.getElementById('inf-total').innerText = countTotal; 
             } else {
@@ -1110,6 +1144,7 @@
                         let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
                         const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor||"").split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=String(uP.detalles||"").split('|')[0]||"-"; } 
                         const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; lote=String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; } 
+                        let catLegible = obtenerNombreCategoriaLegible(cat);
                         const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
                         const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
                         const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nut = (uNut.valor || "") + " | " + (uNut.detalles || "");
@@ -1120,7 +1155,7 @@
                         doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.text("Resumen del Perfil", 14, 43);
                         doc.autoTable({ startY: 46, theme: 'grid', styles: { fontSize: 9, cellPadding: 3, textColor: 20 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold' },
                             body: [
-                                [`Categoría: ${cleanPDFText(cat)}`, `Lote: ${cleanPDFText(lote)}`, `Carimbo: ${cleanPDFText(carimbo)}`],
+                                [`Categoría: ${cleanPDFText(catLegible)}`, `Lote: ${cleanPDFText(lote)}`, `Carimbo: ${cleanPDFText(carimbo)}`],
                                 [`Raza: ${cleanPDFText(raza)}`, `Nacimiento: ${cleanPDFText(edad)}`, `Último Peso: ${cleanPDFText(peso)}`],
                                 [`Dx Actual: ${cleanPDFText(dx)}`, `Genealogía: ${cleanPDFText(pa)} / ${cleanPDFText(ma)}`, `Régimen: ${cleanPDFText(nut)}`],
                                 [`Últ. Sanidad: ${cleanPDFText(san)}`, { content: `Últ. Inseminación: ${cleanPDFText(ins)}`, colSpan: 2 }]
@@ -1176,25 +1211,25 @@
             datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; if(r.accion === 'Baja') { let causa = String(r.valor).trim(); g11[causa] = (g11[causa] || 0) + 1; } });
             
             unicas.forEach(car => {
-                const regs = obtenerHistorial(car); let cat = "Sin Categoría", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                if(uC) { let v=String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : "Sin Categoría"; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
+                const regs = obtenerHistorial(car); let catRaw = "Sin Categoría", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                if(uC) { let v=String(uC.valor||"").split('|'); catRaw = v[0] ? v[0].replace('Cat:','').trim() : "Sin Categoría"; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
                 else {
                     const uP = regs.find(d => d.accion === 'Perfil Master');
-                    if(uP && uP.detalles) { cat = String(uP.detalles).split('|')[0] || "Sin Categoría"; }
+                    if(uP && uP.detalles) { catRaw = String(uP.detalles).split('|')[0] || "Sin Categoría"; }
                 }
                 
-                let catKey = cat.trim();
-                g2[catKey] = (g2[catKey] || 0) + 1;
+                let catLegible = obtenerNombreCategoriaLegible(catRaw);
+                g2[catLegible] = (g2[catLegible] || 0) + 1;
                 g3[lote] = (g3[lote] || 0) + 1;
 
                 const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
                 
-                let esVaca = catKey.toLowerCase().includes('vaca') || catKey.toLowerCase().includes('vaquilla') || catKey.toLowerCase().startsWith('v:');
+                let esVaca = catLegible.toLowerCase().includes('vaca');
 
                 if(uDx) { if(String(uDx.valor||"").includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } } if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--texto);">${car}</strong> diagnosticada Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } } }
                 
                 if(uPeso) { 
-                    if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️️</span><div><strong style="color:var(--texto);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } 
+                    if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--texto);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } 
                     else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; 
                     else g4.opt++; 
                     let pVal = parseFloat(uPeso.valor); 
@@ -1262,7 +1297,7 @@
                         </div>
                     </div>`; 
                 } 
-                else if(g === '2') { html += makePieAndBars("Composición de Hacienda (Detallada)", g2, unicas.length); } 
+                else if(g === '2') { html += makePieAndBars("Composición de Hacienda", g2, unicas.length); } 
                 else if(g === '3') { html += makePieAndBars("Distribución por Lotes", g3, unicas.length); } 
                 else if(g === '4') { 
                     let t = g4.opt + g4.bp + g4.sp || 1; 
@@ -1306,7 +1341,7 @@
 
         function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
         function abrirModal(id) { document.getElementById(id).style.display = 'flex'; } function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
-        function cargarListaRegistro() { const datosActivos = obtenerRegistrosActivos(); let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja')); const ul = document.getElementById('tb-registro'); ul.innerHTML = ""; vivas.forEach(car => { const regs = obtenerHistorial(car); let info = "-", dxText = "-", loteText = "-"; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { let vals = String(c.valor||"").split('|'); info = vals[0] ? vals[0].replace('Cat:','').trim() : info; loteText = (String(c.detalles||"").split('|')[0] ? String(c.detalles||"").split('|')[0].replace('Lote:','').trim() : ""); } else if(p) { info = String(p.detalles||"").split('|')[0] || "-"; } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = d.valor || "-"; ul.innerHTML += `<li onclick="navegarDesdeLista('${car}')"><div style="display:flex; flex-direction:column; gap:4px;"><strong style="font-size:18px; color:var(--texto);">${car}</strong><span style="font-size:12px; color:var(--muted);">${info} | ${loteText} | ${dxText}</span></div><span style="font-size:20px; color:var(--texto);">›</span></li>`; }); }
+        function cargarListaRegistro() { const datosActivos = obtenerRegistrosActivos(); let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja')); const ul = document.getElementById('tb-registro'); ul.innerHTML = ""; vivas.forEach(car => { const regs = obtenerHistorial(car); let info = "-", dxText = "-", loteText = "-"; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { let vals = String(c.valor||"").split('|'); info = vals[0] ? vals[0].replace('Cat:','').trim() : info; loteText = (String(c.detalles||"").split('|')[0] ? String(c.detalles||"").split('|')[0].replace('Lote:','').trim() : ""); } else if(p) { info = String(p.detalles||"").split('|')[0] || "-"; } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = d.valor || "-"; ul.innerHTML += `<li onclick="navegarDesdeLista('${car}')"><div style="display:flex; flex-direction:column; gap:4px;"><strong style="font-size:18px; color:var(--texto);">${car}</strong><span style="font-size:12px; color:var(--muted);">${obtenerNombreCategoriaLegible(info)} | ${loteText} | ${dxText}</span></div><span style="font-size:20px; color:var(--texto);">›</span></li>`; }); }
         function filtrarLista(t) { const lis = document.getElementById('tb-registro').getElementsByTagName('li'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "flex" : "none"; }
         function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); buscarCaravanaBtn(); }
         
