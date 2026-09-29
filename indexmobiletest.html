@@ -372,7 +372,12 @@
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">👤 Mi Perfil</div>
                     <div class="form-grupo"><label>Sesión iniciada como:</label><input type="text" id="usuario-activo-lbl" class="form-control" readonly style="font-weight:bold; color:var(--exito);"></div>
-                    <div class="form-grupo" id="panel-licencia"><label>Motor Backend:</label><input type="text" id="lbl-licencia" class="form-control" value="🔥 Firebase Realtime Database" readonly style="font-weight:bold;"></div>
+                    
+                    <div class="form-grupo" style="margin-top: 15px;">
+                        <label>Cambiar mi Contraseña de Acceso</label>
+                        <input type="password" id="nueva-clave" class="form-control" placeholder="Mínimo 6 caracteres">
+                    </div>
+                    <button class="btn-guardar" onclick="cambiarMiContrasena()">Actualizar Contraseña</button>
                 </div>
                 
                 <div class="tarjeta" id="panel-membrete">
@@ -394,6 +399,7 @@
                     <div class="tarjeta-titulo">👷 Control de Operadores</div>
                     <div class="form-grupo"><label>Nombre y Apellido</label><input type="text" id="op-nombre" class="form-control" autocomplete="off" placeholder="Ej: Juan Ramírez"></div>
                     <div class="form-grupo"><label>Correo de Acceso (Usuario)</label><input type="text" id="op-usu" class="form-control" autocomplete="off" placeholder="Ej: juan@taurus.com"></div>
+                    <div class="form-grupo"><label>Contraseña de Acceso</label><input type="text" id="op-pass" class="form-control" autocomplete="off" placeholder="Mínimo 6 caracteres"></div>
                     <div class="form-grupo">
                         <label>Rol del Nuevo Usuario</label>
                         <select id="op-rol" class="form-control" onchange="togglePermisos()">
@@ -411,7 +417,7 @@
                             <label style="display:flex; gap:10px;"><input type="checkbox" class="chk-permiso" value="reporte"> 📄 Reportes PDF</label>
                         </div>
                     </div>
-                    <button id="btn-crear-op" class="btn-guardar" style="background:var(--exito);" onclick="crearOperador()">Registrar Permisos de Usuario</button>
+                    <button id="btn-crear-op" class="btn-guardar" style="background:var(--exito);" onclick="crearOperador()">Registrar Operador</button>
                     
                     <hr style="border-color:var(--borde); margin:20px 0;">
                     
@@ -531,7 +537,7 @@
 
     <script>
         // ==========================================
-        // 1. INICIALIZACIÓN DE FIREBASE (El nuevo Motor)
+        // 1. INICIALIZACIÓN DE FIREBASE
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDTXUYwYYkQ_pKDhui9H3cFmecgAPQ9eqA",
@@ -546,7 +552,7 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // ACTIVAR MODO OFFLINE AUTOMÁTICO (Reemplaza a tc_pendientes)
+        // ACTIVAR MODO OFFLINE AUTOMÁTICO
         db.enablePersistence().catch(err => {
             console.warn("La persistencia offline falló:", err);
         });
@@ -558,24 +564,72 @@
         let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
         let alertaGlobalIdActual = "";
         let unsubscribeSnapshot = null;
+        let unsubscribeConfig = null;
 
         function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 
         // ==========================================
-        // 3. INICIO AUTOMÁTICO (Si ya hay sesión)
+        // 3. INICIO AUTOMÁTICO Y KILL SWITCH
         // ==========================================
+        
+        function iniciarKillSwitch() {
+            if(unsubscribeConfig) unsubscribeConfig();
+            unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot((doc) => {
+                const pantMant = document.getElementById('pantalla-mantenimiento');
+                const banner = document.getElementById('banner-alerta-global');
+                
+                if(doc.exists) {
+                    const data = doc.data();
+                    
+                    // Kill Switch (Bloqueo Total)
+                    if(data.mantenimiento) {
+                        pantMant.classList.remove('oculto');
+                    } else {
+                        pantMant.classList.add('oculto');
+                    }
+
+                    // Avisos Globales (Banner Naranja)
+                    if(data.alerta_global && data.alerta_global.trim() !== "") {
+                        let leidas = lsGet('tc_alertas_leidas', []);
+                        if (!leidas.includes(data.alerta_global)) {
+                            alertaGlobalIdActual = data.alerta_global;
+                            document.getElementById('txt-alerta-global').innerText = data.alerta_global;
+                            document.getElementById('txt-banner-alerta').innerText = data.alerta_global;
+                            
+                            let mostradas = lsGet('tc_alertas_mostradas', []);
+                            if (!mostradas.includes(data.alerta_global)) {
+                                document.getElementById('modal-alerta-global').style.display = 'flex';
+                            }
+                            banner.classList.remove('oculto');
+                        } else {
+                            banner.classList.add('oculto');
+                        }
+                    } else {
+                        banner.classList.add('oculto');
+                    }
+                }
+            });
+        }
+
         auth.onAuthStateChanged(async (user) => {
             if (user) {
-                // El usuario ya ingresó antes. Buscamos sus datos en la base.
-                const userDoc = await db.collection("usuarios").doc(user.email).get();
-                if(userDoc.exists) {
-                    const ud = userDoc.data();
-                    arrancarSistemaFirebase(ud.maestroId, user.email, ud.rol, ud.nombre, ud.hacienda);
-                } else {
-                    // Salvavidas de prueba si el documento de usuario aún no existe
-                    arrancarSistemaFirebase("ESTANCIA_DEMO_01", user.email, "Propietario", "Administrador", "Taurus Demo");
+                try {
+                    const userDoc = await db.collection("usuarios").doc(user.email).get();
+                    if(userDoc.exists) {
+                        const ud = userDoc.data();
+                        iniciarKillSwitch();
+                        arrancarSistemaFirebase(ud.maestroId, user.email, ud.rol, ud.nombre, ud.hacienda);
+                    } else {
+                        mostrarToast("Error: Su perfil no está configurado en la base de datos.");
+                        auth.signOut();
+                    }
+                } catch(e) {
+                    console.error("Error al cargar perfil de usuario:", e);
                 }
+            } else {
+                document.getElementById('pantalla-login').classList.remove('oculto');
+                document.getElementById('pantalla-app').classList.add('oculto');
             }
         });
 
@@ -596,10 +650,28 @@
         }
 
         function cerrarPopUpAlerta() {
+            if (alertaGlobalIdActual) {
+                let mostradas = lsGet('tc_alertas_mostradas', []);
+                if (!mostradas.includes(alertaGlobalIdActual)) {
+                    mostradas.push(alertaGlobalIdActual);
+                    lsSet('tc_alertas_mostradas', mostradas);
+                }
+                let leidas = lsGet('tc_alertas_leidas', []);
+                if (!leidas.includes(alertaGlobalIdActual)) {
+                    leidas.push(alertaGlobalIdActual);
+                    lsSet('tc_alertas_leidas', leidas);
+                }
+            }
             document.getElementById('modal-alerta-global').style.display = 'none';
             document.getElementById('banner-alerta-global').classList.add('oculto');
         }
+
         window.marcarAlertaLeida = function() {
+            if (alertaGlobalIdActual) {
+                let leidas = lsGet('tc_alertas_leidas', []);
+                leidas.push(alertaGlobalIdActual);
+                lsSet('tc_alertas_leidas', leidas);
+            }
             document.getElementById('modal-alerta-global').style.display = 'none';
             document.getElementById('banner-alerta-global').classList.add('oculto');
         }
@@ -655,11 +727,7 @@
             try {
                 // Formato correo para Firebase (Ej: fer@taurus.com)
                 const email = u.includes('@') ? u : u + '@taurus.com';
-                
                 await auth.signInWithEmailAndPassword(email, p);
-                
-                // Si el login fue exitoso, Firebase llama automáticamente a auth.onAuthStateChanged arriba.
-                // Lo dejamos terminar...
             } catch(error) {
                 console.error(error);
                 let msj = "Usuario o contraseña incorrectos.";
@@ -740,7 +808,7 @@
             // ==============================================================
             const eventosRef = db.collection("estancias").doc(maestroId).collection("eventos");
             
-            if(unsubscribeSnapshot) unsubscribeSnapshot(); // Limpiar si había uno previo
+            if(unsubscribeSnapshot) unsubscribeSnapshot(); 
             
             unsubscribeSnapshot = eventosRef.orderBy("fecha", "desc").limit(2000).onSnapshot((snapshot) => {
                 let nuevosDatos = [];
@@ -749,7 +817,7 @@
                     nuevosDatos.push(d);
                 });
                 
-                dbCache = nuevosDatos; // Reemplaza todo el array local al instante
+                dbCache = nuevosDatos; 
                 
                 procesarDatosDashboard();
                 if(document.getElementById('vista-registro') && !document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); 
@@ -911,7 +979,7 @@
         }
 
         // ==========================================
-        // 8. GUARDADO EN FIREBASE (SOPORTA OFFLINE NATURAMENTE)
+        // 8. GUARDADO EN FIREBASE (SOPORTA OFFLINE)
         // ==========================================
         function ejecutarAccion(tipo, val, det, modalId) {
             const obj = { 
@@ -922,7 +990,7 @@
                 detalles: det + ` | Op: ${usNombre}` 
             };
             
-            // Reflejo visual inmediato (Optimistic UI)
+            // Reflejo visual inmediato
             dbCache.unshift(obj); 
             if (rpActivo && rpActivo !== "---") buscarCaravanaBtn(rpActivo); 
             procesarDatosDashboard(); 
@@ -935,7 +1003,7 @@
             })
             .catch((err) => {
                 console.log("Guardado en caché (Offline)", err);
-                if(tipo === 'Peso') mostrarToast("💾 Peso en Caché");
+                if(tipo === 'Peso') mostrarToast("💾 Peso en Caché (Offline)");
             });
         }
 
@@ -1220,7 +1288,6 @@
                 lsSet('tc_hacienda', {nombre: n, logo: b64}); 
                 aplicarDisenoEnPantalla(n, b64); 
                 
-                // Guardamos en Firebase Usuarios
                 db.collection("usuarios").doc(usActivo).update({
                     hacienda: n,
                     logo: b64
@@ -1236,15 +1303,18 @@
         }
         
         // ==========================================
-        // 9. GESTIÓN DE PEONES EN FIREBASE
+        // 9. GESTIÓN DE PEONES EN FIREBASE (APP SECUNDARIA)
         // ==========================================
         async function crearOperador() { 
             if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
             const n = document.getElementById('op-nombre').value.trim();
             const u = document.getElementById('op-usu').value.trim(); 
+            const pass = document.getElementById('op-pass').value.trim();
             const rolSel = document.getElementById('op-rol').value;
             
-            if(!n || !u) { alert("Completar Nombre y Correo de Usuario."); return; } 
+            if(!n || !u || !pass) { alert("Completar Nombre, Correo y Contraseña."); return; } 
+            if(pass.length < 6) { alert("Firebase exige un mínimo de 6 caracteres para la contraseña."); return; }
+
             const email = u.includes('@') ? u : u + '@taurus.com';
             
             let rolFinal = rolSel;
@@ -1259,6 +1329,12 @@
             btn.disabled = true;
 
             try {
+                // Truco de la App Secundaria para no cerrar la sesión del dueño
+                const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryAppMobile");
+                await secondaryApp.auth().createUserWithEmailAndPassword(email, pass);
+                await secondaryApp.auth().signOut();
+                await secondaryApp.delete();
+
                 await db.collection('usuarios').doc(email.toLowerCase()).set({
                     nombre: n,
                     rol: rolFinal,
@@ -1266,15 +1342,19 @@
                     hacienda: usHacienda
                 });
 
-                document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = '';
-                cargarListaOperadores(); 
+                document.getElementById('op-nombre').value = ''; 
+                document.getElementById('op-usu').value = '';
+                document.getElementById('op-pass').value = '';
                 
-                alert(`⚠️ ¡ATENCIÓN!\n\nSe han guardado los permisos para:\n${email}\n\nRECUERDE: Debe registrar este mismo correo y una contraseña en la pestaña 'Authentication' de la consola de Firebase para que el operador pueda ingresar.`);
+                cargarListaOperadores(); 
+                mostrarToast("✅ Operador creado correctamente");
                 
             } catch(e) {
-                alert("Hubo un error de conexión al verificar el usuario.");
+                console.error(e);
+                if(e.code === 'auth/email-already-in-use') alert("El correo ya está en uso.");
+                else alert("Hubo un error de conexión al registrar al usuario.");
             } finally {
-                btn.innerHTML = "Registrar Permisos de Usuario"; btn.disabled = false;
+                btn.innerHTML = "Registrar Operador"; btn.disabled = false;
             }
         }
 
@@ -1350,14 +1430,14 @@
             const u = selectEl.value.trim();
             if(!u) { alert("Seleccione un operador de la lista."); return; }
             
-            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso del operador "${u}"? (Deberá eliminarlo también de Authentication en Firebase)`)) {
+            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso del operador "${u}"?`)) {
                 const btn = document.getElementById('btn-eliminar-op');
                 btn.innerHTML = "⏳ Eliminando...";
                 btn.disabled = true;
                 
                 try {
                     await db.collection("usuarios").doc(u).delete();
-                    alert(`El operador "${u}" ha sido eliminado. Recuerda borrar su cuenta en la pestaña Authentication de Firebase.`); 
+                    alert(`El operador "${u}" ha sido eliminado de la base de datos.`); 
                     selectEl.value = ''; 
                     cargarListaOperadores(); 
                 } catch(e) {
@@ -1366,6 +1446,38 @@
                     btn.innerHTML = "Eliminar Operador";
                     btn.disabled = false;
                 }
+            }
+        }
+
+        async function cambiarMiContrasena() { 
+            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
+            
+            const nueva = document.getElementById('nueva-clave').value.trim(); 
+            if(!nueva || nueva.length < 6) { 
+                alert("Firebase requiere que la contraseña tenga un mínimo de 6 caracteres."); 
+                return; 
+            } 
+
+            const user = firebase.auth().currentUser;
+            if(user) {
+                try {
+                    await user.updatePassword(nueva);
+                    alert("✅ Contraseña actualizada con éxito.");
+                    document.getElementById('nueva-clave').value = ''; 
+                    
+                    if(usActivo) {
+                        db.collection("usuarios").doc(usActivo).update({ password: nueva }).catch(()=>{});
+                    }
+                } catch(error) {
+                    console.error(error);
+                    if(error.code === 'auth/requires-recent-login') {
+                        alert("⚠️ Por seguridad, Firebase requiere que cierres sesión y vuelvas a ingresar con tu clave actual antes de poder cambiarla.");
+                    } else {
+                        alert("❌ Error al cambiar la contraseña: " + error.message);
+                    }
+                }
+            } else {
+                alert("No hay una sesión activa.");
             }
         }
         
