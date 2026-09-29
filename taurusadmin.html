@@ -17,7 +17,61 @@
       OneSignalDeferred.push(async function(OneSignal) {
         try { await OneSignal.init({ appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60" }); } catch(e) {}
       });
+        // ==========================================
+        // FUNCIONES KILL SWITCH Y AVISOS (CON NOTIFICACIONES PUSH)
+        // ==========================================
+        const APPS_SCRIPT_NOTIFICACIONES = "https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec";
+
+        async function toggleMantenimiento(nuevoEstado) {
+            if(nuevoEstado === 'ON' && !confirm("⚠️ ¿Estás seguro que deseas desconectar a todos los clientes e inutilizar la plataforma?")) return;
+            
+            toggleLoading(true, "Transmitiendo orden de bloqueo y notificación...");
+            try {
+                // 1. Bloquear o desbloquear en Firebase
+                await db.collection('sistema').doc('config').set({ mantenimiento: nuevoEstado === 'ON' }, { merge: true });
+                
+                // 2. Disparar Notificación Push global a todos los celulares (Solo si se bloquea)
+                if(nuevoEstado === 'ON') {
+                    const fd = new URLSearchParams(); 
+                    fd.append('accion', 'toggle_mantenimiento'); 
+                    fd.append('estado', nuevoEstado);
+                    fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
+                }
+
+                toggleLoading(false); 
+                mostrarToast(`✅ Plataforma cambiada a estado: ${nuevoEstado}`);
+            } catch (e) {
+                toggleLoading(false); 
+                mostrarToast("❌ Error al cambiar estado", true);
+            }
+        }
+
+        async function enviarAvisoMantenimiento() {
+            let msg = document.getElementById('txt-aviso-mant').value.trim();
+            if(!msg) return mostrarToast("⚠️ Escribe el mensaje de aviso", true);
+            if(!confirm("📣 ¿Enviar esta notificación push a TODOS los usuarios ahora mismo?")) return;
+            
+            toggleLoading(true, "Enviando anuncio global...");
+            try {
+                // 1. Mostrar banner naranja en las apps a través de Firebase
+                await db.collection('sistema').doc('config').set({ alerta_global: "⏳ AVISO: " + msg }, { merge: true });
+                
+                // 2. Disparar Notificación Push a todos los celulares
+                const fd = new URLSearchParams(); 
+                fd.append('accion', 'aviso_mantenimiento'); 
+                fd.append('mensaje', "⏳ AVISO: " + msg);
+                fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
+
+                toggleLoading(false); 
+                mostrarToast("✅ Aviso enviado a todos"); 
+                document.getElementById('txt-aviso-mant').value = '';
+            } catch (e) {
+                toggleLoading(false); 
+                mostrarToast("❌ Error al enviar el aviso", true);
+            }
+        }
     </script>
+    
 
     <!-- FIREBASE SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
