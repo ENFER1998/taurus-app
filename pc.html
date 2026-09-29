@@ -67,6 +67,9 @@
         .spinner-mant { border: 5px solid var(--border); border-top: 5px solid var(--danger); border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin-top:30px;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        #modal-alerta-global { z-index: 99999; }
+        #modal-alerta-global .modal-body { text-align: center; border: 2px solid var(--warning); }
+
         #sidebar { width: 240px; background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
         .sidebar-header { padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border); background: var(--bg-card);}
         .sidebar-header img { width: 35px; }
@@ -95,7 +98,8 @@
         .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;}
         .grid-acciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 
-        .kpi-box { background: var(--bg-card); padding: 15px; border-radius: 4px; border-left: 4px solid var(--primary); }
+        .kpi-box { background: var(--bg-card); padding: 15px; border-radius: 4px; border-left: 4px solid var(--primary); cursor: pointer; transition: 0.2s; }
+        .kpi-box:hover { border-color: var(--primary-hover); transform: translateY(-2px); }
         .kpi-box span { display: block; font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; }
         .kpi-box strong { display: block; font-size: 28px; margin-top: 5px; color: var(--text-main); }
 
@@ -120,15 +124,36 @@
         .nota-item .f { font-size: 11px; color: var(--primary); font-weight: bold; display: block; margin-bottom: 2px;}
         .nota-item .t { font-size: 13px; color: var(--text-main); line-height: 1.4; }
 
-        .torta-container { position: relative; width: 120px; height: 120px; margin: 0 auto 15px auto; }
+        /* ANALÍTICAS DINÁMICAS MODERNAS CON MINI-DONUTS */
+        .grafico-flex { display: flex; align-items: center; gap: 20px; justify-content: space-between; flex-wrap: nowrap;}
+        .torta-container { position: relative; width: 100px; height: 100px; flex-shrink: 0; cursor: pointer;}
         .torta { width: 100%; height: 100%; border-radius: 50%; background: var(--border); transition: background 1s ease-in-out;}
-        .torta-centro { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 75px; height: 75px; background: var(--bg-panel); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 20px; color: var(--text-main);}
-        .leyenda-torta { font-size: 12px; line-height: 1.8; color: var(--text-muted); text-align: center;}
-        .punto { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px;}
-        .barra-cat { margin-bottom: 12px;}
-        .barra-head { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; margin-bottom: 4px; color: var(--text-main); text-transform: uppercase;}
-        .barra-bg { width: 100%; background: var(--border); height: 6px; border-radius: 3px; overflow: hidden;}
-        .barra-fill { height: 100%; border-radius: 3px; width: 0%; transition: width 1s ease;}
+        .torta-centro { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: var(--bg-panel); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 15px; color: var(--text-main);}
+        .contenedor-scroll-analitica { max-height: 140px; overflow-y: auto; padding-right: 5px; flex: 1; }
+
+        .barra-cat { margin-bottom: 10px; cursor: pointer; padding: 4px; border-radius: 4px; transition: 0.2s;}
+        .barra-cat:hover { background: rgba(37, 99, 235, 0.1); }
+        .barra-head { display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: var(--text-main); text-transform: uppercase;}
+        .barra-bg { width: 100%; background: var(--border); height: 8px; border-radius: 4px; overflow: hidden;}
+        .barra-fill { height: 100%; border-radius: 4px; width: 0%; transition: width 1s ease;}
+        .punto { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px;}
+
+        /* ADAPTABILIDAD DINÁMICA DE RECUADROS Y PREVIEW PDF */
+        .caja-filtros-rapidos { background: var(--bg-card); padding: 15px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px; }
+        body.tema-claro .caja-filtros-rapidos { background: #ffffff !important; border-color: var(--border) !important; }
+
+        .contenedor-permisos { display: flex; flex-direction: column; gap: 8px; background: var(--bg-base); padding: 12px; border: 1px solid var(--border); border-radius: 4px; }
+        body.tema-claro .contenedor-permisos { background: #ffffff !important; border-color: var(--border) !important; }
+
+        .tabla-informe { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--bg-panel); color: var(--text-main); min-width: 400px; border: 1px solid var(--border); }
+        .tabla-informe th { background: var(--bg-card); padding: 10px 15px; text-align: left; border: 1px solid var(--border); color: var(--primary); font-size: 11px; text-transform: uppercase; font-weight: bold; }
+        .tabla-informe td { padding: 10px 15px; border: 1px solid var(--border); color: var(--text-main); }
+        .tabla-informe tr:hover td { background: var(--bg-card); }
+
+        body.tema-claro .tabla-informe { background: #ffffff; color: #0f172a; border-color: var(--border); }
+        body.tema-claro .tabla-informe th { background: #f1f5f9; color: var(--primary); border-color: var(--border); }
+        body.tema-claro .tabla-informe td { border-color: var(--border); color: #0f172a; }
+        body.tema-claro .tabla-informe tr:hover td { background: #f8fafc; }
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); z-index: 2000; align-items: center; justify-content: center;}
         .modal-body { background: var(--bg-panel); width: 450px; border-radius: 6px; padding: 25px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5);}
@@ -172,8 +197,8 @@
     </div>
 
     <!-- MODAL POP-UP AVISO GLOBAL -->
-    <div id="modal-alerta-global" class="modal" style="z-index: 99999;">
-        <div class="modal-body" style="text-align: center; border: 2px solid var(--warning);">
+    <div id="modal-alerta-global" class="modal">
+        <div class="modal-body">
             <h3 style="color:var(--warning); margin-top:0; border-bottom: none; font-size:22px;">⚠️ Aviso Importante</h3>
             <p id="txt-alerta-global" style="font-size:15px; line-height: 1.6; color:var(--text-main); margin-bottom: 25px; font-weight:bold;"></p>
             <button class="btn-guardar" style="background:var(--warning);" onclick="cerrarPopUpAlerta()">Entendido / Cerrar Ventana</button>
@@ -207,10 +232,10 @@
             </div>
         </div>
 
+        <!-- VISTA: DASHBOARD -->
         <div id="v-dash" class="vista oculto">
             <h2 class="titulo-seccion">Panel de Control General</h2>
             
-            <!-- BANNER PERSISTENTE ALERTA GLOBAL -->
             <div id="banner-alerta-global" class="tarjeta oculto" style="border-color: var(--warning); background: rgba(245, 158, 11, 0.05); padding: 15px;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div style="flex:1;">
@@ -222,9 +247,15 @@
             </div>
 
             <div class="grid-3" style="margin-bottom: 20px;">
-                <div class="kpi-box" style="border-color: var(--primary);"><span>Inventario General Activo</span><strong id="dash-cabezas">0</strong></div>
-                <div class="kpi-box" style="border-color: var(--danger);"><span>Mortalidad / Bajas</span><strong id="dash-bajas">0</strong></div>
-                <div class="kpi-box" style="border-color: var(--success);"><span>Registros Históricos Procesados</span><strong id="dash-acciones">0</strong></div>
+                <div class="kpi-box" style="border-color: var(--primary);" onclick="filtrarDesdeDashboard('estado', 'vivos')">
+                    <span>Inventario General Activo</span><strong id="dash-cabezas">0</strong>
+                </div>
+                <div class="kpi-box" style="border-color: var(--danger);" onclick="filtrarDesdeDashboard('estado', 'bajas')">
+                    <span>Mortalidad / Bajas</span><strong id="dash-bajas">0</strong>
+                </div>
+                <div class="kpi-box" style="border-color: var(--success);">
+                    <span>Registros Históricos Procesados</span><strong id="dash-acciones">0</strong>
+                </div>
             </div>
             
             <div class="tarjeta" id="contenedor-alertas" style="display:none; border-color:var(--warning);">
@@ -233,15 +264,15 @@
             </div>
 
             <div class="tarjeta">
-                <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; color:var(--text-muted);">Métricas Dinámicas</h3>
+                <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; color:var(--text-muted);">Métricas Dinámicas e Interactivas</h3>
                 <div id="contenedor-graficos" class="grid-2"></div>
             </div>
         </div>
 
+        <!-- VISTA: FICHA CLÍNICA -->
         <div id="v-ficha" class="vista oculto">
             <h2 class="titulo-seccion">Expediente Clínico Individual</h2>
             
-            <!-- TARJETA MODO RÁFAGA -->
             <div id="tarjeta-rafaga" class="tarjeta" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid var(--primary); background: var(--bg-card);">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div style="display:flex; align-items:center; gap:10px;">
@@ -351,24 +382,54 @@
             </div>
         </div>
 
+        <!-- VISTA: BASE DE DATOS / BÚSQUEDA AVANZADA -->
         <div id="v-base" class="vista oculto">
-            <h2 class="titulo-seccion">Inventario General Activo</h2>
-            <div class="search-bar">
-                <input type="text" id="buscador-lista" class="form-control" style="margin:0;" placeholder="Buscar en inventario (Ej: caravana, lote, vacía)..." onkeyup="if(event.key === 'Enter') filtrarLista(this.value)">
-                <button type="button" class="btn-primary" style="width: 150px; margin:0;" onclick="filtrarLista(document.getElementById('buscador-lista').value)">Buscar</button>
+            <h2 class="titulo-seccion">Inventario General Activo y Búsqueda Avanzada</h2>
+            
+            <!-- RECUADRO DE FILTROS RÁPIDOS DINÁMICOS -->
+            <div class="caja-filtros-rapidos">
+                <span style="font-size:11px; font-weight:bold; color:var(--text-muted); text-transform:uppercase;">🔍 Filtros Rápidos de Hacienda</span>
+                
+                <div style="display:flex; gap:12px;">
+                    <select id="filtro-reg-estado" class="form-control" style="flex:1; margin-bottom:0; font-weight:bold;" onchange="cargarListaRegistro()">
+                        <option value="vivos">🐄 Activos / Vivos</option>
+                        <option value="bajas">💀 Bajas / Muertes / Vendidos</option>
+                        <option value="todos">📋 Todos los Registros</option>
+                    </select>
+                    
+                    <select id="filtro-reg-dx" class="form-control" style="flex:1; margin-bottom:0;" onchange="cargarListaRegistro()">
+                        <option value="ALL">🩺 Diagnóstico (Todos)</option>
+                        <option value="Preñada">✅ Solo Preñadas</option>
+                        <option value="Vacía">❌ Solo Vacías</option>
+                    </select>
+
+                    <select id="filtro-reg-lote" class="form-control" style="flex:1; margin-bottom:0;" onchange="cargarListaRegistro()">
+                        <option value="ALL">🏷️ Lote (Todos)</option>
+                    </select>
+                    
+                    <select id="filtro-reg-cat" class="form-control" style="flex:1; margin-bottom:0;" onchange="cargarListaRegistro()">
+                        <option value="ALL">🐄 Categoría (Todas)</option>
+                    </select>
+                </div>
             </div>
-            <div class="tarjeta" style="padding:0; overflow-y:auto; max-height: 60vh;">
+
+            <div class="search-bar">
+                <input type="text" id="buscador-lista" class="form-control" style="margin:0;" placeholder="Buscar por RP, categoría, lote, observaciones..." onkeyup="cargarListaRegistro()">
+                <button type="button" class="btn-primary" style="width: 150px; margin:0;" onclick="cargarListaRegistro()">Filtrar</button>
+            </div>
+            
+            <div class="tarjeta" style="padding:0; overflow-y:auto; max-height: 55vh;">
                 <table class="tabla-datos">
-                    <thead><tr><th>Caravana</th><th>Categoría</th><th>Ubicación</th><th>Diagnóstico</th><th>Acción</th></tr></thead>
+                    <thead><tr><th>Caravana</th><th>Categoría Oficial</th><th>Ubicación / Lote</th><th>Diagnóstico</th><th>Acción</th></tr></thead>
                     <tbody id="tb-registro"></tbody>
                 </table>
             </div>
         </div>
 
+        <!-- VISTA: REPORTES PDF -->
         <div id="v-reporte" class="vista oculto">
             <h2 class="titulo-seccion">Centro de Reportes y Documentos PDF</h2>
             
-            <!-- VISTA PREVIA DEL MEMBRETE -->
             <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid var(--border);">
                 <img id="preview-logo-reporte" src="gemini-svg.png" style="width:50px; height:50px; object-fit:contain; border-radius:8px; background:white; padding:2px;">
                 <div>
@@ -378,79 +439,109 @@
             </div>
 
             <div class="tarjeta">
+                <label style="font-size:11px; font-weight:bold; color:var(--text-muted); margin-bottom:6px; display:block;">SELECCIONA EL FORMATO DEL REPORTE:</label>
                 <select class="form-control" id="f-inf-modo" onchange="cambiarModoReporte()" style="margin-bottom:15px; font-weight:bold; background:var(--primary); color:white;">
-                    <option value="eventos">📋 TRATAMIENTOS Y TRABAJOS (Historial)</option>
-                    <option value="inventario">📊 INVENTARIO GENERAL (Estado Actual)</option>
+                    <option value="inventario">📊 INVENTARIO (Por Lote y Categorías de Hacienda)</option>
+                    <option value="bajas">💀 REPORTE DE BAJAS Y MORTALIDAD</option>
+                    <option value="eventos">📋 HISTORIAL DE TRATAMIENTOS Y PROCEDIMIENTOS</option>
                 </select>
 
-                <div id="filtros-eventos" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
-                    <select class="form-control" style="width:auto;" id="f-inf-rango-fecha" onchange="manejarRangoFechas()"><option value="30">Últimos 30 Días</option><option value="hoy">Trabajos de Hoy</option><option value="7">Últimos 7 Días</option><option value="todo">Ver Todo</option><option value="custom">📅 Rango Manual...</option></select>
-                    <select class="form-control" style="width:auto;" onchange="document.getElementById('f-inf-accion-oculto').value = this.value; actualizarInformeAvanzado();"><option value="ALL">Todos los Trabajos</option><option value="Sanidad">💉 Sanidad</option><option value="Peso">⚖ Pesos</option><option value="Diagnóstico">🩺 Tactos</option><option value="Inseminación">🧬 Reproducción</option><option value="Nutrición">🌾 Nutrición</option><option value="Baja">💀 Mortalidad y Bajas</option></select>
-                    <input type="hidden" id="f-inf-accion-oculto" value="ALL">
-                    <input type="text" id="f-inf-keyword" class="form-control" style="width:auto; flex:1;" placeholder="Buscar producto..." onkeyup="actualizarInformeAvanzado()">
-                </div>
-                
-                <div id="caja-fechas-custom" style="display:none; gap:10px; margin-bottom:15px;">
-                    <input type="date" id="f-inf-desde" class="form-control" onchange="actualizarInformeAvanzado()">
-                    <input type="date" id="f-inf-hasta" class="form-control" onchange="actualizarInformeAvanzado()">
-                </div>
-
-                <div id="filtros-inventario" style="display:none; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+                <!-- FILTROS INVENTARIO PDF -->
+                <div id="filtros-inventario" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
                     <select class="form-control" style="width:auto; flex:1;" id="f-inf-lote" onchange="actualizarInformeAvanzado()">
-                        <option value="ALL">Todos los Lotes</option>
+                        <option value="ALL">🏷️ Todos los Lotes</option>
                         <option value="Hacienda General">Hacienda General</option>
-                        <option value="Lecheras">Lecheras</option>
                         <option value="Preñadas">Preñadas</option>
+                        <option value="Lecheras">Lecheras</option>
                         <option value="Inseminadas">Inseminadas</option>
                         <option value="Destete">Destete</option>
                         <option value="Enfermería">Enfermería</option>
                     </select>
                     
                     <select class="form-control" style="width:auto; flex:1;" id="f-inf-cat" onchange="actualizarInformeAvanzado()">
-                        <option value="ALL">Todas las Categorías</option>
-                        <option value="V:">Vacas / Vaquillas (V)</option>
-                        <option value="VV:">Vacas Viejas (VV)</option>
-                        <option value="TH:">Ternera Hembra (TH)</option>
-                        <option value="TM:">Ternero Macho (TM)</option>
-                        <option value="DH:">Desmamante Hembra (DH)</option>
-                        <option value="DM:">Desmamante Macho (DM)</option>
+                        <option value="ALL">🐄 Todas las Categorías</option>
+                        <option value="Vaca / Vaquilla">Vaca / Vaquilla</option>
+                        <option value="Vaca Vieja">Vaca Vieja</option>
+                        <option value="Ternera Hembra">Ternera Hembra</option>
+                        <option value="Ternero Macho">Ternero Macho</option>
+                        <option value="Desmamante Hembra">Desmamante Hembra</option>
+                        <option value="Desmamante Macho">Desmamante Macho</option>
                         <option value="Toros">Toros</option>
                         <option value="Novillos">Novillos</option>
                         <option value="Bueyes">Bueyes / Señuelos</option>
                     </select>
 
                     <select class="form-control" style="width:auto; flex:1;" id="f-inf-carimbo" onchange="actualizarInformeAvanzado()">
-                        <option value="ALL">Todos los Carimbos</option>
+                        <option value="ALL">🎯 Todos los Carimbos</option>
                         <option value="0">Carimbo 0</option><option value="1">Carimbo 1</option><option value="2">Carimbo 2</option>
                         <option value="3">Carimbo 3</option><option value="4">Carimbo 4</option><option value="5">Carimbo 5</option>
                         <option value="6">Carimbo 6</option><option value="7">Carimbo 7</option><option value="8">Carimbo 8</option><option value="9">Carimbo 9</option>
                     </select>
 
                     <select class="form-control" style="width:auto; flex:1;" id="f-inf-dx" onchange="actualizarInformeAvanzado()">
-                        <option value="ALL">Estados de Preñez</option>
+                        <option value="ALL">🩺 Estados de Preñez</option>
                         <option value="Preñada">Solo Preñadas</option>
                         <option value="Vacía">Solo Vacías</option>
                     </select>
                 </div>
 
-                <input type="text" id="f-inf-rp" class="form-control" style="border-color:var(--success);" placeholder="🔍 Ingrese Nº RP para Dossier Clínico..." onkeyup="actualizarInformeAvanzado()">
+                <!-- FILTROS BAJAS PDF -->
+                <div id="filtros-bajas" style="display:none; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+                    <select class="form-control" style="width:auto; flex:1;" id="f-inf-baja-causa" onchange="actualizarInformeAvanzado()">
+                        <option value="ALL">💀 Todas las Causas</option>
+                        <option value="Enfermedad">Enfermedad</option>
+                        <option value="Accidente">Accidente</option>
+                        <option value="Depredador">Depredador</option>
+                        <option value="Natural">Natural / Desconocida</option>
+                        <option value="Venta">Venta / Faena</option>
+                    </select>
+                    
+                    <select class="form-control" style="width:auto; flex:1;" id="f-inf-baja-rango" onchange="manejarRangoFechasBajas()">
+                        <option value="todo">Ver Todo el Historial</option>
+                        <option value="30">Últimos 30 Días</option>
+                        <option value="90">Últimos 3 Meses</option>
+                        <option value="365">Último Año</option>
+                        <option value="custom">📅 Rango Manual...</option>
+                    </select>
+
+                    <div id="caja-fechas-bajas" style="display:none; gap:10px; flex: 1 1 100%;">
+                        <input type="date" id="f-inf-baja-desde" class="form-control" onchange="actualizarInformeAvanzado()">
+                        <input type="date" id="f-inf-baja-hasta" class="form-control" onchange="actualizarInformeAvanzado()">
+                    </div>
+                </div>
+
+                <!-- FILTROS EVENTOS PDF -->
+                <div id="filtros-eventos" style="display:none; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+                    <select class="form-control" style="width:auto;" id="f-inf-rango-fecha" onchange="manejarRangoFechas()"><option value="30">Últimos 30 Días</option><option value="hoy">Trabajos de Hoy</option><option value="7">Últimos 7 Días</option><option value="todo">Ver Todo</option><option value="custom">📅 Rango Manual...</option></select>
+                    <select class="form-control" style="width:auto;" onchange="document.getElementById('f-inf-accion-oculto').value = this.value; actualizarInformeAvanzado();"><option value="ALL">Todos los Trabajos</option><option value="Sanidad">💉 Sanidad</option><option value="Peso">⚖ Pesos</option><option value="Diagnóstico">🩺 Tactos</option><option value="Inseminación">🧬 Reproducción</option><option value="Nutrición">🌾 Nutrición</option></select>
+                    <input type="hidden" id="f-inf-accion-oculto" value="ALL">
+                    <input type="text" id="f-inf-keyword" class="form-control" style="width:auto; flex:1;" placeholder="Buscar producto o detalles..." onkeyup="actualizarInformeAvanzado()">
+                    <div id="caja-fechas-custom" style="display:none; gap:10px; flex: 1 1 100%;">
+                        <input type="date" id="f-inf-desde" class="form-control" onchange="actualizarInformeAvanzado()">
+                        <input type="date" id="f-inf-hasta" class="form-control" onchange="actualizarInformeAvanzado()">
+                    </div>
+                </div>
+
+                <input type="text" id="f-inf-rp" class="form-control" style="border-color:var(--success);" placeholder="🔍 Ingrese Nº RP para Dossier Clínico Individual..." onkeyup="actualizarInformeAvanzado()">
 
                 <div style="display:flex; justify-content:space-between; align-items:center; margin:15px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:15px 0;">
                     <div style="display:flex; gap:30px;">
-                        <div><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;">REGISTROS LISTADOS</span><strong style="font-size:22px;" id="inf-total">0</strong></div>
-                        <div><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;">PREÑADAS CONF.</span><strong style="font-size:22px; color:var(--success);" id="inf-prenadas">0</strong></div>
+                        <div><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;" id="lbl-inf-total">CABEZAS LISTADAS</span><strong style="font-size:22px;" id="inf-total">0</strong></div>
+                        <div id="caja-kpi-prenadas">><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;">PREÑADAS CONF.</span><strong style="font-size:22px; color:var(--success);" id="inf-prenadas">0</strong></div>
                     </div>
                     <button type="button" id="btn-print-magico" class="btn-primary" style="width:auto; padding:10px 25px; background:var(--primary);" onclick="ejecutarDescargaPDF()">🖨️ Descargar Informe PDF</button>
                 </div>
                 
                 <div style="overflow-y:auto; max-height: 50vh;">
-                    <table class="tabla-datos" id="tabla-eventos"><thead><tr><th>Fecha</th><th>RP</th><th>Trabajo Realizado</th><th>Detalles Extras</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
-                    <table class="tabla-datos oculto" id="tabla-masiva"><thead><tr><th>RP y Carimbo</th><th>Categoría y Lote</th><th>Últ. Peso</th><th>Dx Actual</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
-                    <table class="tabla-datos oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Procedimiento</th><th>Valor Principal</th><th>Observaciones Adicionales</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
+                    <table class="tabla-informe" id="tabla-masiva"><thead><tr><th>RP y Carimbo</th><th>Categoría Oficial</th><th>Lote / Ubicación</th><th>Últ. Peso</th><th>Dx Actual</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
+                    <table class="tabla-informe oculto" id="tabla-bajas"><thead><tr><th>Fecha de Baja</th><th>Caravana / RP</th><th>Causa Registrada</th><th>Observaciones</th></tr></thead><tbody id="tb-informe-bajas"></tbody></table>
+                    <table class="tabla-informe oculto" id="tabla-eventos"><thead><tr><th>Fecha</th><th>RP</th><th>Trabajo Realizado</th><th>Detalles Extras</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
+                    <table class="tabla-informe oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Procedimiento</th><th>Valor Principal</th><th>Observaciones Adicionales</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
                 </div>
             </div>
         </div>
 
+        <!-- VISTA: CONFIGURACIÓN -->
         <div id="v-config" class="vista oculto">
             <h2 class="titulo-seccion">Administración del Software</h2>
             <div class="grid-2">
@@ -473,9 +564,8 @@
                     </div>
 
                     <div class="tarjeta" id="panel-membrete">
-                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">🖨️ Membrete para Documentos PDF</h3>
+                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">🖨️️ Membrete para Documentos PDF</h3>
                         
-                        <!-- VISTA PREVIA DEL LOGO AL CARGAR -->
                         <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
                             <img id="preview-logo-config" src="gemini-svg.png" style="width:60px; height:60px; object-fit:contain; border-radius:8px; border:1px solid var(--border); background:white; padding:2px;">
                             <div style="flex:1;">
@@ -516,11 +606,11 @@
                         
                         <div class="form-grupo" id="caja-permisos">
                             <label style="font-size:12px; color:var(--text-muted); margin-bottom:8px; display:block;">Permisos de Acceso al Menú:</label>
-                            <div style="display:flex; flex-direction:column; gap:8px; background:var(--bg-base); padding:10px; border:1px solid var(--border); border-radius:4px;">
-                                <label class="check-container"><input type="checkbox" class="chk-permiso" value="dash" checked> <span>📊 Panel de Control</span></label>
-                                <label class="check-container"><input type="checkbox" class="chk-permiso" value="ficha" checked> <span>🐄 Ficha Clínica (Manga)</span></label>
-                                <label class="check-container"><input type="checkbox" class="chk-permiso" value="base" checked> <span>📋 Base de Datos</span></label>
-                                <label class="check-container"><input type="checkbox" class="chk-permiso" value="reporte"> <span>📄 Reportes PDF</span></label>
+                            <div class="contenedor-permisos">
+                                <label><input type="checkbox" class="chk-permiso" value="dash" checked> <span>📊 Panel de Control</span></label>
+                                <label><input type="checkbox" class="chk-permiso" value="ficha" checked> <span>🐄 Ficha Clínica (Manga)</span></label>
+                                <label><input type="checkbox" class="chk-permiso" value="base" checked> <span>📋 Base de Datos</span></label>
+                                <label><input type="checkbox" class="chk-permiso" value="reporte"> <span>📄 Reportes PDF</span></label>
                             </div>
                         </div>
                         <button type="button" id="btn-crear-op" class="btn-primary" style="background:#10b981;" onclick="crearOperador()">Registrar Usuario en Nube</button>
@@ -529,18 +619,18 @@
                         
                         <h4 style="margin-top:0; font-size:13px; text-transform:uppercase; color:var(--text-main);">✏️ Editar Permisos de Operador</h4>
                         <div class="form-grupo">
-                            <select id="op-edit-usu-sel" class="form-control" onchange="cargarPermisosEdicion()">
+                            <select id="op-edit-usu-sel" class="form-control" onfocus="cargarListaOperadores()" onchange="cargarPermisosEdicion()">
                                 <option value="">-- Seleccione un operador --</option>
                             </select>
                         </div>
                         <div id="caja-edit-permisos" class="oculto">
                             <div class="form-grupo">
                                 <label style="font-size:12px; color:var(--text-muted); margin-bottom:8px; display:block;">Nuevos Permisos:</label>
-                                <div style="display:flex; flex-direction:column; gap:8px; background:var(--bg-base); padding:10px; border:1px solid var(--border); border-radius:4px;">
-                                    <label class="check-container"><input type="checkbox" class="chk-edit-permiso" value="dash"> <span>📊 Panel de Control</span></label>
-                                    <label class="check-container"><input type="checkbox" class="chk-edit-permiso" value="ficha"> <span>🐄 Ficha Clínica (Manga)</span></label>
-                                    <label class="check-container"><input type="checkbox" class="chk-edit-permiso" value="base"> <span>📋 Base de Datos</span></label>
-                                    <label class="check-container"><input type="checkbox" class="chk-edit-permiso" value="reporte"> <span>📄 Reportes PDF</span></label>
+                                <div class="contenedor-permisos">
+                                    <label><input type="checkbox" class="chk-edit-permiso" value="dash"> <span>📊 Panel de Control</span></label>
+                                    <label><input type="checkbox" class="chk-edit-permiso" value="ficha"> <span>🐄 Ficha Clínica (Manga)</span></label>
+                                    <label><input type="checkbox" class="chk-edit-permiso" value="base"> <span>📋 Base de Datos</span></label>
+                                    <label><input type="checkbox" class="chk-edit-permiso" value="reporte"> <span>📄 Reportes PDF</span></label>
                                 </div>
                             </div>
                             <button type="button" id="btn-editar-op" class="btn-primary" style="background:#3b82f6;" onclick="guardarEdicionOperador()">Actualizar Permisos</button>
@@ -550,7 +640,7 @@
                         
                         <div class="form-grupo">
                             <label>Eliminar Operador o Dueño Permanentemente</label>
-                            <select id="op-del-usu-sel" class="form-control">
+                            <select id="op-del-usu-sel" class="form-control" onfocus="cargarListaOperadores()">
                                 <option value="">-- Seleccione un usuario --</option>
                             </select>
                             <span style="font-size:11px; color:var(--text-muted); display:block; margin-top:5px;">El sistema borrará sus credenciales de Firebase Auth y su perfil de acceso.</span>
@@ -571,17 +661,17 @@
                     <div class="tarjeta" id="panel-analiticas">
                         <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">📊 Analíticas en Dashboard (Máx 3)</h3>
                         <div style="display:flex; flex-direction:column; gap:8px;">
-                            <label class="check-container"><input type="checkbox" class="chk-graf" value="1" onchange="verificarLimiteGraficos(this)"> <span>1. Tasa de Preñez Dinámica</span></label>
-                            <label class="check-container"><input type="checkbox" class="chk-graf" value="2" onchange="verificarLimiteGraficos(this)"> <span>2. Composición de Hacienda</span></label>
-                            <label class="check-container"><input type="checkbox" class="chk-graf" value="3" onchange="verificarLimiteGraficos(this)"> <span>3. Distribución por Lotes</span></label>
-                            <label class="check-container"><input type="checkbox" class="chk-graf" value="4" onchange="verificarLimiteGraficos(this)"> <span>4. Condición Corporal General</span></label>
-                            <label class="check-container"><input type="checkbox" class="chk-graf" value="5" onchange="verificarLimiteGraficos(this)"> <span>5. Causas de Vientre Vacío</span></label>
-                            <label class="check-container"><input type="checkbox" class="chk-graf" value="6" onchange="verificarLimiteGraficos(this)"> <span>6. Ratios de Sanidad Global</span></label>
-                            <label class="check-container"><input type="checkbox" class="chk-graf" value="7" onchange="verificarLimiteGraficos(this)"> <span>7. Preñez Eficaz por Lote</span></label>
-                            <label class="check-container"><input type="checkbox" class="chk-graf" value="8" onchange="verificarLimiteGraficos(this)"> <span>8. Eficacia por Toro</span></label>
-                            <label class="check-container"><input type="checkbox" class="chk-graf" value="9" onchange="verificarLimiteGraficos(this)"> <span>9. Promedios</span></label>
-                            <label class="check-container"><input type="checkbox" class="chk-graf" value="10" onchange="verificarLimiteGraficos(this)"> <span>10. Volumen</span></label>
-                            <label class="check-container"><input type="checkbox" class="chk-graf" value="11" onchange="verificarLimiteGraficos(this)"> <span>11. Causas de Baja / Mortalidad</span></label>
+                            <label><input type="checkbox" class="chk-graf" value="1" onchange="verificarLimiteGraficos(this)"> <span>1. Tasa de Preñez Dinámica</span></label>
+                            <label><input type="checkbox" class="chk-graf" value="2" onchange="verificarLimiteGraficos(this)"> <span>2. Composición de Hacienda</span></label>
+                            <label><input type="checkbox" class="chk-graf" value="3" onchange="verificarLimiteGraficos(this)"> <span>3. Distribución por Lotes</span></label>
+                            <label><input type="checkbox" class="chk-graf" value="4" onchange="verificarLimiteGraficos(this)"> <span>4. Condición Corporal General</span></label>
+                            <label><input type="checkbox" class="chk-graf" value="5" onchange="verificarLimiteGraficos(this)"> <span>5. Causas de Vientre Vacío</span></label>
+                            <label><input type="checkbox" class="chk-graf" value="6" onchange="verificarLimiteGraficos(this)"> <span>6. Ratios de Sanidad Global</span></label>
+                            <label><input type="checkbox" class="chk-graf" value="7" onchange="verificarLimiteGraficos(this)"> <span>7. Preñez Eficaz por Lote</span></label>
+                            <label><input type="checkbox" class="chk-graf" value="8" onchange="verificarLimiteGraficos(this)"> <span>8. Eficacia por Toro</span></label>
+                            <label><input type="checkbox" class="chk-graf" value="9" onchange="verificarLimiteGraficos(this)"> <span>9. Promedios</span></label>
+                            <label><input type="checkbox" class="chk-graf" value="10" onchange="verificarLimiteGraficos(this)"> <span>10. Volumen</span></label>
+                            <label><input type="checkbox" class="chk-graf" value="11" onchange="verificarLimiteGraficos(this)"> <span>11. Causas de Baja / Mortalidad</span></label>
                         </div>
                     </div>
                     
@@ -591,7 +681,7 @@
         </div>
     </div>
 
-    <!-- MODALES DE CARGA DE DATOS -->
+    <!-- MODALES GANADEROS -->
     <div id="m-baja" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-baja')">&times;</span><h3>💀 Registro de Baja / Muerte</h3><div class="form-grupo"><label>Causa de Baja / Venta</label><select class="form-control" id="i-baja-causa"><option>Enfermedad</option><option>Accidente</option><option>Depredador</option><option>Natural / Desconocida</option><option>Venta / Faena</option></select></div><div class="form-grupo"><label>Observaciones (Opcional)</label><textarea class="form-control textarea" id="i-baja-txt" placeholder="Detalles de la baja..."></textarea></div><button type="button" class="btn-guardar" style="background:var(--danger);" onclick="prepararGuardado('m-baja', 'Baja')">Confirmar Baja</button></div></div>
     <div id="m-renombrar" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-renombrar')">&times;</span><h3>Modificar Número RP</h3><p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">El historial clínico se enlazará al nuevo número.</p><div class="form-grupo"><label>Nuevo Número RP</label><input type="text" class="form-control" id="f-nueva-caravana" autocomplete="off"></div><button type="button" class="btn-guardar" onclick="guardarCambioCaravana()">Confirmar Cambio</button></div></div>
     <div id="m-nota" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-nota')">&times;</span><h3>Anotación Libre</h3><div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt" placeholder="Describa la observación general..."></textarea></div><button type="button" class="btn-guardar" onclick="prepararGuardado('m-nota', 'Comentario')">Guardar en Historial</button></div></div>
@@ -653,6 +743,10 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        try {
+            db.enablePersistence().catch((err) => {});
+        } catch(e) {}
+
         function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 
@@ -668,13 +762,23 @@
                 db.collection('usuarios').doc(user.email).get().then(doc => {
                     if (doc.exists) {
                         const userData = doc.data();
-                        if(userData.vencimiento && new Date() > new Date(userData.vencimiento)) {
-                            cerrarSesion(); alert("Su licencia ha vencido.");
-                            return;
+                        lsSet('tc_user_profile', userData);
+                        
+                        // Cálculo de licencia hasta el fin del día (23:59:59)
+                        if(userData.vencimiento) {
+                            let fLimit = new Date(userData.vencimiento.includes('T') ? userData.vencimiento : userData.vencimiento + "T23:59:59");
+                            if(new Date() > fLimit) {
+                                cerrarSesion(); alert("Su licencia ha vencido."); return;
+                            }
                         }
                         arrancarSistemaFirebase(user.email, userData.maestroId, userData.rol, userData.nombre, userData.hacienda, userData.features);
                     }
-                }).catch(e => { console.error("Error al obtener perfil", e); });
+                }).catch(e => {
+                    let cachedProfile = lsGet('tc_user_profile', null);
+                    if (cachedProfile) {
+                        arrancarSistemaFirebase(user.email, cachedProfile.maestroId, cachedProfile.rol, cachedProfile.nombre, cachedProfile.hacienda, cachedProfile.features);
+                    }
+                });
             }
         });
 
@@ -797,7 +901,6 @@
             btn.disabled = true; btn.innerText = "Verificando Credenciales..."; err.style.display = 'none';
             let email = u.includes('@') ? u.toLowerCase() : u.toLowerCase() + '@taurus.com';
             try {
-                if(!navigator.onLine) throw new Error("Offline");
                 await firebase.auth().signInWithEmailAndPassword(email, p);
                 solicitarPermisoNotificaciones();
             } catch(error) {
@@ -865,9 +968,9 @@
                     procesarDatosDashboard(); 
                     if(!document.getElementById('v-base').classList.contains('oculto')) cargarListaRegistro(); 
                     if(!document.getElementById('v-reporte').classList.contains('oculto')) actualizarInformeAvanzado();
-                    cargarListaOperadores();
+                    cargarListasFiltrosSelects();
                     setEstadoRed(true);
-                }, err => { setEstadoRed(false, '❌ Error de red'); });
+                }, err => { setEstadoRed(false, '❌ Red Local'); });
                 
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
                 let displayRol = isPropietario ? 'Propietario' : 'Operador';
@@ -935,7 +1038,7 @@
                             if (bloqueRafaga) bloqueRafaga.style.display = 'none';
                         }
                     }
-                });
+                }).catch(e => {});
 
                 const prefs = lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
                 
@@ -963,7 +1066,7 @@
                 document.getElementById('main-content').classList.remove('oculto');
                 document.getElementById('pantalla-mantenimiento').classList.add('oculto');
                 if(tabSeleccionado) { cambiarVista(vistaInicial, tabSeleccionado); } else { cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4]); }
-                sincronizarPendientesAuto(); cargarListaOperadores();
+                sincronizarPendientesAuto(); cargarListasFiltrosSelects();
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
 
@@ -1038,6 +1141,71 @@
             return [...hist].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
         }
 
+        function obtenerNombreCategoriaLegible(sigla) {
+            if(!sigla) return "Sin Categoría";
+            let s = String(sigla).trim().toUpperCase();
+            if(s.startsWith('V:')) return "Vaca / Vaquilla";
+            if(s.startsWith('VV:')) return "Vaca Vieja";
+            if(s.startsWith('TH:')) return "Ternera Hembra";
+            if(s.startsWith('TM:')) return "Ternero Macho";
+            if(s.startsWith('DH:')) return "Desmamante Hembra";
+            if(s.startsWith('DM:')) return "Desmamante Macho";
+            if(s.includes('TORO')) return "Toros";
+            if(s.includes('NOVILLO')) return "Novillos";
+            if(s.includes('BUEY')) return "Bueyes / Señuelos";
+            return sigla;
+        }
+
+        function cargarListasFiltrosSelects() {
+            let datosActivos = obtenerRegistrosActivos();
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
+            let lotesSet = new Set();
+            let catsSet = new Set();
+
+            unicas.forEach(car => {
+                const regs = obtenerHistorial(car);
+                const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                if(uC) {
+                    let v = String(uC.valor||"").split('|');
+                    if(v[0]) catsSet.add(obtenerNombreCategoriaLegible(v[0].replace('Cat:','').trim()));
+                    let l = String(uC.detalles||"").split('|')[0];
+                    if(l) lotesSet.add(l.replace('Lote:','').trim());
+                } else {
+                    const uP = regs.find(d => d.accion === 'Perfil Master');
+                    if(uP && uP.detalles) {
+                        catsSet.add(obtenerNombreCategoriaLegible(String(uP.detalles).split('|')[0]));
+                    }
+                }
+            });
+
+            // Poblar selectores de Lotes (Búsqueda e Informes)
+            ['filtro-reg-lote', 'f-inf-lote'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                    let curr = el.value;
+                    let opts = '<option value="ALL">🏷️ Todos los Lotes</option>';
+                    lotesSet.forEach(l => { opts += `<option value="${l}">${l}</option>`; });
+                    el.innerHTML = opts;
+                    if(curr && curr !== "") el.value = curr;
+                }
+            });
+
+            // Poblar selectores de Categorías (Búsqueda e Informes)
+            ['filtro-reg-cat', 'f-inf-cat'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                    let curr = el.value;
+                    let opts = '<option value="ALL">🐄 Todas las Categorías</option>';
+                    catsSet.add("Vaca / Vaquilla"); catsSet.add("Vaca Vieja"); catsSet.add("Ternera Hembra"); 
+                    catsSet.add("Ternero Macho"); catsSet.add("Desmamante Hembra"); catsSet.add("Desmamante Macho"); 
+                    catsSet.add("Toros"); catsSet.add("Novillos"); catsSet.add("Bueyes / Señuelos");
+                    Array.from(catsSet).sort().forEach(c => { opts += `<option value="${c}">${c}</option>`; });
+                    el.innerHTML = opts;
+                    if(curr && curr !== "") el.value = curr;
+                }
+            });
+        }
+
         function buscarCaravanaBtn(rpForzado = null) {
             try {
                 let rp = rpForzado ? rpForzado : document.getElementById('buscador-caravana').value.trim(); 
@@ -1094,7 +1262,7 @@
                 }
                 if(htmlNotas === "") htmlNotas = "<span style='font-size:13px; color:var(--text-muted); font-style:italic;'>Sin anotaciones extra.</span>";
                 
-                const elCat = document.getElementById('val-categoria'); if(elCat) elCat.innerText = cat;
+                const elCat = document.getElementById('val-categoria'); if(elCat) elCat.innerText = obtenerNombreCategoriaLegible(cat);
                 const elPeso = document.getElementById('val-peso'); if(elPeso) elPeso.innerText = peso;
                 const elDx = document.getElementById('val-dx'); if(elDx) elDx.innerText = dx;
                 const elLote = document.getElementById('val-lote'); if(elLote) elLote.innerText = lote;
@@ -1189,8 +1357,14 @@
 
         function cambiarModoReporte() {
             const modo = document.getElementById('f-inf-modo').value;
-            if(modo === 'inventario') { document.getElementById('filtros-inventario').style.display = 'flex'; document.getElementById('filtros-eventos').style.display = 'none'; } 
-            else { document.getElementById('filtros-inventario').style.display = 'none'; document.getElementById('filtros-eventos').style.display = 'flex'; }
+            const fInv = document.getElementById('filtros-inventario');
+            const fBajas = document.getElementById('filtros-bajas');
+            const fEvt = document.getElementById('filtros-eventos');
+            
+            if (fInv) fInv.style.display = (modo === 'inventario') ? 'flex' : 'none';
+            if (fBajas) fBajas.style.display = (modo === 'bajas') ? 'flex' : 'none';
+            if (fEvt) fEvt.style.display = (modo === 'eventos') ? 'flex' : 'none';
+            
             actualizarInformeAvanzado();
         }
 
@@ -1206,6 +1380,23 @@
             actualizarInformeAvanzado();
         }
 
+        function manejarRangoFechasBajas() {
+            const rango = document.getElementById('f-inf-baja-rango').value;
+            const cajaManual = document.getElementById('caja-fechas-bajas');
+            const dDesde = document.getElementById('f-inf-baja-desde');
+            const dHasta = document.getElementById('f-inf-baja-hasta');
+            let hoy = new Date(); let desde = new Date();
+            if (rango === 'custom') { cajaManual.style.display = 'flex'; } else {
+                cajaManual.style.display = 'none';
+                if(rango === '30') { desde.setDate(hoy.getDate() - 30); }
+                else if (rango === '90') { desde.setDate(hoy.getDate() - 90); }
+                else if (rango === '365') { desde.setDate(hoy.getDate() - 365); }
+                else if (rango === 'todo') { desde = new Date('2000-01-01'); }
+                dDesde.value = desde.toISOString().split('T')[0]; dHasta.value = hoy.toISOString().split('T')[0];
+            }
+            actualizarInformeAvanzado();
+        }
+
         function obtenerBadgeAccion(accion) {
             if(accion === 'Sanidad') return `Sanidad`; if(accion === 'Peso') return `Peso`; if(accion === 'Diagnóstico') return `Tacto`; if(accion === 'Inseminación') return `Reproducción`; if(accion === 'Nutrición') return `Nutrición`; if(accion === 'Baja') return `Baja / Muerte`;
             return `${accion}`;
@@ -1215,47 +1406,108 @@
             const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
             const datosActivos = obtenerRegistrosActivos(); 
             const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; 
-            const tbodyMasivo = document.getElementById('tb-informe-masivo'); const tbodyEventos = document.getElementById('tb-informe-eventos'); const tbodyIndiv = document.getElementById('tb-informe-individual');
-            document.getElementById('tabla-masiva').classList.add('oculto'); document.getElementById('tabla-eventos').classList.add('oculto'); document.getElementById('tabla-individual').classList.add('oculto');
+            
+            const tbodyMasivo = document.getElementById('tb-informe-masivo');
+            const tbodyBajas = document.getElementById('tb-informe-bajas');
+            const tbodyEventos = document.getElementById('tb-informe-eventos');
+            const tbodyIndiv = document.getElementById('tb-informe-individual');
+            
+            document.getElementById('tabla-masiva').classList.add('oculto');
+            document.getElementById('tabla-bajas').classList.add('oculto');
+            document.getElementById('tabla-eventos').classList.add('oculto');
+            document.getElementById('tabla-individual').classList.add('oculto');
             
             let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja'));
             let tPreGlobal = 0; vivas.forEach(car => { const regs = obtenerHistorial(car); const uDx = regs.find(d => d.accion === 'Diagnóstico'); if (uDx && String(uDx.valor).includes('Preñada')) tPreGlobal++; });
-            document.getElementById('inf-prenadas').innerText = tPreGlobal;
+            
+            const cajaKpiPre = document.getElementById('caja-kpi-prenadas');
+            const lblTotal = document.getElementById('lbl-inf-total');
 
             if(fRp !== "") {
-                rpPrint = fRp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar Dossier de RP: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
+                rpPrint = fRp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Dossier: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
                 const regs = obtenerHistorial(fRp); let hInd = ""; 
-                regs.forEach(r => { if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') hInd+=`<tr><td>${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${obtenerBadgeAccion(r.accion)}</strong></td><td>${r.valor}</td><td style="font-size:12px; color:var(--text-muted);">${r.detalles}</td></tr>`; });
+                regs.forEach(r => { if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') hInd+=`<tr><td>${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${obtenerBadgeAccion(r.accion)}</strong></td><td>${r.valor}</td><td>${r.detalles}</td></tr>`; });
                 tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.filter(r => !r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master').length; document.getElementById('inf-prenadas').innerText = "-"; 
+                if(lblTotal) lblTotal.innerText = "REGISTROS";
                 return;
             }
 
-            rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar Informe PDF`;
+            rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar PDF`;
 
             if(modo === 'inventario') {
                 document.getElementById('tabla-masiva').classList.remove('oculto');
-                const fLote = document.getElementById('f-inf-lote').value; const fCat = document.getElementById('f-inf-cat').value; const fDx = document.getElementById('f-inf-dx').value; const fCarimbo = document.getElementById('f-inf-carimbo').value;
-                tbodyMasivo.innerHTML = ""; let countTotal = 0;
+                if (cajaKpiPre) cajaKpiPre.style.display = 'block';
+                if (lblTotal) lblTotal.innerText = "CABEZAS LISTADAS";
+
+                const fLote = document.getElementById('f-inf-lote').value;
+                const fCat = document.getElementById('f-inf-cat').value;
+                const fDx = document.getElementById('f-inf-dx').value;
+                const fCarimbo = document.getElementById('f-inf-carimbo').value;
+                
+                tbodyMasivo.innerHTML = ""; let countTotal = 0; let countPre = 0;
+                
                 vivas.forEach(car => {
                     const regs = obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
                     const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
                     if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles||"split('|')[0]") ? String(uC.detalles||"split('|')[0]").replace('Lote:','').trim() : "-"; }
+                    let catLegible = obtenerNombreCategoriaLegible(cat);
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-";
+                    
                     let pasaFiltro = true; 
                     if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; 
-                    if(fCat !== "ALL" && !cat.includes(fCat)) pasaFiltro = false; 
+                    if(fCat !== "ALL" && !catLegible.includes(fCat)) pasaFiltro = false; 
                     if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false; 
                     if(fCarimbo !== "ALL" && carimbo !== fCarimbo) pasaFiltro = false; 
-                    if(pasaFiltro) { countTotal++; tbodyMasivo.innerHTML += `<tr><td><strong>${car}</strong><br><span style="font-size:11px; color:var(--text-muted);">Cb: ${carimbo}</span></td><td>${cat}<br><span style="font-size:11px; color:var(--text-muted);">${lote}</span></td><td>${peso}</td><td>${dx}</td></tr>`; }
+                    
+                    if(pasaFiltro) { 
+                        countTotal++; 
+                        if(String(dx).includes('Preñada')) countPre++;
+                        tbodyMasivo.innerHTML += `<tr><td><strong>${car}</strong><br><span style="font-size:11px; color:var(--text-muted);">Cb: ${carimbo}</span></td><td>${catLegible}</td><td>${lote}</td><td><strong>${peso}</strong></td><td>${dx}</td></tr>`; 
+                    }
                 });
                 document.getElementById('inf-total').innerText = countTotal; 
+                document.getElementById('inf-prenadas').innerText = countPre;
+                
+            } else if(modo === 'bajas') {
+                document.getElementById('tabla-bajas').classList.remove('oculto');
+                if (cajaKpiPre) cajaKpiPre.style.display = 'none';
+                if (lblTotal) lblTotal.innerText = "BAJAS / MORTALIDAD";
+
+                const fCausa = document.getElementById('f-inf-baja-causa').value;
+                const fDesde = document.getElementById('f-inf-baja-desde').value;
+                const fHasta = document.getElementById('f-inf-baja-hasta').value;
+
+                tbodyBajas.innerHTML = "";
+                let countBajas = 0;
+
+                unicas.forEach(car => {
+                    const regs = obtenerHistorial(car);
+                    const rBaja = regs.find(r => r.accion === 'Baja');
+                    if (!rBaja) return;
+
+                    let pasa = true;
+                    if (fCausa !== "ALL" && !String(rBaja.valor).toLowerCase().includes(fCausa.toLowerCase())) pasa = false;
+                    if (fDesde && new Date(rBaja.fecha) < new Date(fDesde + 'T00:00:00')) pasa = false;
+                    if (fHasta && new Date(rBaja.fecha) > new Date(fHasta + 'T23:59:59')) pasa = false;
+
+                    if (pasa) {
+                        countBajas++;
+                        tbodyBajas.innerHTML += `<tr><td>${new Date(rBaja.fecha).toLocaleDateString()}</td><td><strong>${car}</strong></td><td style="color:var(--danger); font-weight:bold;">${rBaja.valor}</td><td>${rBaja.detalles||'-'}</td></tr>`;
+                    }
+                });
+                document.getElementById('inf-total').innerText = countBajas;
+
             } else {
                 document.getElementById('tabla-eventos').classList.remove('oculto');
+                if (cajaKpiPre) cajaKpiPre.style.display = 'none';
+                if (lblTotal) lblTotal.innerText = "TRABAJOS LISTADOS";
+
                 const fAcc = document.getElementById('f-inf-accion-oculto').value; const fDesde = document.getElementById('f-inf-desde').value; const fHasta = document.getElementById('f-inf-hasta').value; const fKey = document.getElementById('f-inf-keyword').value.trim().toLowerCase();
-                let eventos = datosActivos.filter(d => !d.accion.includes('Vinculacion') && d.accion !== 'Perfil Master' && d.accion !== 'Actualización de Datos' && d.caravana !== "---" && d.accion !== 'Baja Operador');
+                let eventos = datosActivos.filter(d => !d.accion.includes('Vinculacion') && d.accion !== 'Perfil Master' && d.accion !== 'Actualización de Datos' && d.caravana !== "---" && d.accion !== 'Baja' && d.accion !== 'Baja Operador');
                 if(fAcc !== "ALL") eventos = eventos.filter(d => d.accion === fAcc); if(fDesde) eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00'));
                 if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); if(fKey) eventos = eventos.filter(d => (String(d.valor) + String(d.detalles)).toLowerCase().includes(fKey));
+                
                 tbodyEventos.innerHTML = "";
                 eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { tbodyEventos.innerHTML += `<tr><td style="white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${r.caravana}</strong></td><td>${obtenerBadgeAccion(r.accion)}</td><td><strong>${r.valor}</strong><br><span style="color:var(--text-muted);">${r.detalles}</span></td></tr>`; });
                 document.getElementById('inf-total').innerText = eventos.length; 
@@ -1276,6 +1528,7 @@
                 try {
                     const hd = lsGet('tc_hacienda', {}); const h_nom = hd.nombre || 'TAURUS CONTROL'; const h_log = hd.logo || "";
                     const modo = document.getElementById('f-inf-modo').value; const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4');
+                    
                     const addMembrete = (tituloReporte) => {
                         doc.setFontSize(20); doc.setFont("helvetica", "bold"); doc.text(cleanPDFText(h_nom).toUpperCase(), 14, 20);
                         doc.setFontSize(11); doc.setFont("helvetica", "normal"); doc.text(cleanPDFText(tituloReporte), 14, 27);
@@ -1290,6 +1543,7 @@
                         let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
                         const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor||"").split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=String(uP.detalles||"").split('|')[0]||"-"; } 
                         const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; lote=String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; } 
+                        let catLegible = obtenerNombreCategoriaLegible(cat);
                         const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
                         const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
                         const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nut = (uNut.valor || "") + " | " + (uNut.detalles || "");
@@ -1300,7 +1554,7 @@
                         doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.text("Resumen del Perfil", 14, 43);
                         doc.autoTable({ startY: 46, theme: 'grid', styles: { fontSize: 9, cellPadding: 3, textColor: 20 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold' },
                             body: [
-                                [`Categoría: ${cleanPDFText(cat)}`, `Lote: ${cleanPDFText(lote)}`, `Carimbo: ${cleanPDFText(carimbo)}`],
+                                [`Categoría: ${cleanPDFText(catLegible)}`, `Lote: ${cleanPDFText(lote)}`, `Carimbo: ${cleanPDFText(carimbo)}`],
                                 [`Raza: ${cleanPDFText(raza)}`, `Nacimiento: ${cleanPDFText(edad)}`, `Último Peso: ${cleanPDFText(peso)}`],
                                 [`Dx Actual: ${cleanPDFText(dx)}`, `Genealogía: ${cleanPDFText(pa)} / ${cleanPDFText(ma)}`, `Régimen: ${cleanPDFText(nut)}`],
                                 [`Últ. Sanidad: ${cleanPDFText(san)}`, { content: `Últ. Inseminación: ${cleanPDFText(ins)}`, colSpan: 2 }]
@@ -1310,28 +1564,57 @@
                         const tableData = []; const rows = document.getElementById('tb-informe-individual').querySelectorAll('tr');
                         rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText).replace(/\n/g, ' ') ]); } });
                         doc.autoTable({ startY: doc.lastAutoTable.finalY + 13, theme: 'grid', head: [['Fecha', 'Procedimiento', 'Valor Principal', 'Observaciones Adicionales']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 40 }, 2: { cellWidth: 40, fontStyle: 'bold' }, 3: { cellWidth: 'auto' } } });
+                        
                         let filename = `Dossier_RP_${rpPrint.toUpperCase()}.pdf`;
                         doc.save(filename);
-                    } else {
-                        const isInventario = (modo === 'inventario');
-                        const titulo = isInventario ? "Reporte Analítico de Inventario General" : "Reporte Analítico de Trabajos y Procedimientos";
+
+                    } else if (modo === 'bajas') {
+                        let fCausa = document.getElementById('f-inf-baja-causa').value;
+                        let titulo = (fCausa !== "ALL") ? `Reporte de Bajas - Causa: ${fCausa}` : "Reporte Oficial de Bajas y Mortalidad";
+                        addMembrete(titulo);
+                        const totalBajas = document.getElementById('inf-total').innerText;
+                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Bajas / Muertes Registradas: ${cleanPDFText(totalBajas)}`, 14, 43);
+
+                        const tableData = [];
+                        const rows = document.getElementById('tb-informe-bajas').querySelectorAll('tr');
+                        rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText).replace(/\n/g, ' ') ]); } });
+                        doc.autoTable({ startY: 48, theme: 'grid', head: [['Fecha de Baja', 'Caravana / RP', 'Causa', 'Observaciones']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [220, 38, 38], textColor: 255, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 35, fontStyle: 'bold', halign: 'center' }, 2: { cellWidth: 40 }, 3: { cellWidth: 'auto' } } });
+                        
+                        let filename = 'Reporte_Bajas_Mortalidad.pdf';
+                        doc.save(filename);
+
+                    } else if (modo === 'inventario') {
+                        const fLote = document.getElementById('f-inf-lote').value;
+                        const fCat = document.getElementById('f-inf-cat').value;
+                        
+                        let titulo = "Reporte Analítico de Inventario General";
+                        if (fCat !== "ALL" && fLote !== "ALL") titulo = `Inventario - ${fCat} (Lote: ${fLote})`;
+                        else if (fCat !== "ALL") titulo = `Inventario de Hacienda - ${fCat}`;
+                        else if (fLote !== "ALL") titulo = `Inventario de Hacienda - Lote: ${fLote}`;
+
                         addMembrete(titulo);
                         const totalReg = document.getElementById('inf-total').innerText; const totalPre = document.getElementById('inf-prenadas').innerText;
-                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Registros Listados: ${cleanPDFText(totalReg)}`, 14, 43); doc.text(`Total Preñadas Global: ${cleanPDFText(totalPre)}`, 130, 43);
-                        const tableData = []; let headRows = []; let colStyles = {};
-                        if (isInventario) {
-                            headRows = [['RP y Carimbo', 'Categoría y Ubicación', 'Último Peso', 'Diagnóstico Actual']];
-                            colStyles = { 0: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 1: { cellWidth: 80 }, 2: { cellWidth: 30, halign: 'center' }, 3: { cellWidth: 40, halign: 'center' } };
-                            const rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr');
-                            rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText).replace(/\n/g, ' - '), cleanPDFText(tds[1].innerText).replace(/\n/g, ' - '), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText) ]); } });
-                        } else {
-                            headRows = [['Fecha', 'Caravana', 'Trabajo Realizado', 'Detalles Extras']];
-                            colStyles = { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 2: { cellWidth: 40 }, 3: { cellWidth: 'auto' } };
-                            const rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr');
-                            rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText).replace(/\n/g, ' ') ]); } });
-                        }
-                        doc.autoTable({ startY: 48, theme: 'grid', head: headRows, body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: colStyles });
-                        let filename = 'Reporte_General.pdf';
+                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Cabezas Listadas: ${cleanPDFText(totalReg)}`, 14, 43); doc.text(`Total Preñadas: ${cleanPDFText(totalPre)}`, 130, 43);
+
+                        const tableData = [];
+                        const rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr');
+                        rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 5) { tableData.push([ cleanPDFText(tds[0].innerText).replace(/\n/g, ' - '), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText), cleanPDFText(tds[4].innerText) ]); } });
+                        doc.autoTable({ startY: 48, theme: 'grid', head: [['RP y Carimbo', 'Categoría', 'Lote / Ubicación', 'Último Peso', 'Diagnóstico']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 1: { cellWidth: 45 }, 2: { cellWidth: 45 }, 3: { cellWidth: 25, halign: 'center' }, 4: { cellWidth: 30, halign: 'center' } } });
+                        
+                        let filename = (fCat !== "ALL") ? `Reporte_${fCat.replace(/[^a-zA-Z0-9]/g, '_')}.pdf` : ((fLote !== "ALL") ? `Reporte_Lote_${fLote.replace(/[^a-zA-Z0-9]/g, '_')}.pdf` : 'Reporte_Inventario.pdf');
+                        doc.save(filename);
+
+                    } else {
+                        addMembrete("Reporte de Trabajos y Procedimientos");
+                        const totalReg = document.getElementById('inf-total').innerText;
+                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Procedimientos Listados: ${cleanPDFText(totalReg)}`, 14, 43);
+
+                        const tableData = [];
+                        const rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr');
+                        rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText).replace(/\n/g, ' ') ]); } });
+                        doc.autoTable({ startY: 48, theme: 'grid', head: [['Fecha', 'Caravana', 'Trabajo Realizado', 'Detalles Extras']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 2: { cellWidth: 40 }, 3: { cellWidth: 'auto' } } });
+                        
+                        let filename = 'Reporte_Tratamientos.pdf';
                         doc.save(filename);
                     }
                     btn.innerText = textoOriginal;
@@ -1340,6 +1623,34 @@
         }
 
         function verificarLimiteGraficos(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { alert('Solo puede fijar 3 gráficas simultáneas.'); checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); lsSet('tc_prefs', prefs); if(dbCache.length > 0) procesarDatosDashboard(); } }
+
+        function filtrarDesdeDashboard(tipo, valor) {
+            cambiarVista('v-base', document.querySelectorAll('.sidebar-nav li')[2]);
+            document.getElementById('buscador-lista').value = "";
+            
+            if(tipo === 'estado') {
+                document.getElementById('filtro-reg-estado').value = valor;
+                document.getElementById('filtro-reg-dx').value = 'ALL';
+                document.getElementById('filtro-reg-lote').value = 'ALL';
+                document.getElementById('filtro-reg-cat').value = 'ALL';
+            } else if(tipo === 'lote') {
+                document.getElementById('filtro-reg-estado').value = 'vivos';
+                document.getElementById('filtro-reg-lote').value = valor;
+                document.getElementById('filtro-reg-cat').value = 'ALL';
+                document.getElementById('filtro-reg-dx').value = 'ALL';
+            } else if(tipo === 'categoria') {
+                document.getElementById('filtro-reg-estado').value = 'vivos';
+                document.getElementById('filtro-reg-cat').value = valor;
+                document.getElementById('filtro-reg-lote').value = 'ALL';
+                document.getElementById('filtro-reg-dx').value = 'ALL';
+            } else if(tipo === 'dx') {
+                document.getElementById('filtro-reg-estado').value = 'vivos';
+                document.getElementById('filtro-reg-dx').value = valor;
+                document.getElementById('filtro-reg-lote').value = 'ALL';
+                document.getElementById('filtro-reg-cat').value = 'ALL';
+            }
+            cargarListaRegistro();
+        }
 
         function procesarDatosDashboard() {
             const datosActivos = obtenerRegistrosActivos(); 
@@ -1352,20 +1663,38 @@
 
             if(datosActivos.length === 0) { document.getElementById('contenedor-graficos').innerHTML = "<p style='color:var(--text-main);'>Inventario vacío.</p>"; return; }
             
-            let g1={p:0,v:0}, g2={v:0,t:0,o:0}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}, g11={}; let alertasHTML = "";
+            let g1={p:0,v:0}, g2={}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}, g11={}; let alertasHTML = "";
             datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; if(r.accion === 'Baja') { let causa = String(r.valor).trim(); g11[causa] = (g11[causa] || 0) + 1; } });
             
             unicas.forEach(car => {
-                const regs = obtenerHistorial(car); let cat = "", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                if(uC) { let v=String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : ""; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
-                cat = cat.toLowerCase(); const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
+                const regs = obtenerHistorial(car); let catRaw = "Sin Categoría", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                if(uC) { let v=String(uC.valor||"").split('|'); catRaw = v[0] ? v[0].replace('Cat:','').trim() : "Sin Categoría"; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
+                else {
+                    const uP = regs.find(d => d.accion === 'Perfil Master');
+                    if(uP && uP.detalles) { catRaw = String(uP.detalles).split('|')[0] || "Sin Categoría"; }
+                }
                 
-                let esVaca = cat.includes('vaca') || cat.includes('vaquilla') || cat.startsWith('v:') || cat.startsWith('vv:');
-                let esTernero = cat.includes('terne') || cat.includes('desmamante') || cat.startsWith('th:') || cat.startsWith('tm:') || cat.startsWith('dh:') || cat.startsWith('dm:');
+                let catLegible = obtenerNombreCategoriaLegible(catRaw);
+                g2[catLegible] = (g2[catLegible] || 0) + 1;
+                g3[lote] = (g3[lote] || 0) + 1;
 
-                if(uDx) { if(String(uDx.valor||"").includes('Preñada')) { g1.p++; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } } if(String(uDx.valor||"").includes('Vacía')) { g1.v++; alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--text-main);">${car}</strong> diagnosticada Vacía.</div></div>`; if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } } }
-                
-                if(esVaca) g2.v++; else if(esTernero) g2.t++; else g2.o++; g3[lote] = (g3[lote] || 0) + 1;
+                const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
+                let esVaca = catLegible.toLowerCase().includes('vaca');
+
+                if(uDx) { 
+                    if(String(uDx.valor||"").includes('Preñada')) { 
+                        g1.p++; 
+                        if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; 
+                        if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } 
+                    } 
+                    if(String(uDx.valor||"").includes('Vacía')) { 
+                        g1.v++; 
+                        alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--text-main);">${car}</strong> diagnosticada Vacía.</div></div>`; 
+                        if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; 
+                        if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; 
+                        if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } 
+                    } 
+                }
                 
                 if(uPeso) { 
                     if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--text-main);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } 
@@ -1374,36 +1703,176 @@
                     let pVal = parseFloat(uPeso.valor); 
                     if(!isNaN(pVal)) { 
                         if(esVaca) { g9.vw += pVal; g9.vc++; } 
-                        if(esTernero) { g9.tw += pVal; g9.tc++; } 
+                        else { g9.tw += pVal; g9.tc++; } 
                     } 
                 } 
                 if(uSan) g6.con++; else g6.sin++;
             });
             
             const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
-            const prefs = lsGet('tc_prefs', ['1', '3']); let htmlGraficos = ""; const makeBar = (lbl, val, total, col) => { let p = total>0 ? Math.round((val/total)*100) : 0; return `<div class="barra-cat"><div class="barra-head"><span style="color:var(--text-main);">${lbl} (${val})</span><span style="color:var(--text-main);">${p}%</span></div><div class="barra-bg"><div class="barra-fill" style="background:${col}; width:${p}%;"></div></div></div>`; };
-            
+            const prefs = lsGet('tc_prefs', ['1', '3']); let htmlGraficos = ""; 
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#38bdf8'];
+
+            const makePieAndBars = (title, dataObj, totalCount, tipoAccion) => {
+                let keys = Object.keys(dataObj).sort((a,b)=>dataObj[b]-dataObj[a]);
+                let currentAngle = 0; let gradientStops = [];
+                keys.forEach((k, idx) => {
+                    let pct = totalCount > 0 ? (dataObj[k] / totalCount) * 100 : 0;
+                    let nextAngle = currentAngle + pct;
+                    gradientStops.push(`${colors[idx % colors.length]} ${currentAngle}% ${nextAngle}%`);
+                    currentAngle = nextAngle;
+                });
+                let conicStyle = gradientStops.length > 0 ? `background: conic-gradient(${gradientStops.join(', ')});` : '';
+                
+                let barsHTML = "";
+                keys.forEach((k, idx) => {
+                    let col = colors[idx % colors.length];
+                    let val = dataObj[k];
+                    let p = totalCount > 0 ? Math.round((val / totalCount) * 100) : 0;
+                    barsHTML += `<div class="barra-cat" onclick="filtrarDesdeDashboard('${tipoAccion}', '${k}')">
+                        <div class="barra-head"><span><span class="punto" style="background:${col};"></span>${k} (${val})</span><span>${p}%</span></div>
+                        <div class="barra-bg"><div class="barra-fill" style="background:${col}; width:${p}%;"></div></div>
+                    </div>`;
+                });
+
+                return `<div>
+                    <h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">${title}</h4>
+                    <div class="grafico-flex">
+                        <div class="torta-container" onclick="filtrarDesdeDashboard('${tipoAccion}', '${keys[0]||''}')">
+                            <div class="torta" style="${conicStyle}"></div>
+                            <div class="torta-centro">${totalCount}</div>
+                        </div>
+                        <div class="contenedor-scroll-analitica">${barsHTML}</div>
+                    </div>
+                </div>`;
+            };
+
             prefs.forEach(g => {
                 let html = `<div>`;
-                if(g === '1') { let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Tasa de Preñez Dinámica</h4><div style="display:flex; gap:20px; align-items:center;"><div class="torta-container"><div class="torta" style="background: conic-gradient(var(--success) 0% ${pp}%, var(--danger) ${pp}% 100%);"></div><div class="torta-centro">${pp}%</div></div><div class="leyenda-torta"><div><span class="punto" style="background: var(--success);"></span> Preñadas (${g1.p})</div><div><span class="punto" style="background: var(--danger);"></span> Vacías (${g1.v})</div></div></div></div>`; } 
-                else if(g === '2') { let t = g2.v + g2.t + g2.o || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Composición de Hacienda</h4>${makeBar('Vacas/Vaquillas', g2.v, t, 'var(--primary)')}${makeBar('Terneros/as', g2.t, t, 'var(--warning)')}${makeBar('Toros/Otros', g2.o, t, '#8b5cf6')}</div>`; } 
-                else if(g === '3') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Distribución por Lotes</h4>`; let lKeys = Object.keys(g3).sort((a,b)=>g3[b]-g3[a]).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--primary)':i===1?'var(--warning)':'var(--success)'; html += makeBar(k, g3[k], unicas.length, col); }); html+=`</div>`;} 
-                else if(g === '4') { let t = g4.opt + g4.bp + g4.sp || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Condición Corporal</h4>${makeBar('Óptima', g4.opt, t, 'var(--success)')}${makeBar('Bajo Peso', g4.bp, t, 'var(--danger)')}${makeBar('Sobrepeso', g4.sp, t, 'var(--warning)')}</div>`; } 
-                else if(g === '5') { let t = g5.norm + g5.san || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Causas Vientre Vacío</h4>${makeBar('Normal', g5.norm, t, 'var(--warning)')}${makeBar('Sangre/Problema', g5.san, t, 'var(--danger)')}</div>`; } 
-                else if(g === '6') { let t = unicas.length; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Sanidad Global</h4>${makeBar('Con Registro', g6.con, t, 'var(--success)')}${makeBar('Sin Registros', g6.sin, t, '#64748b')}</div>`; } 
-                else if(g === '7') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Preñez por Lote</h4>`; let lKeys = Object.keys(g7).sort((a,b)=>g7[b].p-g7[a].p).slice(0,3); lKeys.forEach((k, i) => { let col = i===0?'var(--success)':i===1?'var(--primary)':'var(--warning)'; html += makeBar(k, g7[k].p, g7[k].t, col); }); html+=`</div>`;} 
-                else if(g === '8') { html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Eficacia de Toros</h4>`; let lKeys = Object.keys(g8).sort((a,b)=>g8[b].p-g8[a].p).slice(0,3); if(lKeys.length===0) html += `<p style="color:var(--text-muted); font-size:12px;">Sin cruces.</p>`; lKeys.forEach((k, i) => { html += makeBar(k, g8[k].p, g8[k].t, '#be185d'); }); html+=`</div>`;} 
-                else if(g === '9') { let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Promedio de Pesos</h4><div class="grid-2"><div class="kpi-box" style="padding:10px;"><strong style="font-size:20px; color:var(--text-main);">${pv} Kg</strong><span>Vacas</span></div><div class="kpi-box" style="padding:10px;"><strong style="font-size:20px; color:var(--text-main);">${pt} Kg</strong><span>Terneros</span></div></div></div>`; } 
-                else if(g === '10') { let t = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Volumen Clínico</h4>${makeBar('Pesajes', g10.peso, t, '#0284c7')}${makeBar('Diagnósticos', g10.dx, t, '#166534')}${makeBar('Nutrición', g10.nut, t, '#84cc16')}${makeBar('Sanidad', g10.san, t, '#c2410c')}`; } 
-                else if(g === '11') { let t = cantBajas || 1; html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Causas de Baja / Mortalidad</h4>`; let lKeys = Object.keys(g11).sort((a,b)=>g11[b]-g11[a]).slice(0,4); if(lKeys.length === 0) html += `<p style="color:var(--text-muted); font-size:12px;">Sin registros de bajas.</p>`; lKeys.forEach((k, i) => { let col = i===0?'var(--danger)':i===1?'var(--warning)':'#be185d'; html += makeBar(k, g11[k], t, col); }); html+=`</div>`; }
+                if(g === '1') { 
+                    let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; 
+                    html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Tasa de Preñez Dinámica</h4>
+                    <div style="display:flex; gap:20px; align-items:center;">
+                        <div class="torta-container" onclick="filtrarDesdeDashboard('dx', 'Preñada')">
+                            <div class="torta" style="background: conic-gradient(var(--success) 0% ${pp}%, var(--danger) ${pp}% 100%);"></div>
+                            <div class="torta-centro">${pp}%</div>
+                        </div>
+                        <div style="font-size:12px; line-height:1.8; color:var(--text-main);">
+                            <div style="cursor:pointer;" onclick="filtrarDesdeDashboard('dx', 'Preñada')"><span class="punto" style="background: var(--success);"></span> Preñadas (${g1.p})</div>
+                            <div style="cursor:pointer;" onclick="filtrarDesdeDashboard('dx', 'Vacía')"><span class="punto" style="background: var(--danger);"></span> Vacías (${g1.v})</div>
+                        </div>
+                    </div></div>`; 
+                } 
+                else if(g === '2') { html += makePieAndBars("Composición de Hacienda", g2, unicas.length, 'categoria'); } 
+                else if(g === '3') { html += makePieAndBars("Distribución por Lotes", g3, unicas.length, 'lote'); } 
+                else if(g === '4') { 
+                    let t = g4.opt + g4.bp + g4.sp || 1; 
+                    let d4 = { "Óptima": g4.opt, "Bajo Peso": g4.bp, "Sobrepeso": g4.sp };
+                    html += makePieAndBars("Condición Corporal", d4, t, 'estado'); 
+                } 
+                else if(g === '5') { 
+                    let t = g5.norm + g5.san || 1; 
+                    let d5 = { "Normal": g5.norm, "Sangre/Problema": g5.san };
+                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'estado'); 
+                } 
+                else if(g === '6') { 
+                    let t = unicas.length; 
+                    let d6 = { "Con Registro": g6.con, "Sin Registros": g6.sin };
+                    html += makePieAndBars("Sanidad Global", d6, t, 'estado'); 
+                } 
+                else if(g === '7') { 
+                    let d7 = {}; Object.keys(g7).forEach(k => d7[k] = g7[k].p);
+                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote'); 
+                } 
+                else if(g === '8') { 
+                    let d8 = {}; Object.keys(g8).forEach(k => d8[k] = g8[k].p);
+                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'estado'); 
+                } 
+                else if(g === '9') { 
+                    let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; 
+                    html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Promedio de Pesos</h4><div class="grid-2"><div class="kpi-box" style="padding:10px;" onclick="filtrarDesdeDashboard('estado', 'vivos')"><strong style="font-size:20px; color:var(--text-main);">${pv} Kg</strong><span>Vacas</span></div><div class="kpi-box" style="padding:10px;" onclick="filtrarDesdeDashboard('estado', 'vivos')"><strong style="font-size:20px; color:var(--text-main);">${pt} Kg</strong><span>Terneros</span></div></div></div>`; 
+                } 
+                else if(g === '10') { 
+                    let d10 = { "Pesajes": g10.peso, "Diagnósticos": g10.dx, "Nutrición": g10.nut, "Sanidad": g10.san };
+                    let t10 = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1;
+                    html += makePieAndBars("Volumen Clínico", d10, t10, 'estado'); 
+                } 
+                else if(g === '11') { 
+                    let t11 = cantBajas || 1;
+                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'estado'); 
+                }
                 htmlGraficos += html;
             }); document.getElementById('contenedor-graficos').innerHTML = htmlGraficos;
         }
 
         function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.sidebar-nav li').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
         function abrirModal(id) { document.getElementById(id).style.display = 'flex'; } function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
-        function cargarListaRegistro() { const datosActivos = obtenerRegistrosActivos(); let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja')); const ul = document.getElementById('tb-registro'); ul.innerHTML = ""; vivas.forEach(car => { const regs = obtenerHistorial(car); let info = "-", dxText = "-", loteText = "-"; const c = regs.find(d => d.accion === 'Actualización de Datos'); const p = regs.find(d => d.accion === 'Perfil Master'); if(c) { let vals = String(c.valor||"").split('|'); info = vals[0] ? vals[0].replace('Cat:','').trim() : info; loteText = (String(c.detalles||"").split('|')[0] ? String(c.detalles||"").split('|')[0].replace('Lote:','').trim() : ""); } else if(p) { info = String(p.detalles||"").split('|')[0] || "-"; } const d = regs.find(d => d.accion === 'Diagnóstico'); if(d) dxText = d.valor || "-"; ul.innerHTML += `<tr onclick="navegarDesdeLista('${car}')"><td style="color:var(--text-main);"><strong>${car}</strong></td><td style="color:var(--text-main);">${info}</td><td style="color:var(--text-main);">${loteText}</td><td style="color:var(--text-main);">${dxText}</td><td><button class="btn-outline">Abrir Ficha</button></td></tr>`; }); }
-        function filtrarLista(t) { const lis = document.getElementById('tb-registro').getElementsByTagName('tr'); for(let i=0; i<lis.length; i++) lis[i].style.display = lis[i].innerText.toLowerCase().includes(t.toLowerCase()) ? "" : "none"; }
+        
+        function cargarListaRegistro() {
+            const datosActivos = obtenerRegistrosActivos();
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
+            
+            let estadoFiltro = document.getElementById('filtro-reg-estado').value;
+            let loteFiltro = document.getElementById('filtro-reg-lote').value;
+            let catFiltro = document.getElementById('filtro-reg-cat').value;
+            let dxFiltro = document.getElementById('filtro-reg-dx').value;
+            let txtBusqueda = document.getElementById('buscador-lista').value.trim().toLowerCase();
+
+            let listaFiltrada = [];
+
+            unicas.forEach(car => {
+                const regs = obtenerHistorial(car);
+                let esBaja = regs.some(r => r.accion === 'Baja');
+
+                if (estadoFiltro === 'vivos' && esBaja) return;
+                if (estadoFiltro === 'bajas' && !esBaja) return;
+
+                let cat = "-", lote = "General", dx = "-";
+                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
+                const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
+                if(uC) { 
+                    let v = String(uC.valor||"").split('|'); 
+                    cat = v[0] ? v[0].replace('Cat:','').trim() : cat; 
+                    lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; 
+                }
+                const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-";
+
+                let catLegible = obtenerNombreCategoriaLegible(cat);
+
+                if (loteFiltro !== "ALL" && !lote.includes(loteFiltro)) return;
+                if (catFiltro !== "ALL" && !catLegible.includes(catFiltro)) return;
+                if (dxFiltro !== "ALL" && !dx.includes(dxFiltro)) return;
+
+                if (txtBusqueda !== "") {
+                    let matchTexto = car.toLowerCase().includes(txtBusqueda) || 
+                                     catLegible.toLowerCase().includes(txtBusqueda) || 
+                                     lote.toLowerCase().includes(txtBusqueda) || 
+                                     dx.toLowerCase().includes(txtBusqueda);
+                    if (!matchTexto) return;
+                }
+
+                listaFiltrada.push({ car, catLegible, lote, dx, esBaja });
+            });
+
+            const ul = document.getElementById('tb-registro'); ul.innerHTML = "";
+            if(listaFiltrada.length === 0) {
+                ul.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:20px;">No se encontraron registros con estos filtros.</td></tr>';
+                return;
+            }
+
+            listaFiltrada.forEach(item => {
+                let badgeBaja = item.esBaja ? `<span style="background:var(--danger); color:white; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px;">BAJA</span>` : '';
+                ul.innerHTML += `<tr onclick="navegarDesdeLista('${item.car}')">
+                    <td style="color:var(--text-main);"><strong>${item.car}</strong>${badgeBaja}</td>
+                    <td style="color:var(--text-main);">${item.catLegible}</td>
+                    <td style="color:var(--text-main);">${item.lote}</td>
+                    <td style="color:var(--text-main);">${item.dx}</td>
+                    <td><button class="btn-outline">Abrir Ficha</button></td>
+                </tr>`;
+            });
+        }
+
+        function filtrarLista(t) { cargarListaRegistro(); }
         function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.sidebar-nav li')[1].click(); buscarCaravanaBtn(); }
         
         function guardarDisenoServidor() { 
@@ -1423,7 +1892,7 @@
                         let w = img.width, h = img.height; 
                         const maxW = 200, maxH = 200; 
                         if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } 
-                        else { if (h > maxH) { w = Math.round(h * maxH / h); h = maxH; } } 
+                        else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } 
                         canvas.width = w; canvas.height = h; 
                         const ctx = canvas.getContext('2d'); 
                         ctx.drawImage(img, 0, 0, w, h); 
@@ -1550,8 +2019,8 @@
                 const selEdit = document.getElementById('op-edit-usu-sel');
                 let options = '<option value="">-- Seleccione un usuario --</option>';
                 ops.forEach(o => { options += `<option value="${o}">${o}</option>`; });
-                if(selDel) selDel.innerHTML = options;
-                if(selEdit) selEdit.innerHTML = options;
+                if(selDel && selDel.innerHTML !== options) selDel.innerHTML = options;
+                if(selEdit && selEdit.innerHTML !== options) selEdit.innerHTML = options;
             } catch(e) { console.error("Error al cargar operadores", e); }
         }
 
