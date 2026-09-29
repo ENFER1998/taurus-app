@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Taurus Control - Terminal PC</title>
     
-    <!-- Íconos para la aplicación web -->
     <link rel="apple-touch-icon" href="gemini-svg.png">
     <link rel="icon" type="image/png" href="gemini-svg.png">
     
-    <!-- LIBRERIAS PROFESIONALES PARA PDF PERFECTO -->
+    <!-- LIBRERIAS PROFESIONALES PARA PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     
@@ -62,7 +61,7 @@
         .btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
         .error-msg { color: var(--danger); font-size: 13px; margin-bottom: 15px; font-weight: bold; display: none; }
 
-        /* CORTINA DE HIERRO GLOBAL */
+        /* CORTINA DE HIERRO */
         #pantalla-mantenimiento { position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg-base); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; text-align:center; }
         .spinner-mant { border: 5px solid var(--border); border-top: 5px solid var(--danger); border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin-top:30px;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -124,21 +123,27 @@
         .nota-item .f { font-size: 11px; color: var(--primary); font-weight: bold; display: block; margin-bottom: 2px;}
         .nota-item .t { font-size: 13px; color: var(--text-main); line-height: 1.4; }
 
-        /* ANALÍTICAS DINÁMICAS MODERNAS CON MINI-DONUTS */
+        /* CUADRÍCULA EXPANDIDA DEL DASHBOARD PARA PC */
+        #contenedor-graficos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+            gap: 20px;
+        }
+
         .grafico-flex { display: flex; align-items: center; gap: 20px; justify-content: space-between; flex-wrap: nowrap;}
-        .torta-container { position: relative; width: 100px; height: 100px; flex-shrink: 0; cursor: pointer;}
+        .torta-container { position: relative; width: 100px; height: 100px; flex-shrink: 0; cursor: pointer; margin: 0 auto;}
         .torta { width: 100%; height: 100%; border-radius: 50%; background: var(--border); transition: background 1s ease-in-out;}
         .torta-centro { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: var(--bg-panel); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 15px; color: var(--text-main);}
-        .contenedor-scroll-analitica { max-height: 140px; overflow-y: auto; padding-right: 5px; flex: 1; }
+        .contenedor-scroll-analitica { max-height: 180px; overflow-y: auto; padding-right: 8px; flex: 1; }
 
-        .barra-cat { margin-bottom: 10px; cursor: pointer; padding: 4px; border-radius: 4px; transition: 0.2s;}
+        .barra-cat { margin-bottom: 10px; cursor: pointer; padding: 5px; border-radius: 4px; transition: 0.2s;}
         .barra-cat:hover { background: rgba(37, 99, 235, 0.1); }
         .barra-head { display: flex; justify-content: space-between; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: var(--text-main); text-transform: uppercase;}
         .barra-bg { width: 100%; background: var(--border); height: 8px; border-radius: 4px; overflow: hidden;}
         .barra-fill { height: 100%; border-radius: 4px; width: 0%; transition: width 1s ease;}
         .punto { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px;}
 
-        /* ADAPTABILIDAD DINÁMICA DE RECUADROS Y PREVIEW PDF */
+        /* ADAPTABILIDAD DINÁMICA DE FILTROS Y TABLAS EN MODO CLARO */
         .caja-filtros-rapidos { background: var(--bg-card); padding: 15px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px; }
         body.tema-claro .caja-filtros-rapidos { background: #ffffff !important; border-color: var(--border) !important; }
 
@@ -232,7 +237,7 @@
             </div>
         </div>
 
-        <!-- VISTA: DASHBOARD -->
+        <!-- DASHBOARD EXPANDIDO PARA PC -->
         <div id="v-dash" class="vista oculto">
             <h2 class="titulo-seccion">Panel de Control General</h2>
             
@@ -263,13 +268,13 @@
                 <div class="contenedor-scroll-alertas" id="lista-alertas"></div>
             </div>
 
-            <div class="tarjeta">
-                <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; color:var(--text-muted);">Métricas Dinámicas e Interactivas</h3>
-                <div id="contenedor-graficos" class="grid-2"></div>
+            <div class="tarjeta" style="background:transparent; border:none; padding:0; box-shadow:none;">
+                <h3 style="margin:0 0 15px 0; font-size:15px; text-transform:uppercase; color:var(--text-muted);">Métricas Dinámicas e Interactivas</h3>
+                <div id="contenedor-graficos"></div>
             </div>
         </div>
 
-        <!-- VISTA: FICHA CLÍNICA -->
+        <!-- FICHA CLÍNICA -->
         <div id="v-ficha" class="vista oculto">
             <h2 class="titulo-seccion">Expediente Clínico Individual</h2>
             
@@ -382,11 +387,10 @@
             </div>
         </div>
 
-        <!-- VISTA: BASE DE DATOS / BÚSQUEDA AVANZADA -->
+        <!-- BASE DE DATOS / BÚSQUEDA AVANZADA -->
         <div id="v-base" class="vista oculto">
             <h2 class="titulo-seccion">Inventario General Activo y Búsqueda Avanzada</h2>
             
-            <!-- RECUADRO DE FILTROS RÁPIDOS DINÁMICOS -->
             <div class="caja-filtros-rapidos">
                 <span style="font-size:11px; font-weight:bold; color:var(--text-muted); text-transform:uppercase;">🔍 Filtros Rápidos de Hacienda</span>
                 
@@ -426,7 +430,7 @@
             </div>
         </div>
 
-        <!-- VISTA: REPORTES PDF -->
+        <!-- REPORTES PDF -->
         <div id="v-reporte" class="vista oculto">
             <h2 class="titulo-seccion">Centro de Reportes y Documentos PDF</h2>
             
@@ -475,7 +479,8 @@
                         <option value="ALL">🎯 Todos los Carimbos</option>
                         <option value="0">Carimbo 0</option><option value="1">Carimbo 1</option><option value="2">Carimbo 2</option>
                         <option value="3">Carimbo 3</option><option value="4">Carimbo 4</option><option value="5">Carimbo 5</option>
-                        <option value="6">Carimbo 6</option><option value="7">Carimbo 7</option><option value="8">Carimbo 8</option><option value="9">Carimbo 9</option>
+                        <option value="6">Carimbo 6</option><option value="7">Carimbo 7</option><option value="8">Carimbo 8</option>
+                        <option value="9">Carimbo 9</option>
                     </select>
 
                     <select class="form-control" style="width:auto; flex:1;" id="f-inf-dx" onchange="actualizarInformeAvanzado()">
@@ -525,9 +530,9 @@
                 <input type="text" id="f-inf-rp" class="form-control" style="border-color:var(--success);" placeholder="🔍 Ingrese Nº RP para Dossier Clínico Individual..." onkeyup="actualizarInformeAvanzado()">
 
                 <div style="display:flex; justify-content:space-between; align-items:center; margin:15px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:15px 0;">
-                    <div style="display:flex; gap:30px;">
+                    <div style="display:flex; gap:30px; align-items:center;">
                         <div><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;" id="lbl-inf-total">CABEZAS LISTADAS</span><strong style="font-size:22px;" id="inf-total">0</strong></div>
-                        <div id="caja-kpi-prenadas">><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;">PREÑADAS CONF.</span><strong style="font-size:22px; color:var(--success);" id="inf-prenadas">0</strong></div>
+                        <div id="caja-kpi-prenadas"><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;">PREÑADAS CONF.</span><strong style="font-size:22px; color:var(--success);" id="inf-prenadas">0</strong></div>
                     </div>
                     <button type="button" id="btn-print-magico" class="btn-primary" style="width:auto; padding:10px 25px; background:var(--primary);" onclick="ejecutarDescargaPDF()">🖨️ Descargar Informe PDF</button>
                 </div>
@@ -541,7 +546,7 @@
             </div>
         </div>
 
-        <!-- VISTA: CONFIGURACIÓN -->
+        <!-- CONFIGURACIÓN -->
         <div id="v-config" class="vista oculto">
             <h2 class="titulo-seccion">Administración del Software</h2>
             <div class="grid-2">
@@ -564,7 +569,7 @@
                     </div>
 
                     <div class="tarjeta" id="panel-membrete">
-                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">🖨️️ Membrete para Documentos PDF</h3>
+                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">🖨️ Membrete para Documentos PDF</h3>
                         
                         <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
                             <img id="preview-logo-config" src="gemini-svg.png" style="width:60px; height:60px; object-fit:contain; border-radius:8px; border:1px solid var(--border); background:white; padding:2px;">
@@ -659,7 +664,7 @@
                     </div>
                     
                     <div class="tarjeta" id="panel-analiticas">
-                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">📊 Analíticas en Dashboard (Máx 3)</h3>
+                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">📊 Analíticas Visibles en Dashboard</h3>
                         <div style="display:flex; flex-direction:column; gap:8px;">
                             <label><input type="checkbox" class="chk-graf" value="1" onchange="verificarLimiteGraficos(this)"> <span>1. Tasa de Preñez Dinámica</span></label>
                             <label><input type="checkbox" class="chk-graf" value="2" onchange="verificarLimiteGraficos(this)"> <span>2. Composición de Hacienda</span></label>
@@ -764,7 +769,6 @@
                         const userData = doc.data();
                         lsSet('tc_user_profile', userData);
                         
-                        // Cálculo de licencia hasta el fin del día (23:59:59)
                         if(userData.vencimiento) {
                             let fLimit = new Date(userData.vencimiento.includes('T') ? userData.vencimiento : userData.vencimiento + "T23:59:59");
                             if(new Date() > fLimit) {
@@ -1027,8 +1031,10 @@
                         let mData = docM.data();
                         const lblLic = document.getElementById('lbl-licencia');
                         if(mData.vencimiento) {
-                            const fVenc = new Date(mData.vencimiento); const diffDias = Math.ceil((fVenc - new Date()) / (1000 * 60 * 60 * 24));
-                            lblLic.innerText = fVenc.toLocaleDateString() + ` (${diffDias} días restantes)`;
+                            let fLimit = new Date(mData.vencimiento.includes('T') ? mData.vencimiento : mData.vencimiento + "T23:59:59");
+                            const diffDias = Math.ceil((fLimit - new Date()) / (1000 * 60 * 60 * 24));
+                            let fDisplay = new Date(mData.vencimiento.includes('T') ? mData.vencimiento : mData.vencimiento + "T00:00:00").toLocaleDateString();
+                            lblLic.innerText = `${fDisplay} (${diffDias} días restantes)`;
                             lblLic.style.color = diffDias <= 7 ? "var(--danger)" : "var(--success)";
                         } else { lblLic.innerText = "Licencia Perpetua / Sin Límite"; }
                         
@@ -1040,7 +1046,9 @@
                     }
                 }).catch(e => {});
 
-                const prefs = lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
+                // EN PC POR DEFECTO MOSTRAMOS TODAS LAS 11 ANALÍTICAS
+                const prefs = lsGet('tc_prefs_pc', ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']);
+                document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
                 
                 db.collection('estancias').doc(m).onSnapshot(docE => {
                     let hNombre = hacienda || "HACIENDA"; 
@@ -1178,7 +1186,6 @@
                 }
             });
 
-            // Poblar selectores de Lotes (Búsqueda e Informes)
             ['filtro-reg-lote', 'f-inf-lote'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el) {
@@ -1190,7 +1197,6 @@
                 }
             });
 
-            // Poblar selectores de Categorías (Búsqueda e Informes)
             ['filtro-reg-cat', 'f-inf-cat'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el) {
@@ -1418,7 +1424,16 @@
             document.getElementById('tabla-individual').classList.add('oculto');
             
             let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja'));
-            let tPreGlobal = 0; vivas.forEach(car => { const regs = obtenerHistorial(car); const uDx = regs.find(d => d.accion === 'Diagnóstico'); if (uDx && String(uDx.valor).includes('Preñada')) tPreGlobal++; });
+            
+            let tPreGlobal = 0; 
+            vivas.forEach(car => { 
+                const regs = obtenerHistorial(car); 
+                const uDx = regs.find(d => d.accion === 'Diagnóstico'); 
+                const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                let lote = uC && uC.detalles ? String(uC.detalles).toLowerCase() : "";
+                let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && lote.includes('preñada'));
+                if (esPre) tPreGlobal++; 
+            });
             
             const cajaKpiPre = document.getElementById('caja-kpi-prenadas');
             const lblTotal = document.getElementById('lbl-inf-total');
@@ -1432,7 +1447,7 @@
                 return;
             }
 
-            rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar PDF`;
+            rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar Informe PDF`;
 
             if(modo === 'inventario') {
                 document.getElementById('tabla-masiva').classList.remove('oculto');
@@ -1452,7 +1467,11 @@
                     const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
                     if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles||"split('|')[0]") ? String(uC.detalles||"split('|')[0]").replace('Lote:','').trim() : "-"; }
                     let catLegible = obtenerNombreCategoriaLegible(cat);
-                    const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-";
+                    const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
+                    const uDx = regs.find(d => d.accion === 'Diagnóstico'); 
+                    
+                    let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && lote.toLowerCase().includes('preñada'));
+                    dx = uDx ? uDx.valor : (esPre ? "Preñada (Lote)" : "-");
                     
                     let pasaFiltro = true; 
                     if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; 
@@ -1462,7 +1481,7 @@
                     
                     if(pasaFiltro) { 
                         countTotal++; 
-                        if(String(dx).includes('Preñada')) countPre++;
+                        if(esPre) countPre++;
                         tbodyMasivo.innerHTML += `<tr><td><strong>${car}</strong><br><span style="font-size:11px; color:var(--text-muted);">Cb: ${carimbo}</span></td><td>${catLegible}</td><td>${lote}</td><td><strong>${peso}</strong></td><td>${dx}</td></tr>`; 
                     }
                 });
@@ -1622,7 +1641,12 @@
             }, 100);
         }
 
-        function verificarLimiteGraficos(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { alert('Solo puede fijar 3 gráficas simultáneas.'); checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); lsSet('tc_prefs', prefs); if(dbCache.length > 0) procesarDatosDashboard(); } }
+        function verificarLimiteGraficos(checkbox) {
+            const checks = document.querySelectorAll('.chk-graf:checked');
+            const prefs = Array.from(checks).map(c => c.value);
+            lsSet('tc_prefs_pc', prefs);
+            if(dbCache.length > 0) procesarDatosDashboard();
+        }
 
         function filtrarDesdeDashboard(tipo, valor) {
             cambiarVista('v-base', document.querySelectorAll('.sidebar-nav li')[2]);
@@ -1681,19 +1705,17 @@
                 const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
                 let esVaca = catLegible.toLowerCase().includes('vaca');
 
-                if(uDx) { 
-                    if(String(uDx.valor||"").includes('Preñada')) { 
-                        g1.p++; 
-                        if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; 
-                        if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } 
-                    } 
-                    if(String(uDx.valor||"").includes('Vacía')) { 
-                        g1.v++; 
-                        alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--text-main);">${car}</strong> diagnosticada Vacía.</div></div>`; 
-                        if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; 
-                        if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; 
-                        if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].t++; } 
-                    } 
+                let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && lote.toLowerCase().includes('preñada'));
+                if (esPre) {
+                    g1.p++; 
+                    if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; 
+                    if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } 
+                } else if (uDx && String(uDx.valor).includes('Vacía')) {
+                    g1.v++; 
+                    alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--text-main);">${car}</strong> diagnosticada Vacía.</div></div>`; 
+                    if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; 
+                    if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; 
+                    if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } 
                 }
                 
                 if(uPeso) { 
@@ -1710,7 +1732,10 @@
             });
             
             const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
-            const prefs = lsGet('tc_prefs', ['1', '3']); let htmlGraficos = ""; 
+            
+            // En PC usamos 'tc_prefs_pc' que activa las 11 por defecto
+            const prefs = lsGet('tc_prefs_pc', ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']); 
+            let htmlGraficos = ""; 
             const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#38bdf8'];
 
             const makePieAndBars = (title, dataObj, totalCount, tipoAccion) => {
@@ -1735,7 +1760,7 @@
                     </div>`;
                 });
 
-                return `<div>
+                return `<div class="tarjeta">
                     <h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">${title}</h4>
                     <div class="grafico-flex">
                         <div class="torta-container" onclick="filtrarDesdeDashboard('${tipoAccion}', '${keys[0]||''}')">
@@ -1748,20 +1773,22 @@
             };
 
             prefs.forEach(g => {
-                let html = `<div>`;
+                let html = "";
                 if(g === '1') { 
                     let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; 
-                    html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Tasa de Preñez Dinámica</h4>
-                    <div style="display:flex; gap:20px; align-items:center;">
-                        <div class="torta-container" onclick="filtrarDesdeDashboard('dx', 'Preñada')">
-                            <div class="torta" style="background: conic-gradient(var(--success) 0% ${pp}%, var(--danger) ${pp}% 100%);"></div>
-                            <div class="torta-centro">${pp}%</div>
+                    html += `<div class="tarjeta">
+                        <h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Tasa de Preñez Dinámica</h4>
+                        <div class="grafico-flex" style="justify-content:space-around;">
+                            <div class="torta-container" onclick="filtrarDesdeDashboard('dx', 'Preñada')">
+                                <div class="torta" style="background: conic-gradient(var(--success) 0% ${pp}%, var(--danger) ${pp}% 100%);"></div>
+                                <div class="torta-centro">${pp}%</div>
+                            </div>
+                            <div style="font-size:12px; line-height:1.8; color:var(--text-main);">
+                                <div style="cursor:pointer;" onclick="filtrarDesdeDashboard('dx', 'Preñada')"><span class="punto" style="background: var(--success);"></span> Preñadas (${g1.p})</div>
+                                <div style="cursor:pointer;" onclick="filtrarDesdeDashboard('dx', 'Vacía')"><span class="punto" style="background: var(--danger);"></span> Vacías (${g1.v})</div>
+                            </div>
                         </div>
-                        <div style="font-size:12px; line-height:1.8; color:var(--text-main);">
-                            <div style="cursor:pointer;" onclick="filtrarDesdeDashboard('dx', 'Preñada')"><span class="punto" style="background: var(--success);"></span> Preñadas (${g1.p})</div>
-                            <div style="cursor:pointer;" onclick="filtrarDesdeDashboard('dx', 'Vacía')"><span class="punto" style="background: var(--danger);"></span> Vacías (${g1.v})</div>
-                        </div>
-                    </div></div>`; 
+                    </div>`; 
                 } 
                 else if(g === '2') { html += makePieAndBars("Composición de Hacienda", g2, unicas.length, 'categoria'); } 
                 else if(g === '3') { html += makePieAndBars("Distribución por Lotes", g3, unicas.length, 'lote'); } 
@@ -1790,7 +1817,7 @@
                 } 
                 else if(g === '9') { 
                     let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; 
-                    html += `<h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Promedio de Pesos</h4><div class="grid-2"><div class="kpi-box" style="padding:10px;" onclick="filtrarDesdeDashboard('estado', 'vivos')"><strong style="font-size:20px; color:var(--text-main);">${pv} Kg</strong><span>Vacas</span></div><div class="kpi-box" style="padding:10px;" onclick="filtrarDesdeDashboard('estado', 'vivos')"><strong style="font-size:20px; color:var(--text-main);">${pt} Kg</strong><span>Terneros</span></div></div></div>`; 
+                    html += `<div class="tarjeta"><h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Promedio de Pesos</h4><div class="grid-2"><div class="kpi-box" style="padding:10px;" onclick="filtrarDesdeDashboard('estado', 'vivos')"><strong style="font-size:20px; color:var(--text-main);">${pv} Kg</strong><span>Vacas</span></div><div class="kpi-box" style="padding:10px;" onclick="filtrarDesdeDashboard('estado', 'vivos')"><strong style="font-size:20px; color:var(--text-main);">${pt} Kg</strong><span>Terneros</span></div></div></div>`; 
                 } 
                 else if(g === '10') { 
                     let d10 = { "Pesajes": g10.peso, "Diagnósticos": g10.dx, "Nutrición": g10.nut, "Sanidad": g10.san };
@@ -1892,7 +1919,7 @@
                         let w = img.width, h = img.height; 
                         const maxW = 200, maxH = 200; 
                         if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } 
-                        else { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } } 
+                        else { if (h > maxH) { w = Math.round(h * maxH / h); h = maxH; } } 
                         canvas.width = w; canvas.height = h; 
                         const ctx = canvas.getContext('2d'); 
                         ctx.drawImage(img, 0, 0, w, h); 
@@ -2041,13 +2068,13 @@
         function cerrarSesion() { 
             let leidas = localStorage.getItem('tc_alertas_leidas');
             let mostradas = localStorage.getItem('tc_alertas_mostradas');
-            let prefs = localStorage.getItem('tc_prefs');
+            let prefs = localStorage.getItem('tc_prefs_pc');
             let tema = localStorage.getItem('tc_tema');
             firebase.auth().signOut().then(() => {
                 localStorage.clear(); 
                 if(leidas) localStorage.setItem('tc_alertas_leidas', leidas);
                 if(mostradas) localStorage.setItem('tc_alertas_mostradas', mostradas);
-                if(prefs) localStorage.setItem('tc_prefs', prefs);
+                if(prefs) localStorage.setItem('tc_prefs_pc', prefs);
                 if(tema) localStorage.setItem('tc_tema', tema);
                 window.location.reload(); 
             });
