@@ -163,9 +163,15 @@
                 <input type="text" id="edit-new-hac" class="form-control">
             </div>
             
-            <div class="form-grupo" style="margin-top: 20px;">
-                <label style="color:var(--warning);">Límite de Operadores Permitidos</label>
-                <input type="number" id="e-limite" class="form-control" style="border-color: var(--warning);" min="1" placeholder="Ej: 5">
+            <div class="grid-2" style="margin-top: 20px;">
+                <div class="form-grupo">
+                    <label style="color:var(--warning);">Límite Operadores (Peones)</label>
+                    <input type="number" id="e-limite-ops" class="form-control" style="border-color: var(--warning);" min="0" placeholder="Ej: 5">
+                </div>
+                <div class="form-grupo">
+                    <label style="color:var(--info);">Límite Dueños Extras</label>
+                    <input type="number" id="e-limite-own" class="form-control" style="border-color: var(--info);" min="0" placeholder="Ej: 1">
+                </div>
             </div>
 
             <div class="form-grupo" style="margin-top: 20px;">
@@ -187,7 +193,7 @@
     <div id="modal-equipo" class="modal oculto">
         <div class="modal-body large">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 15px;">
-                <h3 style="margin:0; color:var(--info); font-size:20px;">👥 Equipo de Trabajo (Operadores)</h3>
+                <h3 style="margin:0; color:var(--info); font-size:20px;">👥 Equipo de Trabajo</h3>
                 <button class="btn" style="background:transparent; color:var(--text-muted); font-size:20px; padding:0;" onclick="cerrarModal('modal-equipo')">&times;</button>
             </div>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Hacienda seleccionada: <strong id="lbl-equipo-hacienda" style="color:var(--text-main);">...</strong></p>
@@ -195,8 +201,8 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Usuario (Correo)</th>
-                        <th>Estado de Conexión</th>
+                        <th>Usuario / Correo</th>
+                        <th>Rol Asignado</th>
                         <th style="text-align:right;">Control de Acceso</th>
                     </tr>
                 </thead>
@@ -264,14 +270,19 @@
                     </div>
                 </div>
                 
-                <div class="grid-2">
-                    <div class="form-grupo">
-                        <label>Vencimiento de Licencia *</label>
-                        <input type="date" id="n-venc" class="form-control">
-                    </div>
+                <div class="form-grupo" style="margin-top: 10px;">
+                    <label>Vencimiento de Licencia Inicial *</label>
+                    <input type="date" id="n-venc" class="form-control">
+                </div>
+
+                <div class="grid-2" style="margin-top: 15px;">
                     <div class="form-grupo">
                         <label style="color:var(--warning);">Límite de Operadores (Peones)</label>
-                        <input type="number" id="n-limite" class="form-control" style="border-color: var(--warning);" value="1" min="1" placeholder="Ej: 3">
+                        <input type="number" id="n-limite-ops" class="form-control" style="border-color: var(--warning);" value="1" min="0">
+                    </div>
+                    <div class="form-grupo">
+                        <label style="color:var(--info);">Límite de Dueños Extras</label>
+                        <input type="number" id="n-limite-own" class="form-control" style="border-color: var(--info);" value="0" min="0">
                     </div>
                 </div>
 
@@ -283,7 +294,7 @@
                     </div>
                 </div>
 
-                <button class="btn btn-success" style="margin-top:15px; padding: 15px; width:100%; font-size:16px;" onclick="crearCliente()">⚡ Crear Cuenta</button>
+                <button class="btn btn-success" style="margin-top:15px; padding: 15px; width:100%; font-size:16px;" onclick="crearCliente()">⚡ Crear Cuenta Master</button>
             </div>
         </div>
 
@@ -310,7 +321,7 @@
                                 <th>Cliente / Titular</th>
                                 <th>Hacienda</th>
                                 <th>Vencimiento</th>
-                                <th>Módulos Premium</th>
+                                <th>Límites y Módulos</th>
                                 <th>Acciones de Administrador</th>
                             </tr>
                         </thead>
@@ -436,7 +447,7 @@
             const email = document.getElementById('admin-email').value.trim();
             const pass = document.getElementById('admin-pass').value.trim();
             
-            if(!email || !pass) return mostrarToast("⚠️ Ingresa correo y contraseña", true);
+            if(!email || !pass) return mostrarToast("⚠️️ Ingresa correo y contraseña", true);
 
             const btn = document.getElementById('btn-login');
             btn.innerText = "Autenticando...";
@@ -482,7 +493,32 @@
         function mostrarToast(mensaje, esError = false) { const toast = document.getElementById('toast-msg'); toast.innerText = mensaje; if(esError) toast.classList.add('error'); else toast.classList.remove('error'); toast.classList.add('mostrar'); setTimeout(() => { toast.classList.remove('mostrar'); }, 3000); }
 
         // ==========================================
-        // FUNCIONES KILL SWITCH Y AVISOS (CON NOTIFICACIONES PUSH VIA APPS SCRIPT)
+        // TRUCO MAESTRO: CAMBIAR CLAVES O ELIMINAR DE FIREBASE AUTH SIN SERVIDOR
+        // ==========================================
+        async function gestionarAuthUsuario(email, claveActual, accion, nuevaClave = "") {
+            // Este truco crea una mini app secundaria, se loguea como el usuario, le cambia la clave/lo borra, y se destruye.
+            const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryGhostApp");
+            let exito = false;
+            try {
+                await secondaryApp.auth().signInWithEmailAndPassword(email, claveActual);
+                if(accion === 'cambiarClave') {
+                    await secondaryApp.auth().currentUser.updatePassword(nuevaClave);
+                    exito = true;
+                } else if(accion === 'eliminar') {
+                    await secondaryApp.auth().currentUser.delete();
+                    exito = true;
+                }
+            } catch(e) {
+                console.error("Error en AuthGhost:", e);
+            } finally {
+                try { await secondaryApp.auth().signOut(); } catch(e){}
+                try { await secondaryApp.delete(); } catch(e){}
+            }
+            return exito;
+        }
+
+        // ==========================================
+        // FUNCIONES KILL SWITCH Y AVISOS
         // ==========================================
         const APPS_SCRIPT_NOTIFICACIONES = "https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec";
 
@@ -490,8 +526,7 @@
             if(unsubscribeConfig) unsubscribeConfig();
             unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot((doc) => {
                 if(doc.exists) {
-                    const data = doc.data();
-                    actualizarUIKillSwitch(data.mantenimiento ? 'ON' : 'OFF');
+                    actualizarUIKillSwitch(doc.data().mantenimiento ? 'ON' : 'OFF');
                 } else {
                     db.collection('sistema').doc('config').set({ mantenimiento: false, alerta_global: "" });
                     actualizarUIKillSwitch('OFF');
@@ -517,19 +552,16 @@
         }
 
         async function toggleMantenimiento(nuevoEstado) {
-            if(nuevoEstado === 'ON' && !confirm("⚠️️ ¿Estás seguro que deseas desconectar a todos los clientes e inutilizar la plataforma?")) return;
+            if(nuevoEstado === 'ON' && !confirm("⚠️ ¿Estás seguro que deseas desconectar a todos los clientes e inutilizar la plataforma?")) return;
             
             toggleLoading(true, "Transmitiendo orden de bloqueo y notificación...");
             try {
-                // 1. Bloquear o desbloquear en la base de datos
                 await db.collection('sistema').doc('config').set({ mantenimiento: nuevoEstado === 'ON' }, { merge: true });
                 
-                // 2. Definir el mensaje según si se apaga o se enciende el sistema
                 let msjPush = (nuevoEstado === 'ON') 
                     ? "⚠️ Mantenimiento Global: El sistema ha sido bloqueado temporalmente por actualización." 
                     : "✅ Servicio Restaurado: El mantenimiento ha finalizado. La plataforma ya está operativa.";
 
-                // 3. Disparar Notificación Push global
                 const fd = new URLSearchParams(); 
                 fd.append('accion', 'toggle_mantenimiento'); 
                 fd.append('mensaje', msjPush);
@@ -573,8 +605,12 @@
             let features = [];
             if(document.getElementById(`${prefijo}-feat-rafaga`).checked) features.push('rafaga');
             if(document.getElementById(`${prefijo}-feat-bluetooth`).checked) features.push('bluetooth');
-            let lim = document.getElementById(`${prefijo}-limite`).value;
-            if(lim) features.push(`limit:${lim}`);
+            
+            let limOps = document.getElementById(`${prefijo}-limite-ops`).value;
+            let limOwn = document.getElementById(`${prefijo}-limite-own`).value;
+            if(limOps !== "") features.push(`limitOps:${limOps}`);
+            if(limOwn !== "") features.push(`limitOwn:${limOwn}`);
+            
             return features.join(',');
         }
 
@@ -582,10 +618,17 @@
             let f = String(featuresStr||"");
             document.getElementById('e-feat-rafaga').checked = f.includes('rafaga');
             document.getElementById('e-feat-bluetooth').checked = f.includes('bluetooth');
-            let limitVal = "1";
+            
+            let lOps = "1", lOwn = "0";
             let arr = f.split(',');
-            arr.forEach(p => { if(p.startsWith('limit:')) limitVal = p.split(':')[1]; });
-            document.getElementById('e-limite').value = limitVal;
+            arr.forEach(p => { 
+                if(p.startsWith('limitOps:')) lOps = p.split(':')[1]; 
+                if(p.startsWith('limitOwn:')) lOwn = p.split(':')[1]; 
+                // Retrocompatibilidad con la versión anterior que usaba "limit:"
+                if(p.startsWith('limit:')) lOps = p.split(':')[1]; 
+            });
+            document.getElementById('e-limite-ops').value = lOps;
+            document.getElementById('e-limite-own').value = lOwn;
         }
 
         async function crearCliente() {
@@ -596,12 +639,12 @@
             const h = document.getElementById('n-hacienda').value.trim();
             const feats = getFeatures('n');
             
-            if(!u || !p || !v || !h || !nom) return mostrarToast("⚠️ Complete todos los campos", true);
+            if(!u || !p || !v || !h || !nom) return mostrarToast("⚠️ Complete todos los campos obligatorios", true);
             if(p.length < 6) return mostrarToast("⚠️ Firebase exige un mínimo de 6 caracteres", true); 
             
             const email = u.includes('@') ? u : u + '@taurus.com';
 
-            toggleLoading(true, "Registrando cliente...");
+            toggleLoading(true, "Registrando cuenta Master...");
             
             try {
                 const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryApp");
@@ -620,7 +663,7 @@
                 });
 
                 toggleLoading(false); 
-                mostrarToast("✅ Cuenta creada y lista para usarse."); 
+                mostrarToast("✅ Cuenta Master creada."); 
                 
                 document.getElementById('n-nombre').value = ''; 
                 document.getElementById('n-usu').value = ''; 
@@ -646,7 +689,8 @@
             toggleLoading(true, "Sincronizando licencias...");
             try {
                 const snapshot = await db.collection('usuarios').where('rol', '==', 'Propietario').get();
-                clientesCache = snapshot.docs.map(doc => ({
+                // Solo guardamos a los Maestros originales (cuyo maestroId es igual a su propio correo)
+                clientesCache = snapshot.docs.filter(doc => doc.id === doc.data().maestroId).map(doc => ({
                     usuario: doc.id,
                     nombre: doc.data().nombre,
                     hacienda: doc.data().hacienda,
@@ -701,12 +745,21 @@
                 if(fc.includes('rafaga')) featBadges += `<span style="background:var(--bg-card); padding:3px 8px; border-radius:4px; font-size:10px; margin-right:5px; border:1px solid var(--border);">⚡ Ráfaga</span>`;
                 if(fc.includes('bluetooth')) featBadges += `<span style="background:rgba(59,130,246,0.1); color:#60a5fa; padding:3px 8px; border-radius:4px; font-size:10px; border:1px solid rgba(59,130,246,0.3);">📡 BT</span>`;
                 
-                let limitText = "Ilimitado";
+                let limitOps = "1", limitOwn = "0";
                 let arr = fc.split(',');
-                arr.forEach(p => { if(p.startsWith('limit:')) { let num = p.split(':')[1]; limitText = (num === "999") ? "Op: Ilimitados" : "Op: " + num; } });
-                featBadges += `<span style="background:rgba(245,158,11,0.1); color:var(--warning); padding:3px 8px; border-radius:4px; font-size:10px; border:1px solid rgba(245,158,11,0.3); margin-left:5px;">👥 ${limitText}</span>`;
+                arr.forEach(p => { 
+                    if(p.startsWith('limitOps:')) limitOps = p.split(':')[1]; 
+                    if(p.startsWith('limitOwn:')) limitOwn = p.split(':')[1]; 
+                    if(p.startsWith('limit:')) limitOps = p.split(':')[1]; 
+                });
+                
+                let textOps = limitOps === "999" ? "∞" : limitOps;
+                let textOwn = limitOwn === "999" ? "∞" : limitOwn;
 
-                if(featBadges === "") featBadges = `<span style="font-size:10px; color:var(--text-muted);">Básico</span>`;
+                featBadges += `<div style="margin-top:8px; font-size:11px; color:var(--text-muted);">
+                    <span style="color:var(--warning); font-weight:bold;">👷 Peones: ${textOps}</span> | 
+                    <span style="color:var(--info); font-weight:bold;">👤 Dueños Ext: ${textOwn}</span>
+                </div>`;
 
                 tb.innerHTML += `
                     <tr>
@@ -716,15 +769,17 @@
                         </td>
                         <td style="font-weight:bold;">${c.hacienda}</td>
                         <td>
-                            <input type="date" id="venc-${c.usuario}" class="form-control" style="margin:0; padding:6px 10px; font-weight:bold; font-size:12px; width:130px;" value="${fechaFormato}">
-                            <button class="btn btn-success" style="padding: 6px 10px; font-size: 11px; margin-left:5px;" onclick="actualizarVencimiento('${c.usuario}')">💾</button>
+                            <div style="display:flex; align-items:center;">
+                                <input type="date" id="venc-${c.usuario}" class="form-control" style="margin:0; padding:6px 10px; font-weight:bold; font-size:12px; width:130px;" value="${fechaFormato}">
+                                <button class="btn btn-success" style="padding: 6px 10px; font-size: 11px; margin-left:5px;" onclick="actualizarVencimiento('${c.usuario}')" title="Guardar Fecha">💾</button>
+                            </div>
                         </td>
                         <td>${featBadges}</td>
                         <td style="display: flex; gap: 8px; flex-wrap: wrap;">
-                            <button class="btn btn-info" onclick="verEquipo('${c.maestroId}', '${c.hacienda}')">👥 Equipo</button>
-                            <button class="btn" style="background: #475569;" onclick="cambiarClaveCliente('${c.usuario}')">🔑 Pass</button>
-                            <button class="btn" style="background: #2563eb;" onclick="abrirEdicion('${c.usuario}', '${c.hacienda}', '${c.features||""}', '${c.nombre||""}')">✏️ Editar</button>
-                            <button class="btn btn-danger" onclick="borrarCliente('${c.usuario}')">🗑️ Eliminar</button>
+                            <button class="btn btn-info" onclick="verEquipo('${c.maestroId}', '${c.hacienda}')">👥 Ver Equipo</button>
+                            <button class="btn" style="background: #475569;" onclick="cambiarClaveMaestroGhost('${c.usuario}')">🔑 Clave Master</button>
+                            <button class="btn" style="background: #2563eb;" onclick="abrirEdicion('${c.usuario}', '${c.hacienda}', '${c.features||""}', '${c.nombre||""}')">✏️ Editar Límites</button>
+                            <button class="btn btn-danger" onclick="borrarUsuarioMaestroGhost('${c.usuario}')">🗑️ Eliminar</button>
                         </td>
                     </tr>`;
             });
@@ -746,30 +801,47 @@
             }
         }
 
-        async function cambiarClaveCliente(usu) {
-            const nuevaClave = prompt(`Ingrese la nueva contraseña de referencia para el cliente "${usu}":\n(Mínimo 6 caracteres)`);
+        // --- GESTIÓN GHOST PARA EL MASTER ---
+        async function cambiarClaveMaestroGhost(usu) {
+            const nuevaClave = prompt(`Ingrese la nueva contraseña oficial para el Master "${usu}":\n(Mínimo 6 caracteres)`);
             if(nuevaClave === null || nuevaClave.trim() === "") return; 
-            if(nuevaClave.trim().length < 6) return mostrarToast("⚠️️ La contraseña debe tener al menos 6 caracteres", true);
+            if(nuevaClave.trim().length < 6) return mostrarToast("⚠️ La contraseña debe tener al menos 6 caracteres", true);
             
-            toggleLoading(true, `Actualizando referencia...`);
+            toggleLoading(true, `Inyectando nueva contraseña en Firebase Auth...`);
             try {
-                await db.collection('usuarios').doc(usu).update({ password: nuevaClave.trim() });
-                toggleLoading(false); 
-                mostrarToast("✅ Contraseña actualizada");
-                alert("Recuerda que debes cambiar la clave real de acceso borrando y recreando el usuario en Authentication de Firebase Console o usando la gestión nativa del usuario.");
+                const doc = await db.collection('usuarios').doc(usu).get();
+                const claveActual = doc.data().password;
+                if(!claveActual) throw new Error("No hay registro de la clave anterior");
+
+                const exito = await gestionarAuthUsuario(usu, claveActual, 'cambiarClave', nuevaClave.trim());
+                
+                if(exito) {
+                    await db.collection('usuarios').doc(usu).update({ password: nuevaClave.trim() });
+                    mostrarToast("✅ Contraseña Auth actualizada correctamente");
+                } else {
+                    mostrarToast("❌ Falló Auth. Quizá el usuario ya cambió su clave manual.", true);
+                }
             } catch (e) {
+                mostrarToast("❌ Error crítico", true);
+            } finally {
                 toggleLoading(false); 
-                mostrarToast("❌ Error al guardar", true);
             }
         }
 
-        async function borrarCliente(usu) {
-            if(!confirm(`⚠️️ ATENCIÓN: ¿Estás seguro que deseas ELIMINAR al cliente "${usu}"?\nSe borrará su perfil (Deberás borrar manualmente sus datos en 'estancias' si así lo deseas).`)) return;
-            toggleLoading(true, "Purgando cliente...");
+        async function borrarUsuarioMaestroGhost(usu) {
+            if(!confirm(`⚠️ ATENCIÓN PELIGRO: ¿Estás seguro que deseas ELIMINAR DE RAÍZ al cliente Master "${usu}"?\nSe borrará su cuenta para siempre.`)) return;
+            toggleLoading(true, "Purgando Master de Firebase Auth...");
             try {
-                await db.collection('usuarios').doc(usu).delete();
+                const doc = await db.collection('usuarios').doc(usu).get();
+                if(doc.exists) {
+                    const claveActual = doc.data().password;
+                    if(claveActual) {
+                        await gestionarAuthUsuario(usu, claveActual, 'eliminar');
+                    }
+                    await db.collection('usuarios').doc(usu).delete();
+                }
                 toggleLoading(false); 
-                mostrarToast("✅ Cliente Eliminado"); 
+                mostrarToast("✅ Cliente Master Eliminado de raíz"); 
                 cargarClientes(); 
             } catch (e) {
                 toggleLoading(false); 
@@ -792,8 +864,8 @@
             const newNom = document.getElementById('edit-new-nombre').value.trim(); 
             const fts = getFeatures('e');
             
-            if(!newHac || !newNom) return mostrarToast("⚠️️ Los campos no pueden estar vacíos", true);
-            toggleLoading(true, "Actualizando perfil y módulos...");
+            if(!newHac || !newNom) return mostrarToast("⚠️ Los campos no pueden estar vacíos", true);
+            toggleLoading(true, "Actualizando límites y módulos...");
             
             try {
                 await db.collection('usuarios').doc(usuId).update({
@@ -803,7 +875,7 @@
                 });
                 toggleLoading(false); 
                 document.getElementById('modal-editar').classList.add('oculto'); 
-                mostrarToast("✅ Información Perfil Editada"); 
+                mostrarToast("✅ Información Actualizada"); 
                 cargarClientes();
             } catch (e) {
                 toggleLoading(false); 
@@ -811,31 +883,40 @@
             }
         }
 
+        // ==========================================
+        // GESTIÓN DE EQUIPO GHOST (PEONES Y DUEÑOS EXTRAS)
+        // ==========================================
         async function verEquipo(maestroId, haciendaName) {
             document.getElementById('lbl-equipo-hacienda').innerText = haciendaName;
-            document.getElementById('tb-equipo').innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:15px;">Buscando operadores...</td></tr>';
+            document.getElementById('tb-equipo').innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:15px;">Buscando miembros del equipo...</td></tr>';
             document.getElementById('modal-equipo').classList.remove('oculto');
 
             try {
                 const snapshot = await db.collection('usuarios').where('maestroId', '==', maestroId).get();
-                const operadores = snapshot.docs.filter(doc => doc.id !== maestroId);
+                const operadores = snapshot.docs.filter(doc => doc.id !== maestroId); // Excluimos al master
 
                 const tb = document.getElementById('tb-equipo'); 
                 tb.innerHTML = '';
                 
                 if(operadores.length === 0) {
-                    tb.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:15px;">Este cliente no ha registrado operadores.</td></tr>';
+                    tb.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:15px;">Sin dueños extras ni peones registrados.</td></tr>';
                     return;
                 }
 
                 operadores.forEach(doc => {
                     let opId = doc.id;
+                    let rol = doc.data().rol;
+                    let displayRol = (rol && (rol.includes('Propietario') || rol.includes('Dueño'))) 
+                                     ? '<span style="color:var(--info); font-weight:bold;">👤 Dueño Extra</span>' 
+                                     : '<span style="color:var(--warning); font-weight:bold;">👷 Peón (Operador)</span>';
+
                     tb.innerHTML += `
                     <tr>
-                        <td style="font-weight:bold; color:var(--text-main);">${opId}</td>
-                        <td><span style="color:var(--success); font-weight:bold; font-size:12px;">Activo</span></td>
-                        <td style="text-align:right;">
-                            <button class="btn btn-mini btn-danger" style="width:auto; padding:6px 10px;" onclick="eliminarOpAdmin('${opId}', '${maestroId}')">🗑️ Eliminar Acceso</button>
+                        <td style="font-weight:bold; color:var(--text-main);">${opId}<br><span style="font-size:11px; color:var(--text-muted); font-weight:normal;">${doc.data().nombre}</span></td>
+                        <td>${displayRol}</td>
+                        <td style="text-align:right; display:flex; gap:5px; justify-content:flex-end;">
+                            <button class="btn btn-mini" style="background:#475569;" onclick="cambiarClaveMiembroGhost('${opId}')">🔑 Clave</button>
+                            <button class="btn btn-mini btn-danger" onclick="eliminarMiembroGhost('${opId}', '${maestroId}')">🗑️ Eliminar</button>
                         </td>
                     </tr>`;
                 });
@@ -844,13 +925,45 @@
             }
         }
 
-        async function eliminarOpAdmin(opId, maestroId) {
-            if(!confirm(`⚠️ ¿Eliminar permanentemente el perfil de acceso del operador ${opId}?`)) return;
-            toggleLoading(true, "Eliminando operador...");
+        async function cambiarClaveMiembroGhost(opId) {
+            const nuevaClave = prompt(`Nueva contraseña oficial para el miembro "${opId}":\n(Mínimo 6 caracteres)`);
+            if(nuevaClave === null || nuevaClave.trim() === "") return; 
+            if(nuevaClave.trim().length < 6) return mostrarToast("⚠️ Mínimo 6 caracteres", true);
+            
+            toggleLoading(true, `Cambiando clave en Firebase Auth...`);
             try {
-                await db.collection('usuarios').doc(opId).delete();
+                const doc = await db.collection('usuarios').doc(opId).get();
+                const claveActual = doc.data().password;
+                if(!claveActual) throw new Error("No hay registro de clave anterior");
+
+                const exito = await gestionarAuthUsuario(opId, claveActual, 'cambiarClave', nuevaClave.trim());
+                if(exito) {
+                    await db.collection('usuarios').doc(opId).update({ password: nuevaClave.trim() });
+                    mostrarToast("✅ Contraseña del equipo actualizada");
+                } else {
+                    mostrarToast("❌ Falló Auth. Quizá ya la cambió manual.", true);
+                }
+            } catch (e) {
+                mostrarToast("❌ Error al cambiar clave", true);
+            } finally {
                 toggleLoading(false); 
-                mostrarToast("✅ Operador Eliminado"); 
+            }
+        }
+
+        async function eliminarMiembroGhost(opId, maestroId) {
+            if(!confirm(`⚠️ ¿Eliminar permanentemente de Firebase Auth al usuario ${opId}?`)) return;
+            toggleLoading(true, "Eliminando miembro de raíz...");
+            try {
+                const doc = await db.collection('usuarios').doc(opId).get();
+                if(doc.exists) {
+                    const claveActual = doc.data().password;
+                    if(claveActual) {
+                        await gestionarAuthUsuario(opId, claveActual, 'eliminar');
+                    }
+                    await db.collection('usuarios').doc(opId).delete();
+                }
+                toggleLoading(false); 
+                mostrarToast("✅ Usuario Eliminado"); 
                 verEquipo(maestroId, document.getElementById('lbl-equipo-hacienda').innerText); 
             } catch(e) {
                 toggleLoading(false); 
@@ -858,6 +971,9 @@
             }
         }
 
+        // ==========================================
+        // CARGA MASIVA
+        // ==========================================
         function cargarClientesMasiva() { 
             if(clientesCache.length === 0) cargarClientes(); 
             else renderizarSelectMasiva(); 
@@ -919,7 +1035,7 @@
             const colLote = document.getElementById('map-lote').value; 
             const maestroId = document.getElementById('sel-cliente-masiva').value;
             
-            if(!colCaravana) return mostrarToast("⚠️ Debes indicar cuál es la columna de la Caravana", true);
+            if(!colCaravana) return mostrarToast("⚠️️ Debes indicar cuál es la columna de la Caravana", true);
             
             const fechaHoy = new Date().toISOString(); 
             let datosAInyectar = [];
@@ -977,25 +1093,14 @@
             datosArchivoCrudo = [];
         }
 
-        // Anclaje explícito para Electron CSP
-        window.ingresarAdmin = ingresarAdmin;
-        window.cerrarSesion = cerrarSesion;
-        window.cambiarVista = cambiarVista;
-        window.cerrarModal = cerrarModal;
-        window.toggleMantenimiento = toggleMantenimiento;
-        window.enviarAvisoMantenimiento = enviarAvisoMantenimiento;
-        window.crearCliente = crearCliente;
-        window.cargarClientes = cargarClientes;
-        window.actualizarVencimiento = actualizarVencimiento;
-        window.cambiarClaveCliente = cambiarClaveCliente;
-        window.borrarCliente = borrarCliente;
-        window.abrirEdicion = abrirEdicion;
-        window.guardarEdicion = guardarEdicion;
-        window.verEquipo = verEquipo;
-        window.eliminarOpAdmin = eliminarOpAdmin;
-        window.cargarClientesMasiva = cargarClientesMasiva;
-        window.leerArchivoInteligente = leerArchivoInteligente;
-        window.procesarMapeoEInyectar = procesarMapeoEInyectar;
+        // Anclaje explícito
+        window.ingresarAdmin = ingresarAdmin; window.cerrarSesion = cerrarSesion; window.cambiarVista = cambiarVista;
+        window.cerrarModal = cerrarModal; window.toggleMantenimiento = toggleMantenimiento; window.enviarAvisoMantenimiento = enviarAvisoMantenimiento;
+        window.crearCliente = crearCliente; window.cargarClientes = cargarClientes; window.actualizarVencimiento = actualizarVencimiento;
+        window.cambiarClaveMaestroGhost = cambiarClaveMaestroGhost; window.borrarUsuarioMaestroGhost = borrarUsuarioMaestroGhost;
+        window.abrirEdicion = abrirEdicion; window.guardarEdicion = guardarEdicion; window.verEquipo = verEquipo;
+        window.cambiarClaveMiembroGhost = cambiarClaveMiembroGhost; window.eliminarMiembroGhost = eliminarMiembroGhost;
+        window.cargarClientesMasiva = cargarClientesMasiva; window.leerArchivoInteligente = leerArchivoInteligente; window.procesarMapeoEInyectar = procesarMapeoEInyectar;
     </script>
 </body>
 </html>
