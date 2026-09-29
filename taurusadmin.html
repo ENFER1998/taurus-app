@@ -123,7 +123,7 @@
             <h1>Taurus Control</h1>
             <div class="form-grupo" style="margin-top: 20px;">
                 <input type="email" id="admin-email" class="form-control" placeholder="Correo del Administrador" style="text-align: center; margin-bottom: 10px;" autocomplete="off">
-                <input type="password" id="admin-pass" class="form-control" placeholder="Clave de Acceso" style="text-align: center; font-size: 16px; letter-spacing: 2px;" autocomplete="off">
+                <input type="password" id="admin-pass" class="form-control" placeholder="Clave de Acceso Maestro" style="text-align: center; font-size: 16px; letter-spacing: 2px;" autocomplete="off">
             </div>
             <button class="btn" id="btn-login" style="width: 100%; padding: 15px; background: #3b82f6;" onclick="ingresarAdmin()">Iniciar Sesión</button>
             <div style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
@@ -482,13 +482,12 @@
         function mostrarToast(mensaje, esError = false) { const toast = document.getElementById('toast-msg'); toast.innerText = mensaje; if(esError) toast.classList.add('error'); else toast.classList.remove('error'); toast.classList.add('mostrar'); setTimeout(() => { toast.classList.remove('mostrar'); }, 3000); }
 
         // ==========================================
-        // FUNCIONES KILL SWITCH Y AVISOS (CON NOTIFICACIONES PUSH)
+        // FUNCIONES KILL SWITCH Y AVISOS (CON NOTIFICACIONES PUSH VIA APPS SCRIPT)
         // ==========================================
         const APPS_SCRIPT_NOTIFICACIONES = "https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec";
 
         function checkStatusInicial() {
             if(unsubscribeConfig) unsubscribeConfig();
-            
             unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot((doc) => {
                 if(doc.exists) {
                     const data = doc.data();
@@ -518,20 +517,23 @@
         }
 
         async function toggleMantenimiento(nuevoEstado) {
-            if(nuevoEstado === 'ON' && !confirm("⚠️ ¿Estás seguro que deseas desconectar a todos los clientes e inutilizar la plataforma?")) return;
+            if(nuevoEstado === 'ON' && !confirm("⚠️️ ¿Estás seguro que deseas desconectar a todos los clientes e inutilizar la plataforma?")) return;
             
             toggleLoading(true, "Transmitiendo orden de bloqueo y notificación...");
             try {
-                // 1. Bloquear o desbloquear en Firebase
+                // 1. Bloquear o desbloquear en la base de datos
                 await db.collection('sistema').doc('config').set({ mantenimiento: nuevoEstado === 'ON' }, { merge: true });
                 
-                // 2. Disparar Notificación Push global a todos los celulares (Solo si se bloquea)
-                if(nuevoEstado === 'ON') {
-                    const fd = new URLSearchParams(); 
-                    fd.append('accion', 'toggle_mantenimiento'); 
-                    fd.append('estado', nuevoEstado);
-                    fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
-                }
+                // 2. Definir el mensaje según si se apaga o se enciende el sistema
+                let msjPush = (nuevoEstado === 'ON') 
+                    ? "⚠️ Mantenimiento Global: El sistema ha sido bloqueado temporalmente por actualización." 
+                    : "✅ Servicio Restaurado: El mantenimiento ha finalizado. La plataforma ya está operativa.";
+
+                // 3. Disparar Notificación Push global
+                const fd = new URLSearchParams(); 
+                fd.append('accion', 'toggle_mantenimiento'); 
+                fd.append('mensaje', msjPush);
+                fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
 
                 toggleLoading(false); 
                 mostrarToast(`✅ Plataforma cambiada a estado: ${nuevoEstado}`);
@@ -548,10 +550,8 @@
             
             toggleLoading(true, "Enviando anuncio global...");
             try {
-                // 1. Mostrar banner naranja en las apps a través de Firebase
                 await db.collection('sistema').doc('config').set({ alerta_global: "⏳ AVISO: " + msg }, { merge: true });
                 
-                // 2. Disparar Notificación Push a todos los celulares
                 const fd = new URLSearchParams(); 
                 fd.append('accion', 'aviso_mantenimiento'); 
                 fd.append('mensaje', "⏳ AVISO: " + msg);
@@ -749,7 +749,7 @@
         async function cambiarClaveCliente(usu) {
             const nuevaClave = prompt(`Ingrese la nueva contraseña de referencia para el cliente "${usu}":\n(Mínimo 6 caracteres)`);
             if(nuevaClave === null || nuevaClave.trim() === "") return; 
-            if(nuevaClave.trim().length < 6) return mostrarToast("⚠️ La contraseña debe tener al menos 6 caracteres", true);
+            if(nuevaClave.trim().length < 6) return mostrarToast("⚠️️ La contraseña debe tener al menos 6 caracteres", true);
             
             toggleLoading(true, `Actualizando referencia...`);
             try {
@@ -764,7 +764,7 @@
         }
 
         async function borrarCliente(usu) {
-            if(!confirm(`⚠️ ATENCIÓN: ¿Estás seguro que deseas ELIMINAR al cliente "${usu}"?\nSe borrará su perfil (Deberás borrar manualmente sus datos en 'estancias' si así lo deseas).`)) return;
+            if(!confirm(`⚠️️ ATENCIÓN: ¿Estás seguro que deseas ELIMINAR al cliente "${usu}"?\nSe borrará su perfil (Deberás borrar manualmente sus datos en 'estancias' si así lo deseas).`)) return;
             toggleLoading(true, "Purgando cliente...");
             try {
                 await db.collection('usuarios').doc(usu).delete();
@@ -792,7 +792,7 @@
             const newNom = document.getElementById('edit-new-nombre').value.trim(); 
             const fts = getFeatures('e');
             
-            if(!newHac || !newNom) return mostrarToast("⚠️ Los campos no pueden estar vacíos", true);
+            if(!newHac || !newNom) return mostrarToast("⚠️️ Los campos no pueden estar vacíos", true);
             toggleLoading(true, "Actualizando perfil y módulos...");
             
             try {
