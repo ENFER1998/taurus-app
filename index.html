@@ -631,7 +631,7 @@
             <div class="nav-item" onclick="cambiarVista('vista-manga', this)"><span class="nav-icon">🐄</span>Ficha</div>
             <div class="nav-item" onclick="cambiarVista('vista-registro', this); cargarListaRegistro();"><span class="nav-icon">📋</span>Buscar</div>
             <div class="nav-item" onclick="cambiarVista('vista-informe', this); actualizarInformeAvanzado();"><span class="nav-icon">📄</span>Informes</div>
-            <div class="nav-item" onclick="cambiarVista('vista-config', this); cargarListaOperadores();"><span class="nav-icon">⚙️</span>Ajustes</div>
+            <div class="nav-item" onclick="cambiarVista('vista-config', this); cargarListaOperadores();"><span class="nav-icon">⚙️️</span>Ajustes</div>
         </nav>
     </div>
 
@@ -708,6 +708,75 @@
         let unsubscribeEventos = null;
         let unsubscribeConfig = null;
         let modulosHabilitados = ""; // <-- Variable Global Agregada
+
+        // ==========================================
+        // FUNCIONES DE INTERFAZ INTEGRADAS (SOLUCIÓN ERRORES)
+        // ==========================================
+        window.cambiarVista = function(idVista, elementoNav) {
+            document.querySelectorAll('.vista').forEach(vista => vista.classList.add('oculto'));
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('activo'));
+            
+            const vistaDestino = document.getElementById(idVista);
+            if (vistaDestino) vistaDestino.classList.remove('oculto');
+            
+            if (elementoNav) elementoNav.classList.add('activo');
+        };
+
+        window.procesarDatosDashboard = function() {
+            if (typeof dbCache === 'undefined' || !dbCache || dbCache.length === 0) return;
+            
+            const datosActivos = obtenerRegistrosActivos();
+            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
+            
+            let vivas = 0;
+            let bajas = 0;
+            
+            unicas.forEach(car => {
+                const regs = obtenerHistorial(car);
+                if (regs.find(r => r.accion === 'Baja')) {
+                    bajas++;
+                } else {
+                    vivas++;
+                }
+            });
+            
+            const kpiVivos = document.getElementById('dash-cabezas');
+            const kpiBajas = document.getElementById('dash-bajas');
+            const kpiAcciones = document.getElementById('dash-acciones');
+            
+            if (kpiVivos) kpiVivos.innerText = vivas;
+            if (kpiBajas) kpiBajas.innerText = bajas;
+            if (kpiAcciones) kpiAcciones.innerText = datosActivos.length;
+        };
+
+        window.abrirModal = function(id) { 
+            const m = document.getElementById(id); 
+            if (m) m.style.display = 'flex'; 
+        };
+        
+        window.cerrarModal = function(id) { 
+            const m = document.getElementById(id); 
+            if (m) m.style.display = 'none'; 
+        };
+
+        window.cargarListaRegistro = function() {
+            const tb = document.getElementById('tb-registro');
+            if (!tb) return;
+            const buscador = document.getElementById('buscador-lista');
+            const query = buscador ? buscador.value.trim().toLowerCase() : "";
+            const datosActivos = obtenerRegistrosActivos();
+            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
+            
+            tb.innerHTML = "";
+            unicas.forEach(car => {
+                if (query !== "" && !car.toLowerCase().includes(query)) return;
+                const regs = obtenerHistorial(car);
+                let rBaja = regs.find(r => r.accion === 'Baja');
+                let color = rBaja ? "var(--peligro)" : "var(--texto)";
+                tb.innerHTML += `<li onclick="cambiarVista('vista-manga'); buscarCaravanaBtn('${car}')" style="cursor:pointer;"><strong style="color:${color};">${car}</strong></li>`;
+            });
+        };
+        // ==========================================
 
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
