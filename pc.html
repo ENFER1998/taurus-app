@@ -161,7 +161,7 @@
         body.tema-claro .tabla-informe tr:hover td { background: #f8fafc; }
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); z-index: 2000; align-items: center; justify-content: center;}
-        .modal-body { background: var(--bg-panel); width: 450px; border-radius: 6px; padding: 25px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5);}
+        .modal-body { background: var(--bg-panel); width: 450px; border-radius: 6px; padding: 25px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto;}
         .modal-body h3 { margin: 0 0 20px 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; font-size: 16px; text-transform: uppercase; color: var(--text-main);}
         .btn-cerrar { float: right; cursor: pointer; color: var(--text-muted); font-size: 20px; font-weight: bold;}
         .btn-cerrar:hover { color: var(--text-main); }
@@ -760,6 +760,7 @@
         
         let unsubscribeEventos = null;
         let unsubscribeConfig = null;
+        let modulosHabilitados = ""; // <-- Variable Global Agregada
 
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
@@ -1042,8 +1043,9 @@
                             lblLic.style.color = diffDias <= 7 ? "var(--danger)" : "var(--success)";
                         } else { lblLic.innerText = "Licencia Perpetua / Sin Límite"; }
                         
-                        const featuresActivos = mData.features || "";
-                        if(!featuresActivos.includes('rafaga')) {
+                        // 👇 APLICACIÓN DE MÓDULOS DE RÁFAGA Y BLUETOOTH 👇
+                        modulosHabilitados = mData.features || "";
+                        if(!modulosHabilitados.includes('rafaga')) {
                             let bloqueRafaga = document.getElementById('tarjeta-rafaga');
                             if (bloqueRafaga) bloqueRafaga.style.display = 'none';
                         }
@@ -1455,7 +1457,7 @@
                 return;
             }
 
-            rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar PDF`;
+            rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️️ Descargar PDF`;
 
             if(modo === 'inventario') {
                 document.getElementById('tabla-masiva').classList.remove('oculto');
@@ -1554,7 +1556,7 @@
 
         function cleanPDFText(text) {
             if (!text) return ''; let str = String(text);
-            str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️|✏️️|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️|🚪/g, '');
+            str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️️|✏|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️|🚪/g, '');
             str = str.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
             return str.trim();
         }
@@ -2003,16 +2005,45 @@
             const rolSel = document.getElementById('op-rol').value;
             if(!n || !u || !p) { alert("Completar Nombre, Usuario y Contraseña."); return; } 
             if(p.length < 6) { alert("La contraseña debe tener mínimo 6 caracteres por seguridad en Firebase."); return; }
-            let rolFinal = rolSel;
-            if (rolSel === 'Operador') {
-                let permisos = Array.from(document.querySelectorAll('.chk-permiso:checked')).map(c => c.value).join(',');
-                if(!permisos) { alert("Debe seleccionar al menos un permiso de acceso para el operador."); return; }
-                rolFinal = 'Operador|' + permisos;
-            }
+            
+            // 👇 LIMITADOR DE PEONES Y DUEÑOS 👇
+            let maxOps = 1, maxOwn = 0;
+            modulosHabilitados.split(',').forEach(param => { 
+                if(param.startsWith('limitOps:')) maxOps = parseInt(param.split(':')[1]) || 1; 
+                if(param.startsWith('limitOwn:')) maxOwn = parseInt(param.split(':')[1]) || 0; 
+            });
+            
             const btn = document.getElementById('btn-crear-op'); const btnOriginal = btn.innerHTML;
-            btn.innerHTML = "⏳ Registrando..."; btn.disabled = true;
-            let email = u.includes('@') ? u : u + '@taurus.com';
+            btn.innerHTML = "⏳ Verificando límites..."; btn.disabled = true;
+
             try {
+                const snapshotOps = await db.collection('usuarios').where('maestroId', '==', maestroId).get();
+                let currOps = 0, currOwn = 0;
+                snapshotOps.docs.forEach(doc => {
+                    if(doc.id !== maestroId) {
+                        let r = doc.data().rol || "";
+                        if(r.includes('Propietario') || r.includes('Dueño')) currOwn++;
+                        else currOps++;
+                    }
+                });
+
+                if (rolSel === 'Operador' && currOps >= maxOps && maxOps !== 999) {
+                    alert(`⚠️️ Límite alcanzado: Su plan solo permite ${maxOps} peón/operador(es). Contacte a soporte para ampliar su licencia.`);
+                    btn.innerHTML = btnOriginal; btn.disabled = false; return;
+                }
+                if (rolSel !== 'Operador' && currOwn >= maxOwn && maxOwn !== 999) {
+                    alert(`⚠️ Límite alcanzado: Su plan solo permite ${maxOwn} dueño(s) extra(s). Contacte a soporte para ampliar su licencia.`);
+                    btn.innerHTML = btnOriginal; btn.disabled = false; return;
+                }
+                
+                let rolFinal = rolSel;
+                if (rolSel === 'Operador') {
+                    let permisos = Array.from(document.querySelectorAll('.chk-permiso:checked')).map(c => c.value).join(',');
+                    if(!permisos) { alert("Debe seleccionar al menos un permiso de acceso para el operador."); btn.innerHTML = btnOriginal; btn.disabled = false; return; }
+                    rolFinal = 'Operador|' + permisos;
+                }
+                
+                let email = u.includes('@') ? u : u + '@taurus.com';
                 const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryAppPeon");
                 await secondaryApp.auth().createUserWithEmailAndPassword(email, p);
                 await secondaryApp.auth().signOut();
@@ -2023,7 +2054,7 @@
                 ejecutarAccion('Alta Operador', email, `Nombre: ${n} | Rol: ${rolFinal}`, null);
                 document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 
                 btn.innerHTML = btnOriginal; btn.disabled = false;
-                alert("Usuario Registrado Exitosamente."); cargarListaOperadores();
+                mostrarToast("✅ Usuario Registrado Exitosamente."); cargarListaOperadores();
             } catch(e) {
                 alert("Hubo un error al crear la cuenta. Verifique que el usuario/correo no esté ya registrado.");
                 btn.innerHTML = btnOriginal; btn.disabled = false;
@@ -2149,6 +2180,12 @@
         }
 
         window.recibirTagNFC = function(tagHex) {
+            // 👇 BLOQUEO DE BASTÓN BLUETOOTH 👇
+            if(!modulosHabilitados.includes('bluetooth')) {
+                mostrarToast("⚠️ El módulo de Bastones Bluetooth no está activo en su plan.", true);
+                return;
+            }
+
             let dataMinuscula = String(tagHex).trim().toLowerCase();
             let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === dataMinuscula);
             if(esRFIDRegistrado) {

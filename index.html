@@ -18,11 +18,15 @@
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({
-          appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60",
-          serviceWorkerParam: { scope: "/taurus-app/" },
-          serviceWorkerPath: "/taurus-app/OneSignalSDKWorker.js"
-        });
+        try {
+            await OneSignal.init({
+              appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60",
+              serviceWorkerParam: { scope: "/taurus-app/" },
+              serviceWorkerPath: "/taurus-app/OneSignalSDKWorker.js"
+            });
+        } catch(e) {
+            console.warn("OneSignal (Local/Dev): No se pudo registrar el Service Worker. Se activará en producción.");
+        }
       });
     </script>
 
@@ -94,14 +98,12 @@
 
         .contenedor-scroll-analitica { max-height: 130px; overflow-y: auto; padding-right: 5px; flex: 1; }
 
-        /* RECUADROS Y ELEMENTOS ADAPTABLES A MODO CLARO */
         .caja-filtros-rapidos { background: #1e293b; padding: 12px; border-radius: 8px; border: 1px solid var(--borde); margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; }
         body.tema-claro .caja-filtros-rapidos { background: #ffffff !important; border-color: var(--borde) !important; }
 
         .contenedor-permisos { display: flex; flex-direction: column; gap: 8px; background: #1e293b; padding: 10px; border: 1px solid var(--borde); border-radius: 8px; }
         body.tema-claro .contenedor-permisos { background: #ffffff !important; border-color: var(--borde) !important; }
 
-        /* TABLA DE PREVIEW DEL REPORTE CON TEMA DINÁMICO */
         .tabla-informe { width: 100%; border-collapse: collapse; font-size: 13px; background: #0f172a; color: var(--texto); min-width: 400px; border: 1px solid var(--borde);}
         .tabla-informe th { background: #1e293b; padding: 10px; text-align: left; border: 1px solid var(--borde); color: var(--secundario); font-size: 11px; text-transform: uppercase; font-weight: bold;}
         .tabla-informe td { padding: 10px; border: 1px solid var(--borde); color: var(--texto);}
@@ -325,7 +327,6 @@
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">📋 Inventario y Búsqueda Avanzada</div>
                     
-                    <!-- RECUADRO DE FILTROS RÁPIDOS DINÁMICOS -->
                     <div class="caja-filtros-rapidos">
                         <span style="font-size:11px; font-weight:bold; color:var(--muted); text-transform:uppercase;">🔍 Filtros Rápidos de Búsqueda</span>
                         
@@ -344,7 +345,7 @@
 
                         <div style="display:flex; gap:8px;">
                             <select id="filtro-reg-lote" class="form-control" style="flex:1; min-width:0; padding:8px; font-size:13px;" onchange="cargarListaRegistro()">
-                                <option value="ALL">🏷️ Lote (Todos)</option>
+                                <option value="ALL">🏷️️ Lote (Todos)</option>
                             </select>
                             <select id="filtro-reg-cat" class="form-control" style="flex:1; min-width:0; padding:8px; font-size:13px;" onchange="cargarListaRegistro()">
                                 <option value="ALL">🐄 Categoría (Todas)</option>
@@ -372,7 +373,6 @@
                 </div>
 
                 <div class="tarjeta">
-                    <!-- SELECTOR DE FORMATO ESTRUCTURADO Y SEGURO -->
                     <div class="form-grupo" style="margin-bottom:12px;">
                         <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">SELECCIONA EL TIPO DE REPORTE:</label>
                         <select class="filtro-sel" id="f-inf-modo" onchange="cambiarModoReporte()" style="border-color: var(--secundario); font-weight: bold; background-color: var(--secundario); color: white;">
@@ -382,7 +382,6 @@
                         </select>
                     </div>
 
-                    <!-- FILTROS DE INVENTARIO (SIN DESBORDAMIENTOS) -->
                     <div id="filtros-inventario" class="filtros-grid">
                         <div class="form-grupo" style="margin-bottom:8px;">
                             <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Lote Asignado:</label>
@@ -433,7 +432,6 @@
                         </div>
                     </div>
 
-                    <!-- FILTROS DE BAJAS Y MORTALIDAD -->
                     <div id="filtros-bajas" class="filtros-grid oculto" style="display:none;">
                         <div class="form-grupo" style="margin-bottom:8px;">
                             <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Causa de Baja:</label>
@@ -462,7 +460,6 @@
                         </div>
                     </div>
 
-                    <!-- FILTROS DE TRATAMIENTOS / HISTORIAL -->
                     <div id="filtros-eventos" class="filtros-grid oculto" style="display: none;">
                         <div class="form-grupo" style="margin-bottom:8px;">
                             <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Rango de Fecha:</label>
@@ -637,9 +634,9 @@
     <div id="modal-comentario" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-comentario')">&times;</span><h3>Anotación General</h3><div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-comentario', 'Comentario')">Guardar Nota</button></div></div>
     <div id="modal-rfid" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-rfid')">&times;</span><h3>Vincular Bastón RFID</h3><p style="font-size:12px; color:var(--muted); margin-bottom:15px;">Chip <strong id="lbl-rfid-scaneado" style="color:var(--secundario);"></strong> no asignado.</p><div class="form-grupo"><input type="text" class="form-control" id="f-rfid-caravana" placeholder="Ingrese RP (Ej: 1234)" style="text-align: center; font-size: 20px; font-weight: bold;"></div><button class="btn-guardar" onclick="guardarVinculacionRFID()">Vincular y Abrir Ficha</button></div></div>
     
-    <div id="m-perfil" class="modal">
+    <div id="modal-perfil" class="modal">
         <div class="modal-body">
-            <span class="cerrar" onclick="cerrarModal('m-perfil')">&times;</span>
+            <span class="cerrar" onclick="cerrarModal('modal-perfil')">&times;</span>
             <h3>Datos Base del Animal</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div class="form-grupo"><label>Raza</label><input type="text" class="form-control" id="f-raza"></div>
@@ -703,6 +700,387 @@
         
         let unsubscribeEventos = null;
         let unsubscribeConfig = null;
+        let modulosHabilitados = "";
+
+        // ==========================================
+        // FUNCIONES DE INTERFAZ Y DASHBOARD
+        // ==========================================
+        window.cambiarVista = function(idVista, elementoNav) {
+            document.querySelectorAll('.vista').forEach(vista => vista.classList.add('oculto'));
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('activo'));
+            
+            const vistaDestino = document.getElementById(idVista);
+            if (vistaDestino) vistaDestino.classList.remove('oculto');
+            
+            if (elementoNav) elementoNav.classList.add('activo');
+        };
+
+        window.procesarDatosDashboard = function() {
+            const datosActivos = typeof obtenerRegistrosActivos === 'function' ? obtenerRegistrosActivos() : [];
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
+            let vivas = []; let cantBajas = datosActivos.filter(r => r.accion === 'Baja').length;
+            unicas.forEach(car => { if(!obtenerHistorial(car).some(x => x.accion === 'Baja')) { vivas.push(car); } }); unicas = vivas; 
+            
+            const kpiCabezas = document.getElementById('dash-cabezas');
+            const kpiAcciones = document.getElementById('dash-acciones');
+            const elBajas = document.getElementById('dash-bajas');
+
+            if(kpiCabezas) kpiCabezas.innerText = unicas.length; 
+            if(kpiAcciones) kpiAcciones.innerText = datosActivos.length;
+            if(elBajas) elBajas.innerText = cantBajas;
+
+            const contenedorGraficos = document.getElementById('contenedor-graficos-dinamicos');
+            if(!contenedorGraficos) return;
+
+            if(datosActivos.length === 0) { 
+                contenedorGraficos.innerHTML = "<p style='color:var(--muted); text-align:center; padding:20px;'>Inventario vacío.</p>"; 
+                return; 
+            }
+            
+            let g1={p:0,v:0}, g2={}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}, g11={}; 
+            datosActivos.forEach(r => { 
+                if(r.accion==='Peso') g10.peso++; 
+                if(r.accion==='Diagnóstico') g10.dx++; 
+                if(r.accion==='Sanidad') g10.san++; 
+                if(r.accion==='Inseminación') g10.ins++; 
+                if(r.accion==='Nutrición') g10.nut++; 
+                if(r.accion === 'Baja') { let causa = String(r.valor).trim(); g11[causa] = (g11[causa] || 0) + 1; } 
+            });
+            
+            let alertasHTML = "";
+            unicas.forEach(car => {
+                const regs = obtenerHistorial(car); let catRaw = "Sin Categoría", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                if(uC) { let v=String(uC.valor||"").split('|'); catRaw = v[0] ? v[0].replace('Cat:','').trim() : "Sin Categoría"; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
+                else {
+                    const uP = regs.find(d => d.accion === 'Perfil Master');
+                    if(uP && uP.detalles) { catRaw = String(uP.detalles).split('|')[0] || "Sin Categoría"; }
+                }
+                
+                let catLegible = obtenerNombreCategoriaLegible(catRaw);
+                g2[catLegible] = (g2[catLegible] || 0) + 1;
+                g3[lote] = (g3[lote] || 0) + 1;
+
+                const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
+                let esVaca = catLegible.toLowerCase().includes('vaca');
+
+                let loteLow = lote.toLowerCase();
+                let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
+                let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
+                let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
+
+                if (esPre) { 
+                    g1.p++; 
+                    if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; 
+                    if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } 
+                } else if (esVacia) { 
+                    g1.v++; 
+                    alertasHTML += `<div class="alerta-item peligro" onclick="filtrarDesdeDashboard('dx', 'Vacía')"><span>🔴</span><div><strong style="color:var(--texto);">${car}</strong> diagnosticada Vacía.</div></div>`; 
+                    if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; 
+                    if(String(uDx ? uDx.valor : "").includes('Sangre')) g5.san++; else g5.norm++; 
+                    if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } 
+                }
+                
+                if(uPeso) { 
+                    if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--texto);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } 
+                    else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; 
+                    else g4.opt++; 
+                    let pVal = parseFloat(uPeso.valor); 
+                    if(!isNaN(pVal)) { 
+                        if(esVaca) { g9.vw += pVal; g9.vc++; } 
+                        else { g9.tw += pVal; g9.tc++; } 
+                    } 
+                } 
+                if(uSan) g6.con++; else g6.sin++;
+            });
+            
+            const contAlertas = document.getElementById('contenedor-alertas'); 
+            if(alertasHTML !== "") { 
+                document.getElementById('lista-alertas').innerHTML = alertasHTML; 
+                if(contAlertas) contAlertas.style.display = 'block'; 
+            } else { 
+                if(contAlertas) contAlertas.style.display = 'none'; 
+            }
+
+            const prefs = lsGet('tc_prefs', ['1', '3']); 
+            let htmlGraficos = ""; 
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#38bdf8'];
+
+            const makePieAndBars = (title, dataObj, totalCount, tipoAccion) => {
+                let keys = Object.keys(dataObj).sort((a,b)=>dataObj[b]-dataObj[a]);
+                let currentAngle = 0; let gradientStops = [];
+                keys.forEach((k, idx) => {
+                    let pct = totalCount > 0 ? (dataObj[k] / totalCount) * 100 : 0;
+                    let nextAngle = currentAngle + pct;
+                    gradientStops.push(`${colors[idx % colors.length]} ${currentAngle}% ${nextAngle}%`);
+                    currentAngle = nextAngle;
+                });
+                let conicStyle = gradientStops.length > 0 ? `background: conic-gradient(${gradientStops.join(', ')});` : '';
+                
+                let barsHTML = "";
+                keys.forEach((k, idx) => {
+                    let col = colors[idx % colors.length];
+                    let val = dataObj[k];
+                    let p = totalCount > 0 ? Math.round((val / totalCount) * 100) : 0;
+                    barsHTML += `<div class="barra-categoria" onclick="filtrarDesdeDashboard('${tipoAccion}', '${k}')">
+                        <div class="barra-header"><span><span class="punto" style="background:${col};"></span>${k} (${val})</span><span>${p}%</span></div>
+                        <div class="barra-fondo"><div class="barra-relleno" style="background:${col}; width:${p}%;"></div></div>
+                    </div>`;
+                });
+
+                return `<div class="tarjeta">
+                    <div class="tarjeta-titulo">${title}</div>
+                    <div class="grafico-flex">
+                        <div class="torta-container" onclick="filtrarDesdeDashboard('${tipoAccion}', '${keys[0]||''}')">
+                            <div class="torta" style="${conicStyle}"></div>
+                            <div class="torta-centro">${totalCount}</div>
+                        </div>
+                        <div class="contenedor-scroll-analitica">${barsHTML}</div>
+                    </div>
+                </div>`;
+            };
+
+            prefs.forEach(g => {
+                let html = "";
+                if(g === '1') { 
+                    let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; 
+                    html += `<div class="tarjeta">
+                        <div class="tarjeta-titulo">Tasa de Preñez Dinámica</div>
+                        <div class="grafico-flex" style="justify-content:space-around;">
+                            <div class="torta-container" onclick="filtrarDesdeDashboard('dx', 'Preñada')">
+                                <div class="torta" style="background: conic-gradient(var(--exito) 0% ${pp}%, var(--peligro) ${pp}% 100%);"></div>
+                                <div class="torta-centro">${pp}%</div>
+                            </div>
+                            <div class="leyenda-torta">
+                                <div style="cursor:pointer;" onclick="filtrarDesdeDashboard('dx', 'Preñada')"><span class="punto" style="background: var(--exito);"></span> Preñadas (${g1.p})</div>
+                                <div style="cursor:pointer;" onclick="filtrarDesdeDashboard('dx', 'Vacía')"><span class="punto" style="background: var(--peligro);"></span> Vacías (${g1.v})</div>
+                            </div>
+                        </div>
+                    </div>`; 
+                } 
+                else if(g === '2') { html += makePieAndBars("Composición de Hacienda", g2, unicas.length, 'categoria'); } 
+                else if(g === '3') { html += makePieAndBars("Distribución por Lotes", g3, unicas.length, 'lote'); } 
+                else if(g === '4') { 
+                    let t = g4.opt + g4.bp + g4.sp || 1; 
+                    let d4 = { "Óptima": g4.opt, "Bajo Peso": g4.bp, "Sobrepeso": g4.sp };
+                    html += makePieAndBars("Condición Corporal", d4, t, 'estado'); 
+                } 
+                else if(g === '5') { 
+                    let t = g5.norm + g5.san || 1; 
+                    let d5 = { "Normal": g5.norm, "Sangre/Problema": g5.san };
+                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'estado'); 
+                } 
+                else if(g === '6') { 
+                    let t = unicas.length; 
+                    let d6 = { "Con Registro": g6.con, "Sin Registros": g6.sin };
+                    html += makePieAndBars("Sanidad Global", d6, t, 'estado'); 
+                } 
+                else if(g === '7') { 
+                    let d7 = {}; Object.keys(g7).forEach(k => d7[k] = g7[k].p);
+                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote'); 
+                } 
+                else if(g === '8') { 
+                    let d8 = {}; Object.keys(g8).forEach(k => d8[k] = g8[k].p);
+                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'estado'); 
+                } 
+                else if(g === '9') { 
+                    let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; 
+                    html += `<div class="tarjeta"><div class="tarjeta-titulo">Promedio de Pesos</div><div class="grid-kpis"><div class="kpi-caja" onclick="filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" style="font-size:20px;">${pv} Kg</div><div class="kpi-label">Vacas</div></div><div class="kpi-caja" onclick="filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" style="font-size:20px;">${pt} Kg</div><div class="kpi-label">Terneros</div></div></div></div>`; 
+                } 
+                else if(g === '10') { 
+                    let d10 = { "Pesajes": g10.peso, "Diagnósticos": g10.dx, "Nutrición": g10.nut, "Sanidad": g10.san };
+                    let t10 = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1;
+                    html += makePieAndBars("Volumen Clínico", d10, t10, 'estado'); 
+                } 
+                else if(g === '11') { 
+                    let t11 = cantBajas || 1;
+                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'estado'); 
+                }
+                htmlGraficos += html;
+            }); 
+            if(contenedorGraficos) contenedorGraficos.innerHTML = htmlGraficos;
+        };
+
+        window.abrirModal = function(id) { 
+            const m = document.getElementById(id); 
+            if (m) m.style.display = 'flex'; 
+        };
+        
+        window.cerrarModal = function(id) { 
+            const m = document.getElementById(id); 
+            if (m) m.style.display = 'none'; 
+        };
+
+        let timeoutBuscadorRegistro = null;
+        function filtrarListaRegistroDebounced() {
+            clearTimeout(timeoutBuscadorRegistro);
+            timeoutBuscadorRegistro = setTimeout(() => { cargarListaRegistro(); }, 400);
+        }
+
+        let timeoutBuscadorInforme = null;
+        function filtrarInformeDebounced() {
+            clearTimeout(timeoutBuscadorInforme);
+            timeoutBuscadorInforme = setTimeout(() => { actualizarInformeAvanzado(); }, 400);
+        }
+
+        window.cargarListaRegistro = function() {
+            const datosActivos = typeof obtenerRegistrosActivos === 'function' ? obtenerRegistrosActivos() : [];
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
+            
+            let estadoFiltro = document.getElementById('filtro-reg-estado').value;
+            let loteFiltro = document.getElementById('filtro-reg-lote').value;
+            let catFiltro = document.getElementById('filtro-reg-cat').value;
+            let dxFiltro = document.getElementById('filtro-reg-dx').value;
+            let txtBusqueda = document.getElementById('buscador-lista').value.trim().toLowerCase();
+
+            let listaFiltrada = [];
+
+            unicas.forEach(car => {
+                const regs = obtenerHistorial(car);
+                let esBaja = regs.some(r => r.accion === 'Baja');
+
+                if (estadoFiltro === 'vivos' && esBaja) return;
+                if (estadoFiltro === 'bajas' && !esBaja) return;
+
+                let cat = "-", lote = "General", dx = "-";
+                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
+                const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
+                if(uC) { 
+                    let v = String(uC.valor||"").split('|'); 
+                    cat = v[0] ? v[0].replace('Cat:','').trim() : cat; 
+                    lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; 
+                }
+                const uDx = regs.find(d => d.accion === 'Diagnóstico'); 
+                
+                let loteLow = lote.toLowerCase();
+                let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
+                let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
+                let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
+                
+                dx = uDx ? uDx.valor : (esPre ? "Preñada" : (esVacia ? "Vacía" : "-"));
+
+                let catLegible = obtenerNombreCategoriaLegible(cat);
+
+                if (loteFiltro !== "ALL" && !lote.includes(loteFiltro)) return;
+                if (catFiltro !== "ALL" && !catLegible.includes(catFiltro)) return;
+                
+                if (dxFiltro === "Preñada") {
+                    if (!esPre) return;
+                } else if (dxFiltro === "Vacía") {
+                    if (!esVacia) return;
+                } else if (dxFiltro !== "ALL" && !dx.includes(dxFiltro)) {
+                    return;
+                }
+
+                if (txtBusqueda !== "") {
+                    let matchTexto = car.toLowerCase().includes(txtBusqueda) || 
+                                     catLegible.toLowerCase().includes(txtBusqueda) || 
+                                     lote.toLowerCase().includes(txtBusqueda) || 
+                                     dx.toLowerCase().includes(txtBusqueda);
+                    if (!matchTexto) return;
+                }
+
+                listaFiltrada.push({ car, catLegible, lote, dx, esBaja });
+            });
+
+            const ul = document.getElementById('tb-registro'); 
+            if(!ul) return;
+            ul.innerHTML = "";
+            if(listaFiltrada.length === 0) {
+                ul.innerHTML = '<li style="text-align:center; color:var(--muted); padding:20px;">No se encontraron registros con estos filtros.</li>';
+                return;
+            }
+
+            let htmlHTML = "";
+            let limiteRender = 100;
+            listaFiltrada.slice(0, limiteRender).forEach(item => {
+                let badgeBaja = item.esBaja ? `<span style="background:var(--peligro); color:white; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px;">BAJA</span>` : '';
+                htmlHTML += `<li onclick="navegarDesdeLista('${item.car}')">
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                        <div style="display:flex; align-items:center;">
+                            <strong style="font-size:18px; color:var(--texto);">${item.car}</strong>${badgeBaja}
+                        </div>
+                        <span style="font-size:12px; color:var(--muted);">${item.catLegible} | Lote: ${item.lote} | Dx: ${item.dx}</span>
+                    </div>
+                    <span style="font-size:20px; color:var(--texto);">›</span>
+                </li>`;
+            });
+            if(listaFiltrada.length > limiteRender) {
+                htmlHTML += `<li style="text-align:center; color:var(--muted); padding:20px;"> Mostrando los primeros ${limiteRender} resultados. Usa el buscador para encontrar más.</li>`;
+            }
+            ul.innerHTML = htmlHTML;
+        };
+
+        window.filtrarLista = function(t) { cargarListaRegistro(); };
+        window.navegarDesdeLista = function(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); buscarCaravanaBtn(); };
+
+        window.sincronizarFondo = async function(manual = false) {
+            setEstadoRed(true, '🔄 Sincronizando...');
+            await sincronizarPendientesAuto();
+            if(manual) mostrarToast("Sincronización manual completada.");
+            setEstadoRed(navigator.onLine);
+        };
+
+        window.togglePermisos = function() {
+            const rol = document.getElementById('op-rol').value;
+            const caja = document.getElementById('caja-permisos');
+            if (caja) {
+                caja.style.display = (rol === 'Operador') ? 'block' : 'none';
+            }
+        };
+
+        window.guardarDisenoServidor = function() { 
+            const n = document.getElementById('cfg-nom').value.trim(); 
+            const f = document.getElementById('cfg-logo'); 
+            let p = (b64) => { 
+                db.collection('estancias').doc(maestroId).set({ nombre_hacienda: n, logo_hacienda: b64 }, { merge: true }).then(() => {
+                    mostrarToast("Membrete oficial de PDF actualizado."); 
+                }); 
+            }; 
+            if(f && f.files && f.files[0]) { 
+                const r = new FileReader(); r.onload = function(e) { 
+                    const img = new Image(); img.onload = function() { 
+                        const canvas = document.createElement('canvas'); 
+                        let w = img.width, h = img.height; 
+                        const maxW = 200, maxH = 200; 
+                        if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } 
+                        else { if (h > maxH) { w = Math.round(h * maxH / h); h = maxH; } } 
+                        canvas.width = w; canvas.height = h; 
+                        const ctx = canvas.getContext('2d'); 
+                        ctx.drawImage(img, 0, 0, w, h); 
+                        p(canvas.toDataURL('image/png')); 
+                    }; 
+                    img.src = e.target.result; 
+                }; 
+                r.readAsDataURL(f.files[0]); 
+            } else { 
+                const logoGuardado = lsGet('tc_hacienda', {}).logo || ""; 
+                p(logoGuardado); 
+            } 
+        };
+
+        window.guardarVinculacionRFID = function() {
+            const caravanaInput = document.getElementById('f-rfid-caravana').value.trim();
+            if(!caravanaInput || !rfidPendiente) { alert("Ingrese el RP."); return; }
+            
+            const obj = { fecha: new Date().toISOString(), accion: 'Vinculación RFID', caravana: caravanaInput, valor: rfidPendiente, detalles: `Vinculado por: ${usNombre}`, maestro: maestroId };
+            
+            dbCache.unshift(obj);
+            if(navigator.onLine) {
+                db.collection('estancias').doc(maestroId).collection('eventos').add(obj).catch(()=>{});
+            } else {
+                let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p);
+            }
+            
+            cerrarModal('modal-rfid');
+            rfidPendiente = "";
+            document.getElementById('f-rfid-caravana').value = "";
+            mostrarToast("Tag RFID vinculado a " + caravanaInput);
+            
+            rpActivo = caravanaInput;
+            forzarSaltoAFicha();
+            buscarCaravanaBtn(caravanaInput);
+        };
+        // ==========================================
 
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
@@ -711,7 +1089,6 @@
                         const userData = doc.data();
                         lsSet('tc_user_profile', userData);
                         
-                        // Cálculo de licencia hasta el final del día (23:59:59)
                         if(userData.vencimiento) {
                             let fLimit = new Date(userData.vencimiento.includes('T') ? userData.vencimiento : userData.vencimiento + "T23:59:59");
                             if(new Date() > fLimit) {
@@ -862,7 +1239,7 @@
                         cargarListasFiltrosSelects();
                         cargarListaOperadores();
                         setEstadoRed(true);
-                    }, 500); // Agrupar llamadas (Debounce) de Firebase
+                    }, 500);
                 }, err => { setEstadoRed(false, '❌ Red Local'); });
                 
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
@@ -917,6 +1294,12 @@
                             lblLic.value = new Date(mData.vencimiento.includes('T') ? mData.vencimiento : mData.vencimiento + "T00:00:00").toLocaleDateString() + ` (${diffDias} días restantes)`;
                             lblLic.style.color = diffDias <= 7 ? "var(--peligro)" : "var(--texto)";
                         } else { lblLic.value = "Licencia Perpetua / Sin Límite"; }
+
+                        modulosHabilitados = mData.features || "";
+                        if(!modulosHabilitados.includes('rafaga')) {
+                            let bloqueRafaga = document.getElementById('tarjeta-rafaga');
+                            if (bloqueRafaga) bloqueRafaga.style.display = 'none';
+                        }
                     }
                 }).catch(e => {});
 
@@ -1230,7 +1613,7 @@
             const fPadre = document.getElementById('f-padre') ? document.getElementById('f-padre').value : "-";
             const fMadre = document.getElementById('f-madre') ? document.getElementById('f-madre').value : "-";
             const catValor = document.getElementById('val-categoria') ? document.getElementById('val-categoria').innerText : "-";
-            ejecutarAccion('Perfil Master', `${fRaza||"-"}|${fNacimiento||"-"}|${fPadre||"-"}|${fMadre||"-"}`, catValor, 'm-perfil'); 
+            ejecutarAccion('Perfil Master', `${fRaza||"-"}|${fNacimiento||"-"}|${fPadre||"-"}|${fMadre||"-"}`, catValor, 'modal-perfil'); 
             if (fNacimiento && fNacimiento !== "-") {
                 const partes = fNacimiento.split('-'); let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
                 if (mes >= 7) anio += 1;
@@ -1530,6 +1913,69 @@
             }, 100);
         }
 
+        async function crearOperador() { 
+            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
+            const n = document.getElementById('op-nombre').value.trim();
+            const u = document.getElementById('op-usu').value.trim().toLowerCase(); 
+            const p = document.getElementById('op-pass').value.trim(); 
+            const rolSel = document.getElementById('op-rol').value;
+            if(!n || !u || !p) { alert("Completar Nombre, Usuario y Contraseña."); return; } 
+            if(p.length < 6) { alert("La contraseña debe tener mínimo 6 caracteres."); return; }
+            
+            let maxOps = 1, maxOwn = 0;
+            modulosHabilitados.split(',').forEach(param => { 
+                if(param.startsWith('limitOps:')) maxOps = parseInt(param.split(':')[1]) || 1; 
+                if(param.startsWith('limitOwn:')) maxOwn = parseInt(param.split(':')[1]) || 0; 
+            });
+            
+            const btn = document.getElementById('btn-crear-op'); const btnOriginal = btn.innerHTML;
+            btn.innerHTML = "⏳ Verificando límites..."; btn.disabled = true;
+
+            try {
+                const snapshotOps = await db.collection('usuarios').where('maestroId', '==', maestroId).get();
+                let currOps = 0, currOwn = 0;
+                snapshotOps.docs.forEach(doc => {
+                    if(doc.id !== maestroId) {
+                        let r = doc.data().rol || "";
+                        if(r.includes('Propietario') || r.includes('Dueño')) currOwn++;
+                        else currOps++;
+                    }
+                });
+
+                if (rolSel === 'Operador' && currOps >= maxOps && maxOps !== 999) {
+                    alert(`⚠️️ Límite alcanzado: Su plan solo permite ${maxOps} peón/operador(es). Contacte a soporte para ampliar su licencia.`);
+                    btn.innerHTML = btnOriginal; btn.disabled = false; return;
+                }
+                if (rolSel !== 'Operador' && currOwn >= maxOwn && maxOwn !== 999) {
+                    alert(`⚠️ Límite alcanzado: Su plan solo permite ${maxOwn} dueño(s) extra(s). Contacte a soporte para ampliar su licencia.`);
+                    btn.innerHTML = btnOriginal; btn.disabled = false; return;
+                }
+                
+                let rolFinal = rolSel;
+                if (rolSel === 'Operador') {
+                    let permisos = Array.from(document.querySelectorAll('.chk-permiso:checked')).map(c => c.value).join(',');
+                    if(!permisos) { alert("Debe seleccionar al menos un permiso de acceso para el operador."); btn.innerHTML = btnOriginal; btn.disabled = false; return; }
+                    rolFinal = 'Operador|' + permisos;
+                }
+                
+                let email = u.includes('@') ? u : u + '@taurus.com';
+                const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryAppPeon");
+                await secondaryApp.auth().createUserWithEmailAndPassword(email, p);
+                await secondaryApp.auth().signOut();
+                await secondaryApp.delete(); 
+                await db.collection('usuarios').doc(email).set({
+                    nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', password: p 
+                });
+                ejecutarAccion('Alta Operador', email, `Nombre: ${n} | Rol: ${rolFinal}`, null);
+                document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 
+                btn.innerHTML = btnOriginal; btn.disabled = false;
+                mostrarToast("✅ Usuario Registrado Exitosamente."); cargarListaOperadores();
+            } catch(e) {
+                alert("Hubo un error al crear la cuenta. Verifique que el usuario/correo no esté ya registrado.");
+                btn.innerHTML = btnOriginal; btn.disabled = false;
+            }
+        }
+
         function verificarLimiteGraficos(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { alert('Solo puede fijar 3 gráficas simultáneas.'); checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); lsSet('tc_prefs', prefs); if(dbCache.length > 0) procesarDatosDashboard(); } }
 
         function filtrarDesdeDashboard(tipo, valor) {
@@ -1558,334 +2004,6 @@
                 document.getElementById('filtro-reg-cat').value = 'ALL';
             }
             cargarListaRegistro();
-        }
-
-        function procesarDatosDashboard() {
-            const datosActivos = obtenerRegistrosActivos(); 
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
-            let vivas = []; let cantBajas = datosActivos.filter(r => r.accion === 'Baja').length;
-            unicas.forEach(car => { if(!obtenerHistorial(car).some(x => x.accion === 'Baja')) { vivas.push(car); } }); unicas = vivas; 
-            
-            document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
-            let elBajas = document.getElementById('dash-bajas'); if(elBajas) elBajas.innerText = cantBajas;
-
-            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos-dinamicos').innerHTML = "<p style='color:var(--muted); text-align:center; padding:20px;'>Inventario vacío.</p>"; return; }
-            
-            let g1={p:0,v:0}, g2={}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}, g11={}; let alertasHTML = "";
-            datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; if(r.accion === 'Baja') { let causa = String(r.valor).trim(); g11[causa] = (g11[causa] || 0) + 1; } });
-            
-            unicas.forEach(car => {
-                const regs = obtenerHistorial(car); let catRaw = "Sin Categoría", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                if(uC) { let v=String(uC.valor||"").split('|'); catRaw = v[0] ? v[0].replace('Cat:','').trim() : "Sin Categoría"; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
-                else {
-                    const uP = regs.find(d => d.accion === 'Perfil Master');
-                    if(uP && uP.detalles) { catRaw = String(uP.detalles).split('|')[0] || "Sin Categoría"; }
-                }
-                
-                let catLegible = obtenerNombreCategoriaLegible(catRaw);
-                g2[catLegible] = (g2[catLegible] || 0) + 1;
-                g3[lote] = (g3[lote] || 0) + 1;
-
-                const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
-                let esVaca = catLegible.toLowerCase().includes('vaca');
-
-                let loteLow = lote.toLowerCase();
-                let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
-                let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
-                let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
-
-                if (esPre) { 
-                    g1.p++; 
-                    if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; 
-                    if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } 
-                } else if (esVacia) { 
-                    g1.v++; 
-                    alertasHTML += `<div class="alerta-item peligro" onclick="filtrarDesdeDashboard('dx', 'Vacía')"><span>🔴</span><div><strong style="color:var(--texto);">${car}</strong> diagnosticada Vacía.</div></div>`; 
-                    if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; 
-                    if(String(uDx ? uDx.valor : "").includes('Sangre')) g5.san++; else g5.norm++; 
-                    if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } 
-                }
-                
-                if(uPeso) { 
-                    if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--texto);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } 
-                    else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; 
-                    else g4.opt++; 
-                    let pVal = parseFloat(uPeso.valor); 
-                    if(!isNaN(pVal)) { 
-                        if(esVaca) { g9.vw += pVal; g9.vc++; } 
-                        else { g9.tw += pVal; g9.tc++; } 
-                    } 
-                } 
-                if(uSan) g6.con++; else g6.sin++;
-            });
-            
-            const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
-            const prefs = lsGet('tc_prefs', ['1', '3']); let htmlGraficos = ""; 
-            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#38bdf8'];
-
-            const makePieAndBars = (title, dataObj, totalCount, tipoAccion) => {
-                let keys = Object.keys(dataObj).sort((a,b)=>dataObj[b]-dataObj[a]);
-                let currentAngle = 0; let gradientStops = [];
-                keys.forEach((k, idx) => {
-                    let pct = totalCount > 0 ? (dataObj[k] / totalCount) * 100 : 0;
-                    let nextAngle = currentAngle + pct;
-                    gradientStops.push(`${colors[idx % colors.length]} ${currentAngle}% ${nextAngle}%`);
-                    currentAngle = nextAngle;
-                });
-                let conicStyle = gradientStops.length > 0 ? `background: conic-gradient(${gradientStops.join(', ')});` : '';
-                
-                let barsHTML = "";
-                keys.forEach((k, idx) => {
-                    let col = colors[idx % colors.length];
-                    let val = dataObj[k];
-                    let p = totalCount > 0 ? Math.round((val / totalCount) * 100) : 0;
-                    barsHTML += `<div class="barra-categoria" onclick="filtrarDesdeDashboard('${tipoAccion}', '${k}')">
-                        <div class="barra-header"><span><span class="punto" style="background:${col};"></span>${k} (${val})</span><span>${p}%</span></div>
-                        <div class="barra-fondo"><div class="barra-relleno" style="background:${col}; width:${p}%;"></div></div>
-                    </div>`;
-                });
-
-                return `<div class="tarjeta">
-                    <div class="tarjeta-titulo">${title}</div>
-                    <div class="grafico-flex">
-                        <div class="torta-container" onclick="filtrarDesdeDashboard('${tipoAccion}', '${keys[0]||''}')">
-                            <div class="torta" style="${conicStyle}"></div>
-                            <div class="torta-centro">${totalCount}</div>
-                        </div>
-                        <div class="contenedor-scroll-analitica">${barsHTML}</div>
-                    </div>
-                </div>`;
-            };
-
-            prefs.forEach(g => {
-                let html = "";
-                if(g === '1') { 
-                    let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; 
-                    html += `<div class="tarjeta">
-                        <div class="tarjeta-titulo">Tasa de Preñez Dinámica</div>
-                        <div class="grafico-flex" style="justify-content:space-around;">
-                            <div class="torta-container" onclick="filtrarDesdeDashboard('dx', 'Preñada')">
-                                <div class="torta" style="background: conic-gradient(var(--exito) 0% ${pp}%, var(--peligro) ${pp}% 100%);"></div>
-                                <div class="torta-centro">${pp}%</div>
-                            </div>
-                            <div class="leyenda-torta">
-                                <div style="cursor:pointer;" onclick="filtrarDesdeDashboard('dx', 'Preñada')"><span class="punto" style="background: var(--exito);"></span> Preñadas (${g1.p})</div>
-                                <div style="cursor:pointer;" onclick="filtrarDesdeDashboard('dx', 'Vacía')"><span class="punto" style="background: var(--peligro);"></span> Vacías (${g1.v})</div>
-                            </div>
-                        </div>
-                    </div>`; 
-                } 
-                else if(g === '2') { html += makePieAndBars("Composición de Hacienda", g2, unicas.length, 'categoria'); } 
-                else if(g === '3') { html += makePieAndBars("Distribución por Lotes", g3, unicas.length, 'lote'); } 
-                else if(g === '4') { 
-                    let t = g4.opt + g4.bp + g4.sp || 1; 
-                    let d4 = { "Óptima": g4.opt, "Bajo Peso": g4.bp, "Sobrepeso": g4.sp };
-                    html += makePieAndBars("Condición Corporal", d4, t, 'estado'); 
-                } 
-                else if(g === '5') { 
-                    let t = g5.norm + g5.san || 1; 
-                    let d5 = { "Normal": g5.norm, "Sangre/Problema": g5.san };
-                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'estado'); 
-                } 
-                else if(g === '6') { 
-                    let t = unicas.length; 
-                    let d6 = { "Con Registro": g6.con, "Sin Registros": g6.sin };
-                    html += makePieAndBars("Sanidad Global", d6, t, 'estado'); 
-                } 
-                else if(g === '7') { 
-                    let d7 = {}; Object.keys(g7).forEach(k => d7[k] = g7[k].p);
-                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote'); 
-                } 
-                else if(g === '8') { 
-                    let d8 = {}; Object.keys(g8).forEach(k => d8[k] = g8[k].p);
-                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'estado'); 
-                } 
-                else if(g === '9') { 
-                    let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; 
-                    html += `<div class="tarjeta"><div class="tarjeta-titulo">Promedio de Pesos</div><div class="grid-kpis"><div class="kpi-caja" onclick="filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" style="font-size:20px;">${pv} Kg</div><div class="kpi-label">Vacas</div></div><div class="kpi-caja" onclick="filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" style="font-size:20px;">${pt} Kg</div><div class="kpi-label">Terneros</div></div></div></div>`; 
-                } 
-                else if(g === '10') { 
-                    let d10 = { "Pesajes": g10.peso, "Diagnósticos": g10.dx, "Nutrición": g10.nut, "Sanidad": g10.san };
-                    let t10 = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1;
-                    html += makePieAndBars("Volumen Clínico", d10, t10, 'estado'); 
-                } 
-                else if(g === '11') { 
-                    let t11 = cantBajas || 1;
-                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'estado'); 
-                }
-                htmlGraficos += html;
-            }); document.getElementById('contenedor-graficos-dinamicos').innerHTML = htmlGraficos;
-        }
-
-        function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
-        function abrirModal(id) { document.getElementById(id).style.display = 'flex'; } function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
-        
-
-        let timeoutBuscadorRegistro = null;
-        function filtrarListaRegistroDebounced() {
-            clearTimeout(timeoutBuscadorRegistro);
-            timeoutBuscadorRegistro = setTimeout(() => { cargarListaRegistro(); }, 400);
-        }
-
-        let timeoutBuscadorInforme = null;
-        function filtrarInformeDebounced() {
-            clearTimeout(timeoutBuscadorInforme);
-            timeoutBuscadorInforme = setTimeout(() => { actualizarInformeAvanzado(); }, 400);
-        }
-
-        function cargarListaRegistro() {
-            const datosActivos = obtenerRegistrosActivos();
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
-            
-            let estadoFiltro = document.getElementById('filtro-reg-estado').value;
-            let loteFiltro = document.getElementById('filtro-reg-lote').value;
-            let catFiltro = document.getElementById('filtro-reg-cat').value;
-            let dxFiltro = document.getElementById('filtro-reg-dx').value;
-            let txtBusqueda = document.getElementById('buscador-lista').value.trim().toLowerCase();
-
-            let listaFiltrada = [];
-
-            unicas.forEach(car => {
-                const regs = obtenerHistorial(car);
-                let esBaja = regs.some(r => r.accion === 'Baja');
-
-                if (estadoFiltro === 'vivos' && esBaja) return;
-                if (estadoFiltro === 'bajas' && !esBaja) return;
-
-                let cat = "-", lote = "General", dx = "-";
-                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
-                const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
-                if(uC) { 
-                    let v = String(uC.valor||"").split('|'); 
-                    cat = v[0] ? v[0].replace('Cat:','').trim() : cat; 
-                    lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; 
-                }
-                const uDx = regs.find(d => d.accion === 'Diagnóstico'); 
-                
-                let loteLow = lote.toLowerCase();
-                let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
-                let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
-                let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
-                
-                dx = uDx ? uDx.valor : (esPre ? "Preñada" : (esVacia ? "Vacía" : "-"));
-
-                let catLegible = obtenerNombreCategoriaLegible(cat);
-
-                if (loteFiltro !== "ALL" && !lote.includes(loteFiltro)) return;
-                if (catFiltro !== "ALL" && !catLegible.includes(catFiltro)) return;
-                
-                if (dxFiltro === "Preñada") {
-                    if (!esPre) return;
-                } else if (dxFiltro === "Vacía") {
-                    if (!esVacia) return;
-                } else if (dxFiltro !== "ALL" && !dx.includes(dxFiltro)) {
-                    return;
-                }
-
-                if (txtBusqueda !== "") {
-                    let matchTexto = car.toLowerCase().includes(txtBusqueda) || 
-                                     catLegible.toLowerCase().includes(txtBusqueda) || 
-                                     lote.toLowerCase().includes(txtBusqueda) || 
-                                     dx.toLowerCase().includes(txtBusqueda);
-                    if (!matchTexto) return;
-                }
-
-                listaFiltrada.push({ car, catLegible, lote, dx, esBaja });
-            });
-
-            const ul = document.getElementById('tb-registro'); ul.innerHTML = "";
-            if(listaFiltrada.length === 0) {
-                ul.innerHTML = '<li style="text-align:center; color:var(--muted); padding:20px;">No se encontraron registros con estos filtros.</li>';
-                return;
-            }
-
-            // Límite de renderizado para evitar congelar teléfonos con bases de datos grandes
-            let htmlHTML = "";
-            let limiteRender = 100;
-            listaFiltrada.slice(0, limiteRender).forEach(item => {
-                let badgeBaja = item.esBaja ? `<span style="background:var(--peligro); color:white; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px;">BAJA</span>` : '';
-                htmlHTML += `<li onclick="navegarDesdeLista('${item.car}')">
-                    <div style="display:flex; flex-direction:column; gap:4px;">
-                        <div style="display:flex; align-items:center;">
-                            <strong style="font-size:18px; color:var(--texto);">${item.car}</strong>${badgeBaja}
-                        </div>
-                        <span style="font-size:12px; color:var(--muted);">${item.catLegible} | Lote: ${item.lote} | Dx: ${item.dx}</span>
-                    </div>
-                    <span style="font-size:20px; color:var(--texto);">›</span>
-                </li>`;
-            });
-            if(listaFiltrada.length > limiteRender) {
-                htmlHTML += `<li style="text-align:center; color:var(--muted); padding:20px;"> Mostrando los primeros ${limiteRender} resultados. Usa el buscador para encontrar más.</li>`;
-            }
-            ul.innerHTML = htmlHTML;
-        }
-
-        function filtrarLista(t) { cargarListaRegistro(); }
-        function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); buscarCaravanaBtn(); }
-        
-        function guardarDisenoServidor() { 
-            const n = document.getElementById('cfg-nom').value.trim(); 
-            const f = document.getElementById('cfg-logo'); 
-            let p = (b64) => { 
-                db.collection('estancias').doc(maestroId).set({ nombre_hacienda: n, logo_hacienda: b64 }, { merge: true }).then(() => {
-                    mostrarToast("Membrete oficial de PDF actualizado."); 
-                }); 
-            }; 
-            if(f.files && f.files[0]) { 
-                const r = new FileReader(); r.onload = function(e) { 
-                    const img = new Image(); img.onload = function() { 
-                        const canvas = document.createElement('canvas'); 
-                        let w = img.width, h = img.height; 
-                        const maxW = 200, maxH = 200; 
-                        if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } } 
-                        else { if (h > maxH) { w = Math.round(h * maxH / h); h = maxH; } } 
-                        canvas.width = w; canvas.height = h; 
-                        const ctx = canvas.getContext('2d'); 
-                        ctx.drawImage(img, 0, 0, w, h); 
-                        p(canvas.toDataURL('image/png')); 
-                    }; 
-                    img.src = e.target.result; 
-                }; 
-                r.readAsDataURL(f.files[0]); 
-            } else { 
-                const logoGuardado = lsGet('tc_hacienda', {}).logo || ""; 
-                p(logoGuardado); 
-            } 
-        }
-        
-        async function crearOperador() { 
-            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
-            const n = document.getElementById('op-nombre').value.trim();
-            const u = document.getElementById('op-usu').value.trim().toLowerCase(); 
-            const p = document.getElementById('op-pass').value.trim(); 
-            const rolSel = document.getElementById('op-rol').value;
-            if(!n || !u || !p) { alert("Completar Nombre, Usuario y Contraseña."); return; } 
-            if(p.length < 6) { alert("La contraseña debe tener mínimo 6 caracteres."); return; }
-            let rolFinal = rolSel;
-            if (rolSel === 'Operador') {
-                let permisos = Array.from(document.querySelectorAll('.chk-permiso:checked')).map(c => c.value).join(',');
-                if(!permisos) { alert("Debe seleccionar al menos un permiso."); return; }
-                rolFinal = 'Operador|' + permisos;
-            }
-            const btn = document.getElementById('btn-crear-op'); const btnOriginal = btn.innerHTML;
-            btn.innerHTML = "⏳ Registrando..."; btn.disabled = true;
-            let email = u.includes('@') ? u : u + '@taurus.com';
-            try {
-                const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryAppPeon");
-                await secondaryApp.auth().createUserWithEmailAndPassword(email, p);
-                await secondaryApp.auth().signOut();
-                await secondaryApp.delete(); 
-                await db.collection('usuarios').doc(email).set({
-                    nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', password: p 
-                });
-                ejecutarAccion('Alta Operador', email, `Nombre: ${n} | Rol: ${rolFinal}`, null);
-                document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 
-                btn.innerHTML = btnOriginal; btn.disabled = false;
-                mostrarToast("Usuario Registrado."); cargarListaOperadores();
-            } catch(e) {
-                alert("Error al crear la cuenta. Verifique que no esté ya registrado.");
-                btn.innerHTML = btnOriginal; btn.disabled = false;
-            }
         }
 
         function cargarPermisosEdicion() {
@@ -1941,15 +2059,15 @@
             const selectEl = document.getElementById('op-del-usu-sel');
             const u = selectEl.value.trim();
             if(!u) { alert("Seleccione un usuario de la lista."); return; }
-            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso de "${u}"?`)) {
+            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso de "${u}"? Esta acción no se puede deshacer.`)) {
                 const btn = document.getElementById('btn-eliminar-op'); const btnOriginal = btn.innerHTML;
                 btn.innerHTML = "⏳ Eliminando..."; btn.disabled = true;
                 try {
                     const doc = await db.collection('usuarios').doc(u).get();
                     if(doc.exists && doc.data().password) { await gestionarAuthGhostParaBorrado(u, doc.data().password); }
                     await db.collection('usuarios').doc(u).delete();
-                    ejecutarAccion('Baja Operador', u, `Eliminado por el panel`, null);
-                    alert(`El usuario ha sido eliminado con éxito.`); 
+                    ejecutarAccion('Baja Operador', u, `Eliminado por el panel PC`, null);
+                    alert(`El usuario "${u}" ha sido eliminado con éxito.`); 
                     selectEl.value = ''; cargarListaOperadores(); 
                     btn.innerHTML = btnOriginal; btn.disabled = false;
                 } catch(e) { alert("Hubo un error de conexión."); btn.innerHTML = btnOriginal; btn.disabled = false; } 
@@ -1965,48 +2083,53 @@
                 const selEdit = document.getElementById('op-edit-usu-sel');
                 let options = '<option value="">-- Seleccione un usuario --</option>';
                 ops.forEach(o => { options += `<option value="${o}">${o}</option>`; });
-                if(selDel) selDel.innerHTML = options;
-                if(selEdit) selEdit.innerHTML = options;
+                if(selDel && selDel.innerHTML !== options) selDel.innerHTML = options;
+                if(selEdit && selEdit.innerHTML !== options) selEdit.innerHTML = options;
             } catch(e) { console.error("Error al cargar operadores", e); }
         }
 
         function cambiarMiContrasena() { 
             if(!navigator.onLine) { alert("Necesitas conexión."); return; } 
             const nueva = document.getElementById('nueva-clave').value.trim(); 
-            if(!nueva || nueva.length < 6) { alert("Mínimo 6 caracteres requeridos."); return; } 
+            if(!nueva || nueva.length < 6) { alert("Mínimo 6 caracteres de contraseña requeridos."); return; } 
             const user = firebase.auth().currentUser;
             if(user) {
                 user.updatePassword(nueva).then(() => {
                     db.collection('usuarios').doc(user.email).update({ password: nueva }).then(() => {
                         alert("Contraseña actualizada con éxito."); document.getElementById('nueva-clave').value = '';
                     });
-                }).catch(e => { alert("Error: Es probable que necesites cerrar e iniciar sesión de nuevo."); });
+                }).catch(e => { alert("Error: Es probable que necesites cerrar e iniciar sesión de nuevo antes de cambiar la clave."); });
             }
         }
         
         function cerrarSesion() { 
             let leidas = localStorage.getItem('tc_alertas_leidas');
             let mostradas = localStorage.getItem('tc_alertas_mostradas');
-            let prefs = localStorage.getItem('tc_prefs');
+            let prefs = localStorage.getItem('tc_prefs_pc');
             let tema = localStorage.getItem('tc_tema');
             firebase.auth().signOut().then(() => {
                 localStorage.clear(); 
                 if(leidas) localStorage.setItem('tc_alertas_leidas', leidas);
                 if(mostradas) localStorage.setItem('tc_alertas_mostradas', mostradas);
-                if(prefs) localStorage.setItem('tc_prefs', prefs);
+                if(prefs) localStorage.setItem('tc_prefs_pc', prefs);
                 if(tema) localStorage.setItem('tc_tema', tema);
                 window.location.reload(); 
             });
         }
 
         function forzarSaltoAFicha() {
-            let tabFicha = document.querySelectorAll('.nav-item')[1];
-            if (typeof cambiarVista === "function" && tabFicha && tabFicha.style.display !== 'none') {
-                cambiarVista('vista-manga', tabFicha);
+            let tabFichaMob = document.querySelectorAll('.nav-inferior .nav-item')[1];
+            if (typeof cambiarVista === "function" && tabFichaMob) {
+                cambiarVista('vista-manga', tabFichaMob);
             }
         }
 
         window.recibirTagNFC = function(tagHex) {
+            if(!modulosHabilitados.includes('bluetooth')) {
+                mostrarToast("⚠️ El módulo de Bastones Bluetooth no está activo en su plan.", true);
+                return;
+            }
+
             let dataMinuscula = String(tagHex).trim().toLowerCase();
             let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === dataMinuscula);
             if(esRFIDRegistrado) {
