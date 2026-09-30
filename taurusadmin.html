@@ -10,15 +10,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-    <!-- INTEGRACIÓN ONESIGNAL -->
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-    <script>
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function(OneSignal) {
-        try { await OneSignal.init({ appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60" }); } catch(e) {}
-      });
-    </script>
-
     <!-- FIREBASE SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
@@ -27,7 +18,7 @@
     <style>
         :root { 
             --bg-base: #0f172a; --bg-panel: #1e293b; --bg-card: #334155; 
-            --border: #475569; --primary: #8b5cf6; --primary-hover: #7c3aed; 
+            --border: #475569; --primary: #3b82f6; --primary-hover: #2563eb; 
             --success: #10b981; --warning: #f59e0b; --danger: #ef4444; 
             --text-main: #f8fafc; --text-muted: #94a3b8; 
             --info: #3b82f6;
@@ -46,7 +37,6 @@
         .login-box { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 40px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
         .login-box img { width: 80px; height: 80px; margin-bottom: 15px; border-radius: 16px; object-fit: contain; background: var(--bg-base); padding: 5px; border: 1px solid var(--border);}
         .login-box h1 { margin: 0 0 20px 0; font-size: 24px; font-weight: 900; letter-spacing: 1px; color: var(--text-main);}
-        .login-box p { color: var(--text-muted); font-size: 13px; margin-bottom: 25px; }
         
         #sidebar { width: 260px; background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 100;}
         .sidebar-header { padding: 25px 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border); background: var(--bg-card); }
@@ -56,7 +46,7 @@
         .sidebar-nav { list-style: none; padding: 0; margin: 15px 0; flex: 1; }
         .sidebar-nav li { padding: 15px 20px; cursor: pointer; font-weight: bold; color: var(--text-muted); transition: 0.2s; border-left: 4px solid transparent; display: flex; align-items: center; gap: 12px; font-size: 13px;}
         .sidebar-nav li:hover { background: var(--bg-card); color: var(--text-main); }
-        .sidebar-nav li.activo { background: rgba(139, 92, 246, 0.1); color: var(--primary); border-left-color: var(--primary); }
+        .sidebar-nav li.activo { background: rgba(59, 130, 246, 0.1); color: var(--primary); border-left-color: var(--primary); }
 
         .sidebar-footer { padding: 20px; text-align: center; border-top: 1px solid var(--border); background: var(--bg-card); font-size: 12px; color: var(--text-muted); line-height: 1.6;}
         .sidebar-footer strong { color: var(--text-main); font-size: 13px; display: block; margin-bottom: 4px;}
@@ -78,7 +68,7 @@
         .form-grupo { margin-bottom: 15px; text-align: left; }
         .form-grupo label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase;}
         .form-control { width: 100%; padding: 12px 15px; background: var(--bg-base); border: 1px solid var(--border); color: var(--text-main); border-radius: 8px; font-size: 14px; outline: none; transition: 0.3s; box-sizing: border-box; }
-        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2); }
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
         
         .btn { padding: 10px 15px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; font-size: 12px; letter-spacing: 1px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;}
         .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
@@ -125,7 +115,7 @@
                 <input type="email" id="admin-email" class="form-control" placeholder="Correo del Administrador" style="text-align: center; margin-bottom: 10px;" autocomplete="off">
                 <input type="password" id="admin-pass" class="form-control" placeholder="Clave de Acceso Maestro" style="text-align: center; font-size: 16px; letter-spacing: 2px;" autocomplete="off">
             </div>
-            <button class="btn" id="btn-login" style="width: 100%; padding: 15px; background: #3b82f6;" onclick="ingresarAdmin()">Iniciar Sesión</button>
+            <button class="btn" id="btn-login" style="width: 100%; padding: 15px; background: var(--primary);" onclick="ingresarAdmin()">Iniciar Sesión</button>
             <div style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
                 <span style="color: var(--text-muted); font-size: 12px;">Taurus Control &copy; 2026</span><br>
                 <strong style="color: var(--text-main); font-size: 13px;">Desarrollado por Fernando Rodriguez</strong>
@@ -189,7 +179,7 @@
         </div>
     </div>
 
-    <!-- MODAL VER EQUIPO (PEONES Y CONTRASEÑAS) -->
+    <!-- MODAL VER EQUIPO -->
     <div id="modal-equipo" class="modal oculto">
         <div class="modal-body large">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 15px;">
@@ -246,7 +236,7 @@
         <div id="v-nuevo" class="vista">
             <h2 class="titulo-seccion">🚀 Alta de Nueva Hacienda</h2>
             <div class="tarjeta" style="max-width: 800px;">
-                <p style="color:var(--text-muted); margin-top:0; margin-bottom: 25px; line-height: 1.6;">Al registrar un cliente, el sistema generará automáticamente su perfil en la base de datos.</p>
+                <p style="color:var(--text-muted); margin-top:0; margin-bottom: 25px; line-height: 1.6;">Al registrar un cliente, el sistema generará automáticamente su cuenta master y su estancia.</p>
                 
                 <div class="grid-2">
                     <div class="form-grupo">
@@ -255,14 +245,14 @@
                     </div>
                     <div class="form-grupo">
                         <label>Nombre Comercial / Hacienda *</label>
-                        <input type="text" id="n-hacienda" class="form-control" placeholder="Ej: Estancia San José S.A.">
+                        <input type="text" id="n-hacienda" class="form-control" placeholder="Ej: Estancia San José">
                     </div>
                 </div>
 
                 <div class="grid-2">
                     <div class="form-grupo">
                         <label>Usuario Master (Correo) *</label>
-                        <input type="email" id="n-usu" class="form-control" placeholder="Ej: estancia_sanjose@taurus.com" autocomplete="off" autocapitalize="none">
+                        <input type="email" id="n-usu" class="form-control" placeholder="Ej: admin@taurus.com" autocomplete="off" autocapitalize="none">
                     </div>
                     <div class="form-grupo">
                         <label>Contraseña de Acceso *</label>
@@ -287,10 +277,10 @@
                 </div>
 
                 <div class="form-grupo" style="margin-top: 25px; border-top: 1px solid var(--border); padding-top: 25px;">
-                    <label style="font-size:14px; color:var(--primary);">Paquete de Software / Módulos Habilitados</label>
+                    <label style="font-size:14px; color:var(--primary);">Módulos Habilitados</label>
                     <div style="display:flex; gap:15px; flex-wrap:wrap; margin-top:15px;">
-                        <label class="check-container"><input type="checkbox" id="n-feat-rafaga" checked> <span>⚡ Modo Ráfaga (Automatización)</span></label>
-                        <label class="check-container"><input type="checkbox" id="n-feat-bluetooth"> <span>📡 Integración Bastones Bluetooth</span></label>
+                        <label class="check-container"><input type="checkbox" id="n-feat-rafaga" checked> <span>⚡ Modo Ráfaga (Balanza)</span></label>
+                        <label class="check-container"><input type="checkbox" id="n-feat-bluetooth"> <span>📡 Bastones Bluetooth</span></label>
                     </div>
                 </div>
 
@@ -310,7 +300,7 @@
 
             <div class="tarjeta">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <p style="margin:0; color:var(--text-muted); font-size:13px;">Monitor sincronizado en tiempo real con la base de datos.</p>
+                    <p style="margin:0; color:var(--text-muted); font-size:13px;">Monitor en tiempo real conectado con Firebase.</p>
                     <button class="btn" style="padding: 10px 20px; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border);" onclick="cargarClientes()">🔄 Refrescar Monitor</button>
                 </div>
                 
@@ -326,84 +316,100 @@
                             </tr>
                         </thead>
                         <tbody id="tb-clientes">
-                            <tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding: 30px;">Haz clic en "Refrescar Monitor" para leer la base de datos.</td></tr>
+                            <tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding: 30px;">Haz clic en "Refrescar Monitor" para cargar.</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- VISTA: CARGA MASIVA -->
+        <!-- VISTA: CARGA MASIVA CON AUTO-DETECCIÓN Y DESHACER -->
         <div id="v-masiva" class="vista oculto">
             <h2 class="titulo-seccion">📦 Importación Universal de Inventario</h2>
+            
+            <div class="tarjeta" style="border-color: var(--danger); background: rgba(239, 68, 68, 0.05); margin-bottom: 25px;">
+                <h3 style="margin-top:0; font-size:16px; color:var(--danger); display:flex; align-items:center; gap:8px;">⏪ Revertir Carga Masiva</h3>
+                <p style="font-size:13px; color:var(--text-main); line-height: 1.5; margin-bottom: 15px;">Si un archivo se importó por error, puedes eliminar de raíz todos los registros generados en la última importación masiva realizada en este dispositivo.</p>
+                <button class="btn btn-danger" onclick="deshacerUltimaImportacion()">Deshacer Última Carga Masiva</button>
+            </div>
+
             <div class="grid-2">
                 <div class="tarjeta">
                     <h3 style="margin-top:0; font-size:16px; color: var(--primary);">1. Configuración de Destino</h3>
                     <div class="form-grupo">
-                        <label>Seleccionar Cliente Destino</label>
+                        <label>Seleccionar Hacienda Destino</label>
                         <select id="sel-cliente-masiva" class="form-control" style="font-weight: bold;">
-                            <option value="">-- Sincronice la lista primero --</option>
+                            <option value="">-- Elija destino --</option>
                         </select>
                     </div>
                     
-                    <h3 style="margin-top:30px; font-size:16px; color: var(--primary);">2. Cargar Archivo de Inventario</h3>
-                    <p style="font-size:12px; color:var(--text-muted); line-height: 1.5;">Selecciona cualquier archivo <strong>Excel (.xlsx, .xls) o CSV</strong>.</p>
+                    <h3 style="margin-top:25px; font-size:16px; color: var(--primary);">2. Archivo Excel o CSV</h3>
                     <div class="form-grupo">
                         <input type="file" id="archivo-excel" class="form-control" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style="padding:10px; background: var(--bg-card);">
                     </div>
                     
-                    <button class="btn btn-warning" style="width:100%; margin-top:15px; padding: 15px;" onclick="leerArchivoInteligente()">📄 Analizar y Leer Archivo</button>
+                    <button class="btn btn-warning" style="width:100%; margin-top:15px; padding: 15px;" onclick="leerArchivoInteligente()">📄 Analizar Archivo</button>
                 </div>
                 
                 <div id="panel-mapeo" class="tarjeta oculto" style="border-color: var(--success); background: rgba(16, 185, 129, 0.05);">
-                    <h3 style="margin-top:0; color:var(--success); display: flex; align-items: center; gap: 8px;">✅ Archivo Escaneado Correctamente</h3>
-                    <p style="font-size: 13px; color: var(--text-main); margin-bottom: 20px;">Asocia las columnas que encontró el sistema con los datos de Taurus.</p>
+                    <h3 style="margin-top:0; color:var(--success); display: flex; align-items: center; gap: 8px;">✅ Archivo Escaneado Exitosamente</h3>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Taurus detectó automáticamente las columnas. Verifica que coincidan antes de inyectar.</p>
                     
                     <div class="form-grupo">
-                        <label>¿Qué columna tiene la CARAVANA (RP)? *</label>
+                        <label>Columna CARAVANA (RP) *</label>
                         <select id="map-caravana" class="form-control" style="border-color: var(--primary);"></select>
                     </div>
                     <div class="form-grupo">
-                        <label>¿Qué columna tiene la CATEGORÍA? (Opcional)</label>
+                        <label>Columna CATEGORÍA</label>
                         <select id="map-categoria" class="form-control"></select>
                     </div>
                     <div class="form-grupo">
-                        <label>¿Qué columna tiene el LOTE? (Opcional)</label>
+                        <label>Columna LOTE</label>
                         <select id="map-lote" class="form-control"></select>
                     </div>
+                    <div class="form-grupo">
+                        <label>Columna PESO (Kg)</label>
+                        <select id="map-peso" class="form-control"></select>
+                    </div>
+                    <div class="form-grupo">
+                        <label>Columna RAZA</label>
+                        <select id="map-raza" class="form-control"></select>
+                    </div>
+                    <div class="form-grupo">
+                        <label>Columna NOTAS / OBSERVACIONES</label>
+                        <select id="map-notas" class="form-control"></select>
+                    </div>
 
-                    <button class="btn btn-success" style="width:100%; margin-top:20px; padding: 15px;" onclick="procesarMapeoEInyectar()">📤 Procesar e Inyectar Datos</button>
+                    <button class="btn btn-success" style="width:100%; margin-top:20px; padding: 15px; font-size:15px;" onclick="procesarMapeoEInyectar()">📤 Inyectar a Firebase</button>
                 </div>
             </div>
         </div>
 
-        <!-- VISTA: CONFIGURACIÓN GLOBAL (KILL SWITCH Y AVISOS) -->
+        <!-- VISTA: CONFIGURACIÓN GLOBAL -->
         <div id="v-config" class="vista oculto">
             <h2 class="titulo-seccion">⚙️ Control Maestro de Operaciones</h2>
             
             <div class="grid-2">
-                <!-- TARJETA: AVISO PREVIO -->
                 <div class="tarjeta" style="border-color: var(--warning); max-width: 600px;">
-                    <h3 style="margin-top:0; color:var(--warning); display:flex; align-items:center; gap:10px;">⏳ Anuncio Previo de Mantenimiento</h3>
+                    <h3 style="margin-top:0; color:var(--warning); display:flex; align-items:center; gap:10px;">⏳ Anuncio Previo (Push)</h3>
                     <p style="color:var(--text-muted); font-size: 13px; line-height: 1.5; margin-bottom: 15px;">
-                        Envía una notificación a todos los dispositivos advirtiendo el horario de actualización. Esto <strong>NO</strong> bloquea el sistema, solo avisa.
+                        Envía una notificación a todos los usuarios advirtiendo el horario de actualización. Esto <strong>NO</strong> bloquea el sistema.
                     </p>
                     <div class="form-grupo">
-                        <input type="text" id="txt-aviso-mant" class="form-control" style="border-color: var(--warning);" placeholder="Ej: Hoy de 14:00 a 16:00 hs el sistema estará en actualización.">
+                        <input type="text" id="txt-aviso-mant" class="form-control" style="border-color: var(--warning);" placeholder="Ej: Hoy a las 14:00 actualización del sistema">
                     </div>
                     <button class="btn btn-warning" style="width: 100%; margin-top: 10px;" onclick="enviarAvisoMantenimiento()">📣 Enviar Anuncio a Todos</button>
                 </div>
 
-                <!-- TARJETA: KILL SWITCH -->
                 <div class="tarjeta" style="max-width: 600px; border-color: var(--danger);">
-                    <h3 style="margin-top:0; color:var(--danger); display:flex; align-items:center; gap:10px;">⚠️ Bloqueo de Mantenimiento Global</h3>
+                    <h3 style="margin-top:0; color:var(--danger); display:flex; align-items:center; gap:10px;">⚠️ Kill Switch (Bloqueo Total)</h3>
                     <p style="color:var(--text-muted); line-height: 1.5; margin-bottom: 25px; font-size: 13px;">
-                        Al activar el modo de mantenimiento, las aplicaciones de PC y Celular de todos los clientes <strong>quedarán bloqueadas y desconectadas inmediatamente</strong>.
+                        Desconecta e inutiliza la plataforma para todos los clientes al instante.
                     </p>
                     <div style="background: rgba(239, 68, 68, 0.1); padding: 20px; border-radius: 8px; text-align: center; border: 1px solid rgba(239, 68, 68, 0.3);">
-                        <strong style="display:block; margin-bottom:15px; font-size:16px;">Estado Actual: <span id="lbl-status-mantenimiento">Cargando...</span></strong>
+                        <strong style="display:block; margin-bottom:15px; font-size:16px;">Estado: <span id="lbl-status-mantenimiento">Cargando...</span></strong>
                         <button class="btn btn-danger" id="btn-toggle-mant" style="font-size:16px; padding: 15px 30px; width: 100%;" onclick="toggleMantenimiento('ON')">🔴 ACTIVAR BLOQUEO GENERAL</button>
-                        <button class="btn btn-success oculto" id="btn-toggle-rest" style="font-size:16px; padding: 15px 30px; width: 100%;" onclick="toggleMantenimiento('OFF')">🟢 RESTAURAR SERVICIO Y DESBLOQUEAR</button>
+                        <button class="btn btn-success oculto" id="btn-toggle-rest" style="font-size:16px; padding: 15px 30px; width: 100%;" onclick="toggleMantenimiento('OFF')">🟢 RESTAURAR SERVICIO</button>
                     </div>
                 </div>
             </div>
@@ -411,9 +417,8 @@
 
     </div>
 
-    <!-- CÓDIGO JS PRINCIPAL -->
+    <!-- JS PRINCIPAL -->
     <script>
-        // INICIALIZACIÓN DE FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyDTXUYwYYkQ_pKDhui9H3cFmecgAPQ9eqA",
             authDomain: "taurus-cbd59.firebaseapp.com",
@@ -429,7 +434,9 @@
         let datosArchivoCrudo = [];
         let unsubscribeConfig = null;
 
-        // AUTO-LOGIN Y SESIÓN FIREBASE
+        function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
+        function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
+
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
                 document.getElementById('pantalla-login').classList.add('oculto');
@@ -447,7 +454,7 @@
             const email = document.getElementById('admin-email').value.trim();
             const pass = document.getElementById('admin-pass').value.trim();
             
-            if(!email || !pass) return mostrarToast("⚠️️ Ingresa correo y contraseña", true);
+            if(!email || !pass) return mostrarToast("⚠️ Ingresa correo y contraseña", true);
 
             const btn = document.getElementById('btn-login');
             btn.innerText = "Autenticando...";
@@ -455,10 +462,9 @@
 
             try {
                 await firebase.auth().signInWithEmailAndPassword(email, pass);
-                mostrarToast("✅ Sesión Iniciada. Bienvenido Maestro.");
+                mostrarToast("✅ Sesión Iniciada.");
             } catch (error) {
-                console.error("Error de login:", error);
-                mostrarToast("❌ Credenciales Incorrectas o Sin Red", true);
+                mostrarToast("❌ Credenciales Incorrectas", true);
                 btn.innerText = "Iniciar Sesión";
                 btn.disabled = false;
             }
@@ -478,7 +484,6 @@
                 clientesCache = [];
                 let tb = document.getElementById('tb-clientes');
                 if(tb) tb.innerHTML = '';
-                
                 if(unsubscribeConfig) unsubscribeConfig();
             });
         }
@@ -493,11 +498,10 @@
         function mostrarToast(mensaje, esError = false) { const toast = document.getElementById('toast-msg'); toast.innerText = mensaje; if(esError) toast.classList.add('error'); else toast.classList.remove('error'); toast.classList.add('mostrar'); setTimeout(() => { toast.classList.remove('mostrar'); }, 3000); }
 
         // ==========================================
-        // TRUCO MAESTRO: CAMBIAR CLAVES O ELIMINAR DE FIREBASE AUTH SIN SERVIDOR
+        // GESTIÓN AUTH FANTASMA (TRUCO MAESTRO)
         // ==========================================
         async function gestionarAuthUsuario(email, claveActual, accion, nuevaClave = "") {
-            // Este truco crea una mini app secundaria, se loguea como el usuario, le cambia la clave/lo borra, y se destruye.
-            const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryGhostApp");
+            const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryGhostAppPC");
             let exito = false;
             try {
                 await secondaryApp.auth().signInWithEmailAndPassword(email, claveActual);
@@ -518,7 +522,7 @@
         }
 
         // ==========================================
-        // FUNCIONES KILL SWITCH Y AVISOS
+        // KILL SWITCH Y NOTIFICACIONES
         // ==========================================
         const APPS_SCRIPT_NOTIFICACIONES = "https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec";
 
@@ -552,14 +556,14 @@
         }
 
         async function toggleMantenimiento(nuevoEstado) {
-            if(nuevoEstado === 'ON' && !confirm("⚠️ ¿Estás seguro que deseas desconectar a todos los clientes e inutilizar la plataforma?")) return;
+            if(nuevoEstado === 'ON' && !confirm("⚠️ ¿Estás seguro que deseas desconectar a todos los clientes?")) return;
             
-            toggleLoading(true, "Transmitiendo orden de bloqueo y notificación...");
+            toggleLoading(true, "Transmitiendo orden...");
             try {
                 await db.collection('sistema').doc('config').set({ mantenimiento: nuevoEstado === 'ON' }, { merge: true });
                 
                 let msjPush = (nuevoEstado === 'ON') 
-                    ? "⚠️ Mantenimiento Global: El sistema ha sido bloqueado temporalmente por actualización." 
+                    ? "⚠️ Mantenimiento Global: El sistema ha sido bloqueado temporalmente." 
                     : "✅ Servicio Restaurado: El mantenimiento ha finalizado. La plataforma ya está operativa.";
 
                 const fd = new URLSearchParams(); 
@@ -568,7 +572,7 @@
                 fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
 
                 toggleLoading(false); 
-                mostrarToast(`✅ Plataforma cambiada a estado: ${nuevoEstado}`);
+                mostrarToast(`✅ Estado: ${nuevoEstado}`);
             } catch (e) {
                 toggleLoading(false); 
                 mostrarToast("❌ Error al cambiar estado", true);
@@ -578,9 +582,9 @@
         async function enviarAvisoMantenimiento() {
             let msg = document.getElementById('txt-aviso-mant').value.trim();
             if(!msg) return mostrarToast("⚠️ Escribe el mensaje de aviso", true);
-            if(!confirm("📣 ¿Enviar esta notificación push a TODOS los usuarios ahora mismo?")) return;
+            if(!confirm("📣 ¿Enviar esta notificación push a TODOS ahora mismo?")) return;
             
-            toggleLoading(true, "Enviando anuncio global...");
+            toggleLoading(true, "Enviando anuncio...");
             try {
                 await db.collection('sistema').doc('config').set({ alerta_global: "⏳ AVISO: " + msg }, { merge: true });
                 
@@ -590,7 +594,7 @@
                 fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
 
                 toggleLoading(false); 
-                mostrarToast("✅ Aviso enviado a todos"); 
+                mostrarToast("✅ Aviso enviado"); 
                 document.getElementById('txt-aviso-mant').value = '';
             } catch (e) {
                 toggleLoading(false); 
@@ -599,7 +603,7 @@
         }
 
         // ==========================================
-        // ALTA Y EDICIÓN DE CLIENTES SaaS (FIREBASE)
+        // ALTA Y EDICIÓN DE CLIENTES SaaS
         // ==========================================
         function getFeatures(prefijo) {
             let features = [];
@@ -624,7 +628,6 @@
             arr.forEach(p => { 
                 if(p.startsWith('limitOps:')) lOps = p.split(':')[1]; 
                 if(p.startsWith('limitOwn:')) lOwn = p.split(':')[1]; 
-                // Retrocompatibilidad con la versión anterior que usaba "limit:"
                 if(p.startsWith('limit:')) lOps = p.split(':')[1]; 
             });
             document.getElementById('e-limite-ops').value = lOps;
@@ -639,15 +642,15 @@
             const h = document.getElementById('n-hacienda').value.trim();
             const feats = getFeatures('n');
             
-            if(!u || !p || !v || !h || !nom) return mostrarToast("⚠️ Complete todos los campos obligatorios", true);
-            if(p.length < 6) return mostrarToast("⚠️ Firebase exige un mínimo de 6 caracteres", true); 
+            if(!u || !p || !v || !h || !nom) return mostrarToast("⚠️ Complete campos obligatorios", true);
+            if(p.length < 6) return mostrarToast("⚠️ Clave min 6 caracteres", true); 
             
             const email = u.includes('@') ? u : u + '@taurus.com';
 
-            toggleLoading(true, "Registrando cuenta Master...");
+            toggleLoading(true, "Registrando Master...");
             
             try {
-                const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryApp");
+                const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryAppMasterPC");
                 await secondaryApp.auth().createUserWithEmailAndPassword(email, p);
                 await secondaryApp.auth().signOut();
                 await secondaryApp.delete(); 
@@ -673,12 +676,9 @@
                 
                 cargarClientes(); 
             } catch (e) {
-                console.error(e);
                 toggleLoading(false); 
                 if(e.code === 'auth/email-already-in-use') {
                     mostrarToast("❌ Este correo ya está registrado", true);
-                } else if (e.code === 'auth/invalid-email') {
-                    mostrarToast("❌ Formato de correo inválido", true);
                 } else {
                     mostrarToast("❌ Error al crear cuenta", true);
                 }
@@ -689,7 +689,6 @@
             toggleLoading(true, "Sincronizando licencias...");
             try {
                 const snapshot = await db.collection('usuarios').where('rol', '==', 'Propietario').get();
-                // Solo guardamos a los Maestros originales (cuyo maestroId es igual a su propio correo)
                 clientesCache = snapshot.docs.filter(doc => doc.id === doc.data().maestroId).map(doc => ({
                     usuario: doc.id,
                     nombre: doc.data().nombre,
@@ -704,7 +703,6 @@
                 renderizarTablaClientes(); 
                 renderizarSelectMasiva(); 
                 calcularKPISaaS(); 
-                mostrarToast("✅ Monitor Sincronizado");
             } catch (e) {
                 toggleLoading(false); 
                 mostrarToast("❌ Falló la conexión al servidor", true);
@@ -718,8 +716,8 @@
             
             clientesCache.forEach(c => {
                 if(!c.vencimiento) { activas++; return; }
-                let d = new Date(c.vencimiento);
-                if(d >= hoy) activas++; else vencidas++;
+                let fLimit = new Date(c.vencimiento.includes('T') ? c.vencimiento : c.vencimiento + "T23:59:59");
+                if(fLimit >= hoy) activas++; else vencidas++;
             });
             
             document.getElementById('kpi-total').innerText = total;
@@ -729,16 +727,10 @@
 
         function renderizarTablaClientes() {
             const tb = document.getElementById('tb-clientes'); tb.innerHTML = '';
-            if(clientesCache.length === 0) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding: 30px;">Sin clientes registrados en la plataforma.</td></tr>'; return; }
+            if(clientesCache.length === 0) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding: 30px;">Sin clientes registrados.</td></tr>'; return; }
             
             clientesCache.forEach(c => {
-                let d = c.vencimiento ? new Date(c.vencimiento) : null;
-                let fechaFormato = ""; 
-                if(d && !isNaN(d.getTime())) {
-                    let offset = d.getTimezoneOffset() * 60000;
-                    let localDate = new Date(d.getTime() - offset);
-                    fechaFormato = localDate.toISOString().split('T')[0];
-                }
+                let fechaFormato = c.vencimiento ? String(c.vencimiento).split('T')[0] : "";
                 
                 let featBadges = "";
                 let fc = String(c.features||"");
@@ -801,25 +793,22 @@
             }
         }
 
-        // --- GESTIÓN GHOST PARA EL MASTER ---
         async function cambiarClaveMaestroGhost(usu) {
-            const nuevaClave = prompt(`Ingrese la nueva contraseña oficial para el Master "${usu}":\n(Mínimo 6 caracteres)`);
-            if(nuevaClave === null || nuevaClave.trim() === "") return; 
-            if(nuevaClave.trim().length < 6) return mostrarToast("⚠️ La contraseña debe tener al menos 6 caracteres", true);
+            const nuevaClave = prompt(`Ingrese la nueva contraseña para el Master "${usu}":\n(Mínimo 6 caracteres)`);
+            if(!nuevaClave || nuevaClave.trim().length < 6) return;
             
-            toggleLoading(true, `Inyectando nueva contraseña en Firebase Auth...`);
+            toggleLoading(true, `Inyectando en Firebase Auth...`);
             try {
                 const doc = await db.collection('usuarios').doc(usu).get();
                 const claveActual = doc.data().password;
-                if(!claveActual) throw new Error("No hay registro de la clave anterior");
+                if(!claveActual) throw new Error("Sin clave previa");
 
                 const exito = await gestionarAuthUsuario(usu, claveActual, 'cambiarClave', nuevaClave.trim());
-                
                 if(exito) {
                     await db.collection('usuarios').doc(usu).update({ password: nuevaClave.trim() });
-                    mostrarToast("✅ Contraseña Auth actualizada correctamente");
+                    mostrarToast("✅ Contraseña Auth actualizada");
                 } else {
-                    mostrarToast("❌ Falló Auth. Quizá el usuario ya cambió su clave manual.", true);
+                    mostrarToast("❌ Falló Auth", true);
                 }
             } catch (e) {
                 mostrarToast("❌ Error crítico", true);
@@ -829,23 +818,60 @@
         }
 
         async function borrarUsuarioMaestroGhost(usu) {
-            if(!confirm(`⚠️ ATENCIÓN PELIGRO: ¿Estás seguro que deseas ELIMINAR DE RAÍZ al cliente Master "${usu}"?\nSe borrará su cuenta para siempre.`)) return;
-            toggleLoading(true, "Purgando Master de Firebase Auth...");
+            if(!confirm(`⚠️ PELIGRO DE DESTRUCCIÓN TOTAL:\n¿Eliminar DE RAÍZ al Master "${usu}", incluyendo animales, Google Sheets, equipo y su cuenta de acceso?`)) return;
+            
+            toggleLoading(true, "Purgando Firestore, Auth y Google Sheets...");
+            
             try {
-                const doc = await db.collection('usuarios').doc(usu).get();
-                if(doc.exists) {
-                    const claveActual = doc.data().password;
-                    if(claveActual) {
-                        await gestionarAuthUsuario(usu, claveActual, 'eliminar');
+                // 1. Google Sheets
+                const fd = new URLSearchParams();
+                fd.append('accion', 'borrar_estancia_completa');
+                fd.append('maestro', usu);
+                await fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
+
+                // 2. Miembros del equipo
+                const snapEquipo = await db.collection('usuarios').where('maestroId', '==', usu).get();
+                for (const docOp of snapEquipo.docs) {
+                    let opData = docOp.data();
+                    if (opData.password && docOp.id !== usu) {
+                        await gestionarAuthUsuario(docOp.id, opData.password, 'eliminar');
                     }
+                    await docOp.ref.delete();
+                }
+
+                // 3. Subcolecciones y documento de estancia
+                const estanciaRef = db.collection('estancias').doc(usu);
+                const snapshotEventos = await estanciaRef.collection('eventos').get();
+                if (!snapshotEventos.empty) {
+                    const docs = snapshotEventos.docs;
+                    for (let i = 0; i < docs.length; i += 450) {
+                        const chunk = docs.slice(i, i + 450);
+                        const batch = db.batch();
+                        chunk.forEach(doc => batch.delete(doc.ref));
+                        await batch.commit();
+                    }
+                }
+                await estanciaRef.delete();
+
+                // 4. Perfil Master en Firestore
+                const docUsu = await db.collection('usuarios').doc(usu).get();
+                let clave = null;
+                if (docUsu.exists) {
+                    clave = docUsu.data().password;
                     await db.collection('usuarios').doc(usu).delete();
                 }
-                toggleLoading(false); 
-                mostrarToast("✅ Cliente Master Eliminado de raíz"); 
+
+                // 5. Auth de Firebase
+                if (clave) {
+                    await gestionarAuthUsuario(usu, clave, 'eliminar');
+                }
+
+                toggleLoading(false);
+                mostrarToast("✅ Estancia, Google Sheets y cuenta eliminadas.");
                 cargarClientes(); 
             } catch (e) {
-                toggleLoading(false); 
-                mostrarToast("❌ Error al eliminar", true);
+                toggleLoading(false);
+                alert("Error crítico al purgar: " + e.message);
             }
         }
 
@@ -864,8 +890,8 @@
             const newNom = document.getElementById('edit-new-nombre').value.trim(); 
             const fts = getFeatures('e');
             
-            if(!newHac || !newNom) return mostrarToast("⚠️ Los campos no pueden estar vacíos", true);
-            toggleLoading(true, "Actualizando límites y módulos...");
+            if(!newHac || !newNom) return mostrarToast("⚠️ Complete todos los campos", true);
+            toggleLoading(true, "Guardando...");
             
             try {
                 await db.collection('usuarios').doc(usuId).update({
@@ -875,25 +901,25 @@
                 });
                 toggleLoading(false); 
                 document.getElementById('modal-editar').classList.add('oculto'); 
-                mostrarToast("✅ Información Actualizada"); 
+                mostrarToast("✅ Cambios guardados"); 
                 cargarClientes();
             } catch (e) {
                 toggleLoading(false); 
-                mostrarToast("❌ Error al editar", true);
+                mostrarToast("❌ Error al guardar", true);
             }
         }
 
         // ==========================================
-        // GESTIÓN DE EQUIPO GHOST (PEONES Y DUEÑOS EXTRAS)
+        // GESTIÓN DE EQUIPO GHOST
         // ==========================================
         async function verEquipo(maestroId, haciendaName) {
             document.getElementById('lbl-equipo-hacienda').innerText = haciendaName;
-            document.getElementById('tb-equipo').innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:15px;">Buscando miembros del equipo...</td></tr>';
+            document.getElementById('tb-equipo').innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:15px;">Buscando operadores...</td></tr>';
             document.getElementById('modal-equipo').classList.remove('oculto');
 
             try {
                 const snapshot = await db.collection('usuarios').where('maestroId', '==', maestroId).get();
-                const operadores = snapshot.docs.filter(doc => doc.id !== maestroId); // Excluimos al master
+                const operadores = snapshot.docs.filter(doc => doc.id !== maestroId);
 
                 const tb = document.getElementById('tb-equipo'); 
                 tb.innerHTML = '';
@@ -921,27 +947,26 @@
                     </tr>`;
                 });
             } catch (e) {
-                document.getElementById('tb-equipo').innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--danger); padding:15px;">Error al cargar el equipo.</td></tr>';
+                document.getElementById('tb-equipo').innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--danger); padding:15px;">Error al cargar equipo.</td></tr>';
             }
         }
 
         async function cambiarClaveMiembroGhost(opId) {
-            const nuevaClave = prompt(`Nueva contraseña oficial para el miembro "${opId}":\n(Mínimo 6 caracteres)`);
-            if(nuevaClave === null || nuevaClave.trim() === "") return; 
-            if(nuevaClave.trim().length < 6) return mostrarToast("⚠️ Mínimo 6 caracteres", true);
+            const nuevaClave = prompt(`Nueva clave para "${opId}":\n(Mínimo 6 caracteres)`);
+            if(!nuevaClave || nuevaClave.trim().length < 6) return;
             
-            toggleLoading(true, `Cambiando clave en Firebase Auth...`);
+            toggleLoading(true);
             try {
                 const doc = await db.collection('usuarios').doc(opId).get();
                 const claveActual = doc.data().password;
-                if(!claveActual) throw new Error("No hay registro de clave anterior");
+                if(!claveActual) throw new Error("Sin clave previa");
 
                 const exito = await gestionarAuthUsuario(opId, claveActual, 'cambiarClave', nuevaClave.trim());
                 if(exito) {
                     await db.collection('usuarios').doc(opId).update({ password: nuevaClave.trim() });
-                    mostrarToast("✅ Contraseña del equipo actualizada");
+                    mostrarToast("✅ Contraseña actualizada");
                 } else {
-                    mostrarToast("❌ Falló Auth. Quizá ya la cambió manual.", true);
+                    mostrarToast("❌ Falló Auth", true);
                 }
             } catch (e) {
                 mostrarToast("❌ Error al cambiar clave", true);
@@ -951,28 +976,25 @@
         }
 
         async function eliminarMiembroGhost(opId, maestroId) {
-            if(!confirm(`⚠️ ¿Eliminar permanentemente de Firebase Auth al usuario ${opId}?`)) return;
-            toggleLoading(true, "Eliminando miembro de raíz...");
+            if(!confirm(`⚠️ ¿Eliminar permanentemente al usuario ${opId}?`)) return;
+            toggleLoading(true);
             try {
                 const doc = await db.collection('usuarios').doc(opId).get();
-                if(doc.exists) {
-                    const claveActual = doc.data().password;
-                    if(claveActual) {
-                        await gestionarAuthUsuario(opId, claveActual, 'eliminar');
-                    }
-                    await db.collection('usuarios').doc(opId).delete();
+                if(doc.exists && doc.data().password) {
+                    await gestionarAuthUsuario(opId, doc.data().password, 'eliminar');
                 }
+                await db.collection('usuarios').doc(opId).delete();
                 toggleLoading(false); 
                 mostrarToast("✅ Usuario Eliminado"); 
                 verEquipo(maestroId, document.getElementById('lbl-equipo-hacienda').innerText); 
             } catch(e) {
                 toggleLoading(false); 
-                mostrarToast("❌ Error de red", true);
+                mostrarToast("❌ Error", true);
             }
         }
 
         // ==========================================
-        // CARGA MASIVA
+        // CARGA MASIVA, AUTO-DETECCIÓN Y DESHACER
         // ==========================================
         function cargarClientesMasiva() { 
             if(clientesCache.length === 0) cargarClientes(); 
@@ -991,116 +1013,209 @@
             const maestroId = document.getElementById('sel-cliente-masiva').value; 
             const fileInput = document.getElementById('archivo-excel');
             
-            if(!maestroId) return mostrarToast("⚠️ Seleccione un cliente destino", true); 
-            if(!fileInput.files.length) return mostrarToast("⚠️ Adjunte un archivo", true);
+            if(!maestroId || !fileInput.files.length) return mostrarToast("⚠️ Selecciona destino y archivo", true); 
             
             toggleLoading(true, "Leyendo documento...");
-            const file = fileInput.files[0]; const reader = new FileReader();
+            const file = fileInput.files[0]; 
+            const reader = new FileReader();
             
             reader.onload = function(e) {
                 try {
                     const data = new Uint8Array(e.target.result); 
                     const workbook = XLSX.read(data, {type: 'array'});
-                    const jsonCrudo = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {defval: ""}); 
+                    datosArchivoCrudo = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {defval: ""}); 
+                    if(datosArchivoCrudo.length === 0) throw new Error();
                     
-                    if(jsonCrudo.length === 0) throw new Error("Archivo vacío");
-                    
-                    datosArchivoCrudo = jsonCrudo; 
-                    const headers = Object.keys(jsonCrudo[0]);
+                    const headers = Object.keys(datosArchivoCrudo[0]);
                     
                     llenarSelectMapeo('map-caravana', headers, false); 
                     llenarSelectMapeo('map-categoria', headers, true); 
                     llenarSelectMapeo('map-lote', headers, true);
+                    llenarSelectMapeo('map-peso', headers, true);
+                    llenarSelectMapeo('map-raza', headers, true);
+                    llenarSelectMapeo('map-notas', headers, true);
+                    
+                    autoSeleccionarMapeo('map-caravana', ['caravana', 'rp', 'tag']);
+                    autoSeleccionarMapeo('map-categoria', ['categoria', 'cat']);
+                    autoSeleccionarMapeo('map-lote', ['lote', 'grupo']);
+                    autoSeleccionarMapeo('map-peso', ['peso', 'kg', 'kilos']);
+                    autoSeleccionarMapeo('map-raza', ['raza', 'genetica']);
+                    autoSeleccionarMapeo('map-notas', ['nota', 'observacion', 'detalle']);
                     
                     document.getElementById('panel-mapeo').classList.remove('oculto'); 
                     toggleLoading(false); 
-                    mostrarToast("✅ Archivo escaneado correctamente");
+                    mostrarToast("✅ Archivo escaneado");
                 } catch (err) { 
                     toggleLoading(false); 
-                    mostrarToast("❌ Error al leer el archivo. Revisa que tenga encabezados.", true); 
+                    mostrarToast("❌ Error al leer el archivo Excel.", true); 
                 }
             }; 
             reader.readAsArrayBuffer(file);
         }
 
-        function llenarSelectMapeo(idSelect, headers, esOpcional = false) { 
-            const sel = document.getElementById(idSelect); 
-            sel.innerHTML = esOpcional ? '<option value="">-- Dejar en blanco (Asignar "-") --</option>' : '<option value="">-- Seleccione la columna --</option>'; 
+        function llenarSelectMapeo(id, headers, opc) { 
+            const sel = document.getElementById(id); 
+            sel.innerHTML = opc ? '<option value="">-- Dejar en blanco --</option>' : '<option value="">-- Seleccione columna --</option>'; 
             headers.forEach(h => { sel.innerHTML += `<option value="${h}">${h}</option>`; }); 
         }
 
-        function procesarMapeoEInyectar() {
-            const colCaravana = document.getElementById('map-caravana').value; 
-            const colCat = document.getElementById('map-categoria').value; 
-            const colLote = document.getElementById('map-lote').value; 
-            const maestroId = document.getElementById('sel-cliente-masiva').value;
-            
-            if(!colCaravana) return mostrarToast("⚠️️ Debes indicar cuál es la columna de la Caravana", true);
-            
-            const fechaHoy = new Date().toISOString(); 
-            let datosAInyectar = [];
-            
-            datosArchivoCrudo.forEach(fila => {
-                let valorCaravana = fila[colCaravana];
-                if(valorCaravana !== undefined && String(valorCaravana).trim() !== "") {
-                    let valCat = colCat && fila[colCat] ? String(fila[colCat]).trim() : "-"; 
-                    let valLote = colLote && fila[colLote] ? String(fila[colLote]).trim() : "Hacienda General";
-                    datosAInyectar.push({ 
-                        fecha: fechaHoy, 
-                        accion: 'Actualización de Datos',
-                        caravana: String(valorCaravana).trim(), 
-                        valor: `Cat: ${valCat}`, 
-                        detalles: `Lote: ${valLote}`,
-                        maestro: maestroId
-                    });
-                }
-            });
-            
-            if(datosAInyectar.length === 0) return mostrarToast("❌ No se encontraron datos válidos", true);
-            
-            if(confirm(`Se procesaron ${datosAInyectar.length} animales válidos.\n¿Proceder a inyectar directamente en Firestore?`)) {
-                document.getElementById('panel-mapeo').classList.add('oculto');
-                enviarCargaMasivaEnBloques(maestroId, datosAInyectar);
-            }
-        }
-
-        async function enviarCargaMasivaEnBloques(maestroId, dataArray) {
-            const chunkSize = 450; 
-            const coleccionEventos = db.collection("estancias").doc(maestroId).collection("eventos");
-            
-            for (let i = 0; i < dataArray.length; i += chunkSize) {
-                const chunk = dataArray.slice(i, i + chunkSize);
-                toggleLoading(true, `Inyectando lote de base de datos ${Math.ceil((i+1)/chunkSize)} de ${Math.ceil(dataArray.length/chunkSize)}...`);
-                
-                const batch = db.batch();
-                chunk.forEach(item => {
-                    const docRef = coleccionEventos.doc();
-                    batch.set(docRef, item);
-                });
-                
-                try {
-                    await batch.commit();
-                } catch (e) {
-                    toggleLoading(false); 
-                    mostrarToast(`❌ Error inyectando el bloque ${Math.ceil((i+1)/chunkSize)}`, true); 
+        function autoSeleccionarMapeo(id, opcionesBase) {
+            const sel = document.getElementById(id);
+            for(let i=0; i<sel.options.length; i++) {
+                let textoOpt = sel.options[i].text.toLowerCase();
+                if(opcionesBase.some(palabra => textoOpt.includes(palabra))) {
+                    sel.selectedIndex = i;
                     return;
                 }
             }
+        }
+
+        function procesarMapeoEInyectar() {
+            const cCar = document.getElementById('map-caravana').value; 
+            const cCat = document.getElementById('map-categoria').value; 
+            const cLot = document.getElementById('map-lote').value; 
+            const cPeso = document.getElementById('map-peso').value; 
+            const cRaza = document.getElementById('map-raza').value; 
+            const cNot = document.getElementById('map-notas').value; 
+            const mId = document.getElementById('sel-cliente-masiva').value;
             
+            if(!cCar) return mostrarToast("⚠️ Falta Columna Caravana", true);
+            
+            let datosAInyectar = [];
+            const batchId = new Date().getTime().toString();
+            
+            datosArchivoCrudo.forEach((f, index) => {
+                let vCar = f[cCar];
+                if(vCar && String(vCar).trim() !== "") {
+                    let rp = String(vCar).trim();
+                    let valCat = cCat && f[cCat] ? String(f[cCat]).trim() : "-";
+                    let valLote = cLot && f[cLot] ? String(f[cLot]).trim() : "Hacienda General";
+                    
+                    let baseTime = new Date().getTime() + (index * 10);
+                    
+                    // 1. Ubicación y Clasificación
+                    datosAInyectar.push({ 
+                        fecha: new Date(baseTime).toISOString(), 
+                        accion: 'Actualización de Datos', 
+                        caravana: rp, 
+                        valor: `Cat: ${valCat} | Carimbo: -`, 
+                        detalles: `Lote: ${valLote}`, 
+                        maestro: mId,
+                        batch_id: batchId
+                    });
+
+                    // 2. Raza / Genética
+                    if(cRaza && f[cRaza]) {
+                        datosAInyectar.push({ 
+                            fecha: new Date(baseTime + 1).toISOString(), 
+                            accion: 'Perfil Master', 
+                            caravana: rp, 
+                            valor: `${String(f[cRaza]).trim()}|-|-|-`, 
+                            detalles: valCat, 
+                            maestro: mId,
+                            batch_id: batchId
+                        });
+                    }
+
+                    // 3. Pesaje Inicial
+                    if(cPeso && f[cPeso]) {
+                        datosAInyectar.push({ 
+                            fecha: new Date(baseTime + 2).toISOString(), 
+                            accion: 'Peso', 
+                            caravana: rp, 
+                            valor: `${String(f[cPeso]).trim()} Kg`, 
+                            detalles: `Cond: Óptima. Notas: Importación Masiva`, 
+                            maestro: mId,
+                            batch_id: batchId
+                        });
+                    }
+
+                    // 4. Notas Generales
+                    if(cNot && f[cNot]) {
+                        datosAInyectar.push({ 
+                            fecha: new Date(baseTime + 3).toISOString(), 
+                            accion: 'Comentario', 
+                            caravana: rp, 
+                            valor: `-`, 
+                            detalles: String(f[cNot]).trim(), 
+                            maestro: mId,
+                            batch_id: batchId
+                        });
+                    }
+                }
+            });
+            
+            if(datosAInyectar.length === 0) return mostrarToast("❌ Sin datos válidos", true);
+            
+            if(confirm(`Se generaron ${datosAInyectar.length} registros para el historial general.\n¿Inyectar en Firestore?`)) { 
+                document.getElementById('panel-mapeo').classList.add('oculto'); 
+                lsSet('tc_ultimo_batch', { mId: mId, batchId: batchId });
+                enviarCargaMasivaEnBloques(mId, datosAInyectar); 
+            }
+        }
+
+        async function enviarCargaMasivaEnBloques(mId, arr) {
+            const chunkSize = 450; 
+            const col = db.collection("estancias").doc(mId).collection("eventos");
+            for (let i = 0; i < arr.length; i += chunkSize) {
+                const chunk = arr.slice(i, i + chunkSize);
+                toggleLoading(true, `Inyectando bloque ${Math.ceil((i+1)/chunkSize)}...`);
+                const batch = db.batch(); 
+                chunk.forEach(item => { batch.set(col.doc(), item); });
+                try { 
+                    await batch.commit(); 
+                } catch (e) { 
+                    toggleLoading(false); 
+                    return mostrarToast(`❌ Error en bloque`, true); 
+                }
+            }
             toggleLoading(false); 
-            mostrarToast("✅ Importación masiva completada al 100%");
+            mostrarToast("✅ Importación masiva completada"); 
             document.getElementById('archivo-excel').value = ''; 
             datosArchivoCrudo = [];
         }
 
-        // Anclaje explícito
+        async function deshacerUltimaImportacion() {
+            let lastBatch = lsGet('tc_ultimo_batch', null);
+            if(!lastBatch || !lastBatch.mId || !lastBatch.batchId) {
+                return mostrarToast("⚠️ No hay registro de una carga reciente para deshacer.", true);
+            }
+            if(!confirm("⚠️ PELIGRO: ¿Eliminar TODOS los registros que entraron en la última importación masiva?")) return;
+
+            toggleLoading(true, "Revirtiendo importación...");
+            try {
+                const snapshot = await db.collection('estancias').doc(lastBatch.mId).collection('eventos').where('batch_id', '==', lastBatch.batchId).get();
+                if(snapshot.empty) {
+                    toggleLoading(false);
+                    return mostrarToast("⚠️ No se encontraron datos vinculados a esa importación.", true);
+                }
+
+                const docs = snapshot.docs;
+                for (let i = 0; i < docs.length; i += 450) {
+                    const chunk = docs.slice(i, i + 450);
+                    const batch = db.batch();
+                    chunk.forEach(doc => batch.delete(doc.ref));
+                    await batch.commit();
+                }
+
+                lsSet('tc_ultimo_batch', null);
+                toggleLoading(false);
+                mostrarToast("✅ Última importación eliminada con éxito.");
+            } catch(e) {
+                toggleLoading(false);
+                mostrarToast("❌ Error al revertir", true);
+            }
+        }
+
+        // Anclajes Globales
         window.ingresarAdmin = ingresarAdmin; window.cerrarSesion = cerrarSesion; window.cambiarVista = cambiarVista;
         window.cerrarModal = cerrarModal; window.toggleMantenimiento = toggleMantenimiento; window.enviarAvisoMantenimiento = enviarAvisoMantenimiento;
         window.crearCliente = crearCliente; window.cargarClientes = cargarClientes; window.actualizarVencimiento = actualizarVencimiento;
         window.cambiarClaveMaestroGhost = cambiarClaveMaestroGhost; window.borrarUsuarioMaestroGhost = borrarUsuarioMaestroGhost;
         window.abrirEdicion = abrirEdicion; window.guardarEdicion = guardarEdicion; window.verEquipo = verEquipo;
         window.cambiarClaveMiembroGhost = cambiarClaveMiembroGhost; window.eliminarMiembroGhost = eliminarMiembroGhost;
-        window.cargarClientesMasiva = cargarClientesMasiva; window.leerArchivoInteligente = leerArchivoInteligente; window.procesarMapeoEInyectar = procesarMapeoEInyectar;
+        window.cargarClientesMasiva = cargarClientesMasiva; window.leerArchivoInteligente = leerArchivoInteligente; 
+        window.procesarMapeoEInyectar = procesarMapeoEInyectar; window.deshacerUltimaImportacion = deshacerUltimaImportacion;
     </script>
 </body>
 </html>
