@@ -18,11 +18,15 @@
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({
-          appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60",
-          serviceWorkerParam: { scope: "/taurus-app/" },
-          serviceWorkerPath: "/taurus-app/OneSignalSDKWorker.js"
-        });
+        try {
+            await OneSignal.init({
+              appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60",
+              serviceWorkerParam: { scope: "/taurus-app/" },
+              serviceWorkerPath: "/taurus-app/OneSignalSDKWorker.js"
+            });
+        } catch(e) {
+            console.warn("OneSignal (Local/Dev): No se pudo registrar el Service Worker. Se activará en producción.");
+        }
       });
     </script>
 
@@ -344,7 +348,7 @@
 
                         <div style="display:flex; gap:8px;">
                             <select id="filtro-reg-lote" class="form-control" style="flex:1; min-width:0; padding:8px; font-size:13px;" onchange="cargarListaRegistro()">
-                                <option value="ALL">🏷️️ Lote (Todos)</option>
+                                <option value="ALL">🏷️ Lote (Todos)</option>
                             </select>
                             <select id="filtro-reg-cat" class="form-control" style="flex:1; min-width:0; padding:8px; font-size:13px;" onchange="cargarListaRegistro()">
                                 <option value="ALL">🐄 Categoría (Todas)</option>
@@ -1561,18 +1565,18 @@
                 });
 
                 if (rolSel === 'Operador' && currOps >= maxOps && maxOps !== 999) {
-                    alert(`⚠️ Límite alcanzado: Su plan solo permite ${maxOps} peón/operador(es). Contacte a soporte para ampliar su licencia.`);
+                    alert(`⚠ Límite alcanzado: Su plan solo permite ${maxOps} peón/operador(es). Contacte a soporte para ampliar su licencia.`);
                     btn.innerHTML = btnOriginal; btn.disabled = false; return;
                 }
                 if (rolSel !== 'Operador' && currOwn >= maxOwn && maxOwn !== 999) {
                     alert(`⚠️ Límite alcanzado: Su plan solo permite ${maxOwn} dueño(s) extra(s). Contacte a soporte para ampliar su licencia.`);
                     btn.innerHTML = btnOriginal; btn.disabled = false; return;
                 }
-
+                
                 let rolFinal = rolSel;
                 if (rolSel === 'Operador') {
                     let permisos = Array.from(document.querySelectorAll('.chk-permiso:checked')).map(c => c.value).join(',');
-                    if(!permisos) { alert("Debe seleccionar al menos un permiso."); btn.innerHTML = btnOriginal; btn.disabled = false; return; }
+                    if(!permisos) { alert("Debe seleccionar al menos un permiso de acceso para el operador."); btn.innerHTML = btnOriginal; btn.disabled = false; return; }
                     rolFinal = 'Operador|' + permisos;
                 }
                 
@@ -1587,9 +1591,9 @@
                 ejecutarAccion('Alta Operador', email, `Nombre: ${n} | Rol: ${rolFinal}`, null);
                 document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 
                 btn.innerHTML = btnOriginal; btn.disabled = false;
-                mostrarToast("Usuario Registrado."); cargarListaOperadores();
+                mostrarToast("✅ Usuario Registrado Exitosamente."); cargarListaOperadores();
             } catch(e) {
-                alert("Error al crear la cuenta. Verifique que no esté ya registrado.");
+                alert("Hubo un error al crear la cuenta. Verifique que el usuario/correo no esté ya registrado.");
                 btn.innerHTML = btnOriginal; btn.disabled = false;
             }
         }
@@ -1677,15 +1681,15 @@
             const selectEl = document.getElementById('op-del-usu-sel');
             const u = selectEl.value.trim();
             if(!u) { alert("Seleccione un usuario de la lista."); return; }
-            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso de "${u}"?`)) {
+            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso de "${u}"? Esta acción no se puede deshacer.`)) {
                 const btn = document.getElementById('btn-eliminar-op'); const btnOriginal = btn.innerHTML;
                 btn.innerHTML = "⏳ Eliminando..."; btn.disabled = true;
                 try {
                     const doc = await db.collection('usuarios').doc(u).get();
                     if(doc.exists && doc.data().password) { await gestionarAuthGhostParaBorrado(u, doc.data().password); }
                     await db.collection('usuarios').doc(u).delete();
-                    ejecutarAccion('Baja Operador', u, `Eliminado por el panel`, null);
-                    alert(`El usuario ha sido eliminado con éxito.`); 
+                    ejecutarAccion('Baja Operador', u, `Eliminado por el panel PC`, null);
+                    alert(`El usuario "${u}" ha sido eliminado con éxito.`); 
                     selectEl.value = ''; cargarListaOperadores(); 
                     btn.innerHTML = btnOriginal; btn.disabled = false;
                 } catch(e) { alert("Hubo un error de conexión."); btn.innerHTML = btnOriginal; btn.disabled = false; } 
@@ -1701,51 +1705,51 @@
                 const selEdit = document.getElementById('op-edit-usu-sel');
                 let options = '<option value="">-- Seleccione un usuario --</option>';
                 ops.forEach(o => { options += `<option value="${o}">${o}</option>`; });
-                if(selDel) selDel.innerHTML = options;
-                if(selEdit) selEdit.innerHTML = options;
+                if(selDel && selDel.innerHTML !== options) selDel.innerHTML = options;
+                if(selEdit && selEdit.innerHTML !== options) selEdit.innerHTML = options;
             } catch(e) { console.error("Error al cargar operadores", e); }
         }
 
         function cambiarMiContrasena() { 
             if(!navigator.onLine) { alert("Necesitas conexión."); return; } 
             const nueva = document.getElementById('nueva-clave').value.trim(); 
-            if(!nueva || nueva.length < 6) { alert("Mínimo 6 caracteres requeridos."); return; } 
+            if(!nueva || nueva.length < 6) { alert("Mínimo 6 caracteres de contraseña requeridos."); return; } 
             const user = firebase.auth().currentUser;
             if(user) {
                 user.updatePassword(nueva).then(() => {
                     db.collection('usuarios').doc(user.email).update({ password: nueva }).then(() => {
                         alert("Contraseña actualizada con éxito."); document.getElementById('nueva-clave').value = '';
                     });
-                }).catch(e => { alert("Error: Es probable que necesites cerrar e iniciar sesión de nuevo."); });
+                }).catch(e => { alert("Error: Es probable que necesites cerrar e iniciar sesión de nuevo antes de cambiar la clave."); });
             }
         }
         
         function cerrarSesion() { 
             let leidas = localStorage.getItem('tc_alertas_leidas');
             let mostradas = localStorage.getItem('tc_alertas_mostradas');
-            let prefs = localStorage.getItem('tc_prefs');
+            let prefs = localStorage.getItem('tc_prefs_pc');
             let tema = localStorage.getItem('tc_tema');
             firebase.auth().signOut().then(() => {
                 localStorage.clear(); 
                 if(leidas) localStorage.setItem('tc_alertas_leidas', leidas);
                 if(mostradas) localStorage.setItem('tc_alertas_mostradas', mostradas);
-                if(prefs) localStorage.setItem('tc_prefs', prefs);
+                if(prefs) localStorage.setItem('tc_prefs_pc', prefs);
                 if(tema) localStorage.setItem('tc_tema', tema);
                 window.location.reload(); 
             });
         }
 
         function forzarSaltoAFicha() {
-            let tabFicha = document.querySelectorAll('.nav-item')[1];
-            if (typeof cambiarVista === "function" && tabFicha && tabFicha.style.display !== 'none') {
-                cambiarVista('vista-manga', tabFicha);
+            let tabFichaPC = document.querySelectorAll('.sidebar-nav li')[1];
+            if (typeof cambiarVista === "function" && tabFichaPC && tabFichaPC.style.display !== 'none') {
+                cambiarVista('v-ficha', tabFichaPC);
             }
         }
 
         window.recibirTagNFC = function(tagHex) {
             // 👇 BLOQUEO DE BASTÓN BLUETOOTH 👇
             if(!modulosHabilitados.includes('bluetooth')) {
-                mostrarToast("⚠️ Bastones Bluetooth no incluidos en su licencia.", true);
+                mostrarToast("⚠️ El módulo de Bastones Bluetooth no está activo en su plan.", true);
                 return;
             }
 
@@ -1762,7 +1766,7 @@
                 if (inputVincular) inputVincular.value = '';
                 let lblScaneado = document.getElementById('lbl-rfid-scaneado');
                 if (lblScaneado) lblScaneado.innerText = tagHex;
-                if (typeof abrirModal === "function") abrirModal('modal-rfid');
+                if (typeof abrirModal === "function") abrirModal('m-rfid');
                 setTimeout(() => { if(inputVincular) inputVincular.focus(); }, 500);
             }
         };
@@ -1792,7 +1796,7 @@
                                 if(typeof mostrarToast === 'function') mostrarToast("✅ ¡Guardado!");
                             } else {
                                 forzarSaltoAFicha();
-                                if (typeof abrirModal === "function") abrirModal('modal-peso');
+                                if (typeof abrirModal === "function") abrirModal('m-peso');
                                 let inputPeso = document.getElementById('i-peso-val');
                                 if (inputPeso) inputPeso.value = dataLimpia;
                             }
