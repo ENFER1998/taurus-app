@@ -641,9 +641,9 @@
     <div id="modal-comentario" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-comentario')">&times;</span><h3>Anotación General</h3><div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-comentario', 'Comentario')">Guardar Nota</button></div></div>
     <div id="modal-rfid" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-rfid')">&times;</span><h3>Vincular Bastón RFID</h3><p style="font-size:12px; color:var(--muted); margin-bottom:15px;">Chip <strong id="lbl-rfid-scaneado" style="color:var(--secundario);"></strong> no asignado.</p><div class="form-grupo"><input type="text" class="form-control" id="f-rfid-caravana" placeholder="Ingrese RP (Ej: 1234)" style="text-align: center; font-size: 20px; font-weight: bold;"></div><button class="btn-guardar" onclick="guardarVinculacionRFID()">Vincular y Abrir Ficha</button></div></div>
     
-    <div id="m-perfil" class="modal">
+    <div id="modal-perfil" class="modal">
         <div class="modal-body">
-            <span class="cerrar" onclick="cerrarModal('m-perfil')">&times;</span>
+            <span class="cerrar" onclick="cerrarModal('modal-perfil')">&times;</span>
             <h3>Datos Base del Animal</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div class="form-grupo"><label>Raza</label><input type="text" class="form-control" id="f-raza"></div>
@@ -773,8 +773,77 @@
                 const regs = obtenerHistorial(car);
                 let rBaja = regs.find(r => r.accion === 'Baja');
                 let color = rBaja ? "var(--peligro)" : "var(--texto)";
-                tb.innerHTML += `<li onclick="cambiarVista('vista-manga'); buscarCaravanaBtn('${car}')" style="cursor:pointer;"><strong style="color:${color};">${car}</strong></li>`;
+                tb.innerHTML += `<li onclick="cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]); buscarCaravanaBtn('${car}')" style="cursor:pointer;"><strong style="color:${color};">${car}</strong></li>`;
             });
+        };
+
+        window.sincronizarFondo = async function(manual = false) {
+            setEstadoRed(true, '🔄 Sincronizando...');
+            await sincronizarPendientesAuto();
+            if(manual) mostrarToast("Sincronización manual completada.");
+            setEstadoRed(navigator.onLine);
+        };
+
+        window.togglePermisos = function() {
+            const rol = document.getElementById('op-rol').value;
+            const caja = document.getElementById('caja-permisos');
+            if (caja) {
+                caja.style.display = (rol === 'Operador') ? 'block' : 'none';
+            }
+        };
+
+        window.guardarDisenoServidor = function() {
+            if(!navigator.onLine) { alert("Necesitas conexión."); return; }
+            const nombre = document.getElementById('cfg-nom').value.trim();
+            const fileInput = document.getElementById('cfg-logo');
+            const file = fileInput ? fileInput.files[0] : null;
+            
+            const btn = document.querySelector('#panel-membrete .btn-guardar');
+            const btnOriginal = btn ? btn.innerHTML : "Guardar Diseño PDF";
+            if(btn) { btn.innerHTML = "⏳ Guardando..."; btn.disabled = true; }
+
+            const updateDB = (logoBase64) => {
+                let data = { nombre_hacienda: nombre };
+                if (logoBase64) data.logo_hacienda = logoBase64;
+                db.collection('estancias').doc(maestroId).set(data, {merge: true}).then(() => {
+                    mostrarToast("Diseño actualizado correctamente.");
+                    if(btn) { btn.innerHTML = btnOriginal; btn.disabled = false; }
+                }).catch(e => {
+                    alert("Error al guardar diseño.");
+                    if(btn) { btn.innerHTML = btnOriginal; btn.disabled = false; }
+                });
+            };
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = function() { updateDB(reader.result); }
+                reader.readAsDataURL(file);
+            } else {
+                updateDB(null);
+            }
+        };
+
+        window.guardarVinculacionRFID = function() {
+            const caravanaInput = document.getElementById('f-rfid-caravana').value.trim();
+            if(!caravanaInput || !rfidPendiente) { alert("Ingrese el RP."); return; }
+            
+            const obj = { fecha: new Date().toISOString(), accion: 'Vinculación RFID', caravana: caravanaInput, valor: rfidPendiente, detalles: `Vinculado por: ${usNombre}`, maestro: maestroId };
+            
+            dbCache.unshift(obj);
+            if(navigator.onLine) {
+                db.collection('estancias').doc(maestroId).collection('eventos').add(obj).catch(()=>{});
+            } else {
+                let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p);
+            }
+            
+            cerrarModal('modal-rfid');
+            rfidPendiente = "";
+            document.getElementById('f-rfid-caravana').value = "";
+            mostrarToast("Tag RFID vinculado a " + caravanaInput);
+            
+            rpActivo = caravanaInput;
+            forzarSaltoAFicha();
+            buscarCaravanaBtn(caravanaInput);
         };
         // ==========================================
 
@@ -1298,7 +1367,7 @@
             const fPadre = document.getElementById('f-padre') ? document.getElementById('f-padre').value : "-";
             const fMadre = document.getElementById('f-madre') ? document.getElementById('f-madre').value : "-";
             const catValor = document.getElementById('val-categoria') ? document.getElementById('val-categoria').innerText : "-";
-            ejecutarAccion('Perfil Master', `${fRaza||"-"}|${fNacimiento||"-"}|${fPadre||"-"}|${fMadre||"-"}`, catValor, 'm-perfil'); 
+            ejecutarAccion('Perfil Master', `${fRaza||"-"}|${fNacimiento||"-"}|${fPadre||"-"}|${fMadre||"-"}`, catValor, 'modal-perfil'); 
             if (fNacimiento && fNacimiento !== "-") {
                 const partes = fNacimiento.split('-'); let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
                 if (mes >= 7) anio += 1;
@@ -1809,9 +1878,9 @@
         }
 
         function forzarSaltoAFicha() {
-            let tabFichaPC = document.querySelectorAll('.sidebar-nav li')[1];
-            if (typeof cambiarVista === "function" && tabFichaPC && tabFichaPC.style.display !== 'none') {
-                cambiarVista('v-ficha', tabFichaPC);
+            let tabFichaMob = document.querySelectorAll('.nav-inferior .nav-item')[1];
+            if (typeof cambiarVista === "function" && tabFichaMob) {
+                cambiarVista('vista-manga', tabFichaMob);
             }
         }
 
@@ -1835,7 +1904,7 @@
                 if (inputVincular) inputVincular.value = '';
                 let lblScaneado = document.getElementById('lbl-rfid-scaneado');
                 if (lblScaneado) lblScaneado.innerText = tagHex;
-                if (typeof abrirModal === "function") abrirModal('m-rfid');
+                if (typeof abrirModal === "function") abrirModal('modal-rfid');
                 setTimeout(() => { if(inputVincular) inputVincular.focus(); }, 500);
             }
         };
@@ -1865,7 +1934,7 @@
                                 if(typeof mostrarToast === 'function') mostrarToast("✅ ¡Guardado!");
                             } else {
                                 forzarSaltoAFicha();
-                                if (typeof abrirModal === "function") abrirModal('m-peso');
+                                if (typeof abrirModal === "function") abrirModal('modal-peso');
                                 let inputPeso = document.getElementById('i-peso-val');
                                 if (inputPeso) inputPeso.value = dataLimpia;
                             }
