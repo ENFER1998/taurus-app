@@ -69,8 +69,8 @@
         .badge-estado { font-size: 12px; background: var(--exito); padding: 5px 12px; border-radius: 20px; font-weight: bold; color: white; transition: 0.3s; display: flex; align-items: center; justify-content: center;}
         .badge-estado.offline { background: var(--peligro); color: white; }
         
-        .contenedor { padding: 15px; max-width: 800px; margin: 0 auto; }
-        .tarjeta { background: #0f172a; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--borde); box-shadow: 0 4px 6px rgba(0,0,0,0.3);}
+        .contenedor { padding: 15px; max-width: 800px; margin: 0 auto; width: 100%; }
+        .tarjeta { background: #0f172a; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--borde); box-shadow: 0 4px 6px rgba(0,0,0,0.3); width: 100%; }
         .tarjeta-titulo { font-size: 16px; font-weight: bold; margin: 0 0 12px 0; border-bottom: 1px solid var(--borde); padding-bottom: 8px; color: var(--texto); }
         
         .grid-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 20px; }
@@ -101,6 +101,7 @@
         .contenedor-permisos { display: flex; flex-direction: column; gap: 8px; background: #1e293b; padding: 10px; border: 1px solid var(--borde); border-radius: 8px; }
         body.tema-claro .contenedor-permisos { background: #ffffff !important; border-color: var(--borde) !important; }
 
+        /* TABLA DE PREVIEW DEL REPORTE CON TEMA DINÁMICO */
         .tabla-informe { width: 100%; border-collapse: collapse; font-size: 13px; background: #0f172a; color: var(--texto); min-width: 400px; border: 1px solid var(--borde);}
         .tabla-informe th { background: #1e293b; padding: 10px; text-align: left; border: 1px solid var(--borde); color: var(--secundario); font-size: 11px; text-transform: uppercase; font-weight: bold;}
         .tabla-informe td { padding: 10px; border: 1px solid var(--borde); color: var(--texto);}
@@ -136,14 +137,15 @@
         .btn-accion { background: #1e293b; border: 1px solid var(--borde); padding: 10px; border-radius: 12px; font-weight: bold; color: var(--texto); display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; text-align: center;}
         .btn-accion span { font-size: 22px; }
         
-        .filtros-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;}
-        .filtro-sel { background: #1e293b; color: var(--texto); border: 1px solid var(--borde); padding: 12px; border-radius: 8px; font-size: 14px; outline: none; font-family: inherit;}
+        .filtros-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; width: 100%; }
+        .filtro-sel { width: 100%; max-width: 100%; min-width: 0; background: #1e293b; color: var(--texto); border: 1px solid var(--borde); padding: 12px; border-radius: 8px; font-size: 14px; outline: none; font-family: inherit; box-sizing: border-box;}
+        
         .lista-animales { list-style: none; padding: 0; margin: 0; }
         .lista-animales li { padding: 15px; border-bottom: 1px solid var(--borde); display: flex; justify-content: space-between; align-items: center; cursor: pointer;}
         .lista-animales li:hover { background: rgba(59,130,246,0.05); }
         
         .btn-descargar { width: 100%; background: var(--exito); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; margin-bottom: 20px;}
-        .tabla-responsive { width: 100%; overflow-x: auto; border-radius: 8px;}
+        .tabla-responsive { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px;}
         
         .nav-inferior { position: fixed; bottom: 0; left: 0; width: 100%; background: #0f172a; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid var(--borde); z-index: 100;}
         .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); font-size: 10px; font-weight: bold; width: 20%; cursor: pointer;}
@@ -155,7 +157,7 @@
         .modal-body h3 { border-bottom: 1px solid var(--borde); padding-bottom: 10px; margin-top:0; color: var(--texto);}
         .form-grupo { margin-bottom: 15px; text-align: left; }
         .form-grupo label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 8px; color: var(--muted);}
-        .form-control { width: 100%; padding: 12px; border: 1px solid var(--borde); border-radius: 8px; font-size: 16px; background: #1e293b; color: var(--texto); outline:none;}
+        .form-control { width: 100%; padding: 12px; border: 1px solid var(--borde); border-radius: 8px; font-size: 16px; background: #1e293b; color: var(--texto); outline:none; box-sizing: border-box;}
         .form-control.textarea { resize: vertical; min-height: 80px; }
         .btn-guardar { width: 100%; background: var(--secundario); color: white; padding: 15px; border-radius: 8px; border: none; font-weight: bold; margin-top: 10px;}
         .btn-guardar:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -220,7 +222,7 @@
                     <div class="kpi-caja" style="border-color: var(--peligro);" onclick="filtrarDesdeDashboard('estado', 'bajas')"><div class="kpi-valor" id="dash-bajas" style="color: var(--peligro);">0</div><div class="kpi-label" style="color: var(--peligro);">Mortalidad / Bajas</div></div>
                     <div class="kpi-caja"><div class="kpi-valor" id="dash-acciones">0</div><div class="kpi-label">Registros Procesados</div></div>
                 </div>
-                <div class="tarjeta" id="contenedor-alertas" style="display:none;"><div class="tarjeta-titulo" style="color:var(--alerta);">⚠️ Alertas (Deslizar)</div><div id="lista-alertas"></div></div>
+                <div class="tarjeta" id="contenedor-alertas" style="display:none;"><div class="tarjeta-titulo" style="color:var(--alerta);">⚠️️ Alertas (Deslizar)</div><div id="lista-alertas"></div></div>
                 <div id="contenedor-graficos-dinamicos"></div>
             </div>
 
@@ -318,7 +320,7 @@
                 </div>
             </div>
 
-            <!-- BASE DE DATOS / BUSCAR CON FILTROS INTELIGENTES DINÁMICOS -->
+            <!-- BASE DE DATOS / BUSCAR CON FILTROS INTELIGENTES -->
             <div id="vista-registro" class="vista oculto">
                 <div class="tarjeta">
                     <div class="tarjeta-titulo">📋 Inventario y Búsqueda Avanzada</div>
@@ -328,12 +330,12 @@
                         <span style="font-size:11px; font-weight:bold; color:var(--muted); text-transform:uppercase;">🔍 Filtros Rápidos de Búsqueda</span>
                         
                         <div style="display:flex; gap:8px;">
-                            <select id="filtro-reg-estado" class="form-control" style="padding:8px; font-size:13px; font-weight:bold;" onchange="cargarListaRegistro()">
+                            <select id="filtro-reg-estado" class="form-control" style="flex:1; min-width:0; padding:8px; font-size:13px; font-weight:bold;" onchange="cargarListaRegistro()">
                                 <option value="vivos">🐄 Activos / Vivos</option>
                                 <option value="bajas">💀 Bajas / Muertes / Vendidos</option>
                                 <option value="todos">📋 Todos (Activos y Bajas)</option>
                             </select>
-                            <select id="filtro-reg-dx" class="form-control" style="padding:8px; font-size:13px;" onchange="cargarListaRegistro()">
+                            <select id="filtro-reg-dx" class="form-control" style="flex:1; min-width:0; padding:8px; font-size:13px;" onchange="cargarListaRegistro()">
                                 <option value="ALL">🔍 Estado Dx (Todos)</option>
                                 <option value="Preñada">✅ Solo Preñadas</option>
                                 <option value="Vacía">❌ Solo Vacías</option>
@@ -341,10 +343,10 @@
                         </div>
 
                         <div style="display:flex; gap:8px;">
-                            <select id="filtro-reg-lote" class="form-control" style="padding:8px; font-size:13px;" onchange="cargarListaRegistro()">
+                            <select id="filtro-reg-lote" class="form-control" style="flex:1; min-width:0; padding:8px; font-size:13px;" onchange="cargarListaRegistro()">
                                 <option value="ALL">🏷️ Lote (Todos)</option>
                             </select>
-                            <select id="filtro-reg-cat" class="form-control" style="padding:8px; font-size:13px;" onchange="cargarListaRegistro()">
+                            <select id="filtro-reg-cat" class="form-control" style="flex:1; min-width:0; padding:8px; font-size:13px;" onchange="cargarListaRegistro()">
                                 <option value="ALL">🐄 Categoría (Todas)</option>
                             </select>
                         </div>
@@ -361,7 +363,6 @@
             <!-- REPORTES PDF -->
             <div id="vista-informe" class="vista oculto">
                 
-                <!-- VISTA PREVIA DEL MEMBRETE -->
                 <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid var(--borde);">
                     <img id="preview-logo-reporte" src="gemini-svg.png" style="width:50px; height:50px; object-fit:contain; border-radius:8px; background:white; padding:2px;">
                     <div>
@@ -371,17 +372,21 @@
                 </div>
 
                 <div class="tarjeta">
-                    <label style="font-size:12px; font-weight:bold; color:var(--muted); margin-bottom:6px; display:block;">SELECCIONA EL TIPO DE REPORTE:</label>
-                    <select class="filtro-sel" id="f-inf-modo" onchange="cambiarModoReporte()" style="width:100%; margin-bottom:15px; border-color: var(--secundario); font-weight: bold; background-color: var(--secundario); color: white;">
-                        <option value="inventario">📊 INVENTARIO (Por Lote y Categorías de Hacienda)</option>
-                        <option value="bajas">💀 REPORTE DE BAJAS Y MORTALIDAD</option>
-                        <option value="eventos">📋 TRATAMIENTOS Y SANIDAD (Historial)</option>
-                    </select>
+                    <!-- SELECTOR DE FORMATO ESTRUCTURADO Y SEGURO -->
+                    <div class="form-grupo" style="margin-bottom:12px;">
+                        <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">SELECCIONA EL TIPO DE REPORTE:</label>
+                        <select class="filtro-sel" id="f-inf-modo" onchange="cambiarModoReporte()" style="border-color: var(--secundario); font-weight: bold; background-color: var(--secundario); color: white;">
+                            <option value="inventario">📊 INVENTARIO (Por Lote y Categorías)</option>
+                            <option value="bajas">💀 REPORTE DE BAJAS Y MORTALIDAD</option>
+                            <option value="eventos">📋 TRATAMIENTOS Y SANIDAD (Historial)</option>
+                        </select>
+                    </div>
 
-                    <!-- FILTROS DE INVENTARIO (LOTES, CATEGORÍAS REALES, DX) -->
+                    <!-- FILTROS DE INVENTARIO (SIN DESBORDAMIENTOS) -->
                     <div id="filtros-inventario" class="filtros-grid">
-                        <div style="display:flex; gap:10px;">
-                            <select class="filtro-sel" style="flex:1;" id="f-inf-lote" onchange="actualizarInformeAvanzado()">
+                        <div class="form-grupo" style="margin-bottom:8px;">
+                            <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Lote Asignado:</label>
+                            <select class="filtro-sel" id="f-inf-lote" onchange="actualizarInformeAvanzado()">
                                 <option value="ALL">🏷️ Todos los Lotes</option>
                                 <option value="Hacienda General">Hacienda General</option>
                                 <option value="Preñadas">Preñadas</option>
@@ -390,8 +395,11 @@
                                 <option value="Destete">Destete</option>
                                 <option value="Enfermería">Enfermería</option>
                             </select>
-                            
-                            <select class="filtro-sel" style="flex:1;" id="f-inf-cat" onchange="actualizarInformeAvanzado()">
+                        </div>
+                        
+                        <div class="form-grupo" style="margin-bottom:8px;">
+                            <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Categoría Oficial:</label>
+                            <select class="filtro-sel" id="f-inf-cat" onchange="actualizarInformeAvanzado()">
                                 <option value="ALL">🐄 Todas las Categorías</option>
                                 <option value="Vaca / Vaquilla">Vaca / Vaquilla</option>
                                 <option value="Vaca Vieja">Vaca Vieja</option>
@@ -405,24 +413,31 @@
                             </select>
                         </div>
                         
-                        <div style="display:flex; gap:10px;">
-                            <select class="filtro-sel" style="flex:1;" id="f-inf-carimbo" onchange="actualizarInformeAvanzado()">
-                                <option value="ALL">🎯 Carimbos (Todos)</option>
-                                <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
-                                <option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option>
-                            </select>
-                            <select class="filtro-sel" style="flex:1;" id="f-inf-dx" onchange="actualizarInformeAvanzado()">
-                                <option value="ALL">🩺 Diagnóstico (Todos)</option>
-                                <option value="Preñada">✅ Solo Preñadas</option>
-                                <option value="Vacía">❌ Solo Vacías</option>
-                            </select>
+                        <div style="display:flex; gap:10px; width:100%;">
+                            <div class="form-grupo" style="flex:1; min-width:0; margin-bottom:0;">
+                                <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Carimbo:</label>
+                                <select class="filtro-sel" id="f-inf-carimbo" onchange="actualizarInformeAvanzado()">
+                                    <option value="ALL">🎯 Todos</option>
+                                    <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+                                    <option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                                </select>
+                            </div>
+                            <div class="form-grupo" style="flex:1; min-width:0; margin-bottom:0;">
+                                <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Diagnóstico:</label>
+                                <select class="filtro-sel" id="f-inf-dx" onchange="actualizarInformeAvanzado()">
+                                    <option value="ALL">🩺 Todos</option>
+                                    <option value="Preñada">✅ Preñadas</option>
+                                    <option value="Vacía">❌ Vacías</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
                     <!-- FILTROS DE BAJAS Y MORTALIDAD -->
                     <div id="filtros-bajas" class="filtros-grid oculto" style="display:none;">
-                        <div style="display:flex; gap:10px;">
-                            <select class="filtro-sel" style="flex:1;" id="f-inf-baja-causa" onchange="actualizarInformeAvanzado()">
+                        <div class="form-grupo" style="margin-bottom:8px;">
+                            <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Causa de Baja:</label>
+                            <select class="filtro-sel" id="f-inf-baja-causa" onchange="actualizarInformeAvanzado()">
                                 <option value="ALL">💀 Todas las Causas</option>
                                 <option value="Enfermedad">Enfermedad</option>
                                 <option value="Accidente">Accidente</option>
@@ -430,7 +445,10 @@
                                 <option value="Natural">Natural / Desconocida</option>
                                 <option value="Venta">Venta / Faena</option>
                             </select>
-                            <select class="filtro-sel" style="flex:1;" id="f-inf-baja-rango" onchange="manejarRangoFechasBajas()">
+                        </div>
+                        <div class="form-grupo" style="margin-bottom:8px;">
+                            <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Periodo Histórico:</label>
+                            <select class="filtro-sel" id="f-inf-baja-rango" onchange="manejarRangoFechasBajas()">
                                 <option value="todo">Ver Todo el Historial</option>
                                 <option value="30">Últimos 30 Días</option>
                                 <option value="90">Últimos 3 Meses</option>
@@ -438,24 +456,30 @@
                                 <option value="custom">📅 Rango Manual...</option>
                             </select>
                         </div>
-                        <div id="caja-fechas-bajas" style="display:none; gap:10px;">
-                            <input type="date" id="f-inf-baja-desde" class="filtro-sel" style="flex:1;" onchange="actualizarInformeAvanzado()">
-                            <input type="date" id="f-inf-baja-hasta" class="filtro-sel" style="flex:1;" onchange="actualizarInformeAvanzado()">
+                        <div id="caja-fechas-bajas" style="display:none; gap:10px; width:100%;">
+                            <input type="date" id="f-inf-baja-desde" class="filtro-sel" style="flex:1; min-width:0;" onchange="actualizarInformeAvanzado()">
+                            <input type="date" id="f-inf-baja-hasta" class="filtro-sel" style="flex:1; min-width:0;" onchange="actualizarInformeAvanzado()">
                         </div>
                     </div>
 
                     <!-- FILTROS DE TRATAMIENTOS / HISTORIAL -->
                     <div id="filtros-eventos" class="filtros-grid oculto" style="display: none;">
-                        <select class="filtro-sel" id="f-inf-rango-fecha" onchange="manejarRangoFechas()"><option value="30">Últimos 30 Días</option><option value="hoy">Trabajos de Hoy</option><option value="7">Últimos 7 Días</option><option value="todo">Ver Todo</option><option value="custom">📅 Rango Manual...</option></select>
-                        <div id="caja-fechas-custom" style="display:none; gap:10px;">
-                            <input type="date" id="f-inf-desde" class="filtro-sel" style="flex:1;" onchange="actualizarInformeAvanzado()">
-                            <input type="date" id="f-inf-hasta" class="filtro-sel" style="flex:1;" onchange="actualizarInformeAvanzado()">
+                        <div class="form-grupo" style="margin-bottom:8px;">
+                            <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Rango de Fecha:</label>
+                            <select class="filtro-sel" id="f-inf-rango-fecha" onchange="manejarRangoFechas()"><option value="30">Últimos 30 Días</option><option value="hoy">Trabajos de Hoy</option><option value="7">Últimos 7 Días</option><option value="todo">Ver Todo</option><option value="custom">📅 Rango Manual...</option></select>
                         </div>
-                        <select class="filtro-sel" id="f-inf-accion-oculto" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Trabajos</option><option value="Sanidad">💉 Sanidad</option><option value="Peso">⚖️ Pesos</option><option value="Diagnóstico">🩺 Tactos</option><option value="Inseminación">🧬 Reproducción</option><option value="Nutrición">🌾 Nutrición</option></select>
+                        <div id="caja-fechas-custom" style="display:none; gap:10px; width:100%; margin-bottom:8px;">
+                            <input type="date" id="f-inf-desde" class="filtro-sel" style="flex:1; min-width:0;" onchange="actualizarInformeAvanzado()">
+                            <input type="date" id="f-inf-hasta" class="filtro-sel" style="flex:1; min-width:0;" onchange="actualizarInformeAvanzado()">
+                        </div>
+                        <div class="form-grupo" style="margin-bottom:8px;">
+                            <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Tipo de Trabajo:</label>
+                            <select class="filtro-sel" id="f-inf-accion-oculto" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Trabajos</option><option value="Sanidad">💉 Sanidad</option><option value="Peso">⚖️ Pesos</option><option value="Diagnóstico">🩺 Tactos</option><option value="Inseminación">🧬 Reproducción</option><option value="Nutrición">🌾 Nutrición</option></select>
+                        </div>
                         <input type="text" id="f-inf-keyword" class="filtro-sel" placeholder="🔍 Buscar producto..." onkeyup="actualizarInformeAvanzado()">
                     </div>
 
-                    <input type="text" id="f-inf-rp" class="filtro-sel" style="width:100%; margin-bottom:15px; border-color:var(--exito);" placeholder="🔍 Dossier Individual (Nº RP)" onkeyup="actualizarInformeAvanzado()">
+                    <input type="text" id="f-inf-rp" class="filtro-sel" style="margin-bottom:15px; border-color:var(--exito);" placeholder="🔍 Dossier Individual (Nº RP)" onkeyup="actualizarInformeAvanzado()">
                     
                     <div class="grid-kpis" style="margin-bottom:15px;">
                         <div class="kpi-caja" style="padding:10px;"><div class="kpi-valor" id="inf-total" style="font-size:20px;">0</div><div class="kpi-label" id="lbl-inf-total">Animales</div></div>
@@ -833,7 +857,7 @@
                     cargarListasFiltrosSelects();
                     cargarListaOperadores();
                     setEstadoRed(true);
-                }, err => { setEstadoRed(false, '❌ Error de red'); });
+                }, err => { setEstadoRed(false, '❌ Red Local'); });
                 
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
                 
@@ -1086,7 +1110,7 @@
                     let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
                     let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
                     let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
-                    dx = uDx ? uDx.valor : (esPre ? "Preñada (Lote/Notas)" : (esVacia ? "Vacía" : "-"));
+                    dx = uDx ? uDx.valor : (esPre ? "Preñada" : (esVacia ? "Vacía" : "-"));
 
                     const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nutricion = (uNut.valor || "-") + " | " + (uNut.detalles || "");
                     const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "-") + " | " + (uSan.detalles || "");
@@ -1377,7 +1401,7 @@
 
         function cleanPDFText(text) {
             if (!text) return ''; let str = String(text);
-            str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️|✏️|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️️|🚪/g, '');
+            str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️|✏️|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️|🚪/g, '');
             str = str.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
             return str.trim();
         }
@@ -1903,8 +1927,8 @@
                 const selEdit = document.getElementById('op-edit-usu-sel');
                 let options = '<option value="">-- Seleccione un usuario --</option>';
                 ops.forEach(o => { options += `<option value="${o}">${o}</option>`; });
-                if(selDel && selDel.innerHTML !== options) selDel.innerHTML = options;
-                if(selEdit && selEdit.innerHTML !== options) selEdit.innerHTML = options;
+                if(selDel) selDel.innerHTML = options;
+                if(selEdit) selEdit.innerHTML = options;
             } catch(e) { console.error("Error al cargar operadores", e); }
         }
 
