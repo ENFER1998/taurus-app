@@ -12,16 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-    <!-- INTEGRACIÓN ONESIGNAL -->
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-    <script>
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function(OneSignal) {
-        try { await OneSignal.init({ appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60" }); } catch(e) {}
-      });
-    </script>
-
-    <!-- FIREBASE SDK -->
+    <!-- FIREBASE SDK (OneSignal retirado para no recibir notificaciones en el Admin) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
@@ -521,8 +512,8 @@
             let activas = 0; let vencidas = 0; let hoy = new Date();
             clientesCache.forEach(c => {
                 if(!c.vencimiento) { activas++; return; }
-                let d = new Date(c.vencimiento);
-                if(d >= hoy) activas++; else vencidas++;
+                let fLimit = new Date(c.vencimiento.includes('T') ? c.vencimiento : c.vencimiento + "T23:59:59");
+                if(fLimit >= hoy) activas++; else vencidas++;
             });
             document.getElementById('kpi-total').innerText = clientesCache.length;
             document.getElementById('kpi-activas').innerText = activas;
@@ -535,8 +526,7 @@
             if(clientesCache.length === 0) { contenedor.innerHTML = '<div style="text-align:center; color:var(--muted); padding: 20px;">Sin clientes</div>'; return; }
             
             clientesCache.forEach(c => {
-                let d = c.vencimiento ? new Date(c.vencimiento) : null;
-                let fechaF = ""; if(d && !isNaN(d.getTime())) { let off = d.getTimezoneOffset() * 60000; fechaF = new Date(d.getTime() - off).toISOString().split('T')[0]; }
+                let fechaF = c.vencimiento ? String(c.vencimiento).split('T')[0] : "";
                 
                 let featBadges = ""; let fc = String(c.features||"");
                 if(fc.includes('rafaga')) featBadges += `<span style="background:var(--bg-card); padding:3px 8px; border-radius:4px; font-size:10px; border:1px solid var(--border);">⚡ Ráfaga</span>`;
@@ -600,64 +590,77 @@
             } catch (e) { mostrarToast("❌ Error crítico", true); } finally { toggleLoading(false); }
         }
 
-   async function borrarUsuarioMaestroGhost(usu) {
-    if(!confirm(`⚠️ PELIGRO DE DESTRUCCIÓN TOTAL:\n¿Eliminar DE RAÍZ al Master "${usu}", incluyendo animales, Google Sheets, equipo y su cuenta de acceso?`)) return;
-    
-    toggleLoading(true, "Purgando Firestore, Auth y Google Sheets...");
-    
-    try {
-        // 1. ENVIAR ORDEN AL GOOGLE APPS SCRIPT PARA BORRAR LOS DATOS EN GOOGLE SHEETS
-        const fd = new URLSearchParams();
-        fd.append('accion', 'borrar_estancia_completa');
-        fd.append('maestro', usu);
-        await fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
+        async function borrarUsuarioMaestroGhost(usu) {
+            if(!confirm(`⚠️ PELIGRO DE DESTRUCCIÓN TOTAL:\n¿Eliminar DE RAÍZ al Master "${usu}", incluyendo animales, Google Sheets, equipo y su cuenta de acceso?`)) return;
+            
+            toggleLoading(true, "Purgando Firestore, Auth y Google Sheets...");
+            
+            try {
+                // 1. Google Sheets
+                const fd = new URLSearchParams();
+                fd.append('accion', 'borrar_estancia_completa');
+                fd.append('maestro', usu);
+                await fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
 
-        // 2. ELIMINAR TODOS LOS MIEMBROS DEL EQUIPO (Peones y Dueños Extra)
-        const snapEquipo = await db.collection('usuarios').where('maestroId', '==', usu).get();
-        for (const docOp of snapEquipo.docs) {
-            let opData = docOp.data();
-            if (opData.password && docOp.id !== usu) {
-                await gestionarAuthUsuario(docOp.id, opData.password, 'eliminar');
+                // 2. Miembros del equipo
+                const snapEquipo = await db.collection('usuarios').where('maestroId', '==', usu).get();
+                for (const docOp of snapEquipo.docs) {
+                    let opData = docOp.data();
+                    if (opData.password && docOp.id !== usu) {
+                        await gestionarAuthUsuario(docOp.id, opData.password, 'eliminar');
+                    }
+                    await docOp.ref.delete();
+                }
+
+                // 3. Subcolecciones y documento de estancia
+                const estanciaRef = db.collection('estancias').doc(usu);
+                const snapshotEventos = await estanciaRef.collection('eventos').get();
+                if (!snapshotEventos.empty) {
+                    const docs = snapshotEventos.docs;
+                    for (let i = 0; i < docs.length; i += 450) {
+                        const chunk = docs.slice(i, i + 450);
+                        const batch = db.batch();
+                        chunk.forEach(doc => batch.delete(doc.ref));
+                        await batch.commit();
+                    }
+                }
+                await estanciaRef.delete();
+
+                // 4. Perfil Master en Firestore
+                const docUsu = await db.collection('usuarios').doc(usu).get();
+                let clave = null;
+                if (docUsu.exists) {
+                    clave = docUsu.data().password;
+                    await db.collection('usuarios').doc(usu).delete();
+                }
+
+                // 5. Auth de Firebase
+                if (clave) {
+                    await gestionarAuthUsuario(usu, clave, 'eliminar');
+                }
+
+                toggleLoading(false);
+                mostrarToast("✅ Estancia, Google Sheets y cuenta eliminadas.");
+                cargarClientes(); 
+            } catch (e) {
+                toggleLoading(false);
+                alert("Error crítico al intentar purgar los datos: " + e.message);
             }
-            await docOp.ref.delete();
         }
 
-        // 3. DESTRUIR SUBCOLECCIONES Y ESTANCIA EN FIRESTORE
-        const estanciaRef = db.collection('estancias').doc(usu);
-        const snapshotEventos = await estanciaRef.collection('eventos').get();
-        if (!snapshotEventos.empty) {
-            const docs = snapshotEventos.docs;
-            for (let i = 0; i < docs.length; i += 450) {
-                const chunk = docs.slice(i, i + 450);
-                const batch = db.batch();
-                chunk.forEach(doc => batch.delete(doc.ref));
-                await batch.commit();
-            }
-        }
-        await estanciaRef.delete();
-
-        // 4. DESTRUIR PERFIL DEL MASTER EN FIRESTORE
-        const docUsu = await db.collection('usuarios').doc(usu).get();
-        let clave = null;
-        if (docUsu.exists) {
-            clave = docUsu.data().password;
-            await db.collection('usuarios').doc(usu).delete();
+        function abrirEdicion(usu, hac, feats, nom) {
+            document.getElementById('edit-old-usu').value = usu; document.getElementById('edit-new-usu').value = usu; 
+            document.getElementById('edit-new-hac').value = hac; document.getElementById('edit-new-nombre').value = nom;
+            setFeatures(feats); abrirModal('modal-editar');
         }
 
-        // 5. DESTRUIR CUENTA EN FIREBASE AUTHENTICATION
-        if (clave) {
-            await gestionarAuthUsuario(usu, clave, 'eliminar');
+        async function guardarEdicion() {
+            const uId = document.getElementById('edit-old-usu').value; const nH = document.getElementById('edit-new-hac').value.trim(); const nN = document.getElementById('edit-new-nombre').value.trim(); 
+            if(!nH || !nN) return mostrarToast("⚠️ Completar campos", true);
+            toggleLoading(true);
+            try { await db.collection('usuarios').doc(uId).update({ nombre: nN, hacienda: nH, features: getFeatures('e') }); toggleLoading(false); cerrarModal('modal-editar'); mostrarToast("✅ Guardado"); cargarClientes(); } 
+            catch (e) { toggleLoading(false); mostrarToast("❌ Error", true); }
         }
-
-        toggleLoading(false);
-        mostrarToast("✅ Estancia, Google Sheets y cuenta eliminadas sin dejar rastro.");
-        cargarClientes(); 
-        
-    } catch (e) {
-        toggleLoading(false);
-        alert("Error crítico al intentar purgar los datos: " + e.message);
-    }
-}
 
         // ==========================================
         // GESTIÓN DE EQUIPO GHOST (PEONES Y DUEÑOS)
@@ -750,7 +753,6 @@
                     llenarSelectMapeo('map-raza', headers, true);
                     llenarSelectMapeo('map-notas', headers, true);
                     
-                    // AUTO-DETECCIÓN INTELIGENTE DE COLUMNAS
                     autoSeleccionarMapeo('map-caravana', ['caravana', 'rp', 'tag']);
                     autoSeleccionarMapeo('map-categoria', ['categoria', 'cat']);
                     autoSeleccionarMapeo('map-lote', ['lote', 'grupo']);
@@ -796,7 +798,7 @@
             if(!cCar) return mostrarToast("⚠️ Falta Columna Caravana", true);
             
             let datosAInyectar = [];
-            const batchId = new Date().getTime().toString(); // ID único para toda esta carga masiva
+            const batchId = new Date().getTime().toString();
             
             datosArchivoCrudo.forEach((f, index) => {
                 let vCar = f[cCar];
@@ -805,7 +807,6 @@
                     let valCat = cCat && f[cCat] ? String(f[cCat]).trim() : "-";
                     let valLote = cLot && f[cLot] ? String(f[cLot]).trim() : "Hacienda General";
                     
-                    // Sumamos milisegundos para que no colisionen los eventos de un mismo animal
                     let baseTime = new Date().getTime() + (index * 10);
                     
                     // 1. Ubicación y Clasificación
@@ -864,8 +865,6 @@
             
             if(confirm(`Se generaron ${datosAInyectar.length} registros para el historial clínico general.\n¿Inyectar en Firestore?`)) { 
                 document.getElementById('panel-mapeo').classList.add('oculto'); 
-                
-                // Guardamos el ID de esta carga localmente para poder deshacerla después
                 lsSet('tc_ultimo_batch', { mId: mId, batchId: batchId });
                 enviarCargaMasivaEnBloques(mId, datosAInyectar); 
             }
@@ -897,7 +896,6 @@
                     return mostrarToast("⚠️ No se encontraron datos vinculados a esa importación.", true);
                 }
 
-                // Borramos en bloques para no exceder los límites de Firestore
                 const docs = snapshot.docs;
                 for (let i = 0; i < docs.length; i += 450) {
                     const chunk = docs.slice(i, i + 450);
@@ -915,7 +913,7 @@
             }
         }
 
-        // Anclajes Globales (para evitar bloqueos CSP)
+        // Anclajes Globales
         window.ingresarAdmin = ingresarAdmin; window.cerrarSesion = cerrarSesion; window.cambiarVista = cambiarVista; window.cerrarModal = cerrarModal;
         window.toggleMantenimiento = toggleMantenimiento; window.enviarAvisoMantenimiento = enviarAvisoMantenimiento; window.crearCliente = crearCliente; window.cargarClientes = cargarClientes;
         window.actualizarVencimiento = actualizarVencimiento; window.cambiarClaveMaestroGhost = cambiarClaveMaestroGhost; window.borrarUsuarioMaestroGhost = borrarUsuarioMaestroGhost;
