@@ -805,7 +805,7 @@
                 _procesarMapeoEInyectar_internal();
             }, 50);
         }
-        function _procesarMapeoEInyectar_internal() {
+        async function _procesarMapeoEInyectar_internal() {
             const cCar = document.getElementById('map-caravana').value; 
             const cCat = document.getElementById('map-categoria').value; 
             const cLot = document.getElementById('map-lote').value; 
@@ -895,9 +895,14 @@
                 const chunk = arr.slice(i, i + chunkSize);
                 toggleLoading(true, `Inyectando bloque ${Math.ceil((i+1)/chunkSize)}...`);
                 const batch = db.batch(); chunk.forEach(item => { batch.set(col.doc(), item); });
-                try { await batch.commit(); } catch (e) { toggleLoading(false); return mostrarToast(`❌ Error en bloque`, true); }
+                try { await batch.commit(); await new Promise(r => setTimeout(r, 2000)); } catch (e) { toggleLoading(false); return mostrarToast(`❌ Error en bloque`, true); }
             }
-            toggleLoading(false); mostrarToast("✅ Importación masiva completada"); document.getElementById('archivo-excel').value = ''; datosArchivoCrudo = [];
+            toggleLoading(false); mostrarToast("✅ Importación masiva completada");
+            try {
+                const fd = new URLSearchParams(); fd.append('accion', 'notificar_accion'); fd.append('maestro', mId); fd.append('mensaje', `Carga Masiva completada: Se inyectaron ${arr.length} eventos nuevos.`);
+                fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
+            } catch(err) {}
+            document.getElementById('archivo-excel').value = ''; datosArchivoCrudo = [];
         }
 
         async function deshacerUltimaImportacion() {

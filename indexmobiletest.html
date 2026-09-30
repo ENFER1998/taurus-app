@@ -353,7 +353,7 @@
                     </div>
 
                     <div class="buscador-contenedor">
-                        <input type="text" id="buscador-lista" class="buscador-input" placeholder="Buscar por RP, raza, notas..." onkeyup="cargarListaRegistro()">
+                        <input type="text" id="buscador-lista" class="buscador-input" placeholder="Buscar por RP, raza, notas..." onkeyup="filtrarListaRegistroDebounced()">
                         <button class="buscador-btn" onclick="cargarListaRegistro()">Limpiar</button>
                     </div>
                     <ul class="lista-animales" id="tb-registro"></ul>
@@ -476,10 +476,10 @@
                             <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Tipo de Trabajo:</label>
                             <select class="filtro-sel" id="f-inf-accion-oculto" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Trabajos</option><option value="Sanidad">💉 Sanidad</option><option value="Peso">⚖️ Pesos</option><option value="Diagnóstico">🩺 Tactos</option><option value="Inseminación">🧬 Reproducción</option><option value="Nutrición">🌾 Nutrición</option></select>
                         </div>
-                        <input type="text" id="f-inf-keyword" class="filtro-sel" placeholder="🔍 Buscar producto..." onkeyup="actualizarInformeAvanzado()">
+                        <input type="text" id="f-inf-keyword" class="filtro-sel" placeholder="🔍 Buscar producto..." onkeyup="filtrarInformeDebounced()">
                     </div>
 
-                    <input type="text" id="f-inf-rp" class="filtro-sel" style="margin-bottom:15px; border-color:var(--exito);" placeholder="🔍 Dossier Individual (Nº RP)" onkeyup="actualizarInformeAvanzado()">
+                    <input type="text" id="f-inf-rp" class="filtro-sel" style="margin-bottom:15px; border-color:var(--exito);" placeholder="🔍 Dossier Individual (Nº RP)" onkeyup="filtrarInformeDebounced()">
                     
                     <div class="grid-kpis" style="margin-bottom:15px;">
                         <div class="kpi-caja" style="padding:10px;"><div class="kpi-valor" id="inf-total" style="font-size:20px;">0</div><div class="kpi-label" id="lbl-inf-total">Animales</div></div>
@@ -993,6 +993,9 @@
                     historiaPorRP[rp].push(evt);
                 }
             });
+            for(let rp in historiaPorRP) {
+                historiaPorRP[rp].reverse();
+            }
             historiaCache = historiaPorRP;
             return historiaPorRP;
         }
@@ -1009,8 +1012,7 @@
 
         function obtenerHistorial(caravana) {
             let historia = procesarEventos();
-            let hist = historia[String(caravana)] || [];
-            return [...hist].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            return historia[String(caravana)] || [];
         }
 
         function obtenerNombreCategoriaLegible(sigla) {
@@ -1295,17 +1297,6 @@
             document.getElementById('tabla-individual').classList.add('oculto');
             
             let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja'));
-            
-            let tPreGlobal = 0; 
-            vivas.forEach(car => { 
-                const regs = obtenerHistorial(car); 
-                const uDx = regs.find(d => d.accion === 'Diagnóstico'); 
-                const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                let lote = uC && uC.detalles ? String(uC.detalles).toLowerCase() : "";
-                let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
-                let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (lote.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
-                if (esPre) tPreGlobal++; 
-            });
             
             const cajaKpiPre = document.getElementById('caja-kpi-prenadas');
             const lblTotal = document.getElementById('lbl-inf-total');
@@ -1719,6 +1710,19 @@
         function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
         function abrirModal(id) { document.getElementById(id).style.display = 'flex'; } function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
         
+
+        let timeoutBuscadorRegistro = null;
+        function filtrarListaRegistroDebounced() {
+            clearTimeout(timeoutBuscadorRegistro);
+            timeoutBuscadorRegistro = setTimeout(() => { cargarListaRegistro(); }, 400);
+        }
+
+        let timeoutBuscadorInforme = null;
+        function filtrarInformeDebounced() {
+            clearTimeout(timeoutBuscadorInforme);
+            timeoutBuscadorInforme = setTimeout(() => { actualizarInformeAvanzado(); }, 400);
+        }
+
         function cargarListaRegistro() {
             const datosActivos = obtenerRegistrosActivos();
             let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
