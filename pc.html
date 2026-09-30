@@ -161,7 +161,7 @@
         body.tema-claro .tabla-informe tr:hover td { background: #f8fafc; }
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); z-index: 2000; align-items: center; justify-content: center;}
-        .modal-body { background: var(--bg-panel); width: 450px; border-radius: 6px; padding: 25px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto;}
+        .modal-body { background: var(--bg-panel); width: 450px; border-radius: 6px; padding: 25px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5);}
         .modal-body h3 { margin: 0 0 20px 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; font-size: 16px; text-transform: uppercase; color: var(--text-main);}
         .btn-cerrar { float: right; cursor: pointer; color: var(--text-muted); font-size: 20px; font-weight: bold;}
         .btn-cerrar:hover { color: var(--text-main); }
@@ -418,7 +418,7 @@
             </div>
 
             <div class="search-bar">
-                <input type="text" id="buscador-lista" class="form-control" style="margin:0;" placeholder="Buscar por RP, categoría, lote, observaciones..." onkeyup="cargarListaRegistro()">
+                <input type="text" id="buscador-lista" class="form-control" style="margin:0;" placeholder="Buscar por RP, categoría, lote, observaciones..." onkeyup="filtrarListaRegistroDebounced()">
                 <button type="button" class="btn-primary" style="width: 150px; margin:0;" onclick="cargarListaRegistro()">Filtrar</button>
             </div>
             
@@ -519,14 +519,14 @@
                     <select class="form-control" style="width:auto;" id="f-inf-rango-fecha" onchange="manejarRangoFechas()"><option value="30">Últimos 30 Días</option><option value="hoy">Trabajos de Hoy</option><option value="7">Últimos 7 Días</option><option value="todo">Ver Todo</option><option value="custom">📅 Rango Manual...</option></select>
                     <select class="form-control" style="width:auto;" onchange="document.getElementById('f-inf-accion-oculto').value = this.value; actualizarInformeAvanzado();"><option value="ALL">Todos los Trabajos</option><option value="Sanidad">💉 Sanidad</option><option value="Peso">⚖ Pesos</option><option value="Diagnóstico">🩺 Tactos</option><option value="Inseminación">🧬 Reproducción</option><option value="Nutrición">🌾 Nutrición</option></select>
                     <input type="hidden" id="f-inf-accion-oculto" value="ALL">
-                    <input type="text" id="f-inf-keyword" class="form-control" style="width:auto; flex:1;" placeholder="Buscar producto o detalles..." onkeyup="actualizarInformeAvanzado()">
+                    <input type="text" id="f-inf-keyword" class="form-control" style="width:auto; flex:1;" placeholder="Buscar producto o detalles..." onkeyup="filtrarInformeDebounced()">
                     <div id="caja-fechas-custom" style="display:none; gap:10px; flex: 1 1 100%;">
                         <input type="date" id="f-inf-desde" class="form-control" onchange="actualizarInformeAvanzado()">
                         <input type="date" id="f-inf-hasta" class="form-control" onchange="actualizarInformeAvanzado()">
                     </div>
                 </div>
 
-                <input type="text" id="f-inf-rp" class="form-control" style="border-color:var(--success);" placeholder="🔍 Ingrese Nº RP para Dossier Clínico Individual..." onkeyup="actualizarInformeAvanzado()">
+                <input type="text" id="f-inf-rp" class="form-control" style="border-color:var(--success);" placeholder="🔍 Ingrese Nº RP para Dossier Clínico Individual..." onkeyup="filtrarInformeDebounced()">
 
                 <div style="display:flex; justify-content:space-between; align-items:center; margin:15px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:15px 0;">
                     <div style="display:flex; gap:30px; align-items:center;">
@@ -760,7 +760,6 @@
         
         let unsubscribeEventos = null;
         let unsubscribeConfig = null;
-        let modulosHabilitados = ""; // <-- Variable Global Agregada
 
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
@@ -1043,9 +1042,8 @@
                             lblLic.style.color = diffDias <= 7 ? "var(--danger)" : "var(--success)";
                         } else { lblLic.innerText = "Licencia Perpetua / Sin Límite"; }
                         
-                        // 👇 APLICACIÓN DE MÓDULOS DE RÁFAGA Y BLUETOOTH 👇
-                        modulosHabilitados = mData.features || "";
-                        if(!modulosHabilitados.includes('rafaga')) {
+                        const featuresActivos = mData.features || "";
+                        if(!featuresActivos.includes('rafaga')) {
                             let bloqueRafaga = document.getElementById('tarjeta-rafaga');
                             if (bloqueRafaga) bloqueRafaga.style.display = 'none';
                         }
@@ -1140,6 +1138,9 @@
                     historiaPorRP[rp].push(evt);
                 }
             });
+            for(let rp in historiaPorRP) {
+                historiaPorRP[rp].reverse();
+            }
             historiaCache = historiaPorRP;
             return historiaPorRP;
         }
@@ -1156,8 +1157,7 @@
 
         function obtenerHistorial(caravana) {
             let historia = procesarEventos();
-            let hist = historia[String(caravana)] || [];
-            return [...hist].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            return historia[String(caravana)] || [];
         }
 
         function obtenerNombreCategoriaLegible(sigla) {
@@ -1443,17 +1443,6 @@
             
             let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja'));
             
-            let tPreGlobal = 0; 
-            vivas.forEach(car => { 
-                const regs = obtenerHistorial(car); 
-                const uDx = regs.find(d => d.accion === 'Diagnóstico'); 
-                const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                let lote = uC && uC.detalles ? String(uC.detalles).toLowerCase() : "";
-                let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
-                let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (lote.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
-                if (esPre) tPreGlobal++; 
-            });
-            
             const cajaKpiPre = document.getElementById('caja-kpi-prenadas');
             const lblTotal = document.getElementById('lbl-inf-total');
 
@@ -1466,7 +1455,7 @@
                 return;
             }
 
-            rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️️ Descargar PDF`;
+            rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar PDF`;
 
             if(modo === 'inventario') {
                 document.getElementById('tabla-masiva').classList.remove('oculto');
@@ -1480,6 +1469,8 @@
                 
                 tbodyMasivo.innerHTML = ""; let countTotal = 0; let countPre = 0;
                 
+                let bufferHTML = "";
+                let maxRows = 500;
                 vivas.forEach(car => {
                     const regs = obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
@@ -1506,9 +1497,13 @@
                     if(pasaFiltro) { 
                         countTotal++; 
                         if(esPre) countPre++;
-                        tbodyMasivo.innerHTML += `<tr><td><strong>${car}</strong><br><span style="font-size:11px; color:var(--text-muted);">Cb: ${carimbo}</span></td><td>${catLegible}</td><td>${lote}</td><td><strong>${peso}</strong></td><td>${dx}</td></tr>`; 
+                        if (countTotal <= maxRows) {
+                            bufferHTML += `<tr><td><strong>${car}</strong><br><span style="font-size:11px; color:var(--text-muted);">Cb: ${carimbo}</span></td><td>${catLegible}</td><td>${lote}</td><td><strong>${peso}</strong></td><td>${dx}</td></tr>`;
+                        }
                     }
                 });
+                if(countTotal > maxRows) bufferHTML += `<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-muted);">Mostrando 500 resultados. Use filtros o descargue PDF para ver todo.</td></tr>`;
+                tbodyMasivo.innerHTML = bufferHTML;
                 document.getElementById('inf-total').innerText = countTotal; 
                 document.getElementById('inf-prenadas').innerText = countPre;
                 
@@ -1559,7 +1554,7 @@
 
         function cleanPDFText(text) {
             if (!text) return ''; let str = String(text);
-            str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️️|✏|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️|🚪/g, '');
+            str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️|✏️️|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️|🚪/g, '');
             str = str.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
             return str.trim();
         }
@@ -1868,6 +1863,19 @@
         function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.sidebar-nav li').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
         function abrirModal(id) { document.getElementById(id).style.display = 'flex'; } function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
         
+
+        let timeoutBuscadorRegistro = null;
+        function filtrarListaRegistroDebounced() {
+            clearTimeout(timeoutBuscadorRegistro);
+            timeoutBuscadorRegistro = setTimeout(() => { cargarListaRegistro(); }, 400);
+        }
+
+        let timeoutBuscadorInforme = null;
+        function filtrarInformeDebounced() {
+            clearTimeout(timeoutBuscadorInforme);
+            timeoutBuscadorInforme = setTimeout(() => { actualizarInformeAvanzado(); }, 400);
+        }
+
         function cargarListaRegistro() {
             const datosActivos = obtenerRegistrosActivos();
             let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
@@ -1934,9 +1942,11 @@
                 return;
             }
 
-            listaFiltrada.forEach(item => {
+            let htmlHTML = "";
+            let limiteRender = 150;
+            listaFiltrada.slice(0, limiteRender).forEach(item => {
                 let badgeBaja = item.esBaja ? `<span style="background:var(--danger); color:white; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px;">BAJA</span>` : '';
-                ul.innerHTML += `<tr onclick="navegarDesdeLista('${item.car}')">
+                htmlHTML += `<tr onclick="navegarDesdeLista('${item.car}')">
                     <td style="color:var(--text-main);"><strong>${item.car}</strong>${badgeBaja}</td>
                     <td style="color:var(--text-main);">${item.catLegible}</td>
                     <td style="color:var(--text-main);">${item.lote}</td>
@@ -1944,6 +1954,10 @@
                     <td><button class="btn-outline">Abrir Ficha</button></td>
                 </tr>`;
             });
+            if(listaFiltrada.length > limiteRender) {
+                htmlHTML += `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:20px;">Mostrando ${limiteRender} de ${listaFiltrada.length} resultados. Utilice el buscador.</td></tr>`;
+            }
+            ul.innerHTML = htmlHTML;
         }
 
         function filtrarLista(t) { cargarListaRegistro(); }
@@ -1989,45 +2003,16 @@
             const rolSel = document.getElementById('op-rol').value;
             if(!n || !u || !p) { alert("Completar Nombre, Usuario y Contraseña."); return; } 
             if(p.length < 6) { alert("La contraseña debe tener mínimo 6 caracteres por seguridad en Firebase."); return; }
-            
-            // 👇 LIMITADOR DE PEONES Y DUEÑOS 👇
-            let maxOps = 1, maxOwn = 0;
-            modulosHabilitados.split(',').forEach(param => { 
-                if(param.startsWith('limitOps:')) maxOps = parseInt(param.split(':')[1]) || 1; 
-                if(param.startsWith('limitOwn:')) maxOwn = parseInt(param.split(':')[1]) || 0; 
-            });
-            
+            let rolFinal = rolSel;
+            if (rolSel === 'Operador') {
+                let permisos = Array.from(document.querySelectorAll('.chk-permiso:checked')).map(c => c.value).join(',');
+                if(!permisos) { alert("Debe seleccionar al menos un permiso de acceso para el operador."); return; }
+                rolFinal = 'Operador|' + permisos;
+            }
             const btn = document.getElementById('btn-crear-op'); const btnOriginal = btn.innerHTML;
-            btn.innerHTML = "⏳ Verificando límites..."; btn.disabled = true;
-
+            btn.innerHTML = "⏳ Registrando..."; btn.disabled = true;
+            let email = u.includes('@') ? u : u + '@taurus.com';
             try {
-                const snapshotOps = await db.collection('usuarios').where('maestroId', '==', maestroId).get();
-                let currOps = 0, currOwn = 0;
-                snapshotOps.docs.forEach(doc => {
-                    if(doc.id !== maestroId) {
-                        let r = doc.data().rol || "";
-                        if(r.includes('Propietario') || r.includes('Dueño')) currOwn++;
-                        else currOps++;
-                    }
-                });
-
-                if (rolSel === 'Operador' && currOps >= maxOps && maxOps !== 999) {
-                    alert(`⚠️️ Límite alcanzado: Su plan solo permite ${maxOps} peón/operador(es). Contacte a soporte para ampliar su licencia.`);
-                    btn.innerHTML = btnOriginal; btn.disabled = false; return;
-                }
-                if (rolSel !== 'Operador' && currOwn >= maxOwn && maxOwn !== 999) {
-                    alert(`⚠️ Límite alcanzado: Su plan solo permite ${maxOwn} dueño(s) extra(s). Contacte a soporte para ampliar su licencia.`);
-                    btn.innerHTML = btnOriginal; btn.disabled = false; return;
-                }
-                
-                let rolFinal = rolSel;
-                if (rolSel === 'Operador') {
-                    let permisos = Array.from(document.querySelectorAll('.chk-permiso:checked')).map(c => c.value).join(',');
-                    if(!permisos) { alert("Debe seleccionar al menos un permiso de acceso para el operador."); btn.innerHTML = btnOriginal; btn.disabled = false; return; }
-                    rolFinal = 'Operador|' + permisos;
-                }
-                
-                let email = u.includes('@') ? u : u + '@taurus.com';
                 const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryAppPeon");
                 await secondaryApp.auth().createUserWithEmailAndPassword(email, p);
                 await secondaryApp.auth().signOut();
@@ -2038,7 +2023,7 @@
                 ejecutarAccion('Alta Operador', email, `Nombre: ${n} | Rol: ${rolFinal}`, null);
                 document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 
                 btn.innerHTML = btnOriginal; btn.disabled = false;
-                mostrarToast("✅ Usuario Registrado Exitosamente."); cargarListaOperadores();
+                alert("Usuario Registrado Exitosamente."); cargarListaOperadores();
             } catch(e) {
                 alert("Hubo un error al crear la cuenta. Verifique que el usuario/correo no esté ya registrado.");
                 btn.innerHTML = btnOriginal; btn.disabled = false;
@@ -2164,12 +2149,6 @@
         }
 
         window.recibirTagNFC = function(tagHex) {
-            // 👇 BLOQUEO DE BASTÓN BLUETOOTH 👇
-            if(!modulosHabilitados.includes('bluetooth')) {
-                mostrarToast("⚠️ El módulo de Bastones Bluetooth no está activo en su plan.", true);
-                return;
-            }
-
             let dataMinuscula = String(tagHex).trim().toLowerCase();
             let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === dataMinuscula);
             if(esRFIDRegistrado) {

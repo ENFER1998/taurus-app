@@ -1071,6 +1071,12 @@
         }
 
         function procesarMapeoEInyectar() {
+            toggleLoading(true, "Procesando datos en memoria...");
+            setTimeout(() => {
+                _procesarMapeoEInyectar_internal();
+            }, 50);
+        }
+        async function _procesarMapeoEInyectar_internal() {
             const cCar = document.getElementById('map-caravana').value; 
             const cCat = document.getElementById('map-categoria').value; 
             const cLot = document.getElementById('map-lote').value; 
@@ -1079,7 +1085,7 @@
             const cNot = document.getElementById('map-notas').value; 
             const mId = document.getElementById('sel-cliente-masiva').value;
             
-            if(!cCar) return mostrarToast("⚠️ Falta Columna Caravana", true);
+            if(!cCar) { toggleLoading(false); return mostrarToast("⚠️ Falta Columna Caravana", true); }
             
             let datosAInyectar = [];
             const batchId = new Date().getTime().toString();
@@ -1145,8 +1151,9 @@
                 }
             });
             
-            if(datosAInyectar.length === 0) return mostrarToast("❌ Sin datos válidos", true);
+            if(datosAInyectar.length === 0) { toggleLoading(false); return mostrarToast("❌ Sin datos válidos", true); }
             
+            toggleLoading(false);
             if(confirm(`Se generaron ${datosAInyectar.length} registros para el historial general.\n¿Inyectar en Firestore?`)) { 
                 document.getElementById('panel-mapeo').classList.add('oculto'); 
                 lsSet('tc_ultimo_batch', { mId: mId, batchId: batchId });
@@ -1172,6 +1179,10 @@
             }
             toggleLoading(false); 
             mostrarToast("✅ Importación masiva completada"); 
+            try {
+                const fd = new URLSearchParams(); fd.append('accion', 'notificar_accion'); fd.append('maestro', mId); fd.append('mensaje', `Carga Masiva completada.`);
+                fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
+            } catch(err) {}
             document.getElementById('archivo-excel').value = ''; 
             datosArchivoCrudo = [];
         }
