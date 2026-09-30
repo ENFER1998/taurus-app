@@ -222,7 +222,7 @@
                     <div class="kpi-caja" style="border-color: var(--peligro);" onclick="filtrarDesdeDashboard('estado', 'bajas')"><div class="kpi-valor" id="dash-bajas" style="color: var(--peligro);">0</div><div class="kpi-label" style="color: var(--peligro);">Mortalidad / Bajas</div></div>
                     <div class="kpi-caja"><div class="kpi-valor" id="dash-acciones">0</div><div class="kpi-label">Registros Procesados</div></div>
                 </div>
-                <div class="tarjeta" id="contenedor-alertas" style="display:none;"><div class="tarjeta-titulo" style="color:var(--alerta);">⚠️️ Alertas (Deslizar)</div><div id="lista-alertas"></div></div>
+                <div class="tarjeta" id="contenedor-alertas" style="display:none;"><div class="tarjeta-titulo" style="color:var(--alerta);">⚠ Alertas (Deslizar)</div><div id="lista-alertas"></div></div>
                 <div id="contenedor-graficos-dinamicos"></div>
             </div>
 
@@ -860,6 +860,16 @@
                 }, err => { setEstadoRed(false, '❌ Red Local'); });
                 
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
+                let displayRol = isPropietario ? 'Propietario' : 'Operador';
+                
+                if (window.OneSignalDeferred) { 
+                    OneSignalDeferred.push(async function(OneSignal) { 
+                        try {
+                            OneSignal.User.addTags({ rol: displayRol, estancia_id: m }); 
+                            if (isPropietario) { await OneSignal.Slidedown.promptPush(); }
+                        } catch (e) {}
+                    }); 
+                }
                 
                 document.querySelectorAll('.vista').forEach(e => e.classList.add('oculto'));
                 document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('activo'));
