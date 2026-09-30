@@ -1343,6 +1343,8 @@
                 
                 tbodyMasivo.innerHTML = ""; let countTotal = 0; let countPre = 0;
                 
+                let bufferHTML = "";
+                let maxRows = 500;
                 vivas.forEach(car => {
                     const regs = obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
@@ -1369,9 +1371,13 @@
                     if(pasaFiltro) { 
                         countTotal++; 
                         if(esPre) countPre++;
-                        tbodyMasivo.innerHTML += `<tr><td><strong>${car}</strong><br><span style="font-size:11px; color:var(--muted);">Cb: ${carimbo}</span></td><td>${catLegible}</td><td>${lote}</td><td><strong>${peso}</strong></td><td>${dx}</td></tr>`; 
+                        if (countTotal <= maxRows) {
+                            bufferHTML += `<tr><td><strong>${car}</strong><br><span style="font-size:11px; color:var(--muted);">Cb: ${carimbo}</span></td><td>${catLegible}</td><td>${lote}</td><td><strong>${peso}</strong></td><td>${dx}</td></tr>`;
+                        }
                     }
                 });
+                if(countTotal > maxRows) bufferHTML += `<tr><td colspan="5" style="text-align:center;">Mostrando 500 resultados. Use filtros o descargue PDF para ver todo.</td></tr>`;
+                tbodyMasivo.innerHTML = bufferHTML;
                 document.getElementById('inf-total').innerText = countTotal; 
                 document.getElementById('inf-prenadas').innerText = countPre;
                 
@@ -1789,9 +1795,12 @@
                 return;
             }
 
-            listaFiltrada.forEach(item => {
+            // Límite de renderizado para evitar congelar teléfonos con bases de datos grandes
+            let htmlHTML = "";
+            let limiteRender = 100;
+            listaFiltrada.slice(0, limiteRender).forEach(item => {
                 let badgeBaja = item.esBaja ? `<span style="background:var(--peligro); color:white; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px;">BAJA</span>` : '';
-                ul.innerHTML += `<li onclick="navegarDesdeLista('${item.car}')">
+                htmlHTML += `<li onclick="navegarDesdeLista('${item.car}')">
                     <div style="display:flex; flex-direction:column; gap:4px;">
                         <div style="display:flex; align-items:center;">
                             <strong style="font-size:18px; color:var(--texto);">${item.car}</strong>${badgeBaja}
@@ -1801,6 +1810,10 @@
                     <span style="font-size:20px; color:var(--texto);">›</span>
                 </li>`;
             });
+            if(listaFiltrada.length > limiteRender) {
+                htmlHTML += `<li style="text-align:center; color:var(--muted); padding:20px;"> Mostrando los primeros ${limiteRender} resultados. Usa el buscador para encontrar más.</li>`;
+            }
+            ul.innerHTML = htmlHTML;
         }
 
         function filtrarLista(t) { cargarListaRegistro(); }

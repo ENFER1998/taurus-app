@@ -1478,6 +1478,8 @@
                 
                 tbodyMasivo.innerHTML = ""; let countTotal = 0; let countPre = 0;
                 
+                let bufferHTML = "";
+                let maxRows = 500;
                 vivas.forEach(car => {
                     const regs = obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
@@ -1504,9 +1506,13 @@
                     if(pasaFiltro) { 
                         countTotal++; 
                         if(esPre) countPre++;
-                        tbodyMasivo.innerHTML += `<tr><td><strong>${car}</strong><br><span style="font-size:11px; color:var(--text-muted);">Cb: ${carimbo}</span></td><td>${catLegible}</td><td>${lote}</td><td><strong>${peso}</strong></td><td>${dx}</td></tr>`; 
+                        if (countTotal <= maxRows) {
+                            bufferHTML += `<tr><td><strong>${car}</strong><br><span style="font-size:11px; color:var(--text-muted);">Cb: ${carimbo}</span></td><td>${catLegible}</td><td>${lote}</td><td><strong>${peso}</strong></td><td>${dx}</td></tr>`;
+                        }
                     }
                 });
+                if(countTotal > maxRows) bufferHTML += `<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-muted);">Mostrando 500 resultados. Use filtros o descargue PDF para ver todo.</td></tr>`;
+                tbodyMasivo.innerHTML = bufferHTML;
                 document.getElementById('inf-total').innerText = countTotal; 
                 document.getElementById('inf-prenadas').innerText = countPre;
                 
@@ -1932,9 +1938,11 @@
                 return;
             }
 
-            listaFiltrada.forEach(item => {
+            let htmlHTML = "";
+            let limiteRender = 150;
+            listaFiltrada.slice(0, limiteRender).forEach(item => {
                 let badgeBaja = item.esBaja ? `<span style="background:var(--danger); color:white; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px;">BAJA</span>` : '';
-                ul.innerHTML += `<tr onclick="navegarDesdeLista('${item.car}')">
+                htmlHTML += `<tr onclick="navegarDesdeLista('${item.car}')">
                     <td style="color:var(--text-main);"><strong>${item.car}</strong>${badgeBaja}</td>
                     <td style="color:var(--text-main);">${item.catLegible}</td>
                     <td style="color:var(--text-main);">${item.lote}</td>
@@ -1942,6 +1950,10 @@
                     <td><button class="btn-outline">Abrir Ficha</button></td>
                 </tr>`;
             });
+            if(listaFiltrada.length > limiteRender) {
+                htmlHTML += `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:20px;">Mostrando ${limiteRender} de ${listaFiltrada.length} resultados. Utilice el buscador.</td></tr>`;
+            }
+            ul.innerHTML = htmlHTML;
         }
 
         function filtrarLista(t) { cargarListaRegistro(); }
