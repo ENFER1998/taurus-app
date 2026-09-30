@@ -479,8 +479,7 @@
                         <option value="ALL">🎯 Todos los Carimbos</option>
                         <option value="0">Carimbo 0</option><option value="1">Carimbo 1</option><option value="2">Carimbo 2</option>
                         <option value="3">Carimbo 3</option><option value="4">Carimbo 4</option><option value="5">Carimbo 5</option>
-                        <option value="6">Carimbo 6</option><option value="7">Carimbo 7</option><option value="8">Carimbo 8</option>
-                        <option value="9">Carimbo 9</option>
+                        <option value="6">Carimbo 6</option><option value="7">Carimbo 7</option><option value="8">Carimbo 8</option><option value="9">Carimbo 9</option>
                     </select>
 
                     <select class="form-control" style="width:auto; flex:1;" id="f-inf-dx" onchange="actualizarInformeAvanzado()">
@@ -1046,7 +1045,7 @@
                     }
                 }).catch(e => {});
 
-                // EN PC POR DEFECTO MOSTRAMOS TODAS LAS 11 ANALÍTICAS
+                // EN PC ACTIVAMOS TODAS LAS 11 ANALÍTICAS PARA APROVECHAR LA PANTALLA
                 const prefs = lsGet('tc_prefs_pc', ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']);
                 document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
                 
@@ -1251,9 +1250,16 @@
                     const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
                     if(uC) { let v = String(uC.valor || "").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-"; } 
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
-                    const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
+                    const uDx = regs.find(d => d.accion === 'Diagnóstico'); 
+                    
+                    let loteLow = lote.toLowerCase();
+                    let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
+                    let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
+                    let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
+                    dx = uDx ? uDx.valor : (esPre ? "Preñada (Lote/Notas)" : (esVacia ? "Vacía" : "-"));
+
                     const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nutricion = (uNut.valor || "-") + " | " + (uNut.detalles || "");
-                    const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) sanidad = (uSan.valor || "-") + " | " + (uSan.detalles || "");
+                    const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "-") + " | " + (uSan.detalles || "");
                     const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) inseminacion = (uIns.valor || "-") + " | " + (uIns.detalles || "");
                     
                     let ultComentario = "Sin comentarios.";
@@ -1431,7 +1437,8 @@
                 const uDx = regs.find(d => d.accion === 'Diagnóstico'); 
                 const uC = regs.find(d => d.accion === 'Actualización de Datos');
                 let lote = uC && uC.detalles ? String(uC.detalles).toLowerCase() : "";
-                let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && lote.includes('preñada'));
+                let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
+                let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (lote.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
                 if (esPre) tPreGlobal++; 
             });
             
@@ -1447,7 +1454,7 @@
                 return;
             }
 
-            rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar Informe PDF`;
+            rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar PDF`;
 
             if(modo === 'inventario') {
                 document.getElementById('tabla-masiva').classList.remove('oculto');
@@ -1470,13 +1477,18 @@
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
                     const uDx = regs.find(d => d.accion === 'Diagnóstico'); 
                     
-                    let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && lote.toLowerCase().includes('preñada'));
-                    dx = uDx ? uDx.valor : (esPre ? "Preñada (Lote)" : "-");
+                    let loteLow = lote.toLowerCase();
+                    let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
+                    let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
+                    let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
+                    
+                    dx = uDx ? uDx.valor : (esPre ? "Preñada" : (esVacia ? "Vacía" : "-"));
                     
                     let pasaFiltro = true; 
                     if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; 
                     if(fCat !== "ALL" && !catLegible.includes(fCat)) pasaFiltro = false; 
-                    if(fDx !== "ALL" && !dx.includes(fDx)) pasaFiltro = false; 
+                    if(fDx === "Preñada" && !esPre) pasaFiltro = false;
+                    if(fDx === "Vacía" && !esVacia) pasaFiltro = false;
                     if(fCarimbo !== "ALL" && carimbo !== fCarimbo) pasaFiltro = false; 
                     
                     if(pasaFiltro) { 
@@ -1535,7 +1547,7 @@
 
         function cleanPDFText(text) {
             if (!text) return ''; let str = String(text);
-            str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️|✏️|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️|🚪/g, '');
+            str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️|✏️️|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️|🚪/g, '');
             str = str.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
             return str.trim();
         }
@@ -1564,7 +1576,13 @@
                         const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; lote=String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; } 
                         let catLegible = obtenerNombreCategoriaLegible(cat);
                         const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
-                        const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-"; 
+                        const uDx = regs.find(d => d.accion === 'Diagnóstico'); 
+                        let loteLow = lote.toLowerCase();
+                        let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
+                        let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
+                        let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
+                        dx = uDx ? uDx.valor : (esPre ? "Preñada" : (esVacia ? "Vacía" : "-"));
+
                         const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nut = (uNut.valor || "") + " | " + (uNut.detalles || "");
                         const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "") + " | " + (uSan.detalles || "");
                         const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) ins = (uIns.valor || "") + " | " + (uIns.detalles || "");
@@ -1705,16 +1723,20 @@
                 const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
                 let esVaca = catLegible.toLowerCase().includes('vaca');
 
-                let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && lote.toLowerCase().includes('preñada'));
-                if (esPre) {
+                let loteLow = lote.toLowerCase();
+                let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
+                let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
+                let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
+
+                if (esPre) { 
                     g1.p++; 
                     if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; 
                     if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } 
-                } else if (uDx && String(uDx.valor).includes('Vacía')) {
+                } else if (esVacia) { 
                     g1.v++; 
-                    alertasHTML += `<div class="alerta-item peligro" onclick="navegarDesdeLista('${car}')"><span>🔴</span><div><strong style="color:var(--text-main);">${car}</strong> diagnosticada Vacía.</div></div>`; 
+                    alertasHTML += `<div class="alerta-item peligro" onclick="filtrarDesdeDashboard('dx', 'Vacía')"><span>🔴</span><div><strong style="color:var(--text-main);">${car}</strong> diagnosticada Vacía.</div></div>`; 
                     if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; 
-                    if(String(uDx.valor||"").includes('Sangre')) g5.san++; else g5.norm++; 
+                    if(String(uDx ? uDx.valor : "").includes('Sangre')) g5.san++; else g5.norm++; 
                     if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } 
                 }
                 
@@ -1733,7 +1755,6 @@
             
             const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
             
-            // En PC usamos 'tc_prefs_pc' que activa las 11 por defecto
             const prefs = lsGet('tc_prefs_pc', ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']); 
             let htmlGraficos = ""; 
             const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#38bdf8'];
@@ -1862,13 +1883,27 @@
                     cat = v[0] ? v[0].replace('Cat:','').trim() : cat; 
                     lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; 
                 }
-                const uDx = regs.find(d => d.accion === 'Diagnóstico'); if(uDx) dx = uDx.valor || "-";
+                const uDx = regs.find(d => d.accion === 'Diagnóstico'); 
+                
+                let loteLow = lote.toLowerCase();
+                let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
+                let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
+                let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
+                
+                dx = uDx ? uDx.valor : (esPre ? "Preñada" : (esVacia ? "Vacía" : "-"));
 
                 let catLegible = obtenerNombreCategoriaLegible(cat);
 
                 if (loteFiltro !== "ALL" && !lote.includes(loteFiltro)) return;
                 if (catFiltro !== "ALL" && !catLegible.includes(catFiltro)) return;
-                if (dxFiltro !== "ALL" && !dx.includes(dxFiltro)) return;
+                
+                if (dxFiltro === "Preñada") {
+                    if (!esPre) return;
+                } else if (dxFiltro === "Vacía") {
+                    if (!esVacia) return;
+                } else if (dxFiltro !== "ALL" && !dx.includes(dxFiltro)) {
+                    return;
+                }
 
                 if (txtBusqueda !== "") {
                     let matchTexto = car.toLowerCase().includes(txtBusqueda) || 
