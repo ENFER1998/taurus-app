@@ -723,12 +723,10 @@
         };
 
         window.procesarDatosDashboard = function() {
-            if (typeof dbCache === 'undefined' || !dbCache || dbCache.length === 0) return;
-            
-            const datosActivos = obtenerRegistrosActivos();
+            const datosActivos = typeof obtenerRegistrosActivos === 'function' ? obtenerRegistrosActivos() : [];
             const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
             
-            let vivas = 0;
+            let vivasArr = [];
             let bajas = 0;
             
             unicas.forEach(car => {
@@ -736,7 +734,7 @@
                 if (regs.find(r => r.accion === 'Baja')) {
                     bajas++;
                 } else {
-                    vivas++;
+                    vivasArr.push(car);
                 }
             });
             
@@ -744,9 +742,131 @@
             const kpiBajas = document.getElementById('dash-bajas');
             const kpiAcciones = document.getElementById('dash-acciones');
             
-            if (kpiVivos) kpiVivos.innerText = vivas;
+            if (kpiVivos) kpiVivos.innerText = vivasArr.length;
             if (kpiBajas) kpiBajas.innerText = bajas;
             if (kpiAcciones) kpiAcciones.innerText = datosActivos.length;
+
+            const contenedorGraficos = document.getElementById('contenedor-graficos-dinamicos');
+            if (!contenedorGraficos) return;
+            contenedorGraficos.innerHTML = ''; // Limpiar el canvas previo
+
+            if (datosActivos.length === 0) {
+                contenedorGraficos.innerHTML = '<div class="tarjeta"><div style="text-align:center; padding: 20px; color: var(--muted); font-size: 13px;">No hay datos registrados aún para generar gráficas.</div></div>';
+                return;
+            }
+
+            // Dibujar las analíticas seleccionadas por el usuario en 'Ajustes'
+            const prefs = lsGet('tc_prefs', ['1', '2']);
+            
+            prefs.forEach(pref => {
+                if (pref === '1') { // 1: Tasa de Preñez
+                    let pre = 0; let vac = 0;
+                    vivasArr.forEach(car => {
+                        const regs = obtenerHistorial(car);
+                        const uDx = regs.find(d => d.accion === 'Diagnóstico');
+                        let loteLow = ""; let notasStr = "";
+                        const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                        if(uC && uC.detalles) loteLow = String(uC.detalles).toLowerCase();
+                        notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
+                        let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
+                        let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
+                        
+                        if (esPre) pre++; else if(esVacia) vac++;
+                    });
+                    
+                    let totalEval = pre + vac;
+                    let pctPre = totalEval > 0 ? Math.round((pre / totalEval) * 100) : 0;
+                    let colorFondo = totalEval > 0 ? `conic-gradient(var(--exito) ${pctPre}%, var(--peligro) 0)` : 'var(--borde)';
+                    
+                    contenedorGraficos.innerHTML += `
+                    <div class="tarjeta">
+                        <div class="tarjeta-titulo">📈 Tasa de Preñez Dinámica</div>
+                        <div class="grafico-flex">
+                            <div class="torta-container">
+                                <div class="torta" style="background: ${colorFondo};"></div>
+                                <div class="torta-centro">${totalEval > 0 ? pctPre + '%' : 'S/D'}</div>
+                            </div>
+                            <div class="leyenda-torta">
+                                <div style="margin-bottom:5px;"><span class="punto" style="background:var(--exito);"></span>Preñadas: <strong>${pre}</strong></div>
+                                <div><span class="punto" style="background:var(--peligro);"></span>Vacías: <strong>${vac}</strong></div>
+                            </div>
+                        </div>
+                    </div>`;
+                    
+                } else if (pref === '2') { // 2: Composición de Hacienda
+                    let conteoCat = {};
+                    vivasArr.forEach(car => {
+                        const regs = obtenerHistorial(car);
+                        let cat = "-";
+                        const uP = regs.find(d => d.accion === 'Perfil Master'); 
+                        if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
+                        const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
+                        if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; }
+                        cat = obtenerNombreCategoriaLegible(cat);
+                        if(cat !== "-") conteoCat[cat] = (conteoCat[cat] || 0) + 1;
+                    });
+                    
+                    let htmlBarras = '';
+                    let maxVal = Math.max(...Object.values(conteoCat), 1);
+                    for(let c in conteoCat) {
+                        let w = (conteoCat[c] / maxVal) * 100;
+                        htmlBarras += `
+                        <div class="barra-categoria" onclick="filtrarDesdeDashboard('categoria', '${c}')">
+                            <div class="barra-header"><span>${c}</span><span>${conteoCat[c]}</span></div>
+                            <div class="barra-fondo"><div class="barra-relleno" style="background:var(--secundario); width:${w}%;"></div></div>
+                        </div>`;
+                    }
+                    if(htmlBarras === '') htmlBarras = '<div style="font-size:12px; color:var(--muted); text-align:center;">Sin datos de categoría asignados</div>';
+                    
+                    contenedorGraficos.innerHTML += `
+                    <div class="tarjeta">
+                        <div class="tarjeta-titulo">📊 Composición de Hacienda</div>
+                        <div class="contenedor-scroll-analitica">
+                            ${htmlBarras}
+                        </div>
+                    </div>`;
+                    
+                } else if (pref === '3') { // 3: Lotes
+                    let conteoLote = {};
+                    vivasArr.forEach(car => {
+                        const regs = obtenerHistorial(car);
+                        let lote = "Sin Asignar";
+                        const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
+                        if(uC) { 
+                            let parsed = String(uC.detalles||"").split('|')[0];
+                            if(parsed) lote = parsed.replace('Lote:','').trim(); 
+                        }
+                        if(lote === "" || lote === "-") lote = "Sin Asignar";
+                        conteoLote[lote] = (conteoLote[lote] || 0) + 1;
+                    });
+                    
+                    let htmlBarras = '';
+                    let maxVal = Math.max(...Object.values(conteoLote), 1);
+                    for(let l in conteoLote) {
+                        let w = (conteoLote[l] / maxVal) * 100;
+                        htmlBarras += `
+                        <div class="barra-categoria" onclick="filtrarDesdeDashboard('lote', '${l}')">
+                            <div class="barra-header"><span>${l}</span><span>${conteoLote[l]}</span></div>
+                            <div class="barra-fondo"><div class="barra-relleno" style="background:#8b5cf6; width:${w}%;"></div></div>
+                        </div>`;
+                    }
+                    if(htmlBarras === '') htmlBarras = '<div style="font-size:12px; color:var(--muted); text-align:center;">Sin lotes registrados</div>';
+                    
+                    contenedorGraficos.innerHTML += `
+                    <div class="tarjeta">
+                        <div class="tarjeta-titulo">📍 Distribución por Lotes</div>
+                        <div class="contenedor-scroll-analitica">
+                            ${htmlBarras}
+                        </div>
+                    </div>`;
+                } else {
+                     contenedorGraficos.innerHTML += `
+                    <div class="tarjeta">
+                        <div class="tarjeta-titulo">📊 Gráfico Analítico #${pref}</div>
+                        <div style="padding:10px; text-align:center; color:var(--muted); font-size:12px;">Visualización detallada reservada para la versión de Escritorio (PC).</div>
+                    </div>`;
+                }
+            });
         };
 
         window.abrirModal = function(id) { 
