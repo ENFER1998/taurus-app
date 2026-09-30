@@ -701,7 +701,7 @@
         function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 
-        let dbCache = []; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
+        let dbCache = []; let historiaCache = null; let activosCache = null; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
         let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
         let alertaGlobalIdActual = "";
         
@@ -1109,17 +1109,23 @@
 
                 setEstadoRed(true, '🔄 Sincronizando...');
                 if(unsubscribeEventos) unsubscribeEventos();
+
+                let renderTimeout;
                 unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot(snapshot => {
                     let nuevosDatos = [];
                     snapshot.forEach(doc => nuevosDatos.push(doc.data()));
                     fusionarDatos(nuevosDatos);
-                    if(rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
-                    procesarDatosDashboard(); 
-                    if(!document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro(); 
-                    if(!document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
-                    cargarListasFiltrosSelects();
-                    cargarListaOperadores();
-                    setEstadoRed(true);
+
+                    clearTimeout(renderTimeout);
+                    renderTimeout = setTimeout(() => {
+                        if(rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
+                        procesarDatosDashboard();
+                        if(!document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro();
+                        if(!document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
+                        cargarListasFiltrosSelects();
+                        cargarListaOperadores();
+                        setEstadoRed(true);
+                    }, 500); // Agrupar llamadas (Debounce) de Firebase
                 }, err => { setEstadoRed(false, '❌ Red Local'); });
                 
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
@@ -1222,6 +1228,7 @@
             }
             dbCache = Array.from(mapa.values()).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
             lsSet('tc_db', dbCache);
+            historiaCache = null; activosCache = null;
         }
 
         function aplicarDisenoEnPantalla(nombre, logo) { 
@@ -1246,6 +1253,7 @@
         }
 
         function procesarEventos() {
+            if (historiaCache) return historiaCache;
             let dbAsc = [...dbCache].sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
             let historiaPorRP = {};
             dbAsc.forEach(evt => {
@@ -1265,15 +1273,18 @@
                     historiaPorRP[rp].push(evt);
                 }
             });
+            historiaCache = historiaPorRP;
             return historiaPorRP;
         }
 
         function obtenerRegistrosActivos() {
+            if (activosCache) return activosCache;
             let historia = procesarEventos();
             let validos = [];
             for(let rp in historia) { validos = validos.concat(historia[rp]); }
             const globalEvents = dbCache.filter(d => d.caravana === "---" || !d.caravana);
-            return validos.concat(globalEvents).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            activosCache = validos.concat(globalEvents).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            return activosCache;
         }
 
         function obtenerHistorial(caravana) {
@@ -1437,7 +1448,7 @@
 
         function ejecutarAccion(tipo, val, det, modalId) {
             const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: rpActivo, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
-            dbCache.unshift(obj); buscarCaravanaBtn(rpActivo); procesarDatosDashboard(); 
+            dbCache.unshift(obj); historiaCache = null; activosCache = null; buscarCaravanaBtn(rpActivo); procesarDatosDashboard();
             if(modalId) cerrarModal(modalId);
             if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador') {
                 notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
