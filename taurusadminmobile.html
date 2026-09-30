@@ -364,7 +364,8 @@
         }
 
         function cambiarVista(id, btn) { document.querySelectorAll('.vista').forEach(v => v.classList.add('oculto')); document.getElementById(id).classList.remove('oculto'); document.querySelectorAll('.nav-item').forEach(l => l.classList.remove('activo')); btn.classList.add('activo'); }
-        function cerrarModal(id) { document.getElementById(id).classList.add('oculto'); }
+        function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
         function toggleLoading(show, text="Procesando...") { document.getElementById('loading-text').innerText = text; document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; }
         function mostrarToast(mensaje, esError = false) { const toast = document.getElementById('toast-msg'); toast.innerText = mensaje; if(esError) toast.classList.add('error'); else toast.classList.remove('error'); toast.classList.add('mostrar'); setTimeout(() => { toast.classList.remove('mostrar'); }, 3000); }
 
@@ -428,7 +429,7 @@
                 await db.collection('sistema').doc('config').set({ mantenimiento: nuevoEstado === 'ON' }, { merge: true });
                 let msjPush = (nuevoEstado === 'ON') ? "⚠️ Mantenimiento Global: Sistema bloqueado temporalmente." : "✅ Servicio Restaurado: La plataforma ya está operativa.";
                 const fd = new URLSearchParams(); fd.append('accion', 'toggle_mantenimiento'); fd.append('mensaje', msjPush);
-                fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
+                fetch('https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec', { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
                 toggleLoading(false); mostrarToast(`✅ Estado: ${nuevoEstado}`);
             } catch (e) { toggleLoading(false); mostrarToast("❌ Error al cambiar estado", true); }
         }
@@ -441,7 +442,7 @@
             try {
                 await db.collection('sistema').doc('config').set({ alerta_global: "⏳ AVISO: " + msg }, { merge: true });
                 const fd = new URLSearchParams(); fd.append('accion', 'aviso_mantenimiento'); fd.append('mensaje', "⏳ AVISO: " + msg);
-                fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
+                fetch('https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec', { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
                 toggleLoading(false); mostrarToast("✅ Aviso enviado"); document.getElementById('txt-aviso-mant').value = '';
             } catch (e) { toggleLoading(false); mostrarToast("❌ Error al enviar el aviso", true); }
         }
@@ -613,7 +614,7 @@
                 const fd = new URLSearchParams();
                 fd.append('accion', 'borrar_estancia_completa');
                 fd.append('maestro', usu);
-                await fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
+                await fetch('https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec', { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
 
                 // 2. Miembros del equipo
                 const snapEquipo = await db.collection('usuarios').where('maestroId', '==', usu).get();
@@ -900,7 +901,7 @@
             toggleLoading(false); mostrarToast("✅ Importación masiva completada");
             try {
                 const fd = new URLSearchParams(); fd.append('accion', 'notificar_accion'); fd.append('maestro', mId); fd.append('mensaje', `Carga Masiva completada: Se inyectaron ${arr.length} eventos nuevos.`);
-                fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
+                fetch('https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec', { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
             } catch(err) {}
             document.getElementById('archivo-excel').value = ''; datosArchivoCrudo = [];
         }

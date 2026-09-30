@@ -697,7 +697,7 @@
         function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 
-        let dbCache = []; let historiaCache = null; let activosCache = null; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = "";
+        let dbCache = []; let historiaCache = null; let activosCache = null; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = ""; let pdfExportData = [];
         let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
         let alertaGlobalIdActual = "";
         
@@ -1313,8 +1313,15 @@
 
             if(fRp !== "") {
                 rpPrint = fRp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Dossier: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
-                const regs = obtenerHistorial(fRp); let hInd = "";
-                regs.forEach(r => { if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') hInd+=`<tr><td>${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${obtenerBadgeAccion(r.accion)}</strong></td><td>${r.valor}</td><td>${r.detalles}</td></tr>`; });
+                const regs = obtenerHistorial(fRp); let hInd = ""; pdfExportData = [];
+                regs.forEach(r => {
+                    if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') {
+                        let fDate = new Date(r.fecha).toLocaleDateString();
+                        let badge = obtenerBadgeAccion(r.accion);
+                        pdfExportData.push([fDate, badge, r.valor, r.detalles]);
+                        hInd+=`<tr><td>${fDate}</td><td><strong>${badge}</strong></td><td>${r.valor}</td><td>${r.detalles}</td></tr>`;
+                    }
+                });
                 tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.filter(r => !r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master').length; document.getElementById('inf-prenadas').innerText = "-";
                 if(lblTotal) lblTotal.innerText = "Registros";
                 return;
@@ -1335,7 +1342,7 @@
                 tbodyMasivo.innerHTML = ""; let countTotal = 0; let countPre = 0;
 
                 let bufferHTML = "";
-                let maxRows = 500;
+                let maxRows = 100; pdfExportData = [];
                 vivas.forEach(car => {
                     const regs = obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
@@ -1362,12 +1369,13 @@
                     if(pasaFiltro) {
                         countTotal++;
                         if(esPre) countPre++;
+                        pdfExportData.push([`${car} - Cb:${carimbo}`, catLegible, lote, peso, dx]);
                         if (countTotal <= maxRows) {
                             bufferHTML += `<tr><td><strong>${car}</strong><br><span style="font-size:11px; color:var(--muted);">Cb: ${carimbo}</span></td><td>${catLegible}</td><td>${lote}</td><td><strong>${peso}</strong></td><td>${dx}</td></tr>`;
                         }
                     }
                 });
-                if(countTotal > maxRows) bufferHTML += `<tr><td colspan="5" style="text-align:center;">Mostrando 500 resultados. Use filtros o descargue PDF para ver todo.</td></tr>`;
+                if(countTotal > maxRows) bufferHTML += `<tr><td colspan="5" style="text-align:center;">Mostrando 100 resultados. Use filtros o descargue PDF para ver todo.</td></tr>`;
                 tbodyMasivo.innerHTML = bufferHTML;
                 document.getElementById('inf-total').innerText = countTotal;
                 document.getElementById('inf-prenadas').innerText = countPre;
@@ -1381,7 +1389,7 @@
                 const fDesde = document.getElementById('f-inf-baja-desde').value;
                 const fHasta = document.getElementById('f-inf-baja-hasta').value;
 
-                tbodyBajas.innerHTML = "";
+                let bufferBajas = ""; let maxBajas = 100; pdfExportData = [];
                 let countBajas = 0;
 
                 unicas.forEach(car => {
@@ -1396,9 +1404,15 @@
 
                     if (pasa) {
                         countBajas++;
-                        tbodyBajas.innerHTML += `<tr><td>${new Date(rBaja.fecha).toLocaleDateString()}</td><td><strong>${car}</strong></td><td style="color:var(--peligro); font-weight:bold;">${rBaja.valor}</td><td>${rBaja.detalles||'-'}</td></tr>`;
+                        let fDate = new Date(rBaja.fecha).toLocaleDateString();
+                        pdfExportData.push([fDate, car, rBaja.valor, rBaja.detalles||'-']);
+                        if(countBajas <= maxBajas) {
+                            bufferBajas += `<tr><td>${fDate}</td><td><strong>${car}</strong></td><td style="color:var(--peligro); font-weight:bold;">${rBaja.valor}</td><td>${rBaja.detalles||'-'}</td></tr>`;
+                        }
                     }
                 });
+                if(countBajas > maxBajas) bufferBajas += `<tr><td colspan="4" style="text-align:center; padding:15px; font-weight:bold; color:var(--text-muted);">Mostrando ${maxBajas} resultados de ${countBajas}. Descargue el PDF para ver el informe completo.</td></tr>`;
+                tbodyBajas.innerHTML = bufferBajas;
                 document.getElementById('inf-total').innerText = countBajas;
 
             } else {
@@ -1411,8 +1425,18 @@
                 if(fAcc !== "ALL") eventos = eventos.filter(d => d.accion === fAcc); if(fDesde) eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00'));
                 if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); if(fKey) eventos = eventos.filter(d => (String(d.valor) + String(d.detalles)).toLowerCase().includes(fKey));
 
-                tbodyEventos.innerHTML = "";
-                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => { tbodyEventos.innerHTML += `<tr><td style="white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${r.caravana}</strong></td><td>${obtenerBadgeAccion(r.accion)}</td><td><strong>${r.valor}</strong><br><span style="color:var(--muted);">${r.detalles}</span></td></tr>`; });
+                let bufferEvt = ""; let maxEvt = 100; pdfExportData = []; let evtCount = 0;
+                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => {
+                    evtCount++;
+                    let fDate = new Date(r.fecha).toLocaleDateString();
+                    let badge = obtenerBadgeAccion(r.accion);
+                    pdfExportData.push([fDate, r.caravana, badge, `${r.valor} - ${r.detalles}`]);
+                    if(evtCount <= maxEvt) {
+                        bufferEvt += `<tr><td style="white-space:nowrap;">${fDate}</td><td><strong>${r.caravana}</strong></td><td>${badge}</td><td><strong>${r.valor}</strong><br><span style="color:var(--muted);">${r.detalles}</span></td></tr>`;
+                    }
+                });
+                if(evtCount > maxEvt) bufferEvt += `<tr><td colspan="4" style="text-align:center; padding:15px; font-weight:bold; color:var(--text-muted);">Mostrando ${maxEvt} resultados de ${evtCount}. Descargue el PDF para ver el informe completo.</td></tr>`;
+                tbodyEventos.innerHTML = bufferEvt;
                 document.getElementById('inf-total').innerText = eventos.length;
             }
         }
@@ -1470,8 +1494,7 @@
                             ]
                         });
                         doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.text("Trazabilidad Histórica de Sucesos", 14, doc.lastAutoTable.finalY + 10);
-                        const tableData = []; const rows = document.getElementById('tb-informe-individual').querySelectorAll('tr');
-                        rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText).replace(/\n/g, ' ') ]); } });
+                        const tableData = pdfExportData.map(row => row.map(cell => cleanPDFText(cell).replace(/\n/g, ' ')));
                         doc.autoTable({ startY: doc.lastAutoTable.finalY + 13, theme: 'grid', head: [['Fecha', 'Procedimiento', 'Valor Principal', 'Observaciones Adicionales']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 40 }, 2: { cellWidth: 40, fontStyle: 'bold' }, 3: { cellWidth: 'auto' } } });
                         let filename = `Dossier_RP_${rpPrint.toUpperCase()}.pdf`;
                         if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
@@ -1483,9 +1506,7 @@
                         const totalBajas = document.getElementById('inf-total').innerText;
                         doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Bajas / Muertes Registradas: ${cleanPDFText(totalBajas)}`, 14, 43);
 
-                        const tableData = [];
-                        const rows = document.getElementById('tb-informe-bajas').querySelectorAll('tr');
-                        rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText).replace(/\n/g, ' ') ]); } });
+                        const tableData = pdfExportData.map(row => row.map(cell => cleanPDFText(cell).replace(/\n/g, ' ')));
                         doc.autoTable({ startY: 48, theme: 'grid', head: [['Fecha de Baja', 'Caravana / RP', 'Causa', 'Observaciones']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [239, 68, 68], textColor: 255, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 35, fontStyle: 'bold', halign: 'center' }, 2: { cellWidth: 40 }, 3: { cellWidth: 'auto' } } });
 
                         let filename = 'Reporte_Bajas_Mortalidad.pdf';
@@ -1504,9 +1525,7 @@
                         const totalReg = document.getElementById('inf-total').innerText; const totalPre = document.getElementById('inf-prenadas').innerText;
                         doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Cabezas Listadas: ${cleanPDFText(totalReg)}`, 14, 43); doc.text(`Total Preñadas: ${cleanPDFText(totalPre)}`, 130, 43);
 
-                        const tableData = [];
-                        const rows = document.getElementById('tb-informe-masivo').querySelectorAll('tr');
-                        rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 5) { tableData.push([ cleanPDFText(tds[0].innerText).replace(/\n/g, ' - '), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText), cleanPDFText(tds[4].innerText) ]); } });
+                        const tableData = pdfExportData.map(row => row.map(cell => cleanPDFText(cell).replace(/\n/g, ' - ')));
                         doc.autoTable({ startY: 48, theme: 'grid', head: [['RP y Carimbo', 'Categoría', 'Lote / Ubicación', 'Último Peso', 'Diagnóstico']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 1: { cellWidth: 45 }, 2: { cellWidth: 45 }, 3: { cellWidth: 25, halign: 'center' }, 4: { cellWidth: 30, halign: 'center' } } });
 
                         let filename = (fCat !== "ALL") ? `Reporte_${fCat.replace(/[^a-zA-Z0-9]/g, '_')}.pdf` : ((fLote !== "ALL") ? `Reporte_Lote_${fLote.replace(/[^a-zA-Z0-9]/g, '_')}.pdf` : 'Reporte_Inventario.pdf');
@@ -1517,9 +1536,7 @@
                         const totalReg = document.getElementById('inf-total').innerText;
                         doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Procedimientos Listados: ${cleanPDFText(totalReg)}`, 14, 43);
 
-                        const tableData = [];
-                        const rows = document.getElementById('tb-informe-eventos').querySelectorAll('tr');
-                        rows.forEach(tr => { const tds = tr.querySelectorAll('td'); if (tds.length >= 4) { tableData.push([ cleanPDFText(tds[0].innerText), cleanPDFText(tds[1].innerText), cleanPDFText(tds[2].innerText), cleanPDFText(tds[3].innerText).replace(/\n/g, ' ') ]); } });
+                        const tableData = pdfExportData.map(row => row.map(cell => cleanPDFText(cell).replace(/\n/g, ' ')));
                         doc.autoTable({ startY: 48, theme: 'grid', head: [['Fecha', 'Caravana', 'Trabajo Realizado', 'Detalles Extras']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 2: { cellWidth: 40 }, 3: { cellWidth: 'auto' } } });
 
                         let filename = 'Reporte_Tratamientos.pdf';
