@@ -12,7 +12,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-    <!-- FIREBASE SDK (OneSignal retirado para no recibir notificaciones en el Admin) -->
+    <!-- ONESIGNAL (Reintegrado solo para forzar el bloqueo de notificaciones en este panel) -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        try {
+            await OneSignal.init({ appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60" });
+            // Fuerza la desuscripción de notificaciones push en este navegador/dispositivo
+            OneSignal.User.PushSubscription.optOut();
+        } catch(e) {}
+      });
+    </script>
+
+    <!-- FIREBASE SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
@@ -563,7 +576,7 @@
                             <button class="btn btn-mini btn-info" style="width:100%; padding:10px;" onclick="verEquipo('${c.maestroId}', '${c.hacienda}')">👥 Equipo</button>
                             <button class="btn btn-mini" style="background:#475569; width:100%; padding:10px;" onclick="cambiarClaveMaestroGhost('${c.usuario}')">🔑 Clave</button>
                             <button class="btn btn-mini" style="background:#2563eb; width:100%; padding:10px;" onclick="abrirEdicion('${c.usuario}', '${c.hacienda}', '${c.features||""}', '${c.nombre||""}')">✏️ Editar</button>
-                            <button class="btn btn-mini btn-danger" style="width:100%; padding:10px;" onclick="borrarUsuarioMaestroGhost('${c.usuario}')">🗑️ Borrar</button>
+                            <button class="btn btn-mini btn-danger" style="width:100%; padding:10px;" onclick="borrarUsuarioMaestroGhost('${c.usuario}')">🗑️️ Borrar</button>
                         </div>
                     </div>`;
             });
