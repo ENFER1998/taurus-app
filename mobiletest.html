@@ -2423,6 +2423,107 @@
             verificarRafagaCustom();
           }
         }
+        else if (cmd === 'crear_operador') {
+          cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+          if (params.nombre) document.getElementById('op-nombre').value = params.nombre;
+          if (params.usuario) document.getElementById('op-usu').value = params.usuario;
+          if (params.password) document.getElementById('op-pass').value = params.password;
+          if (params.rol) {
+            document.getElementById('op-rol').value = params.rol;
+            if (typeof togglePermisos === 'function') togglePermisos();
+          }
+          if (params.permisos && Array.isArray(params.permisos)) {
+            document.querySelectorAll('.chk-permiso').forEach(chk => {
+              chk.checked = params.permisos.includes(chk.value) || params.permisos.some(p => chk.nextElementSibling.innerText.toLowerCase().includes(p.toLowerCase()));
+            });
+          }
+          if (params.autoguardar) crearOperador();
+        }
+        else if (cmd === 'eliminar_operador') {
+          if (params.usuario) {
+            cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+            const selDel = document.getElementById('op-del-usu-sel');
+            if (selDel) {
+              selDel.value = params.usuario;
+              if (params.autoguardar) {
+                const originalConfirm = window.confirm;
+                window.confirm = () => true;
+                Promise.resolve(eliminarOperador()).finally(() => {
+                  window.confirm = originalConfirm;
+                });
+              }
+            }
+          }
+        }
+        else if (cmd === 'cambiar_tema') {
+          cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+          toggleTema();
+        }
+        else if (cmd === 'configurar_hacienda') {
+          cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+          if (params.nombre) {
+            document.getElementById('cfg-nom').value = params.nombre;
+            if (params.autoguardar) guardarDisenoServidor();
+          }
+        }
+        else if (cmd === 'seleccionar_graficos') {
+          cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+          if (params.graficos && Array.isArray(params.graficos)) {
+            const checkboxes = document.querySelectorAll('.chk-graf');
+            checkboxes.forEach(chk => {
+              chk.checked = params.graficos.includes(chk.value) || params.graficos.includes(parseInt(chk.value));
+            });
+            const checkedBoxes = document.querySelectorAll('.chk-graf:checked');
+            if (checkedBoxes.length > 0) verificarLimiteGraficos(checkedBoxes[0]);
+          }
+        }
+        else if (cmd === 'borrar_caravana') {
+          if (params.rp) {
+            document.getElementById('buscador-caravana').value = params.rp;
+            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+            buscarCaravanaBtn(params.rp);
+          }
+          if (rpActivo) {
+            const originalConfirm = window.confirm;
+            window.confirm = () => true;
+            borrarCaravana();
+            window.confirm = originalConfirm;
+          } else {
+            alert("No se especificó ninguna caravana para borrar.");
+          }
+        }
+        else if (cmd === 'renombrar_caravana') {
+          if (params.rp) {
+            document.getElementById('buscador-caravana').value = params.rp;
+            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+            buscarCaravanaBtn(params.rp);
+          }
+          if (rpActivo && params.nuevo_rp) {
+            document.getElementById('f-nueva-caravana').value = params.nuevo_rp;
+            if (params.autoguardar) guardarCambioCaravana();
+          }
+        }
+        else if (cmd === 'clasificar_animal') {
+          if (params.rp) {
+            document.getElementById('buscador-caravana').value = params.rp;
+            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+            buscarCaravanaBtn(params.rp);
+          }
+          if (rpActivo) {
+            if (params.categoria) {
+              const catSel = document.getElementById('input-cat-rapida');
+              for (let i = 0; i < catSel.options.length; i++) {
+                if (catSel.options[i].value.includes(params.categoria) || catSel.options[i].text.toLowerCase().includes(params.categoria.toLowerCase())) {
+                  catSel.selectedIndex = i;
+                  break;
+                }
+              }
+            }
+            if (params.lote) document.getElementById('input-lote-rapido').value = params.lote;
+            if (params.carimbo) document.getElementById('input-carimbo-rapido').value = params.carimbo;
+            if (params.autoguardar) guardarClasificacion();
+          }
+        }
         else if (cmd === 'accion_ganadera') {
           let rpObjetivo = params.rp ? String(params.rp).trim() : rpActivo;
 
