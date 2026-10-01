@@ -1141,9 +1141,10 @@
             if (activosCache) return activosCache;
             let historia = procesarEventos();
             let validos = [];
-            for(let rp in historia) { validos = validos.concat(historia[rp]); }
+            for(let rp in historia) { validos.push(...historia[rp]); }
             const globalEvents = dbCache.filter(d => d.caravana === "---" || !d.caravana);
-            activosCache = validos.concat(globalEvents).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            validos.push(...globalEvents);
+            activosCache = validos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
             return activosCache;
         }
 
