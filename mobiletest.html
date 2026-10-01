@@ -161,7 +161,7 @@
         .btn-guardar:disabled { opacity: 0.6; cursor: not-allowed; }
         .cerrar { float: right; font-size: 30px; color: var(--muted);}
 
-        /* ESTILOS DEL AURA DE CORA (ESTILO SIRI) */
+        /* ESTILOS DEL AURA DE CORA (ESTILO SIRI PROFESIONAL TEMA TAURUS) */
         #btn-aura {
           position: fixed;
           bottom: 85px;
@@ -169,9 +169,9 @@
           width: 65px;
           height: 65px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #2b5876 0%, #4e4376 100%);
-          box-shadow: 0 0 15px rgba(78, 67, 118, 0.6), inset 0 0 10px rgba(255,255,255,0.3);
-          border: none;
+          background: linear-gradient(135deg, #0f172a 0%, #3b82f6 100%);
+          box-shadow: 0 0 15px rgba(59, 130, 246, 0.5), inset 0 0 10px rgba(255,255,255,0.3);
+          border: 1px solid var(--borde);
           cursor: pointer;
           z-index: 9999;
           animation: respirar 3s infinite alternate;
@@ -182,23 +182,23 @@
           -webkit-tap-highlight-color: transparent;
         }
         @keyframes respirar {
-          0% { transform: scale(1); box-shadow: 0 0 15px rgba(78, 67, 118, 0.5); }
-          100% { transform: scale(1.08); box-shadow: 0 0 30px rgba(78, 67, 118, 0.9); }
+          0% { transform: scale(1); box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+          100% { transform: scale(1.08); box-shadow: 0 0 25px rgba(59, 130, 246, 0.8); }
         }
         #btn-aura.escuchando {
-          background: linear-gradient(135deg, #f12711 0%, #f5af19 100%);
+          background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
           animation: latir 0.8s infinite alternate;
         }
         @keyframes latir {
-          0% { transform: scale(1); box-shadow: 0 0 15px rgba(241, 39, 17, 0.6); }
-          100% { transform: scale(1.15); box-shadow: 0 0 35px rgba(245, 175, 25, 0.9); }
+          0% { transform: scale(1); box-shadow: 0 0 15px rgba(16, 185, 129, 0.6); }
+          100% { transform: scale(1.15); box-shadow: 0 0 35px rgba(59, 130, 246, 0.9); }
         }
         .icono-mic { width: 28px; height: 28px; fill: currentColor; }
         #estado-ia {
           position: fixed;
           bottom: 160px;
           right: 20px;
-          background: rgba(0, 0, 0, 0.85);
+          background: rgba(15, 23, 42, 0.9);
           color: white;
           padding: 10px 15px;
           border-radius: 12px;
@@ -604,7 +604,7 @@
                     
                     <hr style="border-color:var(--borde); margin:20px 0;">
                     
-                    <h4 style="margin-top:0; font-size:14px; text-transform:uppercase; color:var(--texto);">✏️️ Editar Permisos de Operador</h4>
+                    <h4 style="margin-top:0; font-size:14px; text-transform:uppercase; color:var(--texto);">✏️ Editar Permisos de Operador</h4>
                     <div class="form-grupo">
                         <select id="op-edit-usu-sel" class="form-control" onchange="cargarPermisosEdicion()">
                             <option value="">-- Seleccione un operador --</option>
@@ -1747,7 +1747,7 @@
                 }
                 
                 if(uPeso) {
-                    if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--texto);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; }
+                    if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️️</span><div><strong style="color:var(--texto);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; }
                     else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++;
                     else g4.opt++;
                     let pVal = parseFloat(uPeso.valor);
@@ -2216,10 +2216,10 @@
     </script>
 
     <!-- ========================================================= -->
-    <!-- INTEGRACIÓN OFICIAL Y COMPLETA DE LA ASISTENTE CORA (IA)  -->
+    <!-- INTEGRACIÓN AUTÓNOMA DE CORA CON CONTEXTO COMPLETO DE TAURUS -->
     <!-- ========================================================= -->
     <script>
-      const URL_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec'; 
+      const URL_APPS_SCRIPT_IA = 'https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec'; 
       const btnAura = document.getElementById('btn-aura');
       const estadoIA = document.getElementById('estado-ia');
       let audioDesbloqueado = false;
@@ -2287,17 +2287,27 @@
       });
 
       function enviarComandoACora(texto) {
-        // Recopilamos datos clave del sistema para que Cora tenga "contexto total"
-        let totalCabezas = document.getElementById('dash-cabezas') ? document.getElementById('dash-cabezas').innerText : "0";
-        let totalBajas = document.getElementById('dash-bajas') ? document.getElementById('dash-bajas').innerText : "0";
-        
+        // Recopilamos el contexto completo en tiempo real desde la app
+        let totalCabezas = parseInt(document.getElementById('dash-cabezas') ? document.getElementById('dash-cabezas').innerText : "0") || 0;
+        let totalBajas = parseInt(document.getElementById('dash-bajas') ? document.getElementById('dash-bajas').innerText : "0") || 0;
+        let totalGeneral = totalCabezas + totalBajas;
+        let tasaMortalidadCalculada = totalGeneral > 0 ? ((totalBajas / totalGeneral) * 100).toFixed(1) + "%" : "0%";
+
         let payload = {
           accion: 'ia',
           mensaje: texto,
-          contexto: { cabezas: totalCabezas, bajas: totalBajas, rpActual: rpActivo || "Ninguno" }
+          nombreUsuario: usNombre || "Productor",
+          rolUsuario: usRol || "Operador",
+          haciendaNombre: usHacienda || "Hacienda",
+          contexto: {
+            cabezasVivas: totalCabezas,
+            bajasMortalidad: totalBajas,
+            tasaMortalidad: tasaMortalidadCalculada,
+            rpActualEnPantalla: rpActivo || "Ninguno"
+          }
         };
 
-        fetch(URL_APPS_SCRIPT, {
+        fetch(URL_APPS_SCRIPT_IA, {
           method: 'POST',
           body: JSON.stringify(payload)
         })
@@ -2322,13 +2332,9 @@
         });
       }
 
-      // MOTOR DE EJECUCIÓN AUTÓNOMA DE CORA EN LA APLICACIÓN
       function ejecutarComandoEnApp(cmd, params) {
-        console.log("Cora ejecutando comando:", cmd, params);
         params = params || {};
-
         if (cmd === 'navegar') {
-          // params.vista puede ser: 'dashboard', 'manga', 'registro', 'informe', 'config'
           if (params.vista === 'dashboard') cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]);
           if (params.vista === 'manga') cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
           if (params.vista === 'registro') { cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]); cargarListaRegistro(); }
@@ -2343,7 +2349,6 @@
           }
         }
         else if (cmd === 'filtrar_estado') {
-          // params.estado: 'vivos', 'bajas', 'Preñada', 'Vacía'
           filtrarDesdeDashboard('estado', params.estado || 'vivos');
         }
         else if (cmd === 'descargar_pdf') {
