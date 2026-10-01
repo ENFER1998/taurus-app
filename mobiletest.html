@@ -161,7 +161,7 @@
         .btn-guardar:disabled { opacity: 0.6; cursor: not-allowed; }
         .cerrar { float: right; font-size: 30px; color: var(--muted);}
 
-        /* ESTILOS DEL AURA DE CORA (ESTILO SIRI PROFESIONAL TEMA TAURUS) */
+        /* ESTILOS DEL AURA DE CORA (OCULTO EN LOGIN, DISEÑO NATIVO TAURUS) */
         #btn-aura {
           position: fixed;
           bottom: 85px;
@@ -175,7 +175,7 @@
           cursor: pointer;
           z-index: 9999;
           animation: respirar 3s infinite alternate;
-          display: flex;
+          display: none; /* Oculto por defecto hasta loguearse */
           align-items: center;
           justify-content: center;
           color: white;
@@ -291,7 +291,7 @@
                         <div class="form-grupo" style="margin-bottom:10px;">
                             <label style="font-size:11px;">Acción combinada con el peso:</label>
                             <select id="rafaga-accion" class="form-control" style="padding:8px; font-size:13px; font-weight:bold;" onchange="verificarRafagaCustom()">
-                                <option value="solo_peso">⚖️ Solo Registrar Peso</option>
+                                <option value="solo_peso">⚖️️ Solo Registrar Peso</option>
                                 <option value="Vacuna Aftosa">💉 Vacuna Aftosa</option>
                                 <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
                                 <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario (Ivermectina)</option>
@@ -604,7 +604,7 @@
                     
                     <hr style="border-color:var(--borde); margin:20px 0;">
                     
-                    <h4 style="margin-top:0; font-size:14px; text-transform:uppercase; color:var(--texto);">✏️ Editar Permisos de Operador</h4>
+                    <h4 style="margin-top:0; font-size:14px; text-transform:uppercase; color:var(--texto);">✏️️ Editar Permisos de Operador</h4>
                     <div class="form-grupo">
                         <select id="op-edit-usu-sel" class="form-control" onchange="cargarPermisosEdicion()">
                             <option value="">-- Seleccione un operador --</option>
@@ -674,7 +674,7 @@
         </nav>
     </div>
 
-    <!-- BOTÓN AURA DE CORA Y ESTADO -->
+    <!-- BOTÓN AURA DE CORA Y ESTADO (Oculto inicialmente en login) -->
     <button id="btn-aura" title="Hablar con Cora">
       <svg class="icono-mic" viewBox="0 0 24 24">
         <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
@@ -924,6 +924,10 @@
             try {
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
                 
+                // MOSTRAR AURA DE CORA AL ENTRAR AL SISTEMA (¡Ya no sale en el login!)
+                const elAuraBtn = document.getElementById('btn-aura');
+                if (elAuraBtn) elAuraBtn.style.display = 'flex';
+
                 if(unsubscribeConfig) unsubscribeConfig();
                 unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot(doc => {
                     if(doc.exists) {
@@ -1747,7 +1751,7 @@
                 }
                 
                 if(uPeso) {
-                    if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️️</span><div><strong style="color:var(--texto);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; }
+                    if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--texto);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; }
                     else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++;
                     else g4.opt++;
                     let pVal = parseFloat(uPeso.valor);
@@ -2081,7 +2085,7 @@
             const selectEl = document.getElementById('op-del-usu-sel');
             const u = selectEl.value.trim();
             if(!u) { alert("Seleccione un usuario de la lista."); return; }
-            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso de "${u}"?`)) {
+            if(confirm(`⚠️️ ATENCIÓN: ¿Está seguro de eliminar el acceso de "${u}"?`)) {
                 const btn = document.getElementById('btn-eliminar-op'); const btnOriginal = btn.innerHTML;
                 btn.innerHTML = "⏳ Eliminando..."; btn.disabled = true;
                 try {
@@ -2125,6 +2129,10 @@
         }
         
         function cerrarSesion() { 
+            // OCULTAR AURA AL CERRAR SESIÓN
+            const elAuraBtn = document.getElementById('btn-aura');
+            if (elAuraBtn) elAuraBtn.style.display = 'none';
+
             let leidas = localStorage.getItem('tc_alertas_leidas');
             let mostradas = localStorage.getItem('tc_alertas_mostradas');
             let prefs = localStorage.getItem('tc_prefs');
@@ -2216,7 +2224,7 @@
     </script>
 
     <!-- ========================================================= -->
-    <!-- INTEGRACIÓN AUTÓNOMA DE CORA CON CONTEXTO COMPLETO DE TAURUS -->
+    <!-- INTEGRACIÓN OFICIAL Y AVANZADA DE CORA (INTELIGENCIA Y CONTROL) -->
     <!-- ========================================================= -->
     <script>
       const URL_APPS_SCRIPT_IA = 'https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec'; 
@@ -2230,7 +2238,7 @@
       };
 
       function hablarCora(texto) {
-        window.speechSynthesis.cancel();
+        window.speechSynthesis.cancel(); // CORTE INMEDIATO SI ESTABA HABLANDO
         const utterance = new SpeechSynthesisUtterance(texto);
         utterance.lang = 'es-ES';
         utterance.rate = 1.05;
@@ -2272,7 +2280,10 @@
         };
       }
 
+      // AL TOCAR EL AURA: SILENCIA CUALQUIER AUDIO ANTERIOR AL INSTANTE Y ESCUCHA
       btnAura.addEventListener('click', () => {
+        window.speechSynthesis.cancel(); // <--- CORTA EL AUDIO ANTERIOR AL MOMENTO DE PRESIONAR
+        
         if (!audioDesbloqueado) {
           let silencio = new SpeechSynthesisUtterance('');
           silencio.volume = 0;
@@ -2287,11 +2298,11 @@
       });
 
       function enviarComandoACora(texto) {
-        // Recopilamos el contexto completo en tiempo real desde la app
         let totalCabezas = parseInt(document.getElementById('dash-cabezas') ? document.getElementById('dash-cabezas').innerText : "0") || 0;
         let totalBajas = parseInt(document.getElementById('dash-bajas') ? document.getElementById('dash-bajas').innerText : "0") || 0;
         let totalGeneral = totalCabezas + totalBajas;
         let tasaMortalidadCalculada = totalGeneral > 0 ? ((totalBajas / totalGeneral) * 100).toFixed(1) + "%" : "0%";
+        let horaLocalActual = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         let payload = {
           accion: 'ia',
@@ -2303,7 +2314,8 @@
             cabezasVivas: totalCabezas,
             bajasMortalidad: totalBajas,
             tasaMortalidad: tasaMortalidadCalculada,
-            rpActualEnPantalla: rpActivo || "Ninguno"
+            rpActualEnPantalla: rpActivo || "Ninguno",
+            horaLocal: horaLocalActual
           }
         };
 
@@ -2364,20 +2376,30 @@
             verificarRafagaCustom();
           }
         }
-        else if (cmd === 'registrar_sanidad_actual') {
+        else if (cmd === 'registrar_sanidad_con_rp') {
+          // Permite registrar sanidad nombrando la caravana directamente por voz
+          if (params.rp) {
+            rpActivo = params.rp;
+            document.getElementById('buscador-caravana').value = params.rp;
+          }
           if (rpActivo && rpActivo !== "---") {
             ejecutarAccion('Sanidad', params.tratamiento || 'Vacuna Aftosa', params.detalles || 'Aplicado por Cora', null);
             mostrarToast(`💉 Sanidad aplicada a ${rpActivo}`);
           } else {
-            alert("Selecciona o busca una caravana primero.");
+            alert("No especificaste el número de caravana.");
           }
         }
-        else if (cmd === 'registrar_peso_actual') {
+        else if (cmd === 'registrar_peso_con_rp') {
+          // Permite registrar peso nombrando la caravana directamente por voz
+          if (params.rp) {
+            rpActivo = params.rp;
+            document.getElementById('buscador-caravana').value = params.rp;
+          }
           if (rpActivo && rpActivo !== "---") {
             ejecutarAccion('Peso', (params.peso || '0') + " Kg", 'Registrado por Cora', null);
             mostrarToast(`⚖️ Peso guardado para ${rpActivo}`);
           } else {
-            alert("Selecciona o busca una caravana primero.");
+            alert("No especificaste el número de caravana.");
           }
         }
       }
