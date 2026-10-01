@@ -710,6 +710,7 @@
                     if (doc.exists) {
                         const userData = doc.data();
                         lsSet('tc_user_profile', userData);
+                        if(userData.alertas_leidas) lsSet('tc_alertas_leidas', userData.alertas_leidas);
 
                         // Cálculo de licencia hasta el final del día (23:59:59)
                         if(userData.vencimiento) {
@@ -780,7 +781,17 @@
                 let mostradas = lsGet('tc_alertas_mostradas', []);
                 if (!mostradas.includes(alertaGlobalIdActual)) { mostradas.push(alertaGlobalIdActual); lsSet('tc_alertas_mostradas', mostradas); }
                 let leidas = lsGet('tc_alertas_leidas', []);
-                if (!leidas.includes(alertaGlobalIdActual)) { leidas.push(alertaGlobalIdActual); lsSet('tc_alertas_leidas', leidas); }
+                if (!leidas.includes(alertaGlobalIdActual)) {
+                    leidas.push(alertaGlobalIdActual);
+                    lsSet('tc_alertas_leidas', leidas);
+                    if(navigator.onLine && usActivo) {
+                        try {
+                            db.collection('usuarios').doc(usActivo).update({
+                                alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
+                            });
+                        } catch(e) {}
+                    }
+                }
             }
             document.getElementById('modal-alerta-global').style.display = 'none';
             document.getElementById('banner-alerta-global').classList.add('oculto');
@@ -789,7 +800,17 @@
         window.marcarAlertaLeida = function() {
             if (alertaGlobalIdActual) {
                 let leidas = lsGet('tc_alertas_leidas', []);
-                leidas.push(alertaGlobalIdActual); lsSet('tc_alertas_leidas', leidas);
+                if(!leidas.includes(alertaGlobalIdActual)) {
+                    leidas.push(alertaGlobalIdActual);
+                    lsSet('tc_alertas_leidas', leidas);
+                    if(navigator.onLine && usActivo) {
+                        try {
+                            db.collection('usuarios').doc(usActivo).update({
+                                alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
+                            });
+                        } catch(e) {}
+                    }
+                }
             }
             document.getElementById('modal-alerta-global').style.display = 'none';
             document.getElementById('banner-alerta-global').classList.add('oculto');
@@ -937,6 +958,9 @@
                     document.querySelectorAll('.nav-item').forEach(li => li.style.display = 'flex');
                     tabSeleccionado = document.querySelectorAll('.nav-item')[0];
                 } else {
+                    const p1 = document.getElementById('panel-crear-peones'); if(p1) p1.style.display = 'none';
+                    const p2 = document.getElementById('panel-membrete'); if(p2) p2.style.display = 'none';
+                    const p3 = document.getElementById('panel-licencia'); if(p3) p3.style.display = 'none';
                     let perms = usRol.includes('|') ? usRol.split('|')[1] : "dash,ficha,base,reporte";
                     let foundFirst = false;
                     document.querySelectorAll('.nav-item').forEach(li => {
@@ -1943,8 +1967,9 @@
                 await secondaryApp.auth().createUserWithEmailAndPassword(email, p);
                 await secondaryApp.auth().signOut();
                 await secondaryApp.delete(); 
+                let alertasParaOmitir = alertaGlobalIdActual ? [alertaGlobalIdActual] : [];
                 await db.collection('usuarios').doc(email).set({
-                    nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', password: p 
+                    nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', password: p, alertas_leidas: alertasParaOmitir
                 });
                 ejecutarAccion('Alta Operador', email, `Nombre: ${n} | Rol: ${rolFinal}`, null);
                 document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 
