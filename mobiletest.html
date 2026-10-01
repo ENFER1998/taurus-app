@@ -175,7 +175,7 @@
           cursor: pointer;
           z-index: 9999;
           animation: respirar 3s infinite alternate;
-          display: none; /* Oculto por defecto hasta loguearse */
+          display: none; /* Oculto por defecto en la pantalla de login */
           align-items: center;
           justify-content: center;
           color: white;
@@ -238,7 +238,7 @@
     <!-- MODAL POP-UP AVISO GLOBAL -->
     <div id="modal-alerta-global" class="modal">
         <div class="modal-body">
-            <h3 style="color:var(--alerta); margin-top:0; border-bottom: none; font-size:22px; text-align:center;">⚠️ Aviso Importante</h3>
+            <h3 style="color:var(--alerta); margin-top:0; border-bottom: none; font-size:22px; text-align:center;">⚠️️ Aviso Importante</h3>
             <p id="txt-alerta-global" style="font-size:16px; line-height: 1.5; color:var(--texto); margin-bottom: 25px; font-weight:bold; text-align:center;"></p>
             <button class="btn-guardar" style="background:var(--alerta);" onclick="cerrarPopUpAlerta()">Entendido / Cerrar</button>
         </div>
@@ -291,7 +291,7 @@
                         <div class="form-grupo" style="margin-bottom:10px;">
                             <label style="font-size:11px;">Acción combinada con el peso:</label>
                             <select id="rafaga-accion" class="form-control" style="padding:8px; font-size:13px; font-weight:bold;" onchange="verificarRafagaCustom()">
-                                <option value="solo_peso">⚖️️ Solo Registrar Peso</option>
+                                <option value="solo_peso">⚖️ Solo Registrar Peso</option>
                                 <option value="Vacuna Aftosa">💉 Vacuna Aftosa</option>
                                 <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
                                 <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario (Ivermectina)</option>
@@ -357,7 +357,7 @@
                     
                     <div class="grid-acciones">
                         <button class="btn-accion" onclick="abrirModal('modal-sanidad')"><span style="color:var(--peligro);">💉</span> Sanidad</button>
-                        <button class="btn-accion" onclick="abrirModal('modal-peso')"><span style="color:var(--secundario);">⚖️</span> Pesaje</button>
+                        <button class="btn-accion" onclick="abrirModal('modal-peso')"><span style="color:var(--secundario);">⚖️️</span> Pesaje</button>
                         <button class="btn-accion" onclick="abrirModal('modal-diagnostico')"><span style="color:var(--exito);">🩺</span> Tacto / Dx</button>
                         <button class="btn-accion" onclick="abrirModal('modal-inseminacion')"><span style="color:#9333ea;">🧬</span> Inseminar</button>
                         <button class="btn-accion" onclick="abrirModal('modal-nut')"><span style="color:var(--alerta);">🌾</span> Nutrición</button>
@@ -604,7 +604,7 @@
                     
                     <hr style="border-color:var(--borde); margin:20px 0;">
                     
-                    <h4 style="margin-top:0; font-size:14px; text-transform:uppercase; color:var(--texto);">✏️️ Editar Permisos de Operador</h4>
+                    <h4 style="margin-top:0; font-size:14px; text-transform:uppercase; color:var(--texto);">✏️ Editar Permisos de Operador</h4>
                     <div class="form-grupo">
                         <select id="op-edit-usu-sel" class="form-control" onchange="cargarPermisosEdicion()">
                             <option value="">-- Seleccione un operador --</option>
@@ -674,7 +674,7 @@
         </nav>
     </div>
 
-    <!-- BOTÓN AURA DE CORA Y ESTADO (Oculto inicialmente en login) -->
+    <!-- BOTÓN AURA DE CORA Y ESTADO (Oculto inicialmente en la pantalla de login) -->
     <button id="btn-aura" title="Hablar con Cora">
       <svg class="icono-mic" viewBox="0 0 24 24">
         <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
@@ -924,7 +924,7 @@
             try {
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
                 
-                // MOSTRAR AURA DE CORA AL ENTRAR AL SISTEMA (¡Ya no sale en el login!)
+                // MOSTRAR AURA DE CORA ÚNICAMENTE TRAS EL LOGIN EXITOSO
                 const elAuraBtn = document.getElementById('btn-aura');
                 if (elAuraBtn) elAuraBtn.style.display = 'flex';
 
@@ -2085,7 +2085,7 @@
             const selectEl = document.getElementById('op-del-usu-sel');
             const u = selectEl.value.trim();
             if(!u) { alert("Seleccione un usuario de la lista."); return; }
-            if(confirm(`⚠️️ ATENCIÓN: ¿Está seguro de eliminar el acceso de "${u}"?`)) {
+            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso de "${u}"?`)) {
                 const btn = document.getElementById('btn-eliminar-op'); const btnOriginal = btn.innerHTML;
                 btn.innerHTML = "⏳ Eliminando..."; btn.disabled = true;
                 try {
@@ -2238,7 +2238,7 @@
       };
 
       function hablarCora(texto) {
-        window.speechSynthesis.cancel(); // CORTE INMEDIATO SI ESTABA HABLANDO
+        window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(texto);
         utterance.lang = 'es-ES';
         utterance.rate = 1.05;
@@ -2280,9 +2280,9 @@
         };
       }
 
-      // AL TOCAR EL AURA: SILENCIA CUALQUIER AUDIO ANTERIOR AL INSTANTE Y ESCUCHA
+      // AL PRESIONAR EL AURA: SILENCIA CUALQUIER AUDIO ANTERIOR AL INSTANTE
       btnAura.addEventListener('click', () => {
-        window.speechSynthesis.cancel(); // <--- CORTA EL AUDIO ANTERIOR AL MOMENTO DE PRESIONAR
+        window.speechSynthesis.cancel(); // CORTE INMEDIATO
         
         if (!audioDesbloqueado) {
           let silencio = new SpeechSynthesisUtterance('');
@@ -2302,12 +2302,17 @@
         let totalBajas = parseInt(document.getElementById('dash-bajas') ? document.getElementById('dash-bajas').innerText : "0") || 0;
         let totalGeneral = totalCabezas + totalBajas;
         let tasaMortalidadCalculada = totalGeneral > 0 ? ((totalBajas / totalGeneral) * 100).toFixed(1) + "%" : "0%";
+        
+        // Hora local exacta del dispositivo
         let horaLocalActual = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        // EXTRAEMOS ÚNICAMENTE EL PRIMER NOMBRE (ej: "Fernando" en vez de "Fernando Rodríguez")
+        let primerNombre = (usNombre || "Productor").split(' ')[0];
 
         let payload = {
           accion: 'ia',
           mensaje: texto,
-          nombreUsuario: usNombre || "Productor",
+          nombreUsuario: primerNombre,
           rolUsuario: usRol || "Operador",
           haciendaNombre: usHacienda || "Hacienda",
           contexto: {
@@ -2377,7 +2382,6 @@
           }
         }
         else if (cmd === 'registrar_sanidad_con_rp') {
-          // Permite registrar sanidad nombrando la caravana directamente por voz
           if (params.rp) {
             rpActivo = params.rp;
             document.getElementById('buscador-caravana').value = params.rp;
@@ -2390,7 +2394,6 @@
           }
         }
         else if (cmd === 'registrar_peso_con_rp') {
-          // Permite registrar peso nombrando la caravana directamente por voz
           if (params.rp) {
             rpActivo = params.rp;
             document.getElementById('buscador-caravana').value = params.rp;
