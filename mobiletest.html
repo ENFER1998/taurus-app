@@ -751,6 +751,7 @@
         let dbCache = []; let historiaCache = null; let activosCache = null; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = ""; let pdfExportData = [];
         let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
         let alertaGlobalIdActual = "";
+        let globalPrenadas = 0; let globalVacias = 0;
 
         let unsubscribeEventos = null;
         let unsubscribeConfig = null;
@@ -1762,6 +1763,8 @@
                 if(uSan) g6.con++; else g6.sin++;
             });
 
+            globalPrenadas = g1.p; globalVacias = g1.v;
+
             const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
             const prefs = lsGet('tc_prefs', ['1', '3']); let htmlGraficos = "";
             const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#38bdf8'];
@@ -2334,6 +2337,8 @@
             cabezasVivas: totalCabezas,
             bajasMortalidad: totalBajas,
             tasaMortalidad: tasaMortalidadCalculada,
+            prenadas: typeof globalPrenadas !== 'undefined' ? globalPrenadas : 0,
+            vacias: typeof globalVacias !== 'undefined' ? globalVacias : 0,
             rpActualEnPantalla: rpActivo || "Ninguno",
             horaLocal: horaLocalActual
           }
@@ -2522,6 +2527,78 @@
             if (params.lote) document.getElementById('input-lote-rapido').value = params.lote;
             if (params.carimbo) document.getElementById('input-carimbo-rapido').value = params.carimbo;
             if (params.autoguardar) guardarClasificacion();
+          }
+        }
+        else if (cmd === 'filtrar_registro') {
+          cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]);
+          if (params.estado) document.getElementById('filtro-reg-estado').value = params.estado;
+
+          if (params.categoria && params.categoria !== 'ALL') {
+            const catSel = document.getElementById('filtro-reg-cat');
+            for (let i = 0; i < catSel.options.length; i++) {
+              if (catSel.options[i].value.toLowerCase().includes(params.categoria.toLowerCase()) || catSel.options[i].text.toLowerCase().includes(params.categoria.toLowerCase())) {
+                catSel.selectedIndex = i;
+                break;
+              }
+            }
+          } else {
+            document.getElementById('filtro-reg-cat').value = 'ALL';
+          }
+
+          if (params.lote && params.lote !== 'ALL') {
+            const loteSel = document.getElementById('filtro-reg-lote');
+            for (let i = 0; i < loteSel.options.length; i++) {
+              if (loteSel.options[i].value.toLowerCase().includes(params.lote.toLowerCase())) {
+                loteSel.selectedIndex = i;
+                break;
+              }
+            }
+          } else {
+            document.getElementById('filtro-reg-lote').value = 'ALL';
+          }
+
+          if (params.dx) document.getElementById('filtro-reg-dx').value = params.dx;
+
+          cargarListaRegistro();
+        }
+        else if (cmd === 'generar_informe') {
+          cambiarVista('vista-informe', document.querySelectorAll('.nav-item')[3]);
+          if (params.modo) {
+             document.getElementById('f-inf-modo').value = params.modo;
+             cambiarModoReporte();
+          }
+          if (params.modo === 'inventario') {
+             if (params.categoria && params.categoria !== 'ALL') {
+                const catSel = document.getElementById('f-inf-cat');
+                for (let i = 0; i < catSel.options.length; i++) {
+                  if (catSel.options[i].value.toLowerCase().includes(params.categoria.toLowerCase()) || catSel.options[i].text.toLowerCase().includes(params.categoria.toLowerCase())) {
+                    catSel.selectedIndex = i;
+                    break;
+                  }
+                }
+             }
+             if (params.lote && params.lote !== 'ALL') {
+                const loteSel = document.getElementById('f-inf-lote');
+                for (let i = 0; i < loteSel.options.length; i++) {
+                  if (loteSel.options[i].value.toLowerCase().includes(params.lote.toLowerCase())) {
+                    loteSel.selectedIndex = i;
+                    break;
+                  }
+                }
+             }
+             if (params.dx) document.getElementById('f-inf-dx').value = params.dx;
+             if (params.carimbo) document.getElementById('f-inf-carimbo').value = params.carimbo;
+          } else if (params.modo === 'bajas') {
+             if (params.causa) document.getElementById('f-inf-baja-causa').value = params.causa;
+             if (params.rango) { document.getElementById('f-inf-baja-rango').value = params.rango; manejarRangoFechasBajas(); }
+          } else if (params.modo === 'eventos') {
+             if (params.rango) { document.getElementById('f-inf-rango-fecha').value = params.rango; manejarRangoFechas(); }
+             if (params.accion) document.getElementById('f-inf-accion-oculto').value = params.accion;
+          }
+
+          actualizarInformeAvanzado();
+          if (params.autoguardar) {
+             setTimeout(() => ejecutarDescargaPDF(), 800);
           }
         }
         else if (cmd === 'accion_ganadera') {
