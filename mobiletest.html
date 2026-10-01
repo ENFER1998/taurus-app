@@ -895,6 +895,11 @@
             if(texto) { b.innerText = texto; }
             else if(navigator.onLine || online) { b.classList.remove('offline'); b.innerText = '🟢 Conectado'; }
             else { b.classList.add('offline'); b.innerText = '🔴 Red Local'; }
+
+            const btnAura = document.getElementById('btn-aura');
+            if (btnAura) {
+               btnAura.style.display = (navigator.onLine || online) ? 'flex' : 'none';
+            }
         }
         window.addEventListener('online', () => setEstadoRed(true)); window.addEventListener('offline', () => setEstadoRed(false));
 
@@ -943,6 +948,21 @@
                 if(unsubscribeEventos) unsubscribeEventos();
 
                 let renderTimeout;
+                const forzarCargaLocalFallback = () => {
+                    setEstadoRed(false, '❌ Red Local');
+                    fusionarDatos(lsGet('tc_db', []));
+                    if(rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
+                    procesarDatosDashboard();
+                    if(!document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro();
+                    if(!document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
+                    cargarListasFiltrosSelects();
+                    cargarListaOperadores();
+                };
+
+                if (!navigator.onLine) {
+                    forzarCargaLocalFallback();
+                }
+
                 unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot(snapshot => {
                     let nuevosDatos = [];
                     snapshot.forEach(doc => nuevosDatos.push(doc.data()));
@@ -975,7 +995,9 @@
                         cargarListaOperadores();
                         setEstadoRed(true);
                     }, 500);
-                }, err => { setEstadoRed(false, '❌ Red Local'); });
+                }, err => {
+                    forzarCargaLocalFallback();
+                });
 
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
                 let displayRol = isPropietario ? 'Propietario' : 'Operador';
