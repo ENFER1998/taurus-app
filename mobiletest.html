@@ -165,27 +165,32 @@
         #btn-aura {
           position: fixed;
           bottom: 85px;
-          right: 20px;
-          width: 65px;
-          height: 65px;
-          border-radius: 50%;
+          right: 0;
+          width: 50px;
+          height: 50px;
+          border-radius: 25px 0 0 25px;
           background: linear-gradient(135deg, #0f172a 0%, #3b82f6 100%);
-          box-shadow: 0 0 15px rgba(59, 130, 246, 0.5), inset 0 0 10px rgba(255,255,255,0.3);
+          box-shadow: -2px 0 10px rgba(59, 130, 246, 0.5), inset 0 0 10px rgba(255,255,255,0.3);
           border: 1px solid var(--borde);
+          border-right: none;
           cursor: pointer;
           z-index: 9999;
-          animation: respirar 3s infinite alternate;
+          transition: width 0.3s, transform 0.3s;
           display: none; /* Oculto por defecto en la pantalla de login */
           align-items: center;
           justify-content: center;
           color: white;
           -webkit-tap-highlight-color: transparent;
+          opacity: 0.8;
         }
-        @keyframes respirar {
-          0% { transform: scale(1); box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
-          100% { transform: scale(1.08); box-shadow: 0 0 25px rgba(59, 130, 246, 0.8); }
-        }
+        #btn-aura:active { opacity: 1; }
         #btn-aura.escuchando {
+          width: 65px;
+          height: 65px;
+          border-radius: 50%;
+          right: 20px;
+          border: 1px solid var(--borde);
+          opacity: 1;
           background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
           animation: latir 0.8s infinite alternate;
         }
@@ -193,7 +198,7 @@
           0% { transform: scale(1); box-shadow: 0 0 15px rgba(16, 185, 129, 0.6); }
           100% { transform: scale(1.15); box-shadow: 0 0 35px rgba(59, 130, 246, 0.9); }
         }
-        .icono-mic { width: 28px; height: 28px; fill: currentColor; }
+        .icono-mic { width: 24px; height: 24px; fill: currentColor; }
         #estado-ia {
           position: fixed;
           bottom: 160px;
@@ -247,7 +252,10 @@
     <div id="pantalla-app" class="oculto">
         <header class="cabecera">
             <h1><img src="gemini-svg.png" alt="Taurus" style="width: 26px; height: 26px; border-radius: 6px; object-fit: contain;"> Taurus</h1>
-            <div id="estado-red" class="badge-estado" onclick="sincronizarFondo(true)">🟢 Conectado</div>
+            <div style="display:flex; align-items:center; gap:5px;">
+                <span id="contador-pendientes" style="display:none; background:white; color:#0f172a; border-radius:12px; padding:2px 8px; font-size:11px; font-weight:bold;">0 ⬆️</span>
+                <div id="estado-red" class="badge-estado" onclick="sincronizarFondo(true)">🟢 Conectado</div>
+            </div>
         </header>
 
         <div class="contenedor">
@@ -693,7 +701,7 @@
             <span class="cerrar" onclick="cerrarModal('m-perfil')">&times;</span>
             <h3>Datos Base del Animal</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div class="form-grupo"><label>Raza</label><input type="text" class="form-control" id="f-raza"></div>
+                <div class="form-grupo"><label>Raza</label><input type="text" class="form-control" id="f-raza" list="lista-razas"><datalist id="lista-razas"></datalist></div>
                 <div class="form-grupo">
                     <label>Nacimiento (Mes/Año)</label>
                     <input type="month" class="form-control" id="f-nacimiento" onchange="mostrarCarimboCalculado()">
@@ -710,7 +718,7 @@
     <div id="modal-diagnostico" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-diagnostico')">&times;</span><h3>Tacto / Diagnóstico (Dx)</h3><div class="form-grupo"><select class="form-control" id="i-dx-sel" style="font-weight:bold; font-size:18px;"><option value="Preñada">✅ Preñada</option><option value="Vacía">❌ Vacía</option><option value="Vacía (Sangre)">🩸 Vacía (Sangre)</option></select></div><div class="form-grupo"><label>Observaciones</label><textarea class="form-control textarea" id="i-dx-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-diagnostico', 'Diagnóstico')">Registrar Tacto</button></div></div>
     <div id="modal-peso" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-peso')">&times;</span><h3>Pesaje</h3><div class="form-grupo"><input type="number" step="0.5" class="form-control" id="i-peso-val" placeholder="Kg" style="font-size:24px; font-weight:bold; text-align:center;"></div><div class="form-grupo"><label>Condición Corporal</label><select class="form-control" id="i-peso-cond"><option>Óptima</option><option>Bajo Peso</option><option>Sobrepeso</option></select></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-peso-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-peso', 'Peso')">Registrar Peso</button></div></div>
 
-    <div id="modal-sanidad" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-sanidad')">&times;</span><h3>💉 Tratamiento / Sanidad</h3><div class="form-grupo"><label>Producto</label><select class="form-control" id="i-sani-sel"><option>Antiparasitario (Ivermectina)</option><option>Vacuna Aftosa</option><option>Vacuna Carbunclo</option><option>Vitamina ADE</option><option>Tratamiento General</option></select></div><div class="form-grupo"><label>Lote / Detalles</label><input type="text" class="form-control" id="i-sani-lote"></div><div class="form-grupo"><label>Notas (Enfermedad, etc)</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div>
+    <div id="modal-sanidad" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-sanidad')">&times;</span><h3>💉 Tratamiento / Sanidad</h3><div class="form-grupo"><label>Producto</label><input type="text" class="form-control" id="i-sani-sel" list="lista-productos"><datalist id="lista-productos"><option value="Antiparasitario (Ivermectina)"></option><option value="Vacuna Aftosa"></option><option value="Vacuna Carbunclo"></option><option value="Vitamina ADE"></option><option value="Tratamiento General"></option></datalist></div><div class="form-grupo"><label>Lote / Detalles</label><input type="text" class="form-control" id="i-sani-lote"></div><div class="form-grupo"><label>Notas (Enfermedad, etc)</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div>
         <div class="form-grupo">
             <label style="color:var(--alerta);">⏳ Próxima Dosis / Recordatorio</label>
             <select class="form-control" id="i-sani-recordatorio" style="border-color: var(--alerta);">
@@ -725,7 +733,7 @@
         </div>
         <button class="btn-guardar" onclick="prepararGuardado('modal-sanidad', 'Sanidad')">Registrar Sanidad</button></div></div>
 
-    <div id="modal-inseminacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-inseminacion')">&times;</span><h3>🧬 Reproducción</h3><div class="form-grupo"><label>Inseminador / Método</label><input type="text" class="form-control" id="i-ins-quien"></div><div class="form-grupo"><label>Toro / Pajuela</label><input type="text" class="form-control" id="i-ins-toro"></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-ins-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-inseminacion', 'Inseminación')">Registrar</button></div></div>
+    <div id="modal-inseminacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-inseminacion')">&times;</span><h3>🧬 Reproducción</h3><div class="form-grupo"><label>Inseminador / Método</label><input type="text" class="form-control" id="i-ins-quien" list="lista-inseminadores"><datalist id="lista-inseminadores"></datalist></div><div class="form-grupo"><label>Toro / Pajuela</label><input type="text" class="form-control" id="i-ins-toro"></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-ins-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-inseminacion', 'Inseminación')">Registrar</button></div></div>
     <div id="modal-nut" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-nut')">&times;</span><h3>🌾 Suplemento Nutricional</h3><div class="form-grupo"><label>Alimento</label><input type="text" class="form-control" id="i-nut-prod" list="lista-alimentos"><datalist id="lista-alimentos"><option value="Sal Mineral"></option><option value="Sal Proteica"></option><option value="Forraje / Pastura"></option></datalist></div><div class="form-grupo"><label>Dosificación</label><input type="text" class="form-control" id="i-nut-rac"></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-nut', 'Nutrición')">Registrar Nutrición</button></div></div>
     <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial Clínico</h3><div id="contenido-historial"></div></div></div>
 
@@ -1121,13 +1129,24 @@
             if(imgCfg) imgCfg.src = l;
         }
 
+        function actualizarContadorPendientes() {
+            const p = lsGet('tc_pendientes', []);
+            const badge = document.getElementById('contador-pendientes');
+            if (badge) {
+                if (p.length > 0) { badge.style.display = 'inline-block'; badge.innerText = p.length + ' ⬆️'; }
+                else { badge.style.display = 'none'; }
+            }
+        }
+
         async function sincronizarPendientesAuto() {
-            let p = lsGet('tc_pendientes', []); if(p.length === 0) return;
+            let p = lsGet('tc_pendientes', []);
+            actualizarContadorPendientes();
+            if(p.length === 0) return;
             if(navigator.onLine) {
                 const batch = db.batch();
                 const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
                 p.forEach(obj => { batch.set(colRef.doc(), obj); });
-                try { await batch.commit(); lsSet('tc_pendientes', []); } catch(e) {}
+                try { await batch.commit(); lsSet('tc_pendientes', []); actualizarContadorPendientes(); } catch(e) {}
             }
         }
 
@@ -1195,9 +1214,19 @@
             let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
             let lotesSet = new Set();
             let catsSet = new Set();
+            let prodsSet = new Set(["Antiparasitario (Ivermectina)", "Vacuna Aftosa", "Vacuna Carbunclo", "Vitamina ADE", "Tratamiento General"]);
+            let insSet = new Set();
+            let razaSet = new Set();
 
             unicas.forEach(car => {
                 const regs = obtenerHistorial(car);
+
+                const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad');
+                if (uSan && uSan.valor) prodsSet.add(uSan.valor);
+
+                const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación' || String(d.accion).trim() === 'Inseminacion');
+                if (uIns && uIns.detalles) { let p = uIns.detalles.split('Notas:')[0].replace('Ins:','').trim(); if(p && p !== "-") insSet.add(p); }
+
                 const uC = regs.find(d => d.accion === 'Actualización de Datos');
                 if(uC) {
                     let v = String(uC.valor||"").split('|');
@@ -1210,6 +1239,9 @@
                         catsSet.add(obtenerNombreCategoriaLegible(String(uP.detalles).split('|')[0]));
                     }
                 }
+
+                const pM = regs.find(d => d.accion === 'Perfil Master');
+                if (pM && pM.valor) { let r = pM.valor.split('|')[0]; if(r && r !== "-") razaSet.add(r); }
             });
 
             ['filtro-reg-lote', 'f-inf-lote'].forEach(id => {
@@ -1236,6 +1268,15 @@
                     if(curr && curr !== "") el.value = curr;
                 }
             });
+
+            const dlLotes = document.getElementById('lista-lotes');
+            if (dlLotes) { let opts = ''; lotesSet.forEach(l => opts += `<option value="${l}"></option>`); dlLotes.innerHTML = opts; }
+            const dlProds = document.getElementById('lista-productos');
+            if (dlProds) { let opts = ''; prodsSet.forEach(p => opts += `<option value="${p}"></option>`); dlProds.innerHTML = opts; }
+            const dlIns = document.getElementById('lista-inseminadores');
+            if (dlIns) { let opts = ''; insSet.forEach(i => opts += `<option value="${i}"></option>`); dlIns.innerHTML = opts; }
+            const dlRazas = document.getElementById('lista-razas');
+            if (dlRazas) { let opts = ''; razaSet.forEach(r => opts += `<option value="${r}"></option>`); dlRazas.innerHTML = opts; }
         }
 
         function buscarCaravanaBtn(rpForzado = null) {
@@ -1349,9 +1390,9 @@
             }
             if(navigator.onLine) {
                 db.collection('estancias').doc(maestroId).collection('eventos').add(obj).catch(e => {
-                    let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p);
+                    let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); actualizarContadorPendientes();
                 });
-            } else { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); }
+            } else { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); actualizarContadorPendientes(); }
         }
 
         function prepararGuardado(mId, t) {
