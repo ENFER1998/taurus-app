@@ -767,6 +767,7 @@
                     if (doc.exists) {
                         const userData = doc.data();
                         lsSet('tc_user_profile', userData);
+                        if(userData.alertas_leidas) lsSet('tc_alertas_leidas', userData.alertas_leidas);
                         
                         if(userData.vencimiento) {
                             let fLimit = new Date(userData.vencimiento.includes('T') ? userData.vencimiento : userData.vencimiento + "T23:59:59");
@@ -843,7 +844,17 @@
                 let mostradas = lsGet('tc_alertas_mostradas', []);
                 if (!mostradas.includes(alertaGlobalIdActual)) { mostradas.push(alertaGlobalIdActual); lsSet('tc_alertas_mostradas', mostradas); }
                 let leidas = lsGet('tc_alertas_leidas', []);
-                if (!leidas.includes(alertaGlobalIdActual)) { leidas.push(alertaGlobalIdActual); lsSet('tc_alertas_leidas', leidas); }
+                if (!leidas.includes(alertaGlobalIdActual)) {
+                    leidas.push(alertaGlobalIdActual);
+                    lsSet('tc_alertas_leidas', leidas);
+                    if(navigator.onLine && usActivo) {
+                        try {
+                            db.collection('usuarios').doc(usActivo).update({
+                                alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
+                            });
+                        } catch(e) {}
+                    }
+                }
             }
             document.getElementById('modal-alerta-global').style.display = 'none';
             document.getElementById('banner-alerta-global').classList.add('oculto');
@@ -852,8 +863,17 @@
         window.marcarAlertaLeida = function() {
             if (alertaGlobalIdActual) {
                 let leidas = lsGet('tc_alertas_leidas', []);
-                leidas.push(alertaGlobalIdActual);
-                lsSet('tc_alertas_leidas', leidas);
+                if(!leidas.includes(alertaGlobalIdActual)) {
+                    leidas.push(alertaGlobalIdActual);
+                    lsSet('tc_alertas_leidas', leidas);
+                    if(navigator.onLine && usActivo) {
+                        try {
+                            db.collection('usuarios').doc(usActivo).update({
+                                alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
+                            });
+                        } catch(e) {}
+                    }
+                }
             }
             document.getElementById('modal-alerta-global').style.display = 'none';
             document.getElementById('banner-alerta-global').classList.add('oculto');
@@ -1020,7 +1040,7 @@
                     document.querySelectorAll('.sidebar-nav li').forEach(li => li.style.display = 'flex');
                     tabSeleccionado = document.querySelectorAll('.sidebar-nav li')[0];
                 } else {
-                    document.getElementById('panel-crear-peones').style.display = 'block'; 
+                    document.getElementById('panel-crear-peones').style.display = 'none';
                     document.getElementById('panel-membrete').style.display = 'none';
                     document.getElementById('panel-licencia').style.display = 'none';
                     
@@ -2049,8 +2069,9 @@
                 await secondaryApp.auth().createUserWithEmailAndPassword(email, p);
                 await secondaryApp.auth().signOut();
                 await secondaryApp.delete(); 
+                let alertasParaOmitir = alertaGlobalIdActual ? [alertaGlobalIdActual] : [];
                 await db.collection('usuarios').doc(email).set({
-                    nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', password: p 
+                    nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', password: p, alertas_leidas: alertasParaOmitir
                 });
                 ejecutarAccion('Alta Operador', email, `Nombre: ${n} | Rol: ${rolFinal}`, null);
                 document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 
