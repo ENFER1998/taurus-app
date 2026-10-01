@@ -1286,15 +1286,27 @@
                     dx = uDx ? uDx.valor : (esPre ? "Preñada" : (esVacia ? "Vacía" : "-"));
 
                     const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nutricion = (uNut.valor || "-") + " | " + (uNut.detalles || "");
-                    const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "-") + " | " + (uSan.detalles || "");
-                    const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) inseminacion = (uIns.valor || "-") + " | " + (uIns.detalles || "");
+                    const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) sanidad = (uSan.valor || "-") + " | " + (uSan.detalles || "");
+                    const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación' || String(d.accion).trim() === 'Inseminacion'); if(uIns) inseminacion = (uIns.valor || "-") + " | " + (uIns.detalles || "");
 
                     let ultComentario = "Sin comentarios.";
                     regs.forEach(r => {
                         try {
                             let acc = String(r.accion).trim(); let det = String(r.detalles || ""); let notaTexto = "";
-                            if (acc === 'Comentario') { notaTexto = det.split('|')[0] || ""; if(ultComentario === "Sin comentarios.") ultComentario = notaTexto; }
-                            else if (det.includes('Notas:')) { let parts = det.split('Notas:'); if (parts.length > 1) { let n = parts[1].split('|')[0].trim(); if(n && n !== "-" && n !== "") notaTexto = `[${acc}] ${n}`; } }
+                            if (acc === 'Comentario') {
+                                notaTexto = det.split('|')[0] || "";
+                                if(ultComentario === "Sin comentarios.") ultComentario = notaTexto;
+                            }
+                            else if (det.includes('Notas:')) {
+                                let parts = det.split('Notas:');
+                                if (parts.length > 1) {
+                                    let n = parts[1].split('|')[0].trim();
+                                    if(n && n !== "-" && n !== "") {
+                                        notaTexto = `[${acc}] ${n}`;
+                                        if(ultComentario === "Sin comentarios.") ultComentario = notaTexto;
+                                    }
+                                }
+                            }
                         } catch(e) {}
                     });
                     document.getElementById('val-comentario').innerText = ultComentario;
