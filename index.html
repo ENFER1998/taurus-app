@@ -742,6 +742,26 @@
             setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() => t.remove(), 500); }, 3000);
         }
 
+        function solicitarPermisoNotificaciones() {
+            if (!("Notification" in window)) return;
+            if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
+        }
+
+        function lanzarNotificacionEscritorio(titulo, mensaje) {
+            if (!("Notification" in window)) return;
+            if (Notification.permission === "granted") {
+                new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' });
+            } else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' });
+                    }
+                });
+            }
+        }
+
         function procesarAlertaServidor(msg, id) {
             const banner = document.getElementById('banner-alerta-global');
             if (!msg || !id) { banner.classList.add('oculto'); return; }
@@ -824,7 +844,7 @@
         }
 
         function notificarPropietario(mensaje) {
-            if(usRol.includes('Propietario') || usRol.includes('Dueño') || !navigator.onLine) return;
+            if(!navigator.onLine) return;
             const fd = new URLSearchParams(); fd.append('accion', 'notificar_accion'); fd.append('maestro', maestroId); fd.append('mensaje', mensaje);
             fetch("https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec", { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
         }
@@ -851,7 +871,23 @@
                 unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot(snapshot => {
                     let nuevosDatos = [];
                     snapshot.forEach(doc => nuevosDatos.push(doc.data()));
+
+                    let mapAnterior = new Set(dbCache.map(d => d.fecha + '_' + d.caravana + '_' + d.accion));
+                    let notificar = nuevosDatos.filter(d => d && d.fecha && !mapAnterior.has(d.fecha + '_' + d.caravana + '_' + d.accion));
+
                     fusionarDatos(nuevosDatos);
+
+                    if (notificar.length > 0 && mapAnterior.size > 0) {
+                        if (notificar.length <= 3) {
+                            notificar.forEach(n => {
+                                let op = n.usuario || "Un operador";
+                                if (n.detalles && n.detalles.includes("Op: ")) { op = n.detalles.split("Op: ")[1].trim(); }
+                                if(op.toLowerCase() !== usNombre.toLowerCase() && n.caravana !== '---') {
+                                    lanzarNotificacionEscritorio("Alerta Taurus", `${op} registró [${n.accion}] al RP ${n.caravana}`);
+                                }
+                            });
+                        }
+                    }
 
                     clearTimeout(renderTimeout);
                     renderTimeout = setTimeout(() => {
