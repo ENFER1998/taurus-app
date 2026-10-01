@@ -882,7 +882,8 @@
                             notificar.forEach(n => {
                                 let op = n.usuario || "Un operador";
                                 if (n.detalles && n.detalles.includes("Op: ")) { op = n.detalles.split("Op: ")[1].trim(); }
-                                if(op.toLowerCase() !== usNombre.toLowerCase() && n.caravana !== '---') {
+                                let propFlag = usRol.includes('Propietario') || usRol.includes('Dueño');
+                                if(propFlag && op.toLowerCase() !== usNombre.toLowerCase() && n.caravana !== '---') {
                                     lanzarNotificacionEscritorio("Alerta Taurus", `${op} registró [${n.accion}] al RP ${n.caravana}`);
                                 }
                             });
@@ -908,7 +909,21 @@
                     OneSignalDeferred.push(async function(OneSignal) {
                         try {
                             OneSignal.User.addTags({ rol: displayRol, estancia_id: m });
-                            if (isPropietario) { await OneSignal.Slidedown.promptPush(); }
+                            if (isPropietario) {
+                                await OneSignal.Slidedown.promptPush();
+                                OneSignal.User.PushSubscription.optIn();
+
+                                // Bloquear notificaciones push de OneSignal si yo mismo fui el autor
+                                OneSignal.Notifications.addEventListener('foregroundWillDisplay', function(event) {
+                                    const notif = event.notification;
+                                    if(notif.body && notif.body.includes(usNombre)) {
+                                        event.preventDefault();
+                                    }
+                                });
+                            } else {
+                                // Los operadores nunca reciben notificaciones Push
+                                OneSignal.User.PushSubscription.optOut();
+                            }
                         } catch (e) {}
                     });
                 }
