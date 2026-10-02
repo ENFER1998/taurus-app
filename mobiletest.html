@@ -730,7 +730,7 @@
     <div id="modal-diagnostico" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-diagnostico')">&times;</span><h3>Tacto / Diagnóstico (Dx)</h3><div class="form-grupo"><select class="form-control" id="i-dx-sel" style="font-weight:bold; font-size:18px;"><option value="Preñada">✅ Preñada</option><option value="Vacía">❌ Vacía</option><option value="Vacía (Sangre)">🩸 Vacía (Sangre)</option></select></div><div class="form-grupo"><label>Observaciones</label><textarea class="form-control textarea" id="i-dx-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-diagnostico', 'Diagnóstico')">Registrar Tacto</button></div></div>
     <div id="modal-peso" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-peso')">&times;</span><h3>Pesaje</h3><div class="form-grupo"><input type="number" step="0.5" class="form-control" id="i-peso-val" placeholder="Kg" style="font-size:24px; font-weight:bold; text-align:center;"></div><div class="form-grupo"><label>Condición Corporal</label><select class="form-control" id="i-peso-cond"><option>Óptima</option><option>Bajo Peso</option><option>Sobrepeso</option></select></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-peso-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-peso', 'Peso')">Registrar Peso</button></div></div>
 
-    <div id="modal-sanidad" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-sanidad')">&times;</span><h3>💉 Tratamiento / Sanidad</h3><div class="form-grupo"><label>Producto</label><input type="text" class="form-control" id="i-sani-sel" list="lista-productos"><datalist id="lista-productos"><option value="Antiparasitario (Ivermectina)"></option><option value="Vacuna Aftosa"></option><option value="Vacuna Carbunclo"></option><option value="Vitamina ADE"></option><option value="Tratamiento General"></option></datalist></div><div class="form-grupo"><label>Lote / Detalles</label><input type="text" class="form-control" id="i-sani-lote"></div><div class="form-grupo"><label>Notas (Enfermedad, etc)</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div>
+    <div id="modal-sanidad" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-sanidad')">&times;</span><h3>💉 Tratamiento / Sanidad</h3><div class="form-grupo"><label>Producto</label><input type="text" class="form-control" id="i-sani-sel" list="lista-productos"><datalist id="lista-productos"><option value="Antiparasitario (Ivermectina)"></option><option value="Vacuna Aftosa"></option><option value="Vacuna Carbunclo"></option><option value="Vitamina ADE"></option><option value="Tratamiento General"></option></datalist></div><div class="form-grupo"><label>Lote / Detalles</label><input type="text" class="form-control" id="i-sani-lote" list="lista-lotes"></div><div class="form-grupo"><label>Notas (Enfermedad, etc)</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div>
         <div class="form-grupo">
             <label style="color:var(--alerta);">⏳ Próxima Dosis / Recordatorio</label>
             <select class="form-control" id="i-sani-recordatorio" style="border-color: var(--alerta);">
@@ -2409,6 +2409,13 @@
               btnAura.style.top = newTop + 'px';
               btnAura.style.right = 'auto'; // Eliminar anclaje right
               btnAura.style.bottom = 'auto'; // Eliminar anclaje bottom
+
+              if (estadoIA) {
+                  estadoIA.style.left = (newLeft - 100) + 'px';
+                  estadoIA.style.top = (newTop - 60) + 'px';
+                  estadoIA.style.right = 'auto';
+                  estadoIA.style.bottom = 'auto';
+              }
           }
       }
 
@@ -2436,7 +2443,8 @@
             vozElegida = vocesDisponibles.find(v => v.lang.startsWith('es') && (v.name.includes('Premium') || v.name.includes('Mujer') || v.name.includes('Female'))) ||
                          vocesDisponibles.find(v => v.lang.startsWith('es') && v.name.includes('Enhanced')) ||
                          vocesDisponibles.find(v => v.lang === 'es-MX') ||
-                         vocesDisponibles.find(v => v.lang.startsWith('es'));
+                         vocesDisponibles.find(v => v.lang.startsWith('es')) ||
+                         vocesDisponibles.find(v => v.lang.includes('es'));
         }
         if (vozElegida) utterance.voice = vozElegida;
 
@@ -2531,7 +2539,7 @@
         let totalGeneral = totalCabezas + totalBajas;
         let tasaMortalidadCalculada = totalGeneral > 0 ? ((totalBajas / totalGeneral) * 100).toFixed(1) + "%" : "0%";
 
-        let horaLocalActual = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        let horaLocalActual = new Date().toLocaleString('es-PY', { timeZone: 'America/Asuncion', dateStyle: 'full', timeStyle: 'short' });
         let primerNombre = (usNombre || "Productor").split(' ')[0];
 
         // Guardar mensaje de usuario
