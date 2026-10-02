@@ -165,32 +165,28 @@
         #btn-aura {
           position: fixed;
           bottom: 85px;
-          right: 0;
-          width: 50px;
-          height: 50px;
-          border-radius: 25px 0 0 25px;
+          right: 20px;
+          width: 65px;
+          height: 65px;
+          border-radius: 50%;
           background: linear-gradient(135deg, #0f172a 0%, #3b82f6 100%);
-          box-shadow: -2px 0 10px rgba(59, 130, 246, 0.5), inset 0 0 10px rgba(255,255,255,0.3);
+          box-shadow: 0 0 15px rgba(59, 130, 246, 0.5), inset 0 0 10px rgba(255,255,255,0.3);
           border: 1px solid var(--borde);
-          border-right: none;
           cursor: pointer;
           z-index: 9999;
-          transition: width 0.3s, transform 0.3s;
+          transition: transform 0.1s, top 0.1s, left 0.1s;
+          animation: respirar 3s infinite alternate;
           display: none; /* Oculto por defecto en la pantalla de login */
           align-items: center;
           justify-content: center;
           color: white;
           -webkit-tap-highlight-color: transparent;
-          opacity: 0.8;
         }
-        #btn-aura:active { opacity: 1; }
+        @keyframes respirar {
+          0% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+          100% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.8); }
+        }
         #btn-aura.escuchando {
-          width: 65px;
-          height: 65px;
-          border-radius: 50%;
-          right: 20px;
-          border: 1px solid var(--borde);
-          opacity: 1;
           background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
           animation: latir 0.8s infinite alternate;
         }
@@ -198,7 +194,7 @@
           0% { transform: scale(1); box-shadow: 0 0 15px rgba(16, 185, 129, 0.6); }
           100% { transform: scale(1.15); box-shadow: 0 0 35px rgba(59, 130, 246, 0.9); }
         }
-        .icono-mic { width: 24px; height: 24px; fill: currentColor; }
+        .icono-mic { width: 28px; height: 28px; fill: currentColor; }
         #estado-ia {
           position: fixed;
           bottom: 160px;
@@ -657,6 +653,22 @@
                         <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="9" onchange="verificarLimiteGraficos(this)"> <span>9. Promedios</span></label>
                         <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="10" onchange="verificarLimiteGraficos(this)"> <span>10. Volumen</span></label>
                         <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="11" onchange="verificarLimiteGraficos(this)"> <span>11. Causas de Baja / Mortalidad</span></label>
+                    </div>
+                </div>
+
+                <div class="tarjeta" id="panel-cora-config">
+                    <div class="tarjeta-titulo">🤖 Configuración de Cora (IA)</div>
+                    <div class="form-grupo">
+                        <label>Voz del Asistente</label>
+                        <select id="cora-voz-sel" class="form-control" onchange="guardarVozCora()">
+                            <option value="">-- Selecciona una voz --</option>
+                        </select>
+                    </div>
+                    <div class="form-grupo" style="margin-top:15px;">
+                        <label>Historial de Conversación Corto</label>
+                        <div id="cora-historial-chat" style="background:#1e293b; padding:10px; border-radius:8px; border:1px solid var(--borde); max-height:150px; overflow-y:auto; font-size:12px; line-height:1.5;">
+                            <em style="color:var(--muted);">Sin mensajes recientes.</em>
+                        </div>
                     </div>
                 </div>
 
@@ -2310,10 +2322,103 @@
       let audioDesbloqueado = false;
       let vocesDisponibles = [];
       let interrupcionManual = false; // FLAG PARA ARREGLAR EL BUCLE DEL BOTÓN
+      let coraHistorial = [];
 
       window.speechSynthesis.onvoiceschanged = () => {
         vocesDisponibles = window.speechSynthesis.getVoices();
+        const sel = document.getElementById('cora-voz-sel');
+        if(sel && sel.options.length <= 1) {
+            vocesDisponibles.forEach((v, index) => {
+                if(v.lang.startsWith('es')) {
+                    const opt = document.createElement('option');
+                    opt.value = index;
+                    opt.textContent = `${v.name} (${v.lang})`;
+                    sel.appendChild(opt);
+                }
+            });
+            const vozGuardada = localStorage.getItem('tc_cora_voz');
+            if (vozGuardada !== null && sel.querySelector(`option[value="${vozGuardada}"]`)) {
+                sel.value = vozGuardada;
+            }
+        }
       };
+
+      window.guardarVozCora = function() {
+          const sel = document.getElementById('cora-voz-sel');
+          if(sel) {
+              localStorage.setItem('tc_cora_voz', sel.value);
+          }
+      };
+
+      // Funcionalidad para mover el botón flotante (Drag & Drop)
+      let isDraggingAura = false;
+      let auraStartX, auraStartY, initialAuraLeft, initialAuraTop;
+      let hasDraggedAura = false; // Para diferenciar click de drag
+
+      btnAura.addEventListener('touchstart', dragStartAura, {passive: false});
+      btnAura.addEventListener('mousedown', dragStartAura);
+
+      function dragStartAura(e) {
+          if (e.type === 'touchstart') {
+              auraStartX = e.touches[0].clientX;
+              auraStartY = e.touches[0].clientY;
+          } else {
+              auraStartX = e.clientX;
+              auraStartY = e.clientY;
+          }
+          const rect = btnAura.getBoundingClientRect();
+          initialAuraLeft = rect.left;
+          initialAuraTop = rect.top;
+          isDraggingAura = true;
+          hasDraggedAura = false;
+
+          document.addEventListener('touchmove', dragAura, {passive: false});
+          document.addEventListener('mousemove', dragAura);
+          document.addEventListener('touchend', dragEndAura);
+          document.addEventListener('mouseup', dragEndAura);
+      }
+
+      function dragAura(e) {
+          if (!isDraggingAura) return;
+          let currentX, currentY;
+          if (e.type === 'touchmove') {
+              currentX = e.touches[0].clientX;
+              currentY = e.touches[0].clientY;
+          } else {
+              currentX = e.clientX;
+              currentY = e.clientY;
+          }
+
+          let deltaX = currentX - auraStartX;
+          let deltaY = currentY - auraStartY;
+
+          if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+              hasDraggedAura = true;
+              e.preventDefault();
+
+              let newLeft = initialAuraLeft + deltaX;
+              let newTop = initialAuraTop + deltaY;
+
+              // Limites de pantalla
+              if (newLeft < 0) newLeft = 0;
+              if (newTop < 0) newTop = 0;
+              if (newLeft + btnAura.offsetWidth > window.innerWidth) newLeft = window.innerWidth - btnAura.offsetWidth;
+              if (newTop + btnAura.offsetHeight > window.innerHeight) newTop = window.innerHeight - btnAura.offsetHeight;
+
+              btnAura.style.left = newLeft + 'px';
+              btnAura.style.top = newTop + 'px';
+              btnAura.style.right = 'auto'; // Eliminar anclaje right
+              btnAura.style.bottom = 'auto'; // Eliminar anclaje bottom
+          }
+      }
+
+      function dragEndAura(e) {
+          isDraggingAura = false;
+          document.removeEventListener('touchmove', dragAura);
+          document.removeEventListener('mousemove', dragAura);
+          document.removeEventListener('touchend', dragEndAura);
+          document.removeEventListener('mouseup', dragEndAura);
+      }
 
       function hablarCora(texto) {
         window.speechSynthesis.cancel();
@@ -2323,10 +2428,16 @@
         utterance.rate = 1.05;
         utterance.pitch = 1.0;
 
-        let vozElegida = vocesDisponibles.find(v => v.lang.startsWith('es') && v.name.includes('Premium')) ||
+        let vozElegida = null;
+        const vozGuardada = localStorage.getItem('tc_cora_voz');
+        if (vozGuardada !== null && vocesDisponibles[parseInt(vozGuardada)]) {
+            vozElegida = vocesDisponibles[parseInt(vozGuardada)];
+        } else {
+            vozElegida = vocesDisponibles.find(v => v.lang.startsWith('es') && (v.name.includes('Premium') || v.name.includes('Mujer') || v.name.includes('Female'))) ||
                          vocesDisponibles.find(v => v.lang.startsWith('es') && v.name.includes('Enhanced')) ||
                          vocesDisponibles.find(v => v.lang === 'es-MX') ||
                          vocesDisponibles.find(v => v.lang.startsWith('es'));
+        }
         if (vozElegida) utterance.voice = vozElegida;
 
         utterance.onend = function() {
@@ -2368,8 +2479,28 @@
         };
       }
 
+      function actualizarPanelHistorial() {
+          const div = document.getElementById('cora-historial-chat');
+          if(!div) return;
+          if(coraHistorial.length === 0) {
+              div.innerHTML = '<em style="color:var(--muted);">Sin mensajes recientes.</em>';
+              return;
+          }
+          let html = "";
+          coraHistorial.forEach(m => {
+              if(m.rol === 'usuario') {
+                  html += `<div style="margin-bottom:8px; text-align:right;"><span style="background:var(--secundario); color:white; padding:4px 8px; border-radius:12px 12px 0 12px; display:inline-block;">${m.texto}</span></div>`;
+              } else {
+                  html += `<div style="margin-bottom:8px; text-align:left;"><span style="background:var(--primario); border:1px solid var(--borde); color:var(--texto); padding:4px 8px; border-radius:12px 12px 12px 0; display:inline-block;">${m.texto}</span></div>`;
+              }
+          });
+          div.innerHTML = html;
+          div.scrollTop = div.scrollHeight;
+      }
+
       // AL PRESIONAR EL AURA: SILENCIA Y ARREGLA EL BUCLE
-      btnAura.addEventListener('click', () => {
+      btnAura.addEventListener('click', (e) => {
+        if (hasDraggedAura) return; // Si fue un arrastre, no hacer click
         if (window.speechSynthesis.speaking) {
             interrupcionManual = true; // Previene que se vuelva a abrir el mic por accidente
             window.speechSynthesis.cancel();
@@ -2403,6 +2534,11 @@
         let horaLocalActual = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         let primerNombre = (usNombre || "Productor").split(' ')[0];
 
+        // Guardar mensaje de usuario
+        coraHistorial.push({rol: 'usuario', texto: texto});
+        if(coraHistorial.length > 10) coraHistorial.shift();
+        actualizarPanelHistorial();
+
         let payload = {
           accion: 'ia',
           mensaje: texto,
@@ -2416,7 +2552,8 @@
             prenadas: typeof globalPrenadas !== 'undefined' ? globalPrenadas : 0,
             vacias: typeof globalVacias !== 'undefined' ? globalVacias : 0,
             rpActualEnPantalla: rpActivo || "Ninguno",
-            horaLocal: horaLocalActual
+            horaLocal: horaLocalActual,
+            historial: coraHistorial.slice(0, -1).map(h => (h.rol === 'usuario' ? 'U: ' : 'A: ') + h.texto).join(' | ')
           }
         };
 
@@ -2428,6 +2565,10 @@
         .then(datos => {
           estadoIA.style.display = 'none';
           if (datos.status === 'ok') {
+            coraHistorial.push({rol: 'ia', texto: datos.respuesta});
+            if(coraHistorial.length > 10) coraHistorial.shift();
+            actualizarPanelHistorial();
+
             hablarCora(datos.respuesta);
             if (datos.comando) {
               ejecutarComandoEnApp(datos.comando, datos.parametros);
