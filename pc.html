@@ -28,6 +28,19 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
+    <!-- SERVICE WORKER REGISTRATION PARA OFFLINE -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js').then((registration) => {
+            console.log('ServiceWorker registrado con éxito: ', registration.scope);
+          }, (err) => {
+            console.log('Fallo en el registro del ServiceWorker: ', err);
+          });
+        });
+      }
+    </script>
+
     <style>
         :root { 
             --bg-base: #0f172a; --bg-panel: #1e293b; --bg-card: #334155; 
@@ -171,6 +184,56 @@
 
         .filtros-grid { display: flex; gap: 10px; margin-bottom: 20px;}
         .filtro-sel { flex:1; background: var(--bg-base); color: var(--text-main); border: 1px solid var(--border); padding: 10px; border-radius: 4px; font-size: 13px; outline: none;}
+
+        /* ESTILOS DEL AURA DE CORA */
+        #btn-aura {
+          position: fixed;
+          bottom: 40px;
+          right: 30px;
+          width: 70px;
+          height: 70px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #0f172a 0%, #3b82f6 100%);
+          box-shadow: 0 0 15px rgba(59, 130, 246, 0.5), inset 0 0 10px rgba(255,255,255,0.3);
+          border: 1px solid var(--border);
+          cursor: pointer;
+          z-index: 9999;
+          transition: transform 0.1s, top 0.1s, left 0.1s;
+          animation: respirar 3s infinite alternate;
+          display: none;
+          align-items: center;
+          justify-content: center;
+          color: white;
+        }
+        @keyframes respirar {
+          0% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+          100% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.8); }
+        }
+        #btn-aura.escuchando {
+          background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+          animation: latir 0.8s infinite alternate;
+        }
+        @keyframes latir {
+          0% { transform: scale(1); box-shadow: 0 0 15px rgba(16, 185, 129, 0.6); }
+          100% { transform: scale(1.15); box-shadow: 0 0 35px rgba(59, 130, 246, 0.9); }
+        }
+        .icono-mic { width: 32px; height: 32px; fill: currentColor; }
+        #estado-ia {
+          position: fixed;
+          bottom: 120px;
+          right: 30px;
+          background: rgba(15, 23, 42, 0.9);
+          color: white;
+          padding: 10px 15px;
+          border-radius: 12px;
+          font-size: 14px;
+          display: none;
+          z-index: 9998;
+          backdrop-filter: blur(5px);
+          max-width: 250px;
+          text-align: center;
+          border: 1px solid var(--border);
+        }
     </style>
 </head>
 <body>
@@ -733,6 +796,14 @@
     <div id="m-nut" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-nut')">&times;</span><h3>Suplemento Nutricional</h3><div class="form-grupo"><label>Alimento Suministrado</label><input type="text" class="form-control" id="i-nut-prod" list="lista-alimentos"><datalist id="lista-alimentos"><option value="FOSFO Plus! 90f (Sal Mineral)"></option><option value="FOSFO Plus! Proteica Ternero"></option><option value="Forraje / Pastura"></option></datalist></div><div class="form-grupo"><label>Dosificación</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 0.50gr/kg/día..."></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div><button type="button" class="btn-guardar" onclick="prepararGuardado('m-nut', 'Nutrición')">Registrar Nutrición</button></div></div>
     <div id="m-traza" class="modal"><div class="modal-body" style="width:700px;"><span class="btn-cerrar" onclick="cerrarModal('m-traza')">&times;</span><h3>Trazabilidad Completa del RP</h3><div style="max-height:450px;overflow-y:auto; margin-top:15px;"><table class="tabla-datos"><thead><tr><th>Fecha</th><th>Acción</th><th>Valor Principal</th><th>Detalles Adicionales</th></tr></thead><tbody id="tb-traza"></tbody></table></div></div></div>
 
+    <!-- BOTÓN AURA DE CORA Y ESTADO -->
+    <button id="btn-aura" title="Hablar con Cora">
+      <svg class="icono-mic" viewBox="0 0 24 24">
+        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+      </svg>
+    </button>
+    <div id="estado-ia">Cora lista</div>
+
     <script>
         const APPS_SCRIPT_NOTIFICACIONES = "https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec";
         
@@ -912,6 +983,20 @@
             if(texto) { b.innerText = texto; } 
             else if(navigator.onLine || online) { b.classList.replace('offline','online'); b.innerText = '🟢 Conectado'; } 
             else { b.classList.replace('online','offline'); b.innerText = '🔴 Red Local'; }
+
+            const btnAura = document.getElementById('btn-aura');
+            if (btnAura) {
+               let featuresStr = (typeof lsGet('tc_user_profile', {})?.features === 'string')
+                                   ? lsGet('tc_user_profile', {}).features
+                                   : "";
+               if ((navigator.onLine || online) && featuresStr.includes('cora')) {
+                   btnAura.style.display = 'flex';
+               } else {
+                   btnAura.style.display = 'none';
+                   const estadoIA = document.getElementById('estado-ia');
+                   if (estadoIA) estadoIA.style.display = 'none';
+               }
+            }
         }
         window.addEventListener('online', () => setEstadoRed(true)); window.addEventListener('offline', () => setEstadoRed(false));
 
@@ -943,6 +1028,15 @@
             try {
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
                 
+                const elAuraBtn = document.getElementById('btn-aura');
+                if (elAuraBtn) {
+                    if (navigator.onLine && String(featuresStr||"").includes('cora')) {
+                        elAuraBtn.style.display = 'flex';
+                    } else {
+                        elAuraBtn.style.display = 'none';
+                    }
+                }
+
                 if(unsubscribeConfig) unsubscribeConfig();
                 unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot(doc => {
                     if(doc.exists) {
@@ -2219,6 +2313,532 @@
                 setTimeout(() => { if(inputVincular) inputVincular.focus(); }, 500);
             }
         };
+
+        // =========================================================
+        // INTEGRACIÓN OFICIAL Y AVANZADA DE CORA (INTELIGENCIA Y CONTROL)
+        // =========================================================
+        const URL_APPS_SCRIPT_IA = 'https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec';
+        const btnAura = document.getElementById('btn-aura');
+        const estadoIA = document.getElementById('estado-ia');
+        let audioDesbloqueado = false;
+        let vocesDisponibles = [];
+        let interrupcionManual = false;
+        let coraHistorial = [];
+
+        window.speechSynthesis.onvoiceschanged = () => {
+          vocesDisponibles = window.speechSynthesis.getVoices();
+        };
+
+        // Funcionalidad para mover el botón flotante (Drag & Drop)
+        let isDraggingAura = false;
+        let auraStartX, auraStartY, initialAuraLeft, initialAuraTop;
+        let hasDraggedAura = false; // Para diferenciar click de drag
+
+        btnAura.addEventListener('touchstart', dragStartAura, {passive: false});
+        btnAura.addEventListener('mousedown', dragStartAura);
+
+        function dragStartAura(e) {
+            if (e.type === 'touchstart') {
+                auraStartX = e.touches[0].clientX;
+                auraStartY = e.touches[0].clientY;
+            } else {
+                auraStartX = e.clientX;
+                auraStartY = e.clientY;
+            }
+            const rect = btnAura.getBoundingClientRect();
+            initialAuraLeft = rect.left;
+            initialAuraTop = rect.top;
+            isDraggingAura = true;
+            hasDraggedAura = false;
+
+            document.addEventListener('touchmove', dragAura, {passive: false});
+            document.addEventListener('mousemove', dragAura);
+            document.addEventListener('touchend', dragEndAura);
+            document.addEventListener('mouseup', dragEndAura);
+        }
+
+        function dragAura(e) {
+            if (!isDraggingAura) return;
+            let currentX, currentY;
+            if (e.type === 'touchmove') {
+                currentX = e.touches[0].clientX;
+                currentY = e.touches[0].clientY;
+            } else {
+                currentX = e.clientX;
+                currentY = e.clientY;
+            }
+
+            let deltaX = currentX - auraStartX;
+            let deltaY = currentY - auraStartY;
+
+            if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+                hasDraggedAura = true;
+                e.preventDefault();
+
+                let newLeft = initialAuraLeft + deltaX;
+                let newTop = initialAuraTop + deltaY;
+
+                // Limites de pantalla
+                if (newLeft < 0) newLeft = 0;
+                if (newTop < 0) newTop = 0;
+                if (newLeft + btnAura.offsetWidth > window.innerWidth) newLeft = window.innerWidth - btnAura.offsetWidth;
+                if (newTop + btnAura.offsetHeight > window.innerHeight) newTop = window.innerHeight - btnAura.offsetHeight;
+
+                btnAura.style.left = newLeft + 'px';
+                btnAura.style.top = newTop + 'px';
+                btnAura.style.right = 'auto'; // Eliminar anclaje right
+                btnAura.style.bottom = 'auto'; // Eliminar anclaje bottom
+
+                if (estadoIA) {
+                    estadoIA.style.left = (newLeft - 100) + 'px';
+                    estadoIA.style.top = (newTop - 60) + 'px';
+                    estadoIA.style.right = 'auto';
+                    estadoIA.style.bottom = 'auto';
+                }
+            }
+        }
+
+        function dragEndAura(e) {
+            isDraggingAura = false;
+            document.removeEventListener('touchmove', dragAura);
+            document.removeEventListener('mousemove', dragAura);
+            document.removeEventListener('touchend', dragEndAura);
+            document.removeEventListener('mouseup', dragEndAura);
+        }
+
+        function hablarCora(texto) {
+          window.speechSynthesis.cancel();
+          interrupcionManual = false;
+          const utterance = new SpeechSynthesisUtterance(texto);
+          utterance.lang = 'es-ES';
+          utterance.rate = 1.05;
+          utterance.pitch = 1.0;
+
+          let vozElegida = vocesDisponibles.find(v => v.lang.startsWith('es') && (v.name.includes('Premium') || v.name.includes('Mujer') || v.name.includes('Female'))) ||
+                           vocesDisponibles.find(v => v.lang.startsWith('es') && v.name.includes('Enhanced')) ||
+                           vocesDisponibles.find(v => v.lang === 'es-MX') ||
+                           vocesDisponibles.find(v => v.lang.startsWith('es')) ||
+                           vocesDisponibles.find(v => v.lang.includes('es'));
+
+          if (vozElegida) utterance.voice = vozElegida;
+
+          utterance.onend = function() {
+              if (!interrupcionManual && reconocimiento && document.getElementById('estado-ia').style.display === 'none') {
+                   setTimeout(() => { btnAura.click(); }, 300);
+              }
+              interrupcionManual = false;
+          };
+
+          window.speechSynthesis.speak(utterance);
+        }
+
+        const ReconocimientoVoz = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let reconocimiento = null;
+
+        if (ReconocimientoVoz) {
+          reconocimiento = new ReconocimientoVoz();
+          reconocimiento.lang = 'es-ES';
+          reconocimiento.interimResults = false;
+
+          reconocimiento.onstart = () => {
+            btnAura.classList.add('escuchando');
+            estadoIA.style.display = 'block';
+            estadoIA.innerText = 'Cora te escucha...';
+          };
+
+          reconocimiento.onresult = (evento) => {
+            btnAura.classList.remove('escuchando');
+            const mensajeUsuario = evento.results[0][0].transcript;
+            estadoIA.innerText = 'Cora pensando...';
+            enviarComandoACora(mensajeUsuario);
+          };
+
+          reconocimiento.onerror = () => {
+            btnAura.classList.remove('escuchando');
+            estadoIA.innerText = 'No te escuché bien.';
+            setTimeout(() => estadoIA.style.display = 'none', 2500);
+          };
+        }
+
+        // AL PRESIONAR EL AURA: SILENCIA Y ARREGLA EL BUCLE
+        btnAura.addEventListener('click', (e) => {
+          if (hasDraggedAura) return; // Si fue un arrastre, no hacer click
+          if (window.speechSynthesis.speaking) {
+              interrupcionManual = true; // Previene que se vuelva a abrir el mic por accidente
+              window.speechSynthesis.cancel();
+          }
+
+          if (!audioDesbloqueado) {
+            let silencio = new SpeechSynthesisUtterance('');
+            silencio.volume = 0;
+            window.speechSynthesis.speak(silencio);
+            audioDesbloqueado = true;
+          }
+
+          if (reconocimiento) {
+            if (btnAura.classList.contains('escuchando')) {
+                reconocimiento.stop();
+                estadoIA.style.display = 'none';
+            } else {
+                try { reconocimiento.start(); } catch(e) { reconocimiento.stop(); }
+            }
+          } else {
+            alert("Tu navegador no soporta el reconocimiento de voz.");
+          }
+        });
+
+        function enviarComandoACora(texto) {
+          let totalCabezas = parseInt(document.getElementById('dash-cabezas') ? document.getElementById('dash-cabezas').innerText : "0") || 0;
+          let totalBajas = parseInt(document.getElementById('dash-bajas') ? document.getElementById('dash-bajas').innerText : "0") || 0;
+          let totalGeneral = totalCabezas + totalBajas;
+          let tasaMortalidadCalculada = totalGeneral > 0 ? ((totalBajas / totalGeneral) * 100).toFixed(1) + "%" : "0%";
+
+          let horaLocalActual = new Date().toLocaleString('es-PY', { timeZone: 'America/Asuncion', dateStyle: 'full', timeStyle: 'short' });
+          let primerNombre = (usNombre || "Productor").split(' ')[0];
+
+          coraHistorial.push({rol: 'usuario', texto: texto});
+          if(coraHistorial.length > 10) coraHistorial.shift();
+
+          let globalPrenadas = 0; let globalVacias = 0; // Calculados en dashboard
+          try {
+             // Intenta extraer valores de los KPIs si están visibles, pero el panel en pc.html no expone globalPrenadas directamente
+             // Dejaremos los vars en 0 para no romper, o intentar sacar de los graficos
+             // En pc.html no se definen variables globales de preñadas como en mobile
+          } catch(e) {}
+
+          let payload = {
+            accion: 'ia',
+            mensaje: texto,
+            nombreUsuario: primerNombre,
+            rolUsuario: usRol || "Operador",
+            haciendaNombre: usHacienda || "Hacienda",
+            contexto: {
+              cabezasVivas: totalCabezas,
+              bajasMortalidad: totalBajas,
+              tasaMortalidad: tasaMortalidadCalculada,
+              prenadas: globalPrenadas,
+              vacias: globalVacias,
+              rpActualEnPantalla: rpActivo || "Ninguno",
+              horaLocal: horaLocalActual,
+              historial: coraHistorial.slice(0, -1).map(h => (h.rol === 'usuario' ? 'U: ' : 'A: ') + h.texto).join(' | ')
+            }
+          };
+
+          fetch(URL_APPS_SCRIPT_IA, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          })
+          .then(res => res.json())
+          .then(datos => {
+            estadoIA.style.display = 'none';
+            if (datos.status === 'ok') {
+              coraHistorial.push({rol: 'ia', texto: datos.respuesta});
+              if(coraHistorial.length > 10) coraHistorial.shift();
+
+              hablarCora(datos.respuesta);
+              if (datos.comando) {
+                ejecutarComandoEnApp(datos.comando, datos.parametros);
+              }
+            } else {
+              estadoIA.style.display = 'block';
+              estadoIA.innerText = 'Error: ' + (datos.error || 'Desconocido');
+              setTimeout(() => estadoIA.style.display = 'none', 3000);
+            }
+          })
+          .catch(err => {
+            estadoIA.style.display = 'block';
+            estadoIA.innerText = 'Error de red con Cora';
+            setTimeout(() => estadoIA.style.display = 'none', 3000);
+          });
+        }
+
+        function ejecutarComandoEnApp(cmd, params) {
+          params = params || {};
+          if (cmd === 'navegar') {
+            if (params.vista === 'dashboard') cambiarVista('v-dash', document.querySelectorAll('.sidebar-nav li')[0]);
+            if (params.vista === 'manga') cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1]);
+            if (params.vista === 'registro') { cambiarVista('v-base', document.querySelectorAll('.sidebar-nav li')[2]); cargarListaRegistro(); }
+            if (params.vista === 'informe') { cambiarVista('v-reporte', document.querySelectorAll('.sidebar-nav li')[3]); actualizarInformeAvanzado(); }
+            if (params.vista === 'config') { cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4]); }
+            if (params.vista === 'clave' || params.vista === 'password' || params.vista === 'contraseña') {
+               cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4]);
+               setTimeout(() => { document.getElementById('nueva-clave').focus(); }, 500);
+            }
+          }
+          else if (cmd === 'cambiar_permiso_operador') {
+             if(params.usuario) {
+                 cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4]);
+                 const selEdit = document.getElementById('op-edit-usu-sel');
+                 if(selEdit) {
+                     selEdit.value = params.usuario;
+                     cargarPermisosEdicion();
+
+                     if (params.permiso) {
+                         setTimeout(() => {
+                             document.querySelectorAll('.chk-edit-permiso').forEach(chk => {
+                                 if (chk.value === params.permiso || chk.nextElementSibling.innerText.toLowerCase().includes(params.permiso.toLowerCase())) {
+                                     chk.checked = (params.estado === 'activar');
+                                 }
+                             });
+                             if (params.autoguardar) {
+                                 guardarEdicionOperador();
+                             }
+                         }, 600);
+                     }
+                 }
+             }
+          }
+          else if (cmd === 'buscar_caravana') {
+            if (params.rp) {
+              document.getElementById('buscador-caravana').value = params.rp;
+              cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1]);
+              buscarCaravanaBtn(params.rp);
+            }
+          }
+          else if (cmd === 'filtrar_estado') {
+            filtrarDesdeDashboard('estado', params.estado || 'vivos');
+          }
+          else if (cmd === 'descargar_pdf') {
+            cambiarVista('v-reporte', document.querySelectorAll('.sidebar-nav li')[3]);
+            actualizarInformeAvanzado();
+            setTimeout(() => ejecutarDescargaPDF(), 800);
+          }
+          else if (cmd === 'activar_rafaga') {
+            cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1]);
+            if (!rafagaActiva) toggleRafaga();
+            if (params.modo) {
+              document.getElementById('rafaga-accion').value = params.modo;
+              verificarRafagaCustom();
+            }
+          }
+          else if (cmd === 'crear_operador') {
+            cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4]);
+            if (params.nombre) document.getElementById('op-nombre').value = params.nombre;
+            if (params.usuario) document.getElementById('op-usu').value = params.usuario;
+            if (params.password) document.getElementById('op-pass').value = params.password;
+            if (params.rol) {
+              document.getElementById('op-rol').value = params.rol;
+              if (typeof togglePermisos === 'function') togglePermisos();
+            }
+            if (params.permisos && Array.isArray(params.permisos)) {
+              document.querySelectorAll('.chk-permiso').forEach(chk => {
+                chk.checked = params.permisos.includes(chk.value) || params.permisos.some(p => chk.nextElementSibling.innerText.toLowerCase().includes(p.toLowerCase()));
+              });
+            }
+            if (params.autoguardar) crearOperador();
+          }
+          else if (cmd === 'eliminar_operador') {
+            if (params.usuario) {
+              cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4]);
+              const selDel = document.getElementById('op-del-usu-sel');
+              if (selDel) {
+                selDel.value = params.usuario;
+                if (params.autoguardar) {
+                  const originalConfirm = window.confirm;
+                  window.confirm = () => true;
+                  Promise.resolve(eliminarOperador()).finally(() => {
+                    window.confirm = originalConfirm;
+                  });
+                }
+              }
+            }
+          }
+          else if (cmd === 'cambiar_tema') {
+            cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4]);
+            toggleTema();
+          }
+          else if (cmd === 'configurar_hacienda') {
+            cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4]);
+            if (params.nombre) {
+              document.getElementById('cfg-nom').value = params.nombre;
+              if (params.autoguardar) guardarDisenoServidor();
+            }
+          }
+          else if (cmd === 'seleccionar_graficos') {
+            cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4]);
+            if (params.graficos && Array.isArray(params.graficos)) {
+              const checkboxes = document.querySelectorAll('.chk-graf');
+              checkboxes.forEach(chk => {
+                chk.checked = params.graficos.includes(chk.value) || params.graficos.includes(parseInt(chk.value));
+              });
+              const checkedBoxes = document.querySelectorAll('.chk-graf:checked');
+              if (checkedBoxes.length > 0) verificarLimiteGraficos(checkedBoxes[0]);
+            }
+          }
+          else if (cmd === 'borrar_caravana') {
+            if (params.rp) {
+              document.getElementById('buscador-caravana').value = params.rp;
+              cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1]);
+              buscarCaravanaBtn(params.rp);
+            }
+            if (rpActivo) {
+              const originalConfirm = window.confirm;
+              window.confirm = () => true;
+              borrarCaravana();
+              window.confirm = originalConfirm;
+            } else {
+              alert("No se especificó ninguna caravana para borrar.");
+            }
+          }
+          else if (cmd === 'renombrar_caravana') {
+            if (params.rp) {
+              document.getElementById('buscador-caravana').value = params.rp;
+              cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1]);
+              buscarCaravanaBtn(params.rp);
+            }
+            if (rpActivo && params.nuevo_rp) {
+              document.getElementById('f-nueva-caravana').value = params.nuevo_rp;
+              if (params.autoguardar) guardarCambioCaravana();
+            }
+          }
+          else if (cmd === 'clasificar_animal') {
+            if (params.rp) {
+              document.getElementById('buscador-caravana').value = params.rp;
+              cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1]);
+              buscarCaravanaBtn(params.rp);
+            }
+            if (rpActivo) {
+              if (params.categoria) {
+                const catSel = document.getElementById('input-cat-rapida');
+                for (let i = 0; i < catSel.options.length; i++) {
+                  if (catSel.options[i].value.includes(params.categoria) || catSel.options[i].text.toLowerCase().includes(params.categoria.toLowerCase())) {
+                    catSel.selectedIndex = i;
+                    break;
+                  }
+                }
+              }
+              if (params.lote) document.getElementById('input-lote-rapido').value = params.lote;
+              if (params.carimbo) document.getElementById('input-carimbo-rapido').value = params.carimbo;
+              if (params.autoguardar) guardarClasificacion();
+            }
+          }
+          else if (cmd === 'filtrar_registro') {
+            cambiarVista('v-base', document.querySelectorAll('.sidebar-nav li')[2]);
+            if (params.estado) document.getElementById('filtro-reg-estado').value = params.estado;
+
+            if (params.categoria && params.categoria !== 'ALL') {
+              const catSel = document.getElementById('filtro-reg-cat');
+              for (let i = 0; i < catSel.options.length; i++) {
+                if (catSel.options[i].value.toLowerCase().includes(params.categoria.toLowerCase()) || catSel.options[i].text.toLowerCase().includes(params.categoria.toLowerCase())) {
+                  catSel.selectedIndex = i;
+                  break;
+                }
+              }
+            } else {
+              document.getElementById('filtro-reg-cat').value = 'ALL';
+            }
+
+            if (params.lote && params.lote !== 'ALL') {
+              const loteSel = document.getElementById('filtro-reg-lote');
+              for (let i = 0; i < loteSel.options.length; i++) {
+                if (loteSel.options[i].value.toLowerCase().includes(params.lote.toLowerCase())) {
+                  loteSel.selectedIndex = i;
+                  break;
+                }
+              }
+            } else {
+              document.getElementById('filtro-reg-lote').value = 'ALL';
+            }
+
+            if (params.dx) document.getElementById('filtro-reg-dx').value = params.dx;
+
+            cargarListaRegistro();
+          }
+          else if (cmd === 'generar_informe') {
+            cambiarVista('v-reporte', document.querySelectorAll('.sidebar-nav li')[3]);
+            if (params.modo) {
+               document.getElementById('f-inf-modo').value = params.modo;
+               cambiarModoReporte();
+            }
+            if (params.modo === 'inventario') {
+               if (params.categoria && params.categoria !== 'ALL') {
+                  const catSel = document.getElementById('f-inf-cat');
+                  for (let i = 0; i < catSel.options.length; i++) {
+                    if (catSel.options[i].value.toLowerCase().includes(params.categoria.toLowerCase()) || catSel.options[i].text.toLowerCase().includes(params.categoria.toLowerCase())) {
+                      catSel.selectedIndex = i;
+                      break;
+                    }
+                  }
+               }
+               if (params.lote && params.lote !== 'ALL') {
+                  const loteSel = document.getElementById('f-inf-lote');
+                  for (let i = 0; i < loteSel.options.length; i++) {
+                    if (loteSel.options[i].value.toLowerCase().includes(params.lote.toLowerCase())) {
+                      loteSel.selectedIndex = i;
+                      break;
+                    }
+                  }
+               }
+               if (params.dx) document.getElementById('f-inf-dx').value = params.dx;
+               if (params.carimbo) document.getElementById('f-inf-carimbo').value = params.carimbo;
+            } else if (params.modo === 'bajas') {
+               if (params.causa) document.getElementById('f-inf-baja-causa').value = params.causa;
+               if (params.rango) { document.getElementById('f-inf-baja-rango').value = params.rango; manejarRangoFechasBajas(); }
+            } else if (params.modo === 'eventos') {
+               if (params.rango) { document.getElementById('f-inf-rango-fecha').value = params.rango; manejarRangoFechas(); }
+               if (params.accion) document.getElementById('f-inf-accion-oculto').value = params.accion;
+            }
+
+            actualizarInformeAvanzado();
+            if (params.autoguardar) {
+               setTimeout(() => ejecutarDescargaPDF(), 800);
+            }
+          }
+          else if (cmd === 'accion_ganadera') {
+            let rpObjetivo = params.rp ? String(params.rp).trim() : rpActivo;
+
+            if (params.tipo === 'Nacimiento' || params.tipo === 'Crear') {
+                 if (params.rp) {
+                     document.getElementById('f-nueva-caravana').value = params.rp;
+                     rpActivo = params.rp;
+                     rpObjetivo = params.rp;
+
+                     if (!params.raza && !params.nacimiento && !params.padre && !params.madre) {
+                         ejecutarAccion('Actualización de Datos', `Cat: Ternero | Carimbo: -`, `Lote: Nacimientos`, null);
+                     }
+                 }
+            }
+
+            if (params.raza || params.nacimiento || params.padre || params.madre) {
+                 rpActivo = rpObjetivo;
+                 if (params.raza) document.getElementById('f-raza').value = params.raza;
+                 if (params.nacimiento) document.getElementById('f-nacimiento').value = params.nacimiento;
+                 if (params.padre) document.getElementById('f-padre').value = params.padre;
+                 if (params.madre) document.getElementById('f-madre').value = params.madre;
+                 guardarPerfilCompleto();
+                 if (params.tipo === 'Nacimiento' || params.tipo === 'Crear') return;
+            }
+
+            if (!rpObjetivo || rpObjetivo === "---") {
+              alert("No se especificó ninguna caravana.");
+              return;
+            }
+
+            rpActivo = rpObjetivo;
+            document.getElementById('buscador-caravana').value = rpObjetivo;
+            forzarSaltoAFicha();
+            buscarCaravanaBtn(rpObjetivo);
+
+            let tipoAccion = params.tipo;
+            let valorAccion = params.valor || "-";
+            let detallesAccion = params.detalles || "Registrado por Cora";
+
+            if (tipoAccion === 'Baja') {
+              ejecutarAccion('Baja', valorAccion, detallesAccion, null);
+              let rpArchivado = rpActivo + "-BAJA-" + Math.floor(Math.random() * 10000);
+              setTimeout(() => {
+                  ejecutarAccion('Cambio de Caravana', rpArchivado, 'RP archivado por Baja/Muerte', null);
+                  rpActivo = rpArchivado;
+                  buscarCaravanaBtn(rpArchivado);
+              }, 400);
+              mostrarToast(`💀 Baja registrada para RP ${rpObjetivo}`);
+            } else {
+              ejecutarAccion(tipoAccion, valorAccion, detallesAccion, null);
+              mostrarToast(`✅ [${tipoAccion}] guardado: ${valorAccion}`);
+            }
+          }
+        }
+
 
         let bufferTeclado = "";
         let timeoutTeclado;

@@ -30,6 +30,19 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
+    <!-- SERVICE WORKER REGISTRATION PARA OFFLINE -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js').then((registration) => {
+            console.log('ServiceWorker registrado con éxito: ', registration.scope);
+          }, (err) => {
+            console.log('Fallo en el registro del ServiceWorker: ', err);
+          });
+        });
+      }
+    </script>
+
     <style>
         :root { --primario: #0f172a; --secundario: #3b82f6; --exito: #10b981; --alerta: #f59e0b; --peligro: #ef4444; --borde: #334155; --texto: #f8fafc; --muted: #94a3b8; --info: #3b82f6;}
         
@@ -147,6 +160,7 @@
                     <label style="color:var(--secundario);">Módulos Habilitados</label>
                     <label class="check-container"><input type="checkbox" id="e-feat-rafaga"> <span>⚡ Modo Ráfaga (Balanza)</span></label>
                     <label class="check-container"><input type="checkbox" id="e-feat-bluetooth"> <span>📡 Conexión Bluetooth</span></label>
+                    <label class="check-container"><input type="checkbox" id="e-feat-cora"> <span>🤖 Asistente Cora (IA)</span></label>
                 </div>
             </div>
             <button class="btn btn-success" style="margin-top:15px;" onclick="guardarEdicion()">Guardar Cambios</button>
@@ -195,6 +209,7 @@
                             <label style="color:var(--secundario);">Módulos Habilitados</label>
                             <label class="check-container"><input type="checkbox" id="n-feat-rafaga" checked> <span>⚡ Modo Ráfaga (Balanza)</span></label>
                             <label class="check-container"><input type="checkbox" id="n-feat-bluetooth"> <span>📡 Bastones Bluetooth</span></label>
+                            <label class="check-container"><input type="checkbox" id="n-feat-cora"> <span>🤖 Asistente Cora (IA)</span></label>
                         </div>
                     </div>
                     <button class="btn btn-success" style="margin-top:10px; font-size:16px;" onclick="crearCliente()">⚡ Crear Cuenta Master</button>
@@ -454,6 +469,7 @@
             let features = [];
             if(document.getElementById(`${prefijo}-feat-rafaga`).checked) features.push('rafaga');
             if(document.getElementById(`${prefijo}-feat-bluetooth`).checked) features.push('bluetooth');
+            if(document.getElementById(`${prefijo}-feat-cora`).checked) features.push('cora');
             let limOps = document.getElementById(`${prefijo}-limite-ops`).value;
             let limOwn = document.getElementById(`${prefijo}-limite-own`).value;
             if(limOps !== "") features.push(`limitOps:${limOps}`);
@@ -465,6 +481,7 @@
             let f = String(featuresStr||"");
             document.getElementById('e-feat-rafaga').checked = f.includes('rafaga');
             document.getElementById('e-feat-bluetooth').checked = f.includes('bluetooth');
+            document.getElementById('e-feat-cora').checked = f.includes('cora');
             let lOps = "1", lOwn = "0";
             f.split(',').forEach(p => {
                 if(p.startsWith('limitOps:')) lOps = p.split(':')[1]; 
@@ -545,6 +562,7 @@
                 let featBadges = ""; let fc = String(c.features||"");
                 if(fc.includes('rafaga')) featBadges += `<span style="background:var(--bg-card); padding:3px 8px; border-radius:4px; font-size:10px; border:1px solid var(--border);">⚡ Ráfaga</span>`;
                 if(fc.includes('bluetooth')) featBadges += `<span style="background:rgba(59,130,246,0.1); color:#60a5fa; padding:3px 8px; border-radius:4px; font-size:10px; border:1px solid rgba(59,130,246,0.3);">📡 BT</span>`;
+                if(fc.includes('cora')) featBadges += `<span style="background:rgba(16,185,129,0.1); color:var(--exito); padding:3px 8px; border-radius:4px; font-size:10px; border:1px solid rgba(16,185,129,0.3);">🤖 Cora IA</span>`;
                 
                 let lOps = "1", lOwn = "0";
                 fc.split(',').forEach(p => {
