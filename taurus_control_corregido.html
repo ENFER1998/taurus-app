@@ -31,6 +31,19 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
+    <!-- SERVICE WORKER REGISTRATION PARA OFFLINE -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js').then((registration) => {
+            console.log('ServiceWorker registrado con éxito: ', registration.scope);
+          }, (err) => {
+            console.log('Fallo en el registro del ServiceWorker: ', err);
+          });
+        });
+      }
+    </script>
+
     <style>
         :root { --primario: #0f172a; --secundario: #3b82f6; --exito: #10b981; --alerta: #f59e0b; --peligro: #ef4444; --borde: #334155; --texto: #f8fafc; --muted: #94a3b8; }
         body.tema-claro { --primario: #f8fafc; --borde: #cbd5e1; --texto: #0f172a; --muted: #64748b; background: #f1f5f9; color: var(--texto); }
@@ -894,6 +907,20 @@
             if(texto) { b.innerText = texto; }
             else if(navigator.onLine || online) { b.classList.remove('offline'); b.innerText = '🟢 Conectado'; }
             else { b.classList.add('offline'); b.innerText = '🔴 Red Local'; }
+
+            const btnAura = document.getElementById('btn-aura');
+            if (btnAura) {
+               let featuresStr = (typeof lsGet('tc_user_profile', {})?.features === 'string')
+                                   ? lsGet('tc_user_profile', {}).features
+                                   : "";
+               if ((navigator.onLine || online) && featuresStr.includes('cora')) {
+                   btnAura.style.display = 'flex';
+               } else {
+                   btnAura.style.display = 'none';
+                   const estadoIA = document.getElementById('estado-ia');
+                   if (estadoIA) estadoIA.style.display = 'none';
+               }
+            }
         }
         window.addEventListener('online', () => setEstadoRed(true)); window.addEventListener('offline', () => setEstadoRed(false));
 
@@ -926,7 +953,13 @@
 
                 // MOSTRAR AURA DE CORA ÚNICAMENTE TRAS EL LOGIN EXITOSO
                 const elAuraBtn = document.getElementById('btn-aura');
-                if (elAuraBtn) elAuraBtn.style.display = 'flex';
+                if (elAuraBtn) {
+                    if (navigator.onLine && String(featuresStr||"").includes('cora')) {
+                        elAuraBtn.style.display = 'flex';
+                    } else {
+                        elAuraBtn.style.display = 'none';
+                    }
+                }
 
                 if(unsubscribeConfig) unsubscribeConfig();
                 unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot(doc => {
