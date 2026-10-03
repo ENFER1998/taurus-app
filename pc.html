@@ -678,6 +678,7 @@
                                 <label><input type="checkbox" class="chk-permiso" value="ficha" checked> <span>🐄 Ficha Clínica (Manga)</span></label>
                                 <label><input type="checkbox" class="chk-permiso" value="base" checked> <span>📋 Base de Datos</span></label>
                                 <label><input type="checkbox" class="chk-permiso" value="reporte"> <span>📄 Reportes PDF</span></label>
+                                <label><input type="checkbox" class="chk-permiso" value="cora"> <span>🤖 Asistente Cora (IA)</span></label>
                             </div>
                         </div>
                         <button type="button" id="btn-crear-op" class="btn-primary" style="background:#10b981;" onclick="crearOperador()">Registrar Usuario en Nube</button>
@@ -698,6 +699,7 @@
                                     <label><input type="checkbox" class="chk-edit-permiso" value="ficha"> <span>🐄 Ficha Clínica (Manga)</span></label>
                                     <label><input type="checkbox" class="chk-edit-permiso" value="base"> <span>📋 Base de Datos</span></label>
                                     <label><input type="checkbox" class="chk-edit-permiso" value="reporte"> <span>📄 Reportes PDF</span></label>
+                                    <label><input type="checkbox" class="chk-edit-permiso" value="cora"> <span>🤖 Asistente Cora (IA)</span></label>
                                 </div>
                             </div>
                             <button type="button" id="btn-editar-op" class="btn-primary" style="background:#3b82f6;" onclick="guardarEdicionOperador()">Actualizar Permisos</button>
@@ -989,7 +991,10 @@
                let featuresStr = (typeof lsGet('tc_user_profile', {})?.features === 'string')
                                    ? lsGet('tc_user_profile', {}).features
                                    : "";
-               if ((navigator.onLine || online) && featuresStr.includes('cora')) {
+               let userProfile = lsGet('tc_user_profile', {});
+               let isPropietario = String(userProfile.rol||"").includes('Propietario') || String(userProfile.rol||"").includes('Dueño');
+               let tienePermisoCora = isPropietario || String(userProfile.rol||"").includes('cora');
+               if ((navigator.onLine || online) && (isPropietario || (featuresStr.includes('cora') && tienePermisoCora))) {
                    btnAura.style.display = 'flex';
                } else {
                    btnAura.style.display = 'none';
@@ -1030,7 +1035,9 @@
                 
                 const elAuraBtn = document.getElementById('btn-aura');
                 if (elAuraBtn) {
-                    if (navigator.onLine && String(featuresStr||"").includes('cora')) {
+                    let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
+                    let tienePermisoCora = isPropietario || usRol.includes('cora');
+                    if (navigator.onLine && (isPropietario || (String(featuresStr||"").includes('cora') && tienePermisoCora))) {
                         elAuraBtn.style.display = 'flex';
                     } else {
                         elAuraBtn.style.display = 'none';
@@ -1150,7 +1157,8 @@
                             if(viewId.includes('ficha') && perms.includes('ficha')) isAllowed = true;
                             if(viewId.includes('base') && perms.includes('base')) isAllowed = true;
                             if(viewId.includes('reporte') && perms.includes('reporte')) isAllowed = true;
-                            if (!esConfig && !isAllowed) { li.style.display = 'none'; } else {
+                            if(viewId.includes('cora') && perms.includes('cora')) isAllowed = true;
+                            if (!esConfig && !isAllowed && !viewId.includes('cora')) { li.style.display = 'none'; } else {
                                 li.style.display = 'flex';
                                 if (!foundFirst && !esConfig) { vistaInicial = viewId; tabSeleccionado = li; foundFirst = true; }
                             }
@@ -1278,9 +1286,9 @@
             if (activosCache) return activosCache;
             let historia = procesarEventos();
             let validos = [];
-            for(let rp in historia) { validos = validos.concat(historia[rp]); }
+            for(let rp in historia) { validos.push(...historia[rp]); }
             const globalEvents = dbCache.filter(d => d.caravana === "---" || !d.caravana);
-            activosCache = validos.concat(globalEvents).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            activosCache = [...validos, ...globalEvents].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
             return activosCache;
         }
 
@@ -2183,11 +2191,11 @@
             if(!u) { caja.classList.add('oculto'); return; }
             caja.classList.remove('oculto');
             db.collection('usuarios').doc(u).get().then(doc => {
-                let perms = "dash,ficha,base,reporte"; 
+                let perms = "dash,ficha,base,reporte,cora";
                 if(doc.exists && doc.data().rol) {
                     let rolFull = doc.data().rol;
                     if(rolFull.includes('|')) perms = rolFull.split('|')[1];
-                    else if(rolFull === 'Propietario') perms = "dash,ficha,base,reporte";
+                    else if(rolFull === 'Propietario') perms = "dash,ficha,base,reporte,cora";
                     else perms = rolFull; 
                 }
                 document.querySelectorAll('.chk-edit-permiso').forEach(chk => { chk.checked = perms.includes(chk.value); });
@@ -2438,6 +2446,7 @@
         if (ReconocimientoVoz) {
           reconocimiento = new ReconocimientoVoz();
           reconocimiento.lang = 'es-ES';
+          reconocimiento.continuous = true;
           reconocimiento.interimResults = false;
 
           reconocimiento.onstart = () => {
@@ -2447,16 +2456,19 @@
           };
 
           reconocimiento.onresult = (evento) => {
-            btnAura.classList.remove('escuchando');
-            const mensajeUsuario = evento.results[0][0].transcript;
+            let mensajeUsuario = evento.results[evento.results.length - 1][0].transcript;
             estadoIA.innerText = 'Cora pensando...';
             enviarComandoACora(mensajeUsuario);
           };
 
-          reconocimiento.onerror = () => {
+          reconocimiento.onerror = (evento) => {
             btnAura.classList.remove('escuchando');
             estadoIA.innerText = 'No te escuché bien.';
             setTimeout(() => estadoIA.style.display = 'none', 2500);
+          };
+          reconocimiento.onend = () => {
+              if (!btnAura.classList.contains('escuchando')) return;
+              try { reconocimiento.start(); } catch(e) {}
           };
         }
 
@@ -2598,10 +2610,29 @@
           else if (cmd === 'filtrar_estado') {
             filtrarDesdeDashboard('estado', params.estado || 'vivos');
           }
-          else if (cmd === 'descargar_pdf') {
+          else if (cmd === 'descargar_pdf' || cmd === 'generar_informe') {
             cambiarVista('v-reporte', document.querySelectorAll('.sidebar-nav li')[3]);
+            if (params.modo) {
+                document.getElementById('f-inf-modo').value = params.modo;
+                cambiarModoReporte();
+            }
+            if (params.modo === 'inventario') {
+                if (params.lote) document.getElementById('f-inf-lote').value = params.lote;
+                if (params.categoria) document.getElementById('f-inf-cat').value = params.categoria;
+                if (params.dx) document.getElementById('f-inf-dx').value = params.dx;
+                if (params.carimbo) document.getElementById('f-inf-carimbo').value = params.carimbo;
+            } else if (params.modo === 'bajas') {
+                if (params.causa) document.getElementById('f-inf-baja-causa').value = params.causa;
+                if (params.rango) { document.getElementById('f-inf-baja-rango').value = params.rango; manejarRangoFechasBajas(); }
+            } else if (params.modo === 'eventos') {
+                if (params.rango) { document.getElementById('f-inf-rango-fecha').value = params.rango; manejarRangoFechas(); }
+                if (params.accion) document.getElementById('f-inf-accion-oculto').value = params.accion;
+            }
             actualizarInformeAvanzado();
-            setTimeout(() => ejecutarDescargaPDF(), 800);
+            if (params.autoguardar || cmd === 'descargar_pdf') {
+               setTimeout(() => ejecutarDescargaPDF(), 800);
+               mostrarToast("✅ Generando reporte PDF...");
+            }
           }
           else if (cmd === 'activar_rafaga') {
             cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1]);

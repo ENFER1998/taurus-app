@@ -568,6 +568,7 @@
                             <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-permiso" value="ficha" checked> <span>🐄 Ficha Clínica (Manga)</span></label>
                             <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-permiso" value="base" checked> <span>📋 Base de Datos</span></label>
                             <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-permiso" value="reporte"> <span>📄 Reportes PDF</span></label>
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-permiso" value="cora"> <span>🤖 Asistente Cora (IA)</span></label>
                         </div>
                     </div>
                     <button class="btn-guardar" id="btn-crear-op" style="background:var(--exito);" onclick="crearOperador()">Registrar Usuario en Nube</button>
@@ -588,6 +589,7 @@
                                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-edit-permiso" value="ficha"> <span>🐄 Ficha Clínica (Manga)</span></label>
                                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-edit-permiso" value="base"> <span>📋 Base de Datos</span></label>
                                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-edit-permiso" value="reporte"> <span>📄 Reportes PDF</span></label>
+                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-edit-permiso" value="cora"> <span>🤖 Asistente Cora (IA)</span></label>
                             </div>
                         </div>
                         <button class="btn-guardar" id="btn-editar-op" style="background:var(--secundario);" onclick="guardarEdicionOperador()">Actualizar Permisos</button>
@@ -857,6 +859,23 @@
             if(texto) { b.innerText = texto; }
             else if(navigator.onLine || online) { b.classList.remove('offline'); b.innerText = '🟢 Conectado'; }
             else { b.classList.add('offline'); b.innerText = '🔴 Red Local'; }
+
+            const btnAura = document.getElementById('btn-aura');
+            if (btnAura) {
+               let featuresStr = (typeof lsGet('tc_user_profile', {})?.features === 'string')
+                                   ? lsGet('tc_user_profile', {}).features
+                                   : "";
+               let userProfile = lsGet('tc_user_profile', {});
+               let isPropietario = String(userProfile.rol||"").includes('Propietario') || String(userProfile.rol||"").includes('Dueño');
+               let tienePermisoCora = isPropietario || String(userProfile.rol||"").includes('cora');
+               if ((navigator.onLine || online) && (isPropietario || (featuresStr.includes('cora') && tienePermisoCora))) {
+                   btnAura.style.display = 'flex';
+               } else {
+                   btnAura.style.display = 'none';
+                   const estadoIA = document.getElementById('estado-ia');
+                   if (estadoIA) estadoIA.style.display = 'none';
+               }
+            }
         }
         window.addEventListener('online', () => setEstadoRed(true)); window.addEventListener('offline', () => setEstadoRed(false));
 
@@ -887,6 +906,17 @@
             try {
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
                 
+                const elAuraBtn = document.getElementById('btn-aura');
+                if (elAuraBtn) {
+                    let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
+                    let tienePermisoCora = isPropietario || usRol.includes('cora');
+                    if (navigator.onLine && (isPropietario || (String(featuresStr||"").includes('cora') && tienePermisoCora))) {
+                        elAuraBtn.style.display = 'flex';
+                    } else {
+                        elAuraBtn.style.display = 'none';
+                    }
+                }
+
                 if(unsubscribeConfig) unsubscribeConfig();
                 unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot(doc => {
                     if(doc.exists) {
@@ -986,7 +1016,8 @@
                             if((viewId.includes('ficha') || viewId.includes('manga')) && perms.includes('ficha')) isAllowed = true;
                             if((viewId.includes('base') || viewId.includes('registro')) && perms.includes('base')) isAllowed = true;
                             if((viewId.includes('reporte') || viewId.includes('informe')) && perms.includes('reporte')) isAllowed = true;
-                            if (!esConfig && !isAllowed) { li.style.display = 'none'; } else {
+                            if((viewId.includes('cora')) && perms.includes('cora')) isAllowed = true;
+                            if (!esConfig && !isAllowed && !viewId.includes('cora')) { li.style.display = 'none'; } else {
                                 li.style.display = 'flex';
                                 if (!foundFirst && !esConfig) { vistaInicial = viewId; tabSeleccionado = li; foundFirst = true; }
                             }
@@ -1084,7 +1115,7 @@
                     let nuevoRP = String(evt.valor);
                     if(!historiaPorRP[nuevoRP]) historiaPorRP[nuevoRP] = [];
                     let eventosTraspasados = historiaPorRP[rp].map(e => ({...e, caravana: nuevoRP}));
-                    historiaPorRP[nuevoRP] = historiaPorRP[nuevoRP].concat(eventosTraspasados);
+                    historiaPorRP[nuevoRP].push(...eventosTraspasados);
                     historiaPorRP[nuevoRP].push({...evt, caravana: nuevoRP});
                     historiaPorRP[rp] = [];
                 } else {
@@ -1102,9 +1133,9 @@
             if (activosCache) return activosCache;
             let historia = procesarEventos();
             let validos = [];
-            for(let rp in historia) { validos = validos.concat(historia[rp]); }
+            for(let rp in historia) { validos.push(...historia[rp]); }
             const globalEvents = dbCache.filter(d => d.caravana === "---" || !d.caravana);
-            activosCache = validos.concat(globalEvents).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            activosCache = [...validos, ...globalEvents].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
             return activosCache;
         }
 
@@ -2000,11 +2031,11 @@
             if(!u) { caja.classList.add('oculto'); return; }
             caja.classList.remove('oculto');
             db.collection('usuarios').doc(u).get().then(doc => {
-                let perms = "dash,ficha,base,reporte"; 
+                let perms = "dash,ficha,base,reporte,cora";
                 if(doc.exists && doc.data().rol) {
                     let rolFull = doc.data().rol;
                     if(rolFull.includes('|')) perms = rolFull.split('|')[1];
-                    else if(rolFull === 'Propietario') perms = "dash,ficha,base,reporte";
+                    else if(rolFull === 'Propietario') perms = "dash,ficha,base,reporte,cora";
                     else perms = rolFull; 
                 }
                 document.querySelectorAll('.chk-edit-permiso').forEach(chk => { chk.checked = perms.includes(chk.value); });
@@ -2180,5 +2211,187 @@
             }
         });
     </script>
+
+
+
+
+    <script>
+      // INTEGRACIÓN DE CORA VÍA VOZ
+      const btnAura = document.getElementById('btn-aura');
+      const estadoIA = document.getElementById('estado-ia');
+      const ReconocimientoVoz = window.SpeechRecognition || window.webkitSpeechRecognition;
+      let reconocimiento = null;
+
+      if (ReconocimientoVoz) {
+        reconocimiento = new ReconocimientoVoz();
+        reconocimiento.lang = 'es-ES';
+        reconocimiento.continuous = true;
+        reconocimiento.interimResults = false;
+
+        reconocimiento.onstart = () => {
+          if(btnAura) btnAura.classList.add('escuchando');
+          if(estadoIA) {
+            estadoIA.style.display = 'block';
+            estadoIA.innerText = 'Escuchando...';
+          }
+        };
+
+        reconocimiento.onresult = (evento) => {
+          let mensajeUsuario = evento.results[evento.results.length - 1][0].transcript;
+          if(estadoIA) estadoIA.innerText = 'Cora pensando...';
+          enviarComandoACora(mensajeUsuario);
+        };
+
+        reconocimiento.onerror = (evento) => {
+          if(btnAura) btnAura.classList.remove('escuchando');
+          if(estadoIA) {
+            estadoIA.innerText = 'No te escuché bien.';
+            setTimeout(() => estadoIA.style.display = 'none', 2500);
+          }
+        };
+
+        reconocimiento.onend = () => {
+            if (!btnAura || !btnAura.classList.contains('escuchando')) return;
+            try { reconocimiento.start(); } catch(e) {}
+        };
+      }
+
+      if (btnAura) {
+          btnAura.addEventListener('click', () => {
+            if (!reconocimiento) {
+              alert("Tu navegador no soporta control por voz.");
+              return;
+            }
+            if (btnAura.classList.contains('escuchando')) {
+              btnAura.classList.remove('escuchando');
+              reconocimiento.stop();
+              if(estadoIA) estadoIA.style.display = 'none';
+            } else {
+              reconocimiento.start();
+            }
+          });
+      }
+
+      function enviarComandoACora(mensaje) {
+        let urlParams = new URLSearchParams(window.location.search);
+        let contexto = {
+          hacienda: urlParams.get('hacienda') || (typeof usHacienda !== 'undefined' ? usHacienda : ''),
+          usuario: urlParams.get('u') || (typeof usActivo !== 'undefined' ? usActivo : ''),
+          rol: typeof usRol !== 'undefined' ? usRol : '',
+          vistaActual: typeof vistaInicial !== 'undefined' ? vistaInicial : '',
+          animalSeleccionado: typeof rpActivo !== 'undefined' ? rpActivo : '',
+          lotesDisponibles: Array.from(document.getElementById('dl-lotes')?.options || []).map(o=>o.value)
+        };
+
+        fetch('https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec', {
+          method: 'POST',
+          body: JSON.stringify({ mensaje: mensaje, contexto: contexto })
+        })
+        .then(r => r.json())
+        .then(data => {
+          if(estadoIA) estadoIA.style.display = 'none';
+          if (data.error) { alert("Cora: " + data.error); return; }
+          ejecutarComandoEnApp(data.comando, data.params || {});
+        })
+        .catch(err => {
+          if(estadoIA) estadoIA.style.display = 'none';
+          console.error(err);
+          alert("Error conectando con Cora.");
+        });
+      }
+
+      function ejecutarComandoEnApp(cmd, params) {
+        if (cmd === 'hablar' && params.respuesta) {
+          alert("Cora dice: " + params.respuesta);
+        }
+        else if (cmd === 'navegar') {
+          let target = params.vista;
+          if (target === 'dashboard') cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]);
+          else if (target === 'manga') cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+          else if (target === 'base') cambiarVista('vista-base', document.querySelectorAll('.nav-item')[2]);
+          else if (target === 'informe') cambiarVista('vista-informe', document.querySelectorAll('.nav-item')[3]);
+          else if (target === 'config') cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+        }
+        else if (cmd === 'buscar_caravana') {
+          cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+          if (params.rp) {
+            document.getElementById('buscador-caravana').value = params.rp;
+            if(typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(params.rp);
+          }
+        }
+        else if (cmd === 'filtrar_estado') {
+          if(typeof filtrarDesdeDashboard === 'function') filtrarDesdeDashboard('estado', params.estado || 'vivos');
+        }
+        else if (cmd === 'descargar_pdf' || cmd === 'generar_informe') {
+          cambiarVista('vista-informe', document.querySelectorAll('.nav-item')[3]);
+          if (params.modo) {
+              let mo = document.getElementById('f-inf-modo');
+              if(mo) { mo.value = params.modo; if(typeof cambiarModoReporte==='function') cambiarModoReporte(); }
+          }
+          if (params.modo === 'inventario') {
+              if (params.lote && document.getElementById('f-inf-lote')) document.getElementById('f-inf-lote').value = params.lote;
+              if (params.categoria && document.getElementById('f-inf-cat')) document.getElementById('f-inf-cat').value = params.categoria;
+              if (params.dx && document.getElementById('f-inf-dx')) document.getElementById('f-inf-dx').value = params.dx;
+              if (params.carimbo && document.getElementById('f-inf-carimbo')) document.getElementById('f-inf-carimbo').value = params.carimbo;
+          } else if (params.modo === 'bajas') {
+              if (params.causa && document.getElementById('f-inf-baja-causa')) document.getElementById('f-inf-baja-causa').value = params.causa;
+              if (params.rango && document.getElementById('f-inf-baja-rango')) { document.getElementById('f-inf-baja-rango').value = params.rango; if(typeof manejarRangoFechasBajas==='function') manejarRangoFechasBajas(); }
+          } else if (params.modo === 'eventos') {
+              if (params.rango && document.getElementById('f-inf-rango-fecha')) { document.getElementById('f-inf-rango-fecha').value = params.rango; if(typeof manejarRangoFechas==='function') manejarRangoFechas(); }
+              if (params.accion && document.getElementById('f-inf-accion-oculto')) document.getElementById('f-inf-accion-oculto').value = params.accion;
+          }
+          if(typeof actualizarInformeAvanzado==='function') actualizarInformeAvanzado();
+          if (params.autoguardar || cmd === 'descargar_pdf') {
+             setTimeout(() => { if(typeof ejecutarDescargaPDF==='function') ejecutarDescargaPDF(); }, 800);
+             if(typeof mostrarToast==='function') mostrarToast("✅ Generando reporte PDF...", false);
+          }
+        }
+        else if (cmd === 'activar_rafaga') {
+          cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+          if (typeof rafagaActiva !== 'undefined' && !rafagaActiva && typeof toggleRafaga === 'function') toggleRafaga();
+        }
+        else if (cmd === 'accion_ganadera') {
+          let rpObjetivo = params.rp || (typeof rpActivo !== 'undefined' ? rpActivo : null);
+          if (!rpObjetivo) {
+            if(typeof mostrarToast==='function') mostrarToast("❌ Falta especificar la caravana", true);
+            return;
+          }
+          let buscador = document.getElementById('buscador-caravana');
+          if(buscador) buscador.value = rpObjetivo;
+          cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+          if(typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(rpObjetivo);
+          let tipoAccion = params.tipo;
+          let valorAccion = params.valor || "-";
+          let detallesAccion = params.detalles || "Registrado por Cora";
+          if (tipoAccion === 'Baja') {
+            if(typeof ejecutarAccion==='function') ejecutarAccion('Baja', valorAccion, detallesAccion, null);
+            let rpArchivado = rpObjetivo + "-BAJA-" + Math.floor(Math.random() * 10000);
+            setTimeout(() => {
+                if(typeof ejecutarAccion==='function') ejecutarAccion('Cambio de Caravana', rpArchivado, 'RP archivado', null);
+                if(typeof rpActivo !== 'undefined') rpActivo = rpArchivado;
+                if(typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(rpArchivado);
+            }, 400);
+            if(typeof mostrarToast==='function') mostrarToast(`💀 Baja registrada para RP ${rpObjetivo}`);
+          } else if (tipoAccion === 'Clasificacion') {
+            if(params.categoria && document.getElementById('input-cat-rapida')) document.getElementById('input-cat-rapida').value = params.categoria;
+            if(params.lote && document.getElementById('input-lote-rapido')) document.getElementById('input-lote-rapido').value = params.lote;
+            if(params.carimbo && document.getElementById('input-carimbo-rapido')) document.getElementById('input-carimbo-rapido').value = params.carimbo;
+            if(typeof guardarClasificacion==='function') guardarClasificacion();
+            if(typeof mostrarToast==='function') mostrarToast(`✅ Clasificación actualizada`);
+          } else {
+            if(typeof ejecutarAccion==='function') ejecutarAccion(tipoAccion, valorAccion, detallesAccion, null);
+            if(typeof mostrarToast==='function') mostrarToast(`✅ [${tipoAccion}] guardado: ${valorAccion}`);
+          }
+        }
+        else if (cmd === 'crear_operador') {
+          cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+          if (params.nombre && document.getElementById('op-nombre')) document.getElementById('op-nombre').value = params.nombre;
+          if (params.pin && document.getElementById('op-pin')) document.getElementById('op-pin').value = params.pin;
+          if (params.rol && document.getElementById('op-rol')) document.getElementById('op-rol').value = params.rol;
+          setTimeout(() => { if(typeof crearOperador==='function') crearOperador(); }, 500);
+        }
+      }
+    </script>
+
 </body>
 </html>
