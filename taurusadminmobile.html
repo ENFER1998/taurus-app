@@ -367,6 +367,7 @@
             }
         }
 
+
         function cerrarSesion() { 
             firebase.auth().signOut().then(() => {
                 document.getElementById('admin-email').value = ''; 
@@ -375,6 +376,9 @@
                 document.getElementById('pantalla-app').classList.add('oculto');
                 clientesCache = [];
                 if(unsubscribeConfig) unsubscribeConfig();
+
+                const btnAura = document.getElementById('btn-aura');
+                if (btnAura) btnAura.style.display = 'none';
             });
         }
 
@@ -420,6 +424,7 @@
             });
         }
 
+
         function actualizarUIKillSwitch(estado) {
             const btnMant = document.getElementById('btn-toggle-mant');
             const btnRest = document.getElementById('btn-toggle-rest');
@@ -434,6 +439,17 @@
                 btnRest.classList.add('oculto'); btnMant.classList.remove('oculto');
                 lblStatus.innerText = "SISTEMA OPERATIVO Y CONECTADO"; lblStatus.style.color = "var(--exito)";
                 badgeTop.innerText = "🟢 En Línea"; badgeTop.style.background = "rgba(16,185,129,0.2)"; badgeTop.style.color = "var(--exito)"; badgeTop.style.borderColor = "var(--exito)";
+            }
+
+            const btnAura = document.getElementById('btn-aura');
+            if (btnAura) {
+                if (navigator.onLine && firebase.auth().currentUser) {
+                    btnAura.style.display = 'flex';
+                } else {
+                    btnAura.style.display = 'none';
+                    const estadoIA = document.getElementById('estado-ia');
+                    if (estadoIA) estadoIA.style.display = 'none';
+                }
             }
         }
 
@@ -963,5 +979,608 @@
         window.abrirEdicion = abrirEdicion; window.guardarEdicion = guardarEdicion; window.verEquipo = verEquipo; window.cambiarClaveMiembroGhost = cambiarClaveMiembroGhost; window.eliminarMiembroGhost = eliminarMiembroGhost;
         window.cargarClientesMasiva = cargarClientesMasiva; window.leerArchivoInteligente = leerArchivoInteligente; window.procesarMapeoEInyectar = procesarMapeoEInyectar; window.deshacerUltimaImportacion = deshacerUltimaImportacion;
     </script>
+
+    <!-- BOTÓN AURA DE CORA Y ESTADO -->
+    <button id="btn-aura" title="Hablar con Cora">
+      <svg class="icono-mic" viewBox="0 0 24 24">
+        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+      </svg>
+    </button>
+    <div id="estado-ia">Cora lista</div>
+
+    <style>
+        /* ESTILOS DEL AURA DE CORA */
+        #btn-aura {
+          position: fixed;
+          bottom: 40px;
+          right: 30px;
+          width: 70px;
+          height: 70px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #0f172a 0%, #3b82f6 100%);
+          box-shadow: 0 0 15px rgba(59, 130, 246, 0.5), inset 0 0 10px rgba(255,255,255,0.3);
+          border: 1px solid var(--border);
+          cursor: pointer;
+          z-index: 9999;
+          transition: transform 0.1s, top 0.1s, left 0.1s;
+          animation: respirar 3s infinite alternate;
+          display: none;
+          align-items: center;
+          justify-content: center;
+          color: white;
+        }
+        @keyframes respirar {
+          0% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+          100% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.8); }
+        }
+        #btn-aura.escuchando {
+          background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+          animation: latir 0.8s infinite alternate;
+        }
+        @keyframes latir {
+          0% { transform: scale(1); box-shadow: 0 0 15px rgba(16, 185, 129, 0.6); }
+          100% { transform: scale(1.15); box-shadow: 0 0 35px rgba(59, 130, 246, 0.9); }
+        }
+        .icono-mic { width: 32px; height: 32px; fill: currentColor; }
+        #estado-ia {
+          position: fixed;
+          bottom: 120px;
+          right: 30px;
+          background: rgba(15, 23, 42, 0.9);
+          color: white;
+          padding: 10px 15px;
+          border-radius: 12px;
+          font-size: 14px;
+          display: none;
+          z-index: 9998;
+          backdrop-filter: blur(5px);
+          max-width: 250px;
+          text-align: center;
+          border: 1px solid var(--border);
+        }
+    </style>
+
+
+    <script>
+        const URL_APPS_SCRIPT_IA = 'https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec';
+        const btnAura = document.getElementById('btn-aura');
+        const estadoIA = document.getElementById('estado-ia');
+        let audioDesbloqueado = false;
+        let vocesDisponibles = [];
+        let interrupcionManual = false;
+        let coraHistorial = [];
+
+        window.speechSynthesis.onvoiceschanged = () => {
+          vocesDisponibles = window.speechSynthesis.getVoices();
+        };
+
+        let isDraggingAura = false;
+        let auraStartX, auraStartY, initialAuraLeft, initialAuraTop;
+        let hasDraggedAura = false;
+        let auraStartTime = 0;
+
+        if (btnAura) {
+            btnAura.addEventListener('touchstart', dragStartAura, {passive: false});
+            btnAura.addEventListener('mousedown', dragStartAura);
+        }
+
+        function dragStartAura(e) {
+            if (e.type === 'touchstart') {
+                auraStartX = e.touches[0].clientX;
+                auraStartY = e.touches[0].clientY;
+            } else {
+                auraStartX = e.clientX;
+                auraStartY = e.clientY;
+            }
+            const rect = btnAura.getBoundingClientRect();
+            initialAuraLeft = rect.left;
+            initialAuraTop = rect.top;
+            isDraggingAura = true;
+            hasDraggedAura = false;
+            auraStartTime = Date.now();
+
+            document.addEventListener('touchmove', dragAura, {passive: false});
+            document.addEventListener('mousemove', dragAura);
+            document.addEventListener('touchend', dragEndAura);
+            document.addEventListener('mouseup', dragEndAura);
+        }
+
+        function dragAura(e) {
+            if (!isDraggingAura) return;
+            let currentX, currentY;
+            if (e.type === 'touchmove') {
+                currentX = e.touches[0].clientX;
+                currentY = e.touches[0].clientY;
+            } else {
+                currentX = e.clientX;
+                currentY = e.clientY;
+            }
+
+            let deltaX = currentX - auraStartX;
+            let deltaY = currentY - auraStartY;
+
+            if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+                hasDraggedAura = true;
+                if (e.cancelable) e.preventDefault();
+
+                let newLeft = initialAuraLeft + deltaX;
+                let newTop = initialAuraTop + deltaY;
+
+                if (newLeft < 0) newLeft = 0;
+                if (newTop < 0) newTop = 0;
+                if (newLeft + btnAura.offsetWidth > window.innerWidth) newLeft = window.innerWidth - btnAura.offsetWidth;
+                if (newTop + btnAura.offsetHeight > window.innerHeight) newTop = window.innerHeight - btnAura.offsetHeight;
+
+                btnAura.style.left = newLeft + 'px';
+                btnAura.style.top = newTop + 'px';
+                btnAura.style.right = 'auto';
+                btnAura.style.bottom = 'auto';
+
+                if (estadoIA) {
+                    estadoIA.style.left = (newLeft - 100) + 'px';
+                    estadoIA.style.top = (newTop - 60) + 'px';
+                    estadoIA.style.right = 'auto';
+                    estadoIA.style.bottom = 'auto';
+                }
+            }
+        }
+
+        function dragEndAura(e) {
+            isDraggingAura = false;
+            document.removeEventListener('touchmove', dragAura);
+            document.removeEventListener('mousemove', dragAura);
+            document.removeEventListener('touchend', dragEndAura);
+            document.removeEventListener('mouseup', dragEndAura);
+
+            setTimeout(() => { hasDraggedAura = false; }, 50);
+        }
+
+        function hablarCora(texto) {
+          window.speechSynthesis.cancel();
+          interrupcionManual = false;
+          const utterance = new SpeechSynthesisUtterance(texto);
+          utterance.lang = 'es-ES';
+          utterance.rate = 1.05;
+          utterance.pitch = 1.0;
+
+          let vozElegida = vocesDisponibles.find(v => v.lang.startsWith('es') && (v.name.includes('Premium') || v.name.includes('Mujer') || v.name.includes('Female'))) ||
+                           vocesDisponibles.find(v => v.lang.startsWith('es') && v.name.includes('Enhanced')) ||
+                           vocesDisponibles.find(v => v.lang === 'es-MX') ||
+                           vocesDisponibles.find(v => v.lang.startsWith('es')) ||
+                           vocesDisponibles.find(v => v.lang.includes('es'));
+
+          if (vozElegida) utterance.voice = vozElegida;
+
+          utterance.onend = function() {
+              if (!interrupcionManual && reconocimiento && document.getElementById('estado-ia').style.display === 'none') {
+                   setTimeout(() => { btnAura.click(); }, 300);
+              }
+              interrupcionManual = false;
+          };
+
+          window.speechSynthesis.speak(utterance);
+        }
+
+        const ReconocimientoVoz = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let reconocimiento = null;
+
+        if (ReconocimientoVoz) {
+          reconocimiento = new ReconocimientoVoz();
+          reconocimiento.lang = 'es-ES';
+          reconocimiento.continuous = true;
+          reconocimiento.interimResults = false;
+
+          reconocimiento.onstart = () => {
+            btnAura.classList.add('escuchando');
+            estadoIA.style.display = 'block';
+            estadoIA.innerText = 'Cora te escucha...';
+          };
+
+          reconocimiento.onresult = (evento) => {
+            let mensajeUsuario = evento.results[evento.results.length - 1][0].transcript;
+            estadoIA.innerText = 'Cora pensando...';
+            enviarComandoACora(mensajeUsuario);
+          };
+
+          reconocimiento.onerror = (evento) => {
+            btnAura.classList.remove('escuchando');
+            estadoIA.innerText = 'No te escuché bien.';
+            setTimeout(() => estadoIA.style.display = 'none', 2500);
+          };
+          reconocimiento.onend = () => {
+              if (!btnAura.classList.contains('escuchando')) return;
+              try { reconocimiento.start(); } catch(e) {}
+          };
+        }
+
+        if (btnAura) {
+            btnAura.addEventListener('click', (e) => {
+              if (hasDraggedAura) {
+                 e.preventDefault();
+                 e.stopPropagation();
+                 return;
+              }
+              if (window.speechSynthesis.speaking) {
+                  interrupcionManual = true;
+                  window.speechSynthesis.cancel();
+              }
+
+              if (!audioDesbloqueado) {
+                let silencio = new SpeechSynthesisUtterance('');
+                silencio.volume = 0;
+                window.speechSynthesis.speak(silencio);
+                audioDesbloqueado = true;
+              }
+
+              if (reconocimiento) {
+                if (btnAura.classList.contains('escuchando')) {
+                    reconocimiento.stop();
+                    estadoIA.style.display = 'none';
+                    btnAura.classList.remove('escuchando');
+                } else {
+                    try { reconocimiento.start(); } catch(e) { reconocimiento.stop(); }
+                }
+              } else {
+                alert("Tu navegador no soporta el reconocimiento de voz.");
+              }
+            });
+        }
+
+        function enviarComandoACora(texto) {
+          let horaLocalActual = new Date().toLocaleString('es-PY', { timeZone: 'America/Asuncion', dateStyle: 'full', timeStyle: 'short' });
+          let usNombreGlobal = "";
+          try { usNombreGlobal = document.getElementById('edit-new-nombre') ? document.getElementById('edit-new-nombre').value : "Admin"; } catch(e) {}
+
+          coraHistorial.push({rol: 'usuario', texto: texto});
+          if(coraHistorial.length > 10) coraHistorial.shift();
+
+          let payload = {
+            accion: 'ia',
+            mensaje: texto,
+            nombreUsuario: "Administrador Master",
+            rolUsuario: "Propietario",
+            haciendaNombre: "Panel de Control",
+            contexto: {
+              cabezasVivas: 0,
+              bajasMortalidad: 0,
+              tasaMortalidad: "0%",
+              prenadas: 0,
+              vacias: 0,
+              rpActualEnPantalla: "Ninguno",
+              horaLocal: horaLocalActual,
+              historial: coraHistorial.slice(0, -1).map(h => (h.rol === 'usuario' ? 'U: ' : 'A: ') + h.texto).join(' | ')
+            }
+          };
+
+          fetch(URL_APPS_SCRIPT_IA, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          })
+          .then(res => res.json())
+          .then(datos => {
+            estadoIA.style.display = 'none';
+            if (datos.status === 'ok') {
+              coraHistorial.push({rol: 'ia', texto: datos.respuesta});
+              if(coraHistorial.length > 10) coraHistorial.shift();
+
+              hablarCora(datos.respuesta);
+              if (datos.comando) {
+                ejecutarComandoEnApp(datos.comando, datos.parametros);
+              }
+            } else {
+              estadoIA.style.display = 'block';
+              estadoIA.innerText = 'Error: ' + (datos.error || 'Desconocido');
+              setTimeout(() => estadoIA.style.display = 'none', 3000);
+            }
+          })
+          .catch(err => {
+            estadoIA.style.display = 'block';
+            estadoIA.innerText = 'Error de red con Cora';
+            setTimeout(() => estadoIA.style.display = 'none', 3000);
+          });
+        }
+
+
+        function ejecutarComandoEnApp(cmd, params) {
+          params = params || {};
+
+          if (cmd === 'hablar' && params.respuesta) {
+            alert("Cora dice: " + params.respuesta);
+          }
+          else if (cmd === 'soporte') {
+            window.open('https://wa.me/595976139617', '_blank');
+          }
+          else if (cmd === 'navegar') {
+            if (typeof cambiarVista !== 'function') return;
+            // Map PC/Index paths
+            if (params.vista === 'dashboard') cambiarVista('v-dash', document.querySelectorAll('.sidebar-nav li')[0] || document.querySelectorAll('.nav-item')[0]);
+            if (params.vista === 'manga') cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]);
+            if (params.vista === 'registro' || params.vista === 'base') { cambiarVista('v-base', document.querySelectorAll('.sidebar-nav li')[2] || document.querySelectorAll('.nav-item')[2]); if(typeof cargarListaRegistro==='function') cargarListaRegistro(); }
+            if (params.vista === 'informe') { cambiarVista('v-reporte', document.querySelectorAll('.sidebar-nav li')[3] || document.querySelectorAll('.nav-item')[3]); if(typeof actualizarInformeAvanzado==='function') actualizarInformeAvanzado(); }
+
+            // Map Admin paths
+            if (params.vista === 'alta' || params.vista === 'nuevo') cambiarVista('v-nuevo', document.querySelectorAll('.sidebar-nav li')[0] || document.querySelectorAll('.nav-item')[0]);
+            if (params.vista === 'licencias' || params.vista === 'suscripciones') { cambiarVista('v-licencias', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]); if(typeof cargarClientes==='function') cargarClientes(); }
+            if (params.vista === 'masiva' || params.vista === 'importar') { cambiarVista('v-masiva', document.querySelectorAll('.sidebar-nav li')[2] || document.querySelectorAll('.nav-item')[2]); if(typeof cargarClientesMasiva==='function') cargarClientesMasiva(); }
+            if (params.vista === 'sistema' || params.vista === 'config') { cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[3] || document.querySelectorAll('.nav-item')[3] || document.querySelectorAll('.nav-item')[4]); if(typeof checkStatusInicial==='function') checkStatusInicial(); }
+          }
+          else if (cmd === 'cambiar_permiso_operador') {
+             if(params.usuario) {
+                 cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4] || document.querySelectorAll('.nav-item')[4]);
+                 const selEdit = document.getElementById('op-edit-usu-sel');
+                 if(selEdit) {
+                     selEdit.value = params.usuario;
+                     if (typeof cargarPermisosEdicion === 'function') cargarPermisosEdicion();
+
+                     if (params.permiso) {
+                         setTimeout(() => {
+                             document.querySelectorAll('.chk-edit-permiso').forEach(chk => {
+                                 if (chk.value === params.permiso || chk.nextElementSibling.innerText.toLowerCase().includes(params.permiso.toLowerCase())) {
+                                     chk.checked = (params.estado === 'activar');
+                                 }
+                             });
+                             if (params.autoguardar) {
+                                 if (typeof guardarEdicionOperador === 'function') guardarEdicionOperador();
+                             }
+                         }, 600);
+                     }
+                 }
+             }
+          }
+          else if (cmd === 'buscar_caravana') {
+            if (params.rp) {
+              document.getElementById('buscador-caravana').value = params.rp;
+              cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]);
+              if (typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(params.rp);
+            }
+          }
+          else if (cmd === 'filtrar_estado') {
+            if (typeof filtrarDesdeDashboard === 'function') filtrarDesdeDashboard('estado', params.estado || 'vivos');
+          }
+          else if (cmd === 'descargar_pdf' || cmd === 'generar_informe') {
+            cambiarVista('v-reporte', document.querySelectorAll('.sidebar-nav li')[3] || document.querySelectorAll('.nav-item')[3]);
+            if (params.modo) {
+                let mo = document.getElementById('f-inf-modo');
+                if (mo) {
+                    mo.value = params.modo;
+                    if(typeof cambiarModoReporte === 'function') cambiarModoReporte();
+                }
+            }
+            if (params.modo === 'inventario') {
+                if (params.lote && document.getElementById('f-inf-lote')) document.getElementById('f-inf-lote').value = params.lote;
+                if (params.categoria && document.getElementById('f-inf-cat')) document.getElementById('f-inf-cat').value = params.categoria;
+                if (params.dx && document.getElementById('f-inf-dx')) document.getElementById('f-inf-dx').value = params.dx;
+                if (params.carimbo && document.getElementById('f-inf-carimbo')) document.getElementById('f-inf-carimbo').value = params.carimbo;
+            } else if (params.modo === 'bajas') {
+                if (params.causa && document.getElementById('f-inf-baja-causa')) document.getElementById('f-inf-baja-causa').value = params.causa;
+                if (params.rango && document.getElementById('f-inf-baja-rango')) { document.getElementById('f-inf-baja-rango').value = params.rango; if(typeof manejarRangoFechasBajas === 'function') manejarRangoFechasBajas(); }
+            } else if (params.modo === 'eventos') {
+                if (params.rango && document.getElementById('f-inf-rango-fecha')) { document.getElementById('f-inf-rango-fecha').value = params.rango; if(typeof manejarRangoFechas === 'function') manejarRangoFechas(); }
+                if (params.accion && document.getElementById('f-inf-accion-oculto')) document.getElementById('f-inf-accion-oculto').value = params.accion;
+            }
+            if(typeof actualizarInformeAvanzado === 'function') actualizarInformeAvanzado();
+            if (params.autoguardar || cmd === 'descargar_pdf' || cmd === 'generar_informe') {
+               setTimeout(() => { if(typeof ejecutarDescargaPDF === 'function') ejecutarDescargaPDF(); }, 800);
+               if(typeof mostrarToast === 'function') mostrarToast("✅ Generando reporte PDF...");
+            }
+          }
+          else if (cmd === 'activar_rafaga') {
+            cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]);
+            if (typeof rafagaActiva !== 'undefined' && !rafagaActiva && typeof toggleRafaga === 'function') toggleRafaga();
+            if (params.modo && document.getElementById('rafaga-accion')) {
+              document.getElementById('rafaga-accion').value = params.modo;
+              if(typeof verificarRafagaCustom === 'function') verificarRafagaCustom();
+            }
+          }
+          else if (cmd === 'crear_operador') {
+            cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4] || document.querySelectorAll('.nav-item')[4]);
+            if (params.nombre && document.getElementById('op-nombre')) document.getElementById('op-nombre').value = params.nombre;
+            if ((params.usuario || params.pin) && document.getElementById('op-usu')) document.getElementById('op-usu').value = params.usuario || params.pin;
+            if (params.password && document.getElementById('op-pass')) document.getElementById('op-pass').value = params.password;
+            if (params.rol && document.getElementById('op-rol')) {
+              document.getElementById('op-rol').value = params.rol;
+              if (typeof togglePermisos === 'function') togglePermisos();
+            }
+            if (params.permisos && Array.isArray(params.permisos)) {
+              document.querySelectorAll('.chk-permiso').forEach(chk => {
+                chk.checked = params.permisos.includes(chk.value) || params.permisos.some(p => chk.nextElementSibling.innerText.toLowerCase().includes(p.toLowerCase()));
+              });
+            }
+            if (params.autoguardar) {
+               setTimeout(() => { if(typeof crearOperador==='function') crearOperador(); }, 500);
+            }
+          }
+          else if (cmd === 'eliminar_operador') {
+            if (params.usuario) {
+              cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4] || document.querySelectorAll('.nav-item')[4]);
+              const selDel = document.getElementById('op-del-usu-sel');
+              if (selDel) {
+                selDel.value = params.usuario;
+                if (params.autoguardar) {
+                  const originalConfirm = window.confirm;
+                  window.confirm = () => true;
+                  Promise.resolve(eliminarOperador()).finally(() => {
+                    window.confirm = originalConfirm;
+                  });
+                }
+              }
+            }
+          }
+          else if (cmd === 'cambiar_tema') {
+            cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4] || document.querySelectorAll('.nav-item')[4]);
+            if (typeof toggleTema === 'function') toggleTema();
+          }
+          else if (cmd === 'configurar_hacienda') {
+            cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4] || document.querySelectorAll('.nav-item')[4]);
+            if (params.nombre && document.getElementById('cfg-nom')) {
+              document.getElementById('cfg-nom').value = params.nombre;
+              if (params.autoguardar && typeof guardarDisenoServidor === 'function') guardarDisenoServidor();
+            }
+          }
+          else if (cmd === 'seleccionar_graficos') {
+            cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4] || document.querySelectorAll('.nav-item')[4]);
+            if (params.graficos && Array.isArray(params.graficos)) {
+              const checkboxes = document.querySelectorAll('.chk-graf');
+              checkboxes.forEach(chk => {
+                chk.checked = params.graficos.includes(chk.value) || params.graficos.includes(parseInt(chk.value));
+              });
+              const checkedBoxes = document.querySelectorAll('.chk-graf:checked');
+              if (checkedBoxes.length > 0 && typeof verificarLimiteGraficos === 'function') verificarLimiteGraficos(checkedBoxes[0]);
+            }
+          }
+          else if (cmd === 'borrar_caravana') {
+            if (params.rp) {
+              document.getElementById('buscador-caravana').value = params.rp;
+              cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]);
+              if(typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(params.rp);
+            }
+            if (typeof rpActivo !== 'undefined' && rpActivo) {
+              const originalConfirm = window.confirm;
+              window.confirm = () => true;
+              if(typeof borrarCaravana === 'function') borrarCaravana();
+              window.confirm = originalConfirm;
+            } else {
+              alert("No se especificó ninguna caravana para borrar.");
+            }
+          }
+          else if (cmd === 'renombrar_caravana') {
+            if (params.rp) {
+              document.getElementById('buscador-caravana').value = params.rp;
+              cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]);
+              if(typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(params.rp);
+            }
+            if (typeof rpActivo !== 'undefined' && rpActivo && params.nuevo_rp) {
+              if (document.getElementById('f-nueva-caravana')) document.getElementById('f-nueva-caravana').value = params.nuevo_rp;
+              if (params.autoguardar && typeof guardarCambioCaravana === 'function') guardarCambioCaravana();
+            }
+          }
+          else if (cmd === 'clasificar_animal') {
+            if (params.rp) {
+              document.getElementById('buscador-caravana').value = params.rp;
+              cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]);
+              if(typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(params.rp);
+            }
+            if (typeof rpActivo !== 'undefined' && rpActivo) {
+              if (params.categoria) {
+                const catSel = document.getElementById('input-cat-rapida');
+                if (catSel) {
+                    for (let i = 0; i < catSel.options.length; i++) {
+                      if (catSel.options[i].value.includes(params.categoria) || catSel.options[i].text.toLowerCase().includes(params.categoria.toLowerCase())) {
+                        catSel.selectedIndex = i;
+                        break;
+                      }
+                    }
+                }
+              }
+              if (params.lote && document.getElementById('input-lote-rapido')) document.getElementById('input-lote-rapido').value = params.lote;
+              if (params.carimbo && document.getElementById('input-carimbo-rapido')) document.getElementById('input-carimbo-rapido').value = params.carimbo;
+              if (params.autoguardar && typeof guardarClasificacion === 'function') guardarClasificacion();
+            }
+          }
+          else if (cmd === 'filtrar_registro') {
+            cambiarVista('v-base', document.querySelectorAll('.sidebar-nav li')[2] || document.querySelectorAll('.nav-item')[2]);
+            if (params.estado && document.getElementById('filtro-reg-estado')) document.getElementById('filtro-reg-estado').value = params.estado;
+
+            if (params.categoria && params.categoria !== 'ALL') {
+              const catSel = document.getElementById('filtro-reg-cat');
+              if (catSel) {
+                  for (let i = 0; i < catSel.options.length; i++) {
+                    if (catSel.options[i].value.toLowerCase().includes(params.categoria.toLowerCase()) || catSel.options[i].text.toLowerCase().includes(params.categoria.toLowerCase())) {
+                      catSel.selectedIndex = i;
+                      break;
+                    }
+                  }
+              }
+            } else {
+              if (document.getElementById('filtro-reg-cat')) document.getElementById('filtro-reg-cat').value = 'ALL';
+            }
+
+            if (params.lote && params.lote !== 'ALL') {
+              const loteSel = document.getElementById('filtro-reg-lote');
+              if (loteSel) {
+                  for (let i = 0; i < loteSel.options.length; i++) {
+                    if (loteSel.options[i].value.toLowerCase().includes(params.lote.toLowerCase())) {
+                      loteSel.selectedIndex = i;
+                      break;
+                    }
+                  }
+              }
+            } else {
+              if (document.getElementById('filtro-reg-lote')) document.getElementById('filtro-reg-lote').value = 'ALL';
+            }
+
+            if (params.dx && document.getElementById('filtro-reg-dx')) document.getElementById('filtro-reg-dx').value = params.dx;
+
+            if (typeof cargarListaRegistro === 'function') cargarListaRegistro();
+          }
+          else if (cmd === 'accion_ganadera') {
+            let rpObjetivo = params.rp ? String(params.rp).trim() : (typeof rpActivo !== 'undefined' ? rpActivo : null);
+
+            if (params.tipo === 'Nacimiento' || params.tipo === 'Crear') {
+                 if (params.rp) {
+                     if (document.getElementById('f-nueva-caravana')) document.getElementById('f-nueva-caravana').value = params.rp;
+                     if (typeof rpActivo !== 'undefined') rpActivo = params.rp;
+                     rpObjetivo = params.rp;
+
+                     if (!params.raza && !params.nacimiento && !params.padre && !params.madre) {
+                         if (typeof ejecutarAccion === 'function') ejecutarAccion('Actualización de Datos', `Cat: Ternero | Carimbo: -`, `Lote: Nacimientos`, null);
+                     }
+                 }
+            }
+
+            if (params.raza || params.nacimiento || params.padre || params.madre) {
+                 if (typeof rpActivo !== 'undefined') rpActivo = rpObjetivo;
+                 if (params.raza && document.getElementById('f-raza')) document.getElementById('f-raza').value = params.raza;
+                 if (params.nacimiento && document.getElementById('f-nacimiento')) document.getElementById('f-nacimiento').value = params.nacimiento;
+                 if (params.padre && document.getElementById('f-padre')) document.getElementById('f-padre').value = params.padre;
+                 if (params.madre && document.getElementById('f-madre')) document.getElementById('f-madre').value = params.madre;
+                 if (typeof guardarPerfilCompleto === 'function') guardarPerfilCompleto();
+                 if (params.tipo === 'Nacimiento' || params.tipo === 'Crear') return;
+            }
+
+            if (!rpObjetivo || rpObjetivo === "---") {
+              if(typeof mostrarToast === 'function') mostrarToast("❌ Falta especificar la caravana", true);
+              return;
+            }
+
+            if (typeof rpActivo !== 'undefined') rpActivo = rpObjetivo;
+            if (document.getElementById('buscador-caravana')) document.getElementById('buscador-caravana').value = rpObjetivo;
+            if (typeof forzarSaltoAFicha === 'function') forzarSaltoAFicha();
+            if (typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(rpObjetivo);
+
+            let tipoAccion = params.tipo;
+            let valorAccion = params.valor || "-";
+            let detallesAccion = params.detalles || "Registrado por Cora";
+
+            if (tipoAccion === 'Baja') {
+              const originalConfirm = window.confirm;
+              window.confirm = () => true;
+              Promise.resolve().then(() => {
+                  if (typeof ejecutarAccion === 'function') ejecutarAccion('Baja', valorAccion, detallesAccion, null);
+                  let rpArchivado = rpObjetivo + "-BAJA-" + Math.floor(Math.random() * 10000);
+                  setTimeout(() => {
+                      if (typeof ejecutarAccion === 'function') ejecutarAccion('Cambio de Caravana', rpArchivado, 'RP archivado por Baja/Muerte', null);
+                      if (typeof rpActivo !== 'undefined') rpActivo = rpArchivado;
+                      if (typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(rpArchivado);
+                  }, 400);
+                  if (typeof mostrarToast === 'function') mostrarToast(`💀 Baja registrada para RP ${rpObjetivo}`);
+              }).finally(() => {
+                  window.confirm = originalConfirm;
+              });
+            } else if (tipoAccion === 'Clasificacion') {
+              if(params.categoria && document.getElementById('input-cat-rapida')) document.getElementById('input-cat-rapida').value = params.categoria;
+              if(params.lote && document.getElementById('input-lote-rapido')) document.getElementById('input-lote-rapido').value = params.lote;
+              if(params.carimbo && document.getElementById('input-carimbo-rapido')) document.getElementById('input-carimbo-rapido').value = params.carimbo;
+              if(typeof guardarClasificacion==='function') guardarClasificacion();
+              if(typeof mostrarToast==='function') mostrarToast(`✅ Clasificación actualizada`);
+            } else {
+              if (typeof ejecutarAccion === 'function') ejecutarAccion(tipoAccion, valorAccion, detallesAccion, null);
+              if (typeof mostrarToast === 'function') mostrarToast(`✅ [${tipoAccion}] guardado: ${valorAccion}`);
+            }
+          }
+        }
+
+    </script>
+
 </body>
 </html>

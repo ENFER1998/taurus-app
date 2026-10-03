@@ -39,11 +39,11 @@ function doPost(e) {
       "5. BAJA/MUERTE: 'accion_ganadera' tipo 'Baja'. El 'valor' es LA CAUSA. Si no la dice, pregunta ('comando': null).\n" +
       "6. NACIMIENTO/GENÉTICA: Usa 'accion_ganadera'. Si da nacimiento, ponlo SOLO en el campo 'nacimiento' (YYYY-MM).\n" +
       "7. OTROS: 'borrar_caravana', 'renombrar_caravana' (nuevo_rp), 'clasificar_animal' (categoria, lote, carimbo).\n" +
-      "8. GESTIÓN: 'crear_operador', 'eliminar_operador', 'cambiar_permiso_operador', 'cambiar_tema'.\n" +
+      "8. GESTIÓN: 'crear_operador', 'eliminar_operador', 'cambiar_permiso_operador', 'cambiar_tema', 'soporte', 'activar_rafaga'.\n" +
       "9. OBLIGATORIO: Responde SOLO en JSON con esta estructura:\n" +
       "{\n" +
       "  \"respuesta\": \"Texto ameno para hablar al usuario...\",\n" +
-      "  \"comando\": \"accion_ganadera | buscar_caravana | filtrar_registro | generar_informe | crear_operador | null\",\n" +
+      "  \"comando\": \"accion_ganadera | buscar_caravana | filtrar_registro | generar_informe | crear_operador | soporte | activar_rafaga | null\",\n" +
       "  \"parametros\": { \"rp\": \"Nº\", \"tipo\": \"Peso|Sanidad|Diagnóstico...\", \"valor\": \"dato\", \"detalles\": \"...\", \"nacimiento\": \"YYYY-MM\" }\n" +
       "}";
 
@@ -62,8 +62,13 @@ function doPost(e) {
         "payload": JSON.stringify(payloadOR), "muteHttpExceptions": true 
       };
       
-      var respuestaOR = UrlFetchApp.fetch(urlOR, opcionesOR);
-      var jsonOR = JSON.parse(respuestaOR.getContentText());
+      var jsonOR;
+      try {
+        var respuestaOR = UrlFetchApp.fetch(urlOR, opcionesOR);
+        jsonOR = JSON.parse(respuestaOR.getContentText());
+      } catch (err) {
+        return ContentService.createTextOutput(JSON.stringify({"status": "error", "error": "Error de conexión con la IA. " + err.toString()})).setMimeType(ContentService.MimeType.JSON);
+      }
       
       if (jsonOR.error) return ContentService.createTextOutput(JSON.stringify({"status": "error", "error": jsonOR.error.message})).setMimeType(ContentService.MimeType.JSON);
       

@@ -979,6 +979,7 @@
             else { detallesBox.classList.remove('oculto'); if(sel === 'OTRO') { customInput.classList.remove('oculto'); customInput.focus(); } else { customInput.classList.add('oculto'); } }
         };
 
+
         function setEstadoRed(online, texto = null) {
             const b = document.getElementById('estado-red');
             if(!b) return;
@@ -1003,6 +1004,7 @@
                }
             }
         }
+
         window.addEventListener('online', () => setEstadoRed(true)); window.addEventListener('offline', () => setEstadoRed(false));
 
         async function procesarIngreso() {
@@ -1033,6 +1035,7 @@
             try {
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
                 
+
                 const elAuraBtn = document.getElementById('btn-aura');
                 if (elAuraBtn) {
                     let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
@@ -1043,6 +1046,7 @@
                         elAuraBtn.style.display = 'none';
                     }
                 }
+
 
                 if(unsubscribeConfig) unsubscribeConfig();
                 unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot(doc => {
@@ -2341,6 +2345,7 @@
         let isDraggingAura = false;
         let auraStartX, auraStartY, initialAuraLeft, initialAuraTop;
         let hasDraggedAura = false; // Para diferenciar click de drag
+        let auraStartTime = 0;
 
         btnAura.addEventListener('touchstart', dragStartAura, {passive: false});
         btnAura.addEventListener('mousedown', dragStartAura);
@@ -2358,6 +2363,7 @@
             initialAuraTop = rect.top;
             isDraggingAura = true;
             hasDraggedAura = false;
+            auraStartTime = Date.now();
 
             document.addEventListener('touchmove', dragAura, {passive: false});
             document.addEventListener('mousemove', dragAura);
@@ -2381,7 +2387,7 @@
 
             if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
                 hasDraggedAura = true;
-                e.preventDefault();
+                if (e.cancelable) e.preventDefault();
 
                 let newLeft = initialAuraLeft + deltaX;
                 let newTop = initialAuraTop + deltaY;
@@ -2412,6 +2418,8 @@
             document.removeEventListener('mousemove', dragAura);
             document.removeEventListener('touchend', dragEndAura);
             document.removeEventListener('mouseup', dragEndAura);
+
+            setTimeout(() => { hasDraggedAura = false; }, 50);
         }
 
         function hablarCora(texto) {
@@ -2474,7 +2482,11 @@
 
         // AL PRESIONAR EL AURA: SILENCIA Y ARREGLA EL BUCLE
         btnAura.addEventListener('click', (e) => {
-          if (hasDraggedAura) return; // Si fue un arrastre, no hacer click
+          if (hasDraggedAura) {
+             e.preventDefault();
+             e.stopPropagation();
+             return; // Si fue un arrastre, no hacer click
+          }
           if (window.speechSynthesis.speaking) {
               interrupcionManual = true; // Previene que se vuelva a abrir el mic por accidente
               window.speechSynthesis.cancel();
@@ -2491,6 +2503,7 @@
             if (btnAura.classList.contains('escuchando')) {
                 reconocimiento.stop();
                 estadoIA.style.display = 'none';
+                btnAura.classList.remove('escuchando');
             } else {
                 try { reconocimiento.start(); } catch(e) { reconocimiento.stop(); }
             }
@@ -2566,7 +2579,11 @@
 
         function ejecutarComandoEnApp(cmd, params) {
           params = params || {};
-          if (cmd === 'navegar') {
+
+          if (cmd === 'soporte') {
+            window.open('https://wa.me/595976139617', '_blank');
+          }
+          else if (cmd === 'navegar') {
             if (params.vista === 'dashboard') cambiarVista('v-dash', document.querySelectorAll('.sidebar-nav li')[0]);
             if (params.vista === 'manga') cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1]);
             if (params.vista === 'registro') { cambiarVista('v-base', document.querySelectorAll('.sidebar-nav li')[2]); cargarListaRegistro(); }
@@ -2629,7 +2646,7 @@
                 if (params.accion) document.getElementById('f-inf-accion-oculto').value = params.accion;
             }
             actualizarInformeAvanzado();
-            if (params.autoguardar || cmd === 'descargar_pdf') {
+            if (params.autoguardar || cmd === 'descargar_pdf' || cmd === 'generar_informe') {
                setTimeout(() => ejecutarDescargaPDF(), 800);
                mostrarToast("✅ Generando reporte PDF...");
             }
@@ -2855,14 +2872,20 @@
             let detallesAccion = params.detalles || "Registrado por Cora";
 
             if (tipoAccion === 'Baja') {
-              ejecutarAccion('Baja', valorAccion, detallesAccion, null);
-              let rpArchivado = rpActivo + "-BAJA-" + Math.floor(Math.random() * 10000);
-              setTimeout(() => {
-                  ejecutarAccion('Cambio de Caravana', rpArchivado, 'RP archivado por Baja/Muerte', null);
-                  rpActivo = rpArchivado;
-                  buscarCaravanaBtn(rpArchivado);
-              }, 400);
-              mostrarToast(`💀 Baja registrada para RP ${rpObjetivo}`);
+              const originalConfirm = window.confirm;
+              window.confirm = () => true;
+              Promise.resolve().then(() => {
+                  ejecutarAccion('Baja', valorAccion, detallesAccion, null);
+                  let rpArchivado = rpActivo + "-BAJA-" + Math.floor(Math.random() * 10000);
+                  setTimeout(() => {
+                      ejecutarAccion('Cambio de Caravana', rpArchivado, 'RP archivado por Baja/Muerte', null);
+                      rpActivo = rpArchivado;
+                      buscarCaravanaBtn(rpArchivado);
+                  }, 400);
+                  mostrarToast(`💀 Baja registrada para RP ${rpObjetivo}`);
+              }).finally(() => {
+                  window.confirm = originalConfirm;
+              });
             } else {
               ejecutarAccion(tipoAccion, valorAccion, detallesAccion, null);
               mostrarToast(`✅ [${tipoAccion}] guardado: ${valorAccion}`);
