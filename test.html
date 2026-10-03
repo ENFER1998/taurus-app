@@ -195,6 +195,7 @@
           justify-content: center;
           color: white;
           touch-action: none;
+          cursor: pointer;
         }
         @keyframes respirar {
           0% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
@@ -311,7 +312,7 @@
                                 <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
                                 <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario (Ivermectina)</option>
                                 <option value="Vitamina ADE">💉 Vitamina ADE / Reconstituyente</option>
-                                <option value="OTRO">✏️ Personalizado (Escribir otro)...</option>
+                                <option value="OTRO">✏️️ Personalizado (Escribir otro)...</option>
                             </select>
                             <input type="text" id="rafaga-prod-custom" class="form-control oculto" placeholder="Escriba el producto..." style="margin-top:8px; padding:8px; font-size:13px;">
                         </div>
@@ -344,7 +345,7 @@
                         <div id="badge-estado-animal" class="badge-estado offline" style="display:none; margin: 10px auto; width: max-content;">DADO DE BAJA</div>
                     </div>
                     <div class="botones-perfil">
-                        <button class="btn-mini" onclick="abrirModal('modal-perfil')">✏️ Genética</button>
+                        <button class="btn-mini" onclick="abrirModal('m-perfil')">✏️ Genética</button>
                         <button class="btn-mini" onclick="abrirModal('modal-clasificacion')">🏷️ Lote/Cat</button>
                         <button class="btn-mini" style="color:var(--alerta); border-color:var(--alerta);" onclick="abrirModal('modal-renombrar')">🔄 Renombrar</button>
                     </div>
@@ -696,6 +697,14 @@
         </nav>
     </div>
 
+    <!-- BOTÓN AURA DE CORA Y ESTADO -->
+    <button id="btn-aura" title="Hablar con Cora">
+      <svg class="icono-mic" viewBox="0 0 24 24">
+        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+      </svg>
+    </button>
+    <div id="estado-ia">Cora lista</div>
+
     <!-- MODALES GANADEROS -->
     <div id="m-baja" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('m-baja')">&times;</span><h3>💀 Registro de Baja / Muerte</h3><div class="form-grupo"><label>Causa</label><select class="form-control" id="i-baja-causa"><option>Enfermedad</option><option>Accidente</option><option>Depredador</option><option>Natural / Desconocida</option><option>Venta / Faena</option></select></div><div class="form-grupo"><label>Observaciones</label><textarea class="form-control textarea" id="i-baja-txt"></textarea></div><button class="btn-guardar" style="background:var(--peligro);" onclick="prepararGuardado('m-baja', 'Baja')">Confirmar Baja</button></div></div>
     <div id="modal-renombrar" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-renombrar')">&times;</span><h3>Modificar Número RP</h3><div class="form-grupo"><label>Nuevo RP</label><input type="text" class="form-control" id="f-nueva-caravana"></div><button class="btn-guardar" onclick="guardarCambioCaravana()">Confirmar</button></div></div>
@@ -911,14 +920,11 @@
 
             const btnAura = document.getElementById('btn-aura');
             if (btnAura) {
-               let featuresStr = (typeof lsGet('tc_user_profile', {})?.features === 'string')
-                                   ? lsGet('tc_user_profile', {}).features
-                                   : "";
                let userProfile = lsGet('tc_user_profile', {});
                let isPropietario = String(userProfile.rol||"").includes('Propietario') || String(userProfile.rol||"").includes('Dueño');
                let tienePermisoCora = isPropietario || String(userProfile.rol||"").includes('cora');
                
-               if ((navigator.onLine || online) && (isPropietario || (featuresStr.includes('cora') && tienePermisoCora))) {
+               if ((navigator.onLine || online) && tienePermisoCora) {
                    btnAura.style.display = 'flex';
                } else {
                    btnAura.style.display = 'none';
@@ -961,7 +967,7 @@
                 if (elAuraBtn) {
                     let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
                     let tienePermisoCora = isPropietario || usRol.includes('cora');
-                    if (navigator.onLine && (isPropietario || (String(featuresStr||"").includes('cora') && tienePermisoCora))) {
+                    if (navigator.onLine && tienePermisoCora) {
                         elAuraBtn.style.display = 'flex';
                     } else {
                         elAuraBtn.style.display = 'none';
