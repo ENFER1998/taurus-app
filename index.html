@@ -175,6 +175,57 @@
         .btn-guardar { width: 100%; background: var(--secundario); color: white; padding: 15px; border-radius: 8px; border: none; font-weight: bold; margin-top: 10px;}
         .btn-guardar:disabled { opacity: 0.6; cursor: not-allowed; }
         .cerrar { float: right; font-size: 30px; color: var(--muted);}
+        
+        /* ESTILOS DE CORA (IA) */
+        #btn-aura {
+          position: fixed;
+          bottom: 80px;
+          right: 20px;
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #0f172a 0%, #3b82f6 100%);
+          box-shadow: 0 0 15px rgba(59, 130, 246, 0.5), inset 0 0 10px rgba(255,255,255,0.3);
+          border: 1px solid var(--borde);
+          z-index: 9999;
+          transition: transform 0.1s, top 0.1s, left 0.1s;
+          animation: respirar 3s infinite alternate;
+          display: none;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          touch-action: none;
+          cursor: pointer;
+        }
+        @keyframes respirar {
+          0% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+          100% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.8); }
+        }
+        #btn-aura.escuchando {
+          background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+          animation: latir 0.8s infinite alternate;
+        }
+        @keyframes latir {
+          0% { transform: scale(1); box-shadow: 0 0 15px rgba(16, 185, 129, 0.6); }
+          100% { transform: scale(1.15); box-shadow: 0 0 35px rgba(59, 130, 246, 0.9); }
+        }
+        .icono-mic { width: 28px; height: 28px; fill: currentColor; }
+        #estado-ia {
+          position: fixed;
+          bottom: 150px;
+          right: 20px;
+          background: rgba(15, 23, 42, 0.9);
+          color: white;
+          padding: 8px 12px;
+          border-radius: 12px;
+          font-size: 12px;
+          display: none;
+          z-index: 9998;
+          backdrop-filter: blur(5px);
+          max-width: 200px;
+          text-align: center;
+          border: 1px solid var(--borde);
+        }
     </style>
 </head>
 <body>
@@ -261,7 +312,7 @@
                                 <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
                                 <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario (Ivermectina)</option>
                                 <option value="Vitamina ADE">💉 Vitamina ADE / Reconstituyente</option>
-                                <option value="OTRO">✏️ Personalizado (Escribir otro)...</option>
+                                <option value="OTRO">✏️️ Personalizado (Escribir otro)...</option>
                             </select>
                             <input type="text" id="rafaga-prod-custom" class="form-control oculto" placeholder="Escriba el producto..." style="margin-top:8px; padding:8px; font-size:13px;">
                         </div>
@@ -294,7 +345,7 @@
                         <div id="badge-estado-animal" class="badge-estado offline" style="display:none; margin: 10px auto; width: max-content;">DADO DE BAJA</div>
                     </div>
                     <div class="botones-perfil">
-                        <button class="btn-mini" onclick="abrirModal('modal-perfil')">✏️ Genética</button>
+                        <button class="btn-mini" onclick="abrirModal('m-perfil')">✏️ Genética</button>
                         <button class="btn-mini" onclick="abrirModal('modal-clasificacion')">🏷️ Lote/Cat</button>
                         <button class="btn-mini" style="color:var(--alerta); border-color:var(--alerta);" onclick="abrirModal('modal-renombrar')">🔄 Renombrar</button>
                     </div>
@@ -646,6 +697,14 @@
         </nav>
     </div>
 
+    <!-- BOTÓN AURA DE CORA Y ESTADO -->
+    <button id="btn-aura" title="Hablar con Cora">
+      <svg class="icono-mic" viewBox="0 0 24 24">
+        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+      </svg>
+    </button>
+    <div id="estado-ia">Cora lista</div>
+
     <!-- MODALES GANADEROS -->
     <div id="m-baja" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('m-baja')">&times;</span><h3>💀 Registro de Baja / Muerte</h3><div class="form-grupo"><label>Causa</label><select class="form-control" id="i-baja-causa"><option>Enfermedad</option><option>Accidente</option><option>Depredador</option><option>Natural / Desconocida</option><option>Venta / Faena</option></select></div><div class="form-grupo"><label>Observaciones</label><textarea class="form-control textarea" id="i-baja-txt"></textarea></div><button class="btn-guardar" style="background:var(--peligro);" onclick="prepararGuardado('m-baja', 'Baja')">Confirmar Baja</button></div></div>
     <div id="modal-renombrar" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-renombrar')">&times;</span><h3>Modificar Número RP</h3><div class="form-grupo"><label>Nuevo RP</label><input type="text" class="form-control" id="f-nueva-caravana"></div><button class="btn-guardar" onclick="guardarCambioCaravana()">Confirmar</button></div></div>
@@ -727,7 +786,6 @@
                         lsSet('tc_user_profile', userData);
                         if(userData.alertas_leidas) lsSet('tc_alertas_leidas', userData.alertas_leidas);
 
-                        // Cálculo de licencia hasta el final del día (23:59:59)
                         if(userData.vencimiento) {
                             let fLimit = new Date(userData.vencimiento.includes('T') ? userData.vencimiento : userData.vencimiento + "T23:59:59");
                             if(new Date() > fLimit) {
@@ -853,7 +911,6 @@
             else { detallesBox.classList.remove('oculto'); if(sel === 'OTRO') { customInput.classList.remove('oculto'); customInput.focus(); } else { customInput.classList.add('oculto'); } }
         };
 
-
         function setEstadoRed(online, texto = null) {
             const b = document.getElementById('estado-red');
             if(!b) return;
@@ -863,13 +920,11 @@
 
             const btnAura = document.getElementById('btn-aura');
             if (btnAura) {
-               let featuresStr = (typeof lsGet('tc_user_profile', {})?.features === 'string')
-                                   ? lsGet('tc_user_profile', {}).features
-                                   : "";
                let userProfile = lsGet('tc_user_profile', {});
                let isPropietario = String(userProfile.rol||"").includes('Propietario') || String(userProfile.rol||"").includes('Dueño');
                let tienePermisoCora = isPropietario || String(userProfile.rol||"").includes('cora');
-               if ((navigator.onLine || online) && (isPropietario || (featuresStr.includes('cora') && tienePermisoCora))) {
+               
+               if ((navigator.onLine || online) && tienePermisoCora) {
                    btnAura.style.display = 'flex';
                } else {
                    btnAura.style.display = 'none';
@@ -908,18 +963,16 @@
             try {
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
                 
-
                 const elAuraBtn = document.getElementById('btn-aura');
                 if (elAuraBtn) {
                     let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
                     let tienePermisoCora = isPropietario || usRol.includes('cora');
-                    if (navigator.onLine && (isPropietario || (String(featuresStr||"").includes('cora') && tienePermisoCora))) {
+                    if (navigator.onLine && tienePermisoCora) {
                         elAuraBtn.style.display = 'flex';
                     } else {
                         elAuraBtn.style.display = 'none';
                     }
                 }
-
 
                 if(unsubscribeConfig) unsubscribeConfig();
                 unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot(doc => {
@@ -967,7 +1020,7 @@
                         cargarListasFiltrosSelects();
                         cargarListaOperadores();
                         setEstadoRed(true);
-                    }, 500); // Agrupar llamadas (Debounce) de Firebase
+                    }, 500); 
                 }, err => { setEstadoRed(false, '❌ Red Local'); });
                 
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
@@ -981,7 +1034,6 @@
                                 await OneSignal.Slidedown.promptPush();
                                 OneSignal.User.PushSubscription.optIn();
 
-                                // Bloquear notificaciones push de OneSignal si yo mismo fui el autor
                                 OneSignal.Notifications.addEventListener('foregroundWillDisplay', function(event) {
                                     const notif = event.notification;
                                     if(notif.body && notif.body.includes(usNombre)) {
@@ -989,7 +1041,6 @@
                                     }
                                 });
                             } else {
-                                // Los operadores nunca reciben notificaciones Push
                                 OneSignal.User.PushSubscription.optOut();
                             }
                         } catch (e) {}
@@ -1939,7 +1990,6 @@
                 return;
             }
 
-            // Límite de renderizado para evitar congelar teléfonos con bases de datos grandes
             let htmlHTML = "";
             let limiteRender = 100;
             listaFiltrada.slice(0, limiteRender).forEach(item => {
@@ -2216,15 +2266,20 @@
         });
     </script>
 
-
-
-
+    <!-- SCRIPTS DE CORA IA (INTEGRACIÓN) -->
     <script>
-      // INTEGRACIÓN DE CORA VÍA VOZ
       const btnAura = document.getElementById('btn-aura');
       const estadoIA = document.getElementById('estado-ia');
       const ReconocimientoVoz = window.SpeechRecognition || window.webkitSpeechRecognition;
       let reconocimiento = null;
+      let vocesDisponibles = [];
+      let interrupcionManual = false;
+      let coraHistorial = [];
+      let audioDesbloqueado = false;
+
+      window.speechSynthesis.onvoiceschanged = () => {
+        vocesDisponibles = window.speechSynthesis.getVoices();
+      };
 
       if (ReconocimientoVoz) {
         reconocimiento = new ReconocimientoVoz();
@@ -2234,24 +2289,18 @@
 
         reconocimiento.onstart = () => {
           if(btnAura) btnAura.classList.add('escuchando');
-          if(estadoIA) {
-            estadoIA.style.display = 'block';
-            estadoIA.innerText = 'Escuchando...';
-          }
+          if(estadoIA) { estadoIA.style.display = 'block'; estadoIA.innerText = 'Cora escuchando...'; }
         };
 
         reconocimiento.onresult = (evento) => {
           let mensajeUsuario = evento.results[evento.results.length - 1][0].transcript;
-          if(estadoIA) estadoIA.innerText = 'Cora pensando...';
+          if(estadoIA) estadoIA.innerText = 'Procesando...';
           enviarComandoACora(mensajeUsuario);
         };
 
         reconocimiento.onerror = (evento) => {
           if(btnAura) btnAura.classList.remove('escuchando');
-          if(estadoIA) {
-            estadoIA.innerText = 'No te escuché bien.';
-            setTimeout(() => estadoIA.style.display = 'none', 2500);
-          }
+          if(estadoIA) { estadoIA.innerText = 'No te escuché bien.'; setTimeout(() => estadoIA.style.display = 'none', 2500); }
         };
 
         reconocimiento.onend = () => {
@@ -2260,11 +2309,10 @@
         };
       }
 
-      // Funcionalidad para mover el botón flotante (Drag & Drop)
+      // Drag & Drop Funcionalidad
       let isDraggingAura = false;
       let auraStartX, auraStartY, initialAuraLeft, initialAuraTop;
-      let hasDraggedAura = false; // Para diferenciar click de drag
-      let auraStartTime = 0;
+      let hasDraggedAura = false; 
 
       if (btnAura) {
           btnAura.addEventListener('touchstart', dragStartAura, {passive: false});
@@ -2284,7 +2332,6 @@
           initialAuraTop = rect.top;
           isDraggingAura = true;
           hasDraggedAura = false;
-          auraStartTime = Date.now();
 
           document.addEventListener('touchmove', dragAura, {passive: false});
           document.addEventListener('mousemove', dragAura);
@@ -2324,8 +2371,8 @@
               btnAura.style.bottom = 'auto';
 
               if (estadoIA) {
-                  estadoIA.style.left = (newLeft - 100) + 'px';
-                  estadoIA.style.top = (newTop - 60) + 'px';
+                  estadoIA.style.left = (newLeft - 80) + 'px';
+                  estadoIA.style.top = (newTop - 40) + 'px';
                   estadoIA.style.right = 'auto';
                   estadoIA.style.bottom = 'auto';
               }
@@ -2338,7 +2385,6 @@
           document.removeEventListener('mousemove', dragAura);
           document.removeEventListener('touchend', dragEndAura);
           document.removeEventListener('mouseup', dragEndAura);
-
           setTimeout(() => { hasDraggedAura = false; }, 50);
       }
 
@@ -2347,7 +2393,19 @@
             if (hasDraggedAura) {
                e.preventDefault();
                e.stopPropagation();
-               return; // Si fue un arrastre, no hacer click
+               return; 
+            }
+
+            if (window.speechSynthesis.speaking) {
+                  interrupcionManual = true; 
+                  window.speechSynthesis.cancel();
+            }
+
+            if (!audioDesbloqueado) {
+                let silencio = new SpeechSynthesisUtterance('');
+                silencio.volume = 0;
+                window.speechSynthesis.speak(silencio);
+                audioDesbloqueado = true;
             }
 
             if (!reconocimiento) {
@@ -2364,31 +2422,82 @@
           });
       }
 
+      function hablarCora(texto) {
+          window.speechSynthesis.cancel();
+          interrupcionManual = false;
+          const utterance = new SpeechSynthesisUtterance(texto);
+          utterance.lang = 'es-ES';
+          utterance.rate = 1.05;
+          utterance.pitch = 1.0;
+
+          let vozElegida = vocesDisponibles.find(v => v.lang.startsWith('es') && (v.name.includes('Premium') || v.name.includes('Mujer') || v.name.includes('Female'))) ||
+                           vocesDisponibles.find(v => v.lang.startsWith('es') && v.name.includes('Enhanced')) ||
+                           vocesDisponibles.find(v => v.lang === 'es-MX') ||
+                           vocesDisponibles.find(v => v.lang.startsWith('es')) ||
+                           vocesDisponibles.find(v => v.lang.includes('es'));
+
+          if (vozElegida) utterance.voice = vozElegida;
+
+          utterance.onend = function() {
+              if (!interrupcionManual && reconocimiento && document.getElementById('estado-ia').style.display === 'none') {
+                   setTimeout(() => { if(btnAura) btnAura.click(); }, 300);
+              }
+              interrupcionManual = false;
+          };
+
+          window.speechSynthesis.speak(utterance);
+      }
+
       function enviarComandoACora(mensaje) {
-        let urlParams = new URLSearchParams(window.location.search);
+        let totalCabezas = parseInt(document.getElementById('dash-cabezas') ? document.getElementById('dash-cabezas').innerText : "0") || 0;
+        let totalBajas = parseInt(document.getElementById('dash-bajas') ? document.getElementById('dash-bajas').innerText : "0") || 0;
+        let totalGeneral = totalCabezas + totalBajas;
+        let tasaMortalidadCalculada = totalGeneral > 0 ? ((totalBajas / totalGeneral) * 100).toFixed(1) + "%" : "0%";
+        let horaLocalActual = new Date().toLocaleString('es-PY', { timeZone: 'America/Asuncion', dateStyle: 'full', timeStyle: 'short' });
+        let primerNombre = (typeof usNombre !== 'undefined' ? usNombre : "Productor").split(' ')[0];
+
+        coraHistorial.push({rol: 'usuario', texto: mensaje});
+        if(coraHistorial.length > 10) coraHistorial.shift();
+
         let contexto = {
-          hacienda: urlParams.get('hacienda') || (typeof usHacienda !== 'undefined' ? usHacienda : ''),
-          usuario: urlParams.get('u') || (typeof usActivo !== 'undefined' ? usActivo : ''),
-          rol: typeof usRol !== 'undefined' ? usRol : '',
-          vistaActual: typeof vistaInicial !== 'undefined' ? vistaInicial : '',
-          animalSeleccionado: typeof rpActivo !== 'undefined' ? rpActivo : '',
-          lotesDisponibles: Array.from(document.getElementById('dl-lotes')?.options || []).map(o=>o.value)
+            cabezasVivas: totalCabezas,
+            bajasMortalidad: totalBajas,
+            tasaMortalidad: tasaMortalidadCalculada,
+            prenadas: 0,
+            vacias: 0,
+            rpActualEnPantalla: typeof rpActivo !== 'undefined' ? rpActivo : "Ninguno",
+            horaLocal: horaLocalActual,
+            historial: coraHistorial.slice(0, -1).map(h => (h.rol === 'usuario' ? 'U: ' : 'A: ') + h.texto).join(' | ')
         };
 
         fetch('https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec', {
           method: 'POST',
-          body: JSON.stringify({ mensaje: mensaje, contexto: contexto })
+          body: JSON.stringify({ 
+              accion: 'ia',
+              mensaje: mensaje, 
+              nombreUsuario: primerNombre,
+              rolUsuario: typeof usRol !== 'undefined' ? usRol : "Operador",
+              haciendaNombre: typeof usHacienda !== 'undefined' ? usHacienda : "Hacienda",
+              contexto: contexto 
+          })
         })
         .then(r => r.json())
         .then(data => {
           if(estadoIA) estadoIA.style.display = 'none';
-          if (data.error) { alert("Cora: " + data.error); return; }
-          ejecutarComandoEnApp(data.comando, data.params || {});
+          if (data.status === 'ok') {
+              coraHistorial.push({rol: 'ia', texto: data.respuesta});
+              if(coraHistorial.length > 10) coraHistorial.shift();
+
+              hablarCora(data.respuesta);
+              if (data.comando) {
+                ejecutarComandoEnApp(data.comando, data.parametros);
+              }
+          } else {
+              if(estadoIA) { estadoIA.style.display = 'block'; estadoIA.innerText = 'Error: ' + data.error; setTimeout(()=>estadoIA.style.display='none', 3000); }
+          }
         })
         .catch(err => {
-          if(estadoIA) estadoIA.style.display = 'none';
-          console.error(err);
-          alert("Error conectando con Cora.");
+          if(estadoIA) { estadoIA.style.display = 'block'; estadoIA.innerText = 'Error conectando con Cora.'; setTimeout(()=>estadoIA.style.display='none', 3000); }
         });
       }
 
@@ -2396,29 +2505,21 @@
         function ejecutarComandoEnApp(cmd, params) {
           params = params || {};
 
-          if (cmd === 'hablar' && params.respuesta) {
-            alert("Cora dice: " + params.respuesta);
-          }
-          else if (cmd === 'soporte') {
+          if (cmd === 'soporte') {
             window.open('https://wa.me/595976139617', '_blank');
           }
           else if (cmd === 'navegar') {
             if (typeof cambiarVista !== 'function') return;
             // Map PC/Index paths
-            if (params.vista === 'dashboard') cambiarVista('v-dash', document.querySelectorAll('.sidebar-nav li')[0] || document.querySelectorAll('.nav-item')[0]);
-            if (params.vista === 'manga') cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]);
-            if (params.vista === 'registro' || params.vista === 'base') { cambiarVista('v-base', document.querySelectorAll('.sidebar-nav li')[2] || document.querySelectorAll('.nav-item')[2]); if(typeof cargarListaRegistro==='function') cargarListaRegistro(); }
-            if (params.vista === 'informe') { cambiarVista('v-reporte', document.querySelectorAll('.sidebar-nav li')[3] || document.querySelectorAll('.nav-item')[3]); if(typeof actualizarInformeAvanzado==='function') actualizarInformeAvanzado(); }
-
-            // Map Admin paths
-            if (params.vista === 'alta' || params.vista === 'nuevo') cambiarVista('v-nuevo', document.querySelectorAll('.sidebar-nav li')[0] || document.querySelectorAll('.nav-item')[0]);
-            if (params.vista === 'licencias' || params.vista === 'suscripciones') { cambiarVista('v-licencias', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]); if(typeof cargarClientes==='function') cargarClientes(); }
-            if (params.vista === 'masiva' || params.vista === 'importar') { cambiarVista('v-masiva', document.querySelectorAll('.sidebar-nav li')[2] || document.querySelectorAll('.nav-item')[2]); if(typeof cargarClientesMasiva==='function') cargarClientesMasiva(); }
-            if (params.vista === 'sistema' || params.vista === 'config') { cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[3] || document.querySelectorAll('.nav-item')[3] || document.querySelectorAll('.nav-item')[4]); if(typeof checkStatusInicial==='function') checkStatusInicial(); }
+            if (params.vista === 'dashboard') cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]);
+            if (params.vista === 'manga') cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+            if (params.vista === 'registro' || params.vista === 'base') { cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]); if(typeof cargarListaRegistro==='function') cargarListaRegistro(); }
+            if (params.vista === 'informe') { cambiarVista('vista-informe', document.querySelectorAll('.nav-item')[3]); if(typeof actualizarInformeAvanzado==='function') actualizarInformeAvanzado(); }
+            if (params.vista === 'sistema' || params.vista === 'config') { cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
           }
           else if (cmd === 'cambiar_permiso_operador') {
              if(params.usuario) {
-                 cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4] || document.querySelectorAll('.nav-item')[4]);
+                 cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
                  const selEdit = document.getElementById('op-edit-usu-sel');
                  if(selEdit) {
                      selEdit.value = params.usuario;
@@ -2442,7 +2543,7 @@
           else if (cmd === 'buscar_caravana') {
             if (params.rp) {
               document.getElementById('buscador-caravana').value = params.rp;
-              cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]);
+              cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
               if (typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(params.rp);
             }
           }
@@ -2450,7 +2551,7 @@
             if (typeof filtrarDesdeDashboard === 'function') filtrarDesdeDashboard('estado', params.estado || 'vivos');
           }
           else if (cmd === 'descargar_pdf' || cmd === 'generar_informe') {
-            cambiarVista('v-reporte', document.querySelectorAll('.sidebar-nav li')[3] || document.querySelectorAll('.nav-item')[3]);
+            cambiarVista('vista-informe', document.querySelectorAll('.nav-item')[3]);
             if (params.modo) {
                 let mo = document.getElementById('f-inf-modo');
                 if (mo) {
@@ -2477,7 +2578,7 @@
             }
           }
           else if (cmd === 'activar_rafaga') {
-            cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]);
+            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
             if (typeof rafagaActiva !== 'undefined' && !rafagaActiva && typeof toggleRafaga === 'function') toggleRafaga();
             if (params.modo && document.getElementById('rafaga-accion')) {
               document.getElementById('rafaga-accion').value = params.modo;
@@ -2485,7 +2586,7 @@
             }
           }
           else if (cmd === 'crear_operador') {
-            cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4] || document.querySelectorAll('.nav-item')[4]);
+            cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
             if (params.nombre && document.getElementById('op-nombre')) document.getElementById('op-nombre').value = params.nombre;
             if ((params.usuario || params.pin) && document.getElementById('op-usu')) document.getElementById('op-usu').value = params.usuario || params.pin;
             if (params.password && document.getElementById('op-pass')) document.getElementById('op-pass').value = params.password;
@@ -2504,7 +2605,7 @@
           }
           else if (cmd === 'eliminar_operador') {
             if (params.usuario) {
-              cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4] || document.querySelectorAll('.nav-item')[4]);
+              cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
               const selDel = document.getElementById('op-del-usu-sel');
               if (selDel) {
                 selDel.value = params.usuario;
@@ -2519,18 +2620,18 @@
             }
           }
           else if (cmd === 'cambiar_tema') {
-            cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4] || document.querySelectorAll('.nav-item')[4]);
+            cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
             if (typeof toggleTema === 'function') toggleTema();
           }
           else if (cmd === 'configurar_hacienda') {
-            cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4] || document.querySelectorAll('.nav-item')[4]);
+            cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
             if (params.nombre && document.getElementById('cfg-nom')) {
               document.getElementById('cfg-nom').value = params.nombre;
               if (params.autoguardar && typeof guardarDisenoServidor === 'function') guardarDisenoServidor();
             }
           }
           else if (cmd === 'seleccionar_graficos') {
-            cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4] || document.querySelectorAll('.nav-item')[4]);
+            cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
             if (params.graficos && Array.isArray(params.graficos)) {
               const checkboxes = document.querySelectorAll('.chk-graf');
               checkboxes.forEach(chk => {
@@ -2543,7 +2644,7 @@
           else if (cmd === 'borrar_caravana') {
             if (params.rp) {
               document.getElementById('buscador-caravana').value = params.rp;
-              cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]);
+              cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
               if(typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(params.rp);
             }
             if (typeof rpActivo !== 'undefined' && rpActivo) {
@@ -2558,7 +2659,7 @@
           else if (cmd === 'renombrar_caravana') {
             if (params.rp) {
               document.getElementById('buscador-caravana').value = params.rp;
-              cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]);
+              cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
               if(typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(params.rp);
             }
             if (typeof rpActivo !== 'undefined' && rpActivo && params.nuevo_rp) {
@@ -2569,7 +2670,7 @@
           else if (cmd === 'clasificar_animal') {
             if (params.rp) {
               document.getElementById('buscador-caravana').value = params.rp;
-              cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]);
+              cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
               if(typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(params.rp);
             }
             if (typeof rpActivo !== 'undefined' && rpActivo) {
@@ -2590,7 +2691,7 @@
             }
           }
           else if (cmd === 'filtrar_registro') {
-            cambiarVista('v-base', document.querySelectorAll('.sidebar-nav li')[2] || document.querySelectorAll('.nav-item')[2]);
+            cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]);
             if (params.estado && document.getElementById('filtro-reg-estado')) document.getElementById('filtro-reg-estado').value = params.estado;
 
             if (params.categoria && params.categoria !== 'ALL') {
@@ -2691,8 +2792,6 @@
             }
           }
         }
-
     </script>
-
 </body>
 </html>
