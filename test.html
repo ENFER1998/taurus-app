@@ -1547,19 +1547,55 @@
             if(!id || id === 'undefined') { alert("Este registro aún no se sincronizó con la nube. Espere un momento."); return; }
             let reg = dbCache.find(r => r.id === id);
             if(!reg) return;
-            document.getElementById('edit-reg-id').value = id; document.getElementById('edit-reg-valor').value = reg.valor || ""; document.getElementById('edit-reg-detalles').value = reg.detalles || "";
+            
+            document.getElementById('edit-reg-id').value = id; 
+            document.getElementById('edit-reg-valor').value = reg.valor || ""; 
+            document.getElementById('edit-reg-detalles').value = reg.detalles || "";
+            
+            // Convertir la fecha al formato que entiende el input datetime-local
+            if(reg.fecha) {
+                let d = new Date(reg.fecha);
+                d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                document.getElementById('edit-reg-fecha').value = d.toISOString().slice(0,16);
+            }
+            
             cerrarModal('modal-historial'); abrirModal('modal-editar-registro');
         };
 
         window.guardarEdicionRegistro = async function() {
-            let id = document.getElementById('edit-reg-id').value; let nValor = document.getElementById('edit-reg-valor').value; let nDetalles = document.getElementById('edit-reg-detalles').value;
+            let id = document.getElementById('edit-reg-id').value; 
+            let nValor = document.getElementById('edit-reg-valor').value; 
+            let nDetalles = document.getElementById('edit-reg-detalles').value;
+            let nFecha = document.getElementById('edit-reg-fecha').value;
+            
             if(!navigator.onLine) { alert("Necesitas conexión a internet para editar."); return; }
+            
             try {
-                await db.collection('estancias').doc(maestroId).collection('eventos').doc(id).update({ valor: nValor, detalles: nDetalles });
+                // Volver a convertir la fecha al estándar ISO para Firebase
+                let fechaFormateada = new Date(nFecha).toISOString();
+                
+                await db.collection('estancias').doc(maestroId).collection('eventos').doc(id).update({ 
+                    valor: nValor, 
+                    detalles: nDetalles,
+                    fecha: fechaFormateada
+                });
+                
                 let i = dbCache.findIndex(r => r.id === id);
-                if(i !== -1) { dbCache[i].valor = nValor; dbCache[i].detalles = nDetalles; historiaCache = null; activosCache = null; buscarCaravanaBtn(rpActivo); }
-                cerrarModal('modal-editar-registro'); mostrarToast("✅ Modificado exitosamente."); verHistorial();
-            } catch(e) { alert("Error al modificar."); }
+                if(i !== -1) { 
+                    dbCache[i].valor = nValor; 
+                    dbCache[i].detalles = nDetalles; 
+                    dbCache[i].fecha = fechaFormateada;
+                    
+                    // Reordenar el caché ya que la fecha cambió
+                    dbCache.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+                    
+                    historiaCache = null; activosCache = null; 
+                    buscarCaravanaBtn(rpActivo); 
+                }
+                cerrarModal('modal-editar-registro'); 
+                mostrarToast("✅ Registro y fecha modificados exitosamente."); 
+                verHistorial();
+            } catch(e) { alert("Error al modificar el registro."); }
         };
 
         function cambiarModoReporte() {
