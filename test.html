@@ -107,14 +107,12 @@
 
         .contenedor-scroll-analitica { max-height: 130px; overflow-y: auto; padding-right: 5px; flex: 1; }
 
-        /* RECUADROS Y ELEMENTOS ADAPTABLES A MODO CLARO */
         .caja-filtros-rapidos { background: #1e293b; padding: 12px; border-radius: 8px; border: 1px solid var(--borde); margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; }
         body.tema-claro .caja-filtros-rapidos { background: #ffffff !important; border-color: var(--borde) !important; }
 
         .contenedor-permisos { display: flex; flex-direction: column; gap: 8px; background: #1e293b; padding: 10px; border: 1px solid var(--borde); border-radius: 8px; }
         body.tema-claro .contenedor-permisos { background: #ffffff !important; border-color: var(--borde) !important; }
 
-        /* TABLA DE PREVIEW DEL REPORTE CON TEMA DINÁMICO */
         .tabla-informe { width: 100%; border-collapse: collapse; font-size: 13px; background: #0f172a; color: var(--texto); min-width: 400px; border: 1px solid var(--borde);}
         .tabla-informe th { background: #1e293b; padding: 10px; text-align: left; border: 1px solid var(--borde); color: var(--secundario); font-size: 11px; text-transform: uppercase; font-weight: bold;}
         .tabla-informe td { padding: 10px; border: 1px solid var(--borde); color: var(--texto);}
@@ -303,16 +301,29 @@
                         </div>
                         <button class="btn-mini" id="btn-toggle-rafaga" style="border-color:var(--borde); font-weight:bold;" onclick="toggleRafaga()">APAGADO</button>
                     </div>
+                    
                     <div id="opciones-rafaga" class="oculto" style="margin-top:15px; padding-top:15px; border-top:1px solid var(--borde);">
+                        <div class="form-grupo" style="margin-bottom:15px;">
+                            <label style="font-size:11px;">Modalidad de Ráfaga:</label>
+                            <select id="rafaga-modalidad" class="form-control" style="padding:8px; font-size:13px;" onchange="verificarRafagaCustom()">
+                                <option value="rfid">📡 Modo Bastón RFID / Antena NFC</option>
+                                <option value="manual">⌨️ Modo Manual Rápido (Teclado)</option>
+                            </select>
+                        </div>
+                        <div id="caja-rafaga-manual" class="form-grupo oculto" style="display:flex; gap:10px; margin-bottom:15px; background: rgba(59, 130, 246, 0.1); padding: 10px; border-radius: 8px;">
+                            <input type="text" id="rm-caravana" class="form-control" placeholder="Nº RP" style="flex:1;" onkeyup="if(event.key === 'Enter') document.getElementById('rm-valor').focus()">
+                            <input type="text" id="rm-valor" class="form-control" placeholder="Valor Principal (Ej: 300)" style="flex:1;" onkeyup="if(event.key === 'Enter') ejecutarRafagaManual()">
+                            <button class="btn-mini" style="background:var(--secundario); color:white; border:none;" onclick="ejecutarRafagaManual()">▶</button>
+                        </div>
                         <div class="form-grupo" style="margin-bottom:10px;">
-                            <label style="font-size:11px;">Acción combinada con el peso:</label>
+                            <label style="font-size:11px;">Acción combinada principal:</label>
                             <select id="rafaga-accion" class="form-control" style="padding:8px; font-size:13px; font-weight:bold;" onchange="verificarRafagaCustom()">
-                                <option value="solo_peso">⚖️ Solo Registrar Peso</option>
+                                <option value="solo_peso">⚖️ Solo Registrar Principal (Peso / Tacto)</option>
                                 <option value="Vacuna Aftosa">💉 Vacuna Aftosa</option>
                                 <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
                                 <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario (Ivermectina)</option>
                                 <option value="Vitamina ADE">💉 Vitamina ADE / Reconstituyente</option>
-                                <option value="OTRO">✏️️ Personalizado (Escribir otro)...</option>
+                                <option value="OTRO">✏ Personalizado (Escribir otro)...</option>
                             </select>
                             <input type="text" id="rafaga-prod-custom" class="form-control oculto" placeholder="Escriba el producto..." style="margin-top:8px; padding:8px; font-size:13px;">
                         </div>
@@ -446,7 +457,7 @@
                         </select>
                     </div>
 
-                    <!-- FILTROS DE INVENTARIO (SIN DESBORDAMIENTOS) -->
+                    <!-- FILTROS DE INVENTARIO -->
                     <div id="filtros-inventario" class="filtros-grid">
                         <div class="form-grupo" style="margin-bottom:8px;">
                             <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Lote Asignado:</label>
@@ -750,7 +761,10 @@
         
     <div id="modal-inseminacion" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-inseminacion')">&times;</span><h3>🧬 Reproducción</h3><div class="form-grupo"><label>Inseminador / Método</label><input type="text" class="form-control" id="i-ins-quien"></div><div class="form-grupo"><label>Toro / Pajuela</label><input type="text" class="form-control" id="i-ins-toro"></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-ins-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-inseminacion', 'Inseminación')">Registrar</button></div></div>
     <div id="modal-nut" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-nut')">&times;</span><h3>🌾 Suplemento Nutricional</h3><div class="form-grupo"><label>Alimento</label><input type="text" class="form-control" id="i-nut-prod" list="lista-alimentos"><datalist id="lista-alimentos"><option value="Sal Mineral"></option><option value="Sal Proteica"></option><option value="Forraje / Pastura"></option></datalist></div><div class="form-grupo"><label>Dosificación</label><input type="text" class="form-control" id="i-nut-rac"></div><div class="form-grupo"><label>Notas</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div><button class="btn-guardar" onclick="prepararGuardado('modal-nut', 'Nutrición')">Registrar Nutrición</button></div></div>
+    
     <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial Clínico</h3><div id="contenido-historial"></div></div></div>
+    
+    <div id="modal-editar-registro" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-editar-registro')">&times;</span><h3>✏️ Editar Registro</h3><input type="hidden" id="edit-reg-id"><div class="form-grupo"><label>Valor Principal</label><input type="text" class="form-control" id="edit-reg-valor"></div><div class="form-grupo"><label>Observaciones / Detalles</label><textarea class="form-control textarea" id="edit-reg-detalles"></textarea></div><button class="btn-guardar" onclick="guardarEdicionRegistro()">Guardar Cambios</button></div></div>
 
     <script>
         const firebaseConfig = {
@@ -905,10 +919,35 @@
 
         window.verificarRafagaCustom = function() {
             const sel = document.getElementById('rafaga-accion').value;
+            const modalidad = document.getElementById('rafaga-modalidad') ? document.getElementById('rafaga-modalidad').value : 'rfid';
             const customInput = document.getElementById('rafaga-prod-custom');
             const detallesBox = document.getElementById('caja-rafaga-detalles');
+            const cajaManual = document.getElementById('caja-rafaga-manual');
+            
+            if(modalidad === 'manual') cajaManual.classList.remove('oculto'); else cajaManual.classList.add('oculto');
+            
             if(sel === 'solo_peso') { customInput.classList.add('oculto'); detallesBox.classList.add('oculto'); }
             else { detallesBox.classList.remove('oculto'); if(sel === 'OTRO') { customInput.classList.remove('oculto'); customInput.focus(); } else { customInput.classList.add('oculto'); } }
+        };
+
+        window.ejecutarRafagaManual = function() {
+            let rp = document.getElementById('rm-caravana').value.trim().toUpperCase();
+            let val = document.getElementById('rm-valor').value.trim().toUpperCase();
+            if(!rp || !val) return;
+            rpActivo = rp;
+            let sel = document.getElementById('rafaga-accion').value; let notas = document.getElementById('rafaga-detalles').value.trim(); let recordatorio = document.getElementById('rafaga-recordatorio').value; 
+            
+            if(!isNaN(val) || val.includes('.')) { ejecutarAccion('Peso', val + " Kg", "Automático (Ráfaga Manual)", null); } 
+            else { ejecutarAccion('Sanidad', val, "Automático (Ráfaga Manual)", null); }
+            
+            if(sel !== 'solo_peso') {
+                let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
+                let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga Manual";
+                if (recordatorio !== "0") detCompleto += ` | [RECORDATORIO:${recordatorio}]`;
+                ejecutarAccion('Sanidad', producto, detCompleto, null);
+            }
+            mostrarToast("✅ Combo asignado al RP: " + rp);
+            document.getElementById('rm-caravana').value = ""; document.getElementById('rm-valor').value = ""; document.getElementById('rm-caravana').focus();
         };
 
         function setEstadoRed(online, texto = null) {
@@ -955,7 +994,8 @@
 
         function notificarPropietario(mensaje) {
             if(!navigator.onLine) return;
-            const fd = new URLSearchParams(); fd.append('accion', 'notificar_accion'); fd.append('maestro', maestroId); fd.append('mensaje', mensaje);
+            let isDueno = usRol.includes('Propietario') || usRol.includes('Dueño');
+            const fd = new URLSearchParams(); fd.append('accion', 'notificar_accion'); fd.append('maestro', maestroId); fd.append('mensaje', mensaje); fd.append('remitente_es_dueno', isDueno);
             fetch("https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec", { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
         }
 
@@ -991,7 +1031,7 @@
                 let renderTimeout;
                 unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot(snapshot => {
                     let nuevosDatos = [];
-                    snapshot.forEach(doc => nuevosDatos.push(doc.data()));
+                    snapshot.forEach(doc => { let d = doc.data(); d.id = doc.id; nuevosDatos.push(d); });
 
                     let mapAnterior = new Set(dbCache.map(d => d.fecha + '_' + d.caravana + '_' + d.accion));
                     let notificar = nuevosDatos.filter(d => d && d.fecha && !mapAnterior.has(d.fecha + '_' + d.caravana + '_' + d.accion));
@@ -1003,8 +1043,8 @@
                             notificar.forEach(n => {
                                 let op = n.usuario || "Un operador";
                                 if (n.detalles && n.detalles.includes("Op: ")) { op = n.detalles.split("Op: ")[1].trim(); }
-                                let propFlag = usRol.includes('Propietario') || usRol.includes('Dueño');
-                                if(propFlag && op.toLowerCase() !== usNombre.toLowerCase() && n.caravana !== '---') {
+                                let isDuenoActual = usRol.includes('Propietario') || usRol.includes('Dueño');
+                                if(isDuenoActual && n.maestro === maestroId && op.toLowerCase() !== usNombre.toLowerCase() && n.caravana !== '---') {
                                     lanzarNotificacionEscritorio("Alerta Taurus", `${op} registró [${n.accion}] al RP ${n.caravana}`);
                                 }
                             });
@@ -1124,13 +1164,13 @@
         function fusionarDatos(nuevos) {
             let pendientes = lsGet('tc_pendientes', []);
             let mapa = new Map();
-            if(Array.isArray(nuevos)) {
-                nuevos.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
-            }
-            if(Array.isArray(pendientes)) {
-                pendientes.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
-            }
-            dbCache = Array.from(mapa.values()).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            if(Array.isArray(nuevos)) { nuevos.forEach(d => { if(d) { let f = d.fecha || new Date().toISOString(); mapa.set(f + '_' + d.caravana + '_' + d.accion, d); } }); }
+            if(Array.isArray(pendientes)) { pendientes.forEach(d => { if(d) { let f = d.fecha || new Date().toISOString(); mapa.set(f + '_' + d.caravana + '_' + d.accion, d); } }); }
+            
+            dbCache = Array.from(mapa.values()).sort((a,b) => {
+                let tA = new Date(a.fecha).getTime(); let tB = new Date(b.fecha).getTime();
+                return (isNaN(tB) ? 0 : tB) - (isNaN(tA) ? 0 : tA); 
+            });
             lsSet('tc_db', dbCache);
             historiaCache = null; activosCache = null;
         }
@@ -1279,18 +1319,27 @@
 
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", nutricion="-", sanidad="-", inseminacion="-", htmlNotas="";
                 let gdpHtml = "";
-                let todosLosPesos = regs.filter(d => d.accion === 'Peso');
+                let todosLosPesos = regs.filter(d => String(d.accion).includes('Peso'));
                 if(todosLosPesos.length >= 1) {
                     let pesoActual = todosLosPesos[0];
-                    let p1 = parseFloat(pesoActual.valor); let d1 = new Date(pesoActual.fecha); let f1_str = pesoActual.fecha.split('T')[0] || "";
+                    let p1 = parseFloat(String(pesoActual.valor).replace(/[^\d.-]/g, '')); let d1 = new Date(pesoActual.fecha); 
                     let pesoAnterior = null;
-                    for(let i = 1; i < todosLosPesos.length; i++) { let fTemp_str = todosLosPesos[i].fecha.split('T')[0] || ""; if(f1_str !== fTemp_str && fTemp_str !== "") { pesoAnterior = todosLosPesos[i]; break; } }
+                    for(let i = 1; i < todosLosPesos.length; i++) { 
+                        let pTest = parseFloat(String(todosLosPesos[i].valor).replace(/[^\d.-]/g, ''));
+                        let diffT = Math.abs(d1 - new Date(todosLosPesos[i].fecha));
+                        if(pTest !== p1 || diffT > 86400000) { pesoAnterior = todosLosPesos[i]; break; } 
+                    }
                     if(pesoAnterior) {
-                        let p2 = parseFloat(pesoAnterior.valor); let d2 = new Date(pesoAnterior.fecha);
+                        let p2 = parseFloat(String(pesoAnterior.valor).replace(/[^\d.-]/g, '')); let d2 = new Date(pesoAnterior.fecha);
                         let diffTime = Math.abs(d1 - d2); let dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                        if(dias >= 1) { let gdp = ((p1 - p2) / dias).toFixed(3); if(gdp > 0) gdpHtml = `<span style="color:var(--exito); font-weight:bold; font-size:12px;">🚀 +${gdp} Kg/día</span>`; else if(gdp < 0) gdpHtml = `<span style="color:var(--peligro); font-weight:bold; font-size:12px;">⚠️ ${gdp} Kg/día</span>`; else gdpHtml = `<span style="color:var(--muted); font-weight:bold; font-size:12px;">⚖️ Mantuvo su peso</span>`; }
+                        if(dias >= 1) { 
+                            let gdp = ((p1 - p2) / dias).toFixed(3); 
+                            if(gdp > 0) gdpHtml = `<span style="color:var(--exito); font-weight:bold; font-size:12px;">🚀 +${gdp} Kg/día</span>`; 
+                            else if(gdp < 0) gdpHtml = `<span style="color:var(--peligro); font-weight:bold; font-size:12px;">⚠️ ${gdp} Kg/día</span>`; 
+                            else gdpHtml = `<span style="color:var(--muted); font-weight:bold; font-size:12px;">⚖️ Mantuvo su peso</span>`; 
+                        }
                     } else {
-                        if(todosLosPesos.length > 1) { gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Pesajes del mismo día)</span>`; } else { gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Falta peso histórico)</span>`; }
+                        if(todosLosPesos.length > 1) { gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Múltiples pesos idénticos/mismo día)</span>`; } else { gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Falta peso histórico)</span>`; }
                     }
                 }
                 const elGdp = document.getElementById('val-gdp'); if (elGdp) elGdp.innerHTML = gdpHtml;
@@ -1300,7 +1349,13 @@
                     if(uP) { let p = String(uP.valor || "").split('|'); raza = p[0] || "-"; edad = p[1] || "-"; padre = p[2] || "-"; madre = p[3] || "-"; cat = String(uP.detalles || "").split('|')[0] || "-"; }
                     const uC = regs.find(d => d.accion === 'Actualización de Datos');
                     if(uC) { let v = String(uC.valor || "").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-"; }
-                    const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-";
+                    
+                    const uPeso = regs.find(d => String(d.accion).includes('Peso')); 
+                    if(uPeso) {
+                        let fPesoStr = new Date(uPeso.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'});
+                        peso = `${uPeso.valor || "-"} <span style="font-size:11px; color:var(--muted); display:block; margin-top:2px;">(Pesado: ${fPesoStr})</span>`;
+                    }
+                    
                     const uDx = regs.find(d => d.accion === 'Diagnóstico');
 
                     let loteLow = lote.toLowerCase();
@@ -1310,7 +1365,7 @@
                     dx = uDx ? uDx.valor : (esPre ? "Preñada" : (esVacia ? "Vacía" : "-"));
 
                     const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nutricion = (uNut.valor || "-") + " | " + (uNut.detalles || "");
-                    const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "-") + " | " + (uSan.detalles || "");
+                    const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) sanidad = (uSan.valor || "-") + " | " + (uSan.detalles || "");
                     const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) inseminacion = (uIns.valor || "-") + " | " + (uIns.detalles || "");
 
                     let ultComentario = "Sin comentarios.";
@@ -1327,7 +1382,7 @@
                 }
                 
                 const elCat = document.getElementById('val-categoria'); if(elCat) elCat.innerText = obtenerNombreCategoriaLegible(cat);
-                const elPeso = document.getElementById('val-peso'); if(elPeso) elPeso.innerText = peso;
+                const elPeso = document.getElementById('val-peso'); if(elPeso) elPeso.innerHTML = peso;
                 const elDx = document.getElementById('val-dx'); if(elDx) elDx.innerText = dx;
                 const elLote = document.getElementById('val-lote'); if(elLote) elLote.innerText = lote;
                 const elCarimbo = document.getElementById('val-carimbo'); if(elCarimbo) elCarimbo.innerText = carimbo;
@@ -1415,8 +1470,57 @@
 
         function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'modal-clasificacion'); }
         function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'modal-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
-        function borrarCaravana() { if(!rpActivo) return; if(confirm(`¿ELIMINAR todo el historial de la caravana ${rpActivo}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null); alert("Historial eliminado. El número quedó libre."); cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); } }
-        function verHistorial() { abrirModal('modal-historial'); let h = "<ul style='list-style:none; padding:0; margin:0;'>"; obtenerHistorial(rpActivo).forEach(r => { if(!r.accion.includes('Vinculacion')) { h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px;"><span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span><br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span></li>`; }}); document.getElementById('contenido-historial').innerHTML = h + "</ul>"; }
+        
+        async function borrarCaravana() { 
+            if(!rpActivo) return; 
+            if(confirm(`⚠️ ¿ELIMINAR TODO EL HISTORIAL de la caravana ${rpActivo} permanentemente? Esto purgará la base de datos.`)) { 
+                try {
+                    const snapshot = await db.collection('estancias').doc(maestroId).collection('eventos').where('caravana', '==', rpActivo).get();
+                    const batch = db.batch();
+                    snapshot.forEach(doc => { batch.delete(doc.ref); });
+                    await batch.commit();
+                    
+                    dbCache = dbCache.filter(d => d.caravana !== rpActivo);
+                    historiaCache = null; activosCache = null;
+                    alert("Historial purgado completamente. El RP quedó libre."); 
+                    cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); 
+                } catch(e) { alert("Error de red al intentar purgar el historial."); }
+            } 
+        }
+
+        function verHistorial() { 
+            abrirModal('modal-historial'); 
+            let h = "<ul style='list-style:none; padding:0; margin:0;'>"; 
+            obtenerHistorial(rpActivo).forEach(r => { 
+                if(!r.accion.includes('Vinculacion')) { 
+                    h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px; position:relative;">
+                        <span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span>
+                        <button onclick="abrirEdicionRegistro('${r.id}')" style="position:absolute; right:0; top:0; background:transparent; border:1px solid var(--borde); color:var(--muted); border-radius:4px; padding:4px 8px; cursor:pointer;">✏️ Editar</button>
+                        <br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span>
+                    </li>`; 
+                }
+            }); 
+            document.getElementById('contenido-historial').innerHTML = h + "</ul>"; 
+        }
+
+        window.abrirEdicionRegistro = function(id) {
+            if(!id || id === 'undefined') { alert("Este registro aún no se sincronizó con la nube. Espere un momento."); return; }
+            let reg = dbCache.find(r => r.id === id);
+            if(!reg) return;
+            document.getElementById('edit-reg-id').value = id; document.getElementById('edit-reg-valor').value = reg.valor || ""; document.getElementById('edit-reg-detalles').value = reg.detalles || "";
+            cerrarModal('modal-historial'); abrirModal('modal-editar-registro');
+        };
+
+        window.guardarEdicionRegistro = async function() {
+            let id = document.getElementById('edit-reg-id').value; let nValor = document.getElementById('edit-reg-valor').value; let nDetalles = document.getElementById('edit-reg-detalles').value;
+            if(!navigator.onLine) { alert("Necesitas conexión a internet para editar."); return; }
+            try {
+                await db.collection('estancias').doc(maestroId).collection('eventos').doc(id).update({ valor: nValor, detalles: nDetalles });
+                let i = dbCache.findIndex(r => r.id === id);
+                if(i !== -1) { dbCache[i].valor = nValor; dbCache[i].detalles = nDetalles; historiaCache = null; activosCache = null; buscarCaravanaBtn(rpActivo); }
+                cerrarModal('modal-editar-registro'); mostrarToast("✅ Modificado exitosamente."); verHistorial();
+            } catch(e) { alert("Error al modificar."); }
+        };
 
         function cambiarModoReporte() {
             const modo = document.getElementById('f-inf-modo').value;
@@ -1600,24 +1704,35 @@
                 if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); if(fKey) eventos = eventos.filter(d => (String(d.valor) + String(d.detalles)).toLowerCase().includes(fKey));
 
                 let bufferEvt = ""; let maxEvt = 100; pdfExportData = []; let evtCount = 0;
-                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => {
-                    evtCount++;
-                    let fDate = new Date(r.fecha).toLocaleDateString();
-                    let badge = obtenerBadgeAccion(r.accion);
-                    pdfExportData.push([fDate, r.caravana, badge, `${r.valor} - ${r.detalles}`]);
-                    if(evtCount <= maxEvt) {
-                        bufferEvt += `<tr><td style="white-space:nowrap;">${fDate}</td><td><strong>${r.caravana}</strong></td><td>${badge}</td><td><strong>${r.valor}</strong><br><span style="color:var(--muted);">${r.detalles}</span></td></tr>`;
-                    }
+                
+                let agrupados = {};
+                eventos.forEach(ev => { 
+                    ev.fechaSafe = isNaN(new Date(ev.fecha).getTime()) ? new Date('2026-01-01').getTime() : new Date(ev.fecha).getTime();
+                    ev.fDateStr = isNaN(new Date(ev.fecha).getTime()) ? String(ev.fecha).substring(0, 10) : new Date(ev.fecha).toLocaleDateString();
                 });
-                if(evtCount > maxEvt) bufferEvt += `<tr><td colspan="4" style="text-align:center; padding:15px; font-weight:bold; color:var(--text-muted);">Mostrando ${maxEvt} resultados de ${evtCount}. Descargue el PDF para ver el informe completo.</td></tr>`;
+
+                eventos.sort((a,b) => b.fechaSafe - a.fechaSafe).forEach(r => {
+                    let key = `${r.caravana}_${r.fDateStr}`;
+                    if(!agrupados[key]) agrupados[key] = { fecha: r.fDateStr, rp: r.caravana, trabajos: [] };
+                    agrupados[key].trabajos.push(`${obtenerBadgeAccion(r.accion)}: ${r.valor} ${r.detalles ? '('+r.detalles+')' : ''}`);
+                });
+
+                Object.values(agrupados).forEach(grp => {
+                    evtCount++;
+                    let trabajosCombinados = grp.trabajos.join(" | ");
+                    pdfExportData.push([grp.fecha, grp.rp, "Múltiples / Combinado", trabajosCombinados]);
+                    if(evtCount <= maxEvt) { bufferEvt += `<tr><td style="white-space:nowrap;">${grp.fecha}</td><td><strong>${grp.rp}</strong></td><td>Múltiples</td><td><span style="font-size:12px;">${trabajosCombinados}</span></td></tr>`; }
+                });
+                
+                if(evtCount > maxEvt) bufferEvt += `<tr><td colspan="4" style="text-align:center; padding:15px; font-weight:bold; color:var(--muted);">Mostrando ${maxEvt} resultados. Descargue PDF.</td></tr>`;
                 tbodyEventos.innerHTML = bufferEvt;
-                document.getElementById('inf-total').innerText = eventos.length;
+                document.getElementById('inf-total').innerText = evtCount;
             }
         }
 
         function cleanPDFText(text) {
             if (!text) return ''; let str = String(text);
-            str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️|✏️|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️|🚪/g, '');
+            str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️|✏️|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️|🚪|▶|⌨️|📡/g, '');
             str = str.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
             return str.trim();
         }
@@ -1645,7 +1760,7 @@
                         const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor||"").split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=String(uP.detalles||"").split('|')[0]||"-"; }
                         const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; lote=String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; }
                         let catLegible = obtenerNombreCategoriaLegible(cat);
-                        const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-";
+                        const uPeso = regs.find(d => String(d.accion).includes('Peso')); if(uPeso) peso = uPeso.valor || "-";
                         const uDx = regs.find(d => d.accion === 'Diagnóstico');
                         let loteLow = lote.toLowerCase();
                         let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
@@ -1763,7 +1878,7 @@
             if(datosActivos.length === 0) { document.getElementById('contenedor-graficos-dinamicos').innerHTML = "<p style='color:var(--muted); text-align:center; padding:20px;'>Inventario vacío.</p>"; return; }
             
             let g1={p:0,v:0}, g2={}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}, g11={}; let alertasHTML = "";
-            datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; if(r.accion === 'Baja') { let causa = String(r.valor).trim(); g11[causa] = (g11[causa] || 0) + 1; } });
+            datosActivos.forEach(r => { if(String(r.accion).includes('Peso')) g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; if(r.accion === 'Baja') { let causa = String(r.valor).trim(); g11[causa] = (g11[causa] || 0) + 1; } });
             
             unicas.forEach(car => {
                 const regs = obtenerHistorial(car); let catRaw = "Sin Categoría", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
@@ -1777,7 +1892,7 @@
                 g2[catLegible] = (g2[catLegible] || 0) + 1;
                 g3[lote] = (g3[lote] || 0) + 1;
 
-                const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
+                const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => String(d.accion).includes('Peso')); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
                 let esVaca = catLegible.toLowerCase().includes('vaca');
 
                 let loteLow = lote.toLowerCase();
@@ -1801,7 +1916,7 @@
                     if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--texto);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; }
                     else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++;
                     else g4.opt++;
-                    let pVal = parseFloat(uPeso.valor);
+                    let pVal = parseFloat(String(uPeso.valor).replace(/[^\d.-]/g, ''));
                     if(!isNaN(pVal)) {
                         if(esVaca) { g9.vw += pVal; g9.vc++; }
                         else { g9.tw += pVal; g9.tc++; }
@@ -2510,7 +2625,6 @@
           }
           else if (cmd === 'navegar') {
             if (typeof cambiarVista !== 'function') return;
-            // Map PC/Index paths
             if (params.vista === 'dashboard') cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]);
             if (params.vista === 'manga') cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
             if (params.vista === 'registro' || params.vista === 'base') { cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]); if(typeof cargarListaRegistro==='function') cargarListaRegistro(); }
