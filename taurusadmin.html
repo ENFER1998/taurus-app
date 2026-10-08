@@ -274,12 +274,14 @@
                     
                     <div class="grid-mobile">
                         <div class="form-grupo"><label>Columna CARAVANA (RP) *</label><select id="map-caravana" class="form-control" style="border-color:var(--secundario);"></select></div>
-                        <div class="form-grupo"><label>Columna CATEGORÍA</label><select id="map-categoria" class="form-control"></select></div>
-                        <div class="form-grupo"><label>Columna LOTE</label><select id="map-lote" class="form-control"></select></div>
-
+                        <div class="form-grupo"><label style="color:var(--secundario); font-weight:bold;">📅 Columna FECHA DE TRABAJO / TRATAMIENTO</label><select id="map-fecha" class="form-control" style="border-color:var(--secundario);"></select></div>
+                        <div class="form-grupo"><label style="color:var(--peligro); font-weight:bold;">💉 Columna TRATAMIENTO / SANIDAD (Vacuna, etc.)</label><select id="map-sanidad" class="form-control" style="border-color:var(--peligro);"></select></div>
+                        <div class="form-grupo"><label>Columna DOSIS / DETALLES DE SANIDAD</label><select id="map-dosis" class="form-control"></select></div>
                         <div class="form-grupo"><label>Columna PESO (Kg)</label><select id="map-peso" class="form-control"></select></div>
-                        <div class="form-grupo"><label>Columna RAZA</label><select id="map-raza" class="form-control"></select></div>
-                        <div class="form-grupo"><label>Columna DIAGNÓSTICO (Tacto)</label><select id="map-dx" class="form-control"></select></div>
+                        <div class="form-grupo"><label>Columna CATEGORÍA</label><select id="map-categoria" class="form-control"></select></div>
+                        <div class="form-grupo"><label>Columna LOTE / GRUPO</label><select id="map-lote" class="form-control"></select></div>
+                        <div class="form-grupo"><label>Columna RAZA / GENÉTICA</label><select id="map-raza" class="form-control"></select></div>
+                        <div class="form-grupo"><label>Columna DIAGNÓSTICO (Tacto Rectal)</label><select id="map-dx" class="form-control"></select></div>
                         <div class="form-grupo"><label>Columna NOTAS / OBSERVACIONES</label><select id="map-notas" class="form-control"></select></div>
                     </div>
                     <button class="btn btn-success" style="margin-top:15px; font-size: 16px; padding: 15px;" onclick="procesarMapeoEInyectar()">📤 Inyectar a Firebase</button>
@@ -293,8 +295,16 @@
                 <div class="tarjeta" style="border-color: var(--warning);">
                     <h3 style="margin-top:0; color:var(--warning); font-size:16px;">⏳ Anuncio Previo (Push)</h3>
                     <p style="color:var(--muted); font-size:12px; margin-bottom:15px;">Solo envía una notificación, NO bloquea la app.</p>
-                    <div class="form-grupo"><input type="text" id="txt-aviso-mant" class="form-control" placeholder="Ej: Hoy 14:00 actualización"></div>
+                    <div class="form-grupo"><input type="text" id="txt-aviso-mant" class="form-control" placeholder="Ej: Hoy 14:00 actualización de servidores"></div>
                     <button class="btn btn-warning" onclick="enviarAvisoMantenimiento()">📣 Enviar Anuncio</button>
+                    
+                    <div style="margin-top:15px; padding-top:12px; border-top:1px solid var(--borde);">
+                        <span style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px; font-weight:bold;">Aviso actual guardado en base de datos:</span>
+                        <div style="background:#1e293b; padding:10px; border-radius:6px; font-weight:bold; font-size:13px; color:var(--texto); border:1px solid var(--borde); margin-bottom:10px;">
+                            <span id="lbl-aviso-actual-db">Ninguno</span>
+                        </div>
+                        <button class="btn btn-danger" style="background:var(--peligro);" onclick="limpiarAvisoGlobal()">🧹 Borrar / Limpiar Aviso Activo de la BD</button>
+                    </div>
                 </div>
 
                 <div class="tarjeta" style="border-color: var(--peligro);">
@@ -409,27 +419,48 @@
         function checkStatusInicial() {
             if(unsubscribeConfig) unsubscribeConfig();
             unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot((doc) => {
-                if(doc.exists) { actualizarUIKillSwitch(doc.data().mantenimiento ? 'ON' : 'OFF'); }
-                else { db.collection('sistema').doc('config').set({ mantenimiento: false, alerta_global: "" }); actualizarUIKillSwitch('OFF'); }
+                if(doc.exists) {
+                    const data = doc.data() || {};
+                    actualizarUIKillSwitch(data.mantenimiento ? 'ON' : 'OFF');
+                    const lblAviso = document.getElementById('lbl-aviso-actual-db');
+                    if (lblAviso) {
+                        let msg = (data.alerta_global || "").trim();
+                        if (msg) {
+                            lblAviso.innerText = msg;
+                            lblAviso.style.color = "var(--alerta)";
+                        } else {
+                            lblAviso.innerText = "Ninguno (Sin avisos activos)";
+                            lblAviso.style.color = "var(--muted)";
+                        }
+                    }
+                } else {
+                    db.collection('sistema').doc('config').set({ mantenimiento: false, alerta_global: "", alerta_id: "", alerta_expira: 0 });
+                    actualizarUIKillSwitch('OFF');
+                }
             });
         }
 
-        function actualizarUIKillSwitch(estado) {
-            const btnMant = document.getElementById('btn-toggle-mant');
-            const btnRest = document.getElementById('btn-toggle-rest');
-            const lblStatus = document.getElementById('lbl-status-mantenimiento');
-            const badgeTop = document.getElementById('badge-top-status');
-
-            if(estado === 'ON') {
-                btnMant.classList.add('oculto'); btnRest.classList.remove('oculto');
-                lblStatus.innerText = "BLOQUEADO (MANTENIMIENTO)"; lblStatus.style.color = "var(--peligro)";
-                badgeTop.innerText = "🔴 Mantenimiento"; badgeTop.style.background = "rgba(239,68,68,0.2)"; badgeTop.style.color = "var(--peligro)"; badgeTop.style.borderColor = "var(--peligro)";
-            } else {
-                btnRest.classList.add('oculto'); btnMant.classList.remove('oculto');
-                lblStatus.innerText = "SISTEMA OPERATIVO Y CONECTADO"; lblStatus.style.color = "var(--exito)";
-                badgeTop.innerText = "🟢 En Línea"; badgeTop.style.background = "rgba(16,185,129,0.2)"; badgeTop.style.color = "var(--exito)"; badgeTop.style.borderColor = "var(--exito)";
+        async function limpiarAvisoGlobal() {
+            if(!confirm("⚠️ ¿Estás seguro de eliminar el aviso global de la base de datos?\nEsto quitará el aviso 'hola' y cualquier otro aviso que les aparezca a los usuarios.")) return;
+            toggleLoading(true, "Limpiando aviso en Firestore...");
+            try {
+                await db.collection('sistema').doc('config').set({
+                    alerta_global: "",
+                    alerta_id: "",
+                    alerta_expira: 0,
+                    alerta_fecha: null
+                }, { merge: true });
+                toggleLoading(false);
+                mostrarToast("✅ Aviso global eliminado completamente.");
+                const lbl = document.getElementById('lbl-aviso-actual-db');
+                if(lbl) { lbl.innerText = "Ninguno (Sin avisos activos)"; lbl.style.color = "var(--muted)"; }
+            } catch(e) {
+                toggleLoading(false);
+                mostrarToast("❌ Error al limpiar aviso", true);
             }
         }
+
+        
 
         async function toggleMantenimiento(nuevoEstado) {
             if(nuevoEstado === 'ON' && !confirm("⚠️ ¿Estás seguro que deseas desconectar a todos los clientes?")) return;
@@ -443,18 +474,7 @@
             } catch (e) { toggleLoading(false); mostrarToast("❌ Error al cambiar estado", true); }
         }
 
-        async function enviarAvisoMantenimiento() {
-            let msg = document.getElementById('txt-aviso-mant').value.trim();
-            if(!msg) return mostrarToast("⚠️ Escribe el mensaje", true);
-            if(!confirm("📣 ¿Enviar notificación push a TODOS ahora mismo?")) return;
-            toggleLoading(true, "Enviando anuncio...");
-            try {
-                await db.collection('sistema').doc('config').set({ alerta_global: "⏳ AVISO: " + msg }, { merge: true });
-                const fd = new URLSearchParams(); fd.append('accion', 'aviso_mantenimiento'); fd.append('mensaje', "⏳ AVISO: " + msg);
-                fetch('https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec', { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
-                toggleLoading(false); mostrarToast("✅ Aviso enviado"); document.getElementById('txt-aviso-mant').value = '';
-            } catch (e) { toggleLoading(false); mostrarToast("❌ Error al enviar el aviso", true); }
-        }
+        
 
         function getFeatures(prefijo) {
             let features = [];
@@ -752,6 +772,44 @@
             clientesCache.forEach(c => { sel.innerHTML += `<option value="${c.maestroId}">${c.hacienda} (${c.usuario})</option>`; });
         }
 
+        function parsearFechaExcel(val) {
+            if (!val && val !== 0) return null;
+            if (val instanceof Date && !isNaN(val.getTime())) return val;
+            if (typeof val === 'number') {
+                if (val > 1000) {
+                    let utc_days = Math.floor(val - 25569);
+                    let utc_value = utc_days * 86400;
+                    let date_info = new Date(utc_value * 1000);
+                    let fractional_day = val - Math.floor(val) + 0.0000001;
+                    let total_seconds = Math.floor(86400 * fractional_day);
+                    date_info.setSeconds(date_info.getSeconds() + total_seconds);
+                    if (!isNaN(date_info.getTime())) return date_info;
+                }
+            }
+            let s = String(val).trim();
+            if (!s) return null;
+            
+            // YYYY-MM-DD o YYYY/MM/DD
+            let mIso = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+            if (mIso) {
+                let d = new Date(parseInt(mIso[1]), parseInt(mIso[2]) - 1, parseInt(mIso[3]), 12, 0, 0);
+                if (!isNaN(d.getTime())) return d;
+            }
+            
+            // DD/MM/YYYY o DD-MM-YYYY
+            let mLat = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/);
+            if (mLat) {
+                let y = parseInt(mLat[3]);
+                if (y < 100) y += (y < 50 ? 2000 : 1900);
+                let d = new Date(y, parseInt(mLat[2]) - 1, parseInt(mLat[1]), 12, 0, 0);
+                if (!isNaN(d.getTime())) return d;
+            }
+            
+            let parsed = new Date(s);
+            if (!isNaN(parsed.getTime())) return parsed;
+            return null;
+        }
+
         function leerArchivoInteligente() {
             const mId = document.getElementById('sel-cliente-masiva').value; const fi = document.getElementById('archivo-excel');
             if(!mId || !fi.files.length) return mostrarToast("⚠️ Faltan datos o archivo", true);
@@ -765,24 +823,30 @@
                     const headers = Object.keys(datosArchivoCrudo[0]);
                     
                     llenarSelectMapeo('map-caravana', headers, false); 
+                    llenarSelectMapeo('map-fecha', headers, true); 
+                    llenarSelectMapeo('map-sanidad', headers, true); 
+                    llenarSelectMapeo('map-dosis', headers, true); 
+                    llenarSelectMapeo('map-peso', headers, true); 
                     llenarSelectMapeo('map-categoria', headers, true); 
-                    llenarSelectMapeo('map-lote', headers, true);
-                    llenarSelectMapeo('map-peso', headers, true);
-                    llenarSelectMapeo('map-raza', headers, true);
-                    llenarSelectMapeo('map-dx', headers, true);
-                    llenarSelectMapeo('map-notas', headers, true);
+                    llenarSelectMapeo('map-lote', headers, true); 
+                    llenarSelectMapeo('map-raza', headers, true); 
+                    llenarSelectMapeo('map-dx', headers, true); 
+                    llenarSelectMapeo('map-notas', headers, true); 
                     
-                    autoSeleccionarMapeo('map-caravana', ['caravana', 'rp', 'tag']);
+                    autoSeleccionarMapeo('map-caravana', ['caravana', 'rp', 'tag', 'numero', 'nro', 'identificacion']);
+                    autoSeleccionarMapeo('map-fecha', ['fecha', 'date', 'dia', 'fec']);
+                    autoSeleccionarMapeo('map-sanidad', ['tratamiento', 'sanidad', 'vacuna', 'medicamento', 'producto', 'remedio']);
+                    autoSeleccionarMapeo('map-dosis', ['dosis', 'posologia', 'aplicacion']);
+                    autoSeleccionarMapeo('map-peso', ['peso', 'kg', 'kilos', 'weight']);
                     autoSeleccionarMapeo('map-categoria', ['categoria', 'cat']);
-                    autoSeleccionarMapeo('map-lote', ['lote', 'grupo']);
-                    autoSeleccionarMapeo('map-peso', ['peso', 'kg', 'kilos']);
-                    autoSeleccionarMapeo('map-raza', ['raza', 'genetica']);
+                    autoSeleccionarMapeo('map-lote', ['lote', 'grupo', 'potrero']);
+                    autoSeleccionarMapeo('map-raza', ['raza', 'genetica', 'cruza']);
                     autoSeleccionarMapeo('map-dx', ['diagnostico', 'dx', 'tacto', 'preñez', 'prenez']);
-                    autoSeleccionarMapeo('map-notas', ['nota', 'observacion', 'detalle']);
+                    autoSeleccionarMapeo('map-notas', ['observacion', 'obs', 'comentario', 'nota']);
                     
                     document.getElementById('panel-mapeo').classList.remove('oculto'); 
                     toggleLoading(false); 
-                    mostrarToast("✅ Archivo escaneado");
+                    mostrarToast("✅ Archivo analizado con éxito");
                 } catch (err) { 
                     toggleLoading(false); 
                     mostrarToast("❌ Error al leer. Verifica que sea un Excel válido.", true);
@@ -791,12 +855,15 @@
         }
 
         function llenarSelectMapeo(id, headers, opc) { 
-            const sel = document.getElementById(id); sel.innerHTML = opc ? '<option value="">-- Dejar en blanco --</option>' : '<option value="">-- Seleccione columna --</option>';
+            const sel = document.getElementById(id);
+            if (!sel) return;
+            sel.innerHTML = opc ? '<option value="">-- Dejar en blanco --</option>' : '<option value="">-- Seleccione columna --</option>';
             headers.forEach(h => { sel.innerHTML += `<option value="${h}">${h}</option>`; }); 
         }
 
         function autoSeleccionarMapeo(id, opcionesBase) {
             const sel = document.getElementById(id);
+            if (!sel) return;
             for(let i=0; i<sel.options.length; i++) {
                 let textoOpt = sel.options[i].text.toLowerCase();
                 if(opcionesBase.some(palabra => textoOpt.includes(palabra))) {
@@ -813,13 +880,16 @@
             }, 50);
         }
         async function _procesarMapeoEInyectar_internal() {
-            const cCar = document.getElementById('map-caravana').value; 
-            const cCat = document.getElementById('map-categoria').value; 
-            const cLot = document.getElementById('map-lote').value; 
-            const cPeso = document.getElementById('map-peso').value; 
-            const cRaza = document.getElementById('map-raza').value; 
-            const cDx = document.getElementById('map-dx').value;
-            const cNot = document.getElementById('map-notas').value; 
+            const cCar = document.getElementById('map-caravana') ? document.getElementById('map-caravana').value : ''; 
+            const cFecha = document.getElementById('map-fecha') ? document.getElementById('map-fecha').value : '';
+            const cSan = document.getElementById('map-sanidad') ? document.getElementById('map-sanidad').value : '';
+            const cDosis = document.getElementById('map-dosis') ? document.getElementById('map-dosis').value : '';
+            const cPeso = document.getElementById('map-peso') ? document.getElementById('map-peso').value : ''; 
+            const cCat = document.getElementById('map-categoria') ? document.getElementById('map-categoria').value : ''; 
+            const cLot = document.getElementById('map-lote') ? document.getElementById('map-lote').value : ''; 
+            const cRaza = document.getElementById('map-raza') ? document.getElementById('map-raza').value : ''; 
+            const cDx = document.getElementById('map-dx') ? document.getElementById('map-dx').value : '';
+            const cNot = document.getElementById('map-notas') ? document.getElementById('map-notas').value : ''; 
             const mId = document.getElementById('sel-cliente-masiva').value;
             
             if(!cCar) { toggleLoading(false); return mostrarToast("⚠️ Falta Columna Caravana", true); }
@@ -830,11 +900,19 @@
             datosArchivoCrudo.forEach((f, index) => {
                 let vCar = f[cCar];
                 if(vCar && String(vCar).trim() !== "") {
-                    let rp = String(vCar).trim();
-                    let valCat = cCat && f[cCat] ? String(f[cCat]).trim() : "-";
-                    let valLote = cLot && f[cLot] ? String(f[cLot]).trim() : "Hacienda General";
+                    let rp = String(vCar).trim().toUpperCase();
                     
-                    let baseTime = new Date().getTime() + (index * 10);
+                    // Parseo de fecha individual de la fila (o fecha actual si viene vacía)
+                    let rowDate = null;
+                    if (cFecha && f[cFecha]) {
+                        rowDate = parsearFechaExcel(f[cFecha]);
+                    }
+                    let baseTime = (rowDate && !isNaN(rowDate.getTime())) 
+                        ? (rowDate.getTime() + (index % 1000))
+                        : (Date.now() + (index * 10));
+
+                    let valCat = (cCat && f[cCat]) ? String(f[cCat]).trim() : "-";
+                    let valLote = (cLot && f[cLot]) ? String(f[cLot]).trim() : "Hacienda General";
                     
                     // 1. Ubicación y Clasificación
                     datosAInyectar.push({ 
@@ -848,7 +926,7 @@
                     });
 
                     // 2. Raza / Genética
-                    if(cRaza && f[cRaza]) {
+                    if(cRaza && f[cRaza] && String(f[cRaza]).trim() !== "") {
                         datosAInyectar.push({ 
                             fecha: new Date(baseTime + 1).toISOString(), 
                             accion: 'Perfil Master', 
@@ -860,40 +938,57 @@
                         });
                     }
 
-                    // 3. Pesaje Inicial
-                    if(cPeso && f[cPeso]) {
-                        datosAInyectar.push({ 
-                            fecha: new Date(baseTime + 2).toISOString(), 
-                            accion: 'Peso', 
-                            caravana: rp, 
-                            valor: `${String(f[cPeso]).trim()} Kg`, 
-                            detalles: `Cond: Óptima. Notas: Importación Masiva`, 
+                    // 3. Tratamiento / Sanidad (CON SU FECHA REAL)
+                    if(cSan && f[cSan] && String(f[cSan]).trim() !== "") {
+                        let valDosis = (cDosis && f[cDosis]) ? String(f[cDosis]).trim() : "Dosis estándar / Importación Masiva";
+                        datosAInyectar.push({
+                            fecha: new Date(baseTime + 2).toISOString(),
+                            accion: 'Sanidad',
+                            caravana: rp,
+                            valor: String(f[cSan]).trim(),
+                            detalles: `${valDosis} | Importación Masiva`,
                             maestro: mId,
                             batch_id: batchId
                         });
                     }
 
-                    // 4. Notas Generales
-                    if(cNot && f[cNot]) {
-                        datosAInyectar.push({ 
-                            fecha: new Date(baseTime + 3).toISOString(), 
-                            accion: 'Comentario', 
-                            caravana: rp, 
-                            valor: `-`, 
-                            detalles: String(f[cNot]).trim(), 
-                            maestro: mId,
-                            batch_id: batchId
-                        });
+                    // 4. Pesaje (CON SU FECHA REAL)
+                    if(cPeso && f[cPeso] && String(f[cPeso]).trim() !== "") {
+                        let numPeso = String(f[cPeso]).replace(/[^0-9.-]/g, '').trim();
+                        if(numPeso) {
+                            datosAInyectar.push({ 
+                                fecha: new Date(baseTime + 3).toISOString(), 
+                                accion: 'Peso', 
+                                caravana: rp, 
+                                valor: `${numPeso} Kg`, 
+                                detalles: `Cond: Óptima. Notas: Importación Masiva`, 
+                                maestro: mId,
+                                batch_id: batchId
+                            });
+                        }
                     }
 
-                    // 5. Diagnóstico Reproductivo
-                    if(cDx && f[cDx]) {
+                    // 5. Diagnóstico Reproductivo / Tacto
+                    if(cDx && f[cDx] && String(f[cDx]).trim() !== "") {
                         datosAInyectar.push({ 
                             fecha: new Date(baseTime + 4).toISOString(), 
                             accion: 'Diagnóstico', 
                             caravana: rp, 
                             valor: String(f[cDx]).trim(), 
-                            detalles: "-", 
+                            detalles: "Tacto Importación Masiva", 
+                            maestro: mId,
+                            batch_id: batchId
+                        });
+                    }
+
+                    // 6. Observaciones / Comentarios
+                    if(cNot && f[cNot] && String(f[cNot]).trim() !== "") {
+                        datosAInyectar.push({ 
+                            fecha: new Date(baseTime + 5).toISOString(), 
+                            accion: 'Comentario', 
+                            caravana: rp, 
+                            valor: `-`, 
+                            detalles: String(f[cNot]).trim(), 
                             maestro: mId,
                             batch_id: batchId
                         });
@@ -903,7 +998,7 @@
             
             if(datosAInyectar.length === 0) { toggleLoading(false); return mostrarToast("❌ Sin datos válidos", true); }
             
-            if(confirm(`Se generaron ${datosAInyectar.length} registros para el historial clínico general.\n¿Inyectar en Firestore?`)) {
+            if(confirm(`Se generaron ${datosAInyectar.length} registros con sus fechas y tratamientos respectivos.\n¿Inyectar en Firestore?`)) {
                 document.getElementById('panel-mapeo').classList.add('oculto'); 
                 lsSet('tc_ultimo_batch', { mId: mId, batchId: batchId });
                 enviarCargaMasivaEnBloques(mId, datosAInyectar); 
@@ -963,7 +1058,7 @@
         window.toggleMantenimiento = toggleMantenimiento; window.enviarAvisoMantenimiento = enviarAvisoMantenimiento; window.crearCliente = crearCliente; window.cargarClientes = cargarClientes;
         window.actualizarVencimiento = actualizarVencimiento; window.cambiarClaveMaestroGhost = cambiarClaveMaestroGhost; window.borrarUsuarioMaestroGhost = borrarUsuarioMaestroGhost;
         window.abrirEdicion = abrirEdicion; window.guardarEdicion = guardarEdicion; window.verEquipo = verEquipo; window.cambiarClaveMiembroGhost = cambiarClaveMiembroGhost; window.eliminarMiembroGhost = eliminarMiembroGhost;
-        window.cargarClientesMasiva = cargarClientesMasiva; window.leerArchivoInteligente = leerArchivoInteligente; window.procesarMapeoEInyectar = procesarMapeoEInyectar; window.deshacerUltimaImportacion = deshacerUltimaImportacion;
+        window.cargarClientesMasiva = cargarClientesMasiva; window.leerArchivoInteligente = leerArchivoInteligente; window.procesarMapeoEInyectar = procesarMapeoEInyectar; window.deshacerUltimaImportacion = deshacerUltimaImportacion; window.limpiarAvisoGlobal = limpiarAvisoGlobal;
     </script>
 </body>
 </html>
