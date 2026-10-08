@@ -345,9 +345,9 @@
                 </div>
 
                 <div class="grid-kpis">
-                    <div class="kpi-caja" onclick="filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" id="dash-cabezas">0</div><div class="kpi-label">Cabezas Únicas</div></div>
-                    <div class="kpi-caja" style="border-color: var(--peligro);" onclick="filtrarDesdeDashboard('estado', 'bajas')"><div class="kpi-valor" id="dash-bajas" style="color: var(--peligro);">0</div><div class="kpi-label" style="color: var(--peligro);">Mortalidad / Bajas</div></div>
-                    <div class="kpi-caja"><div class="kpi-valor" id="dash-acciones">0</div><div class="kpi-label">Registros Procesados</div></div>
+                    <div class="kpi-caja" onclick="window.filtrarDesdeDashboard('estado', 'vivos')" title="Ver todos los animales activos"><div class="kpi-valor" id="dash-cabezas">0</div><div class="kpi-label">Cabezas Vivas</div></div>
+                    <div class="kpi-caja" style="border-color: var(--peligro);" onclick="window.filtrarDesdeDashboard('estado', 'bajas')" title="Ver todas las bajas / mortalidad"><div class="kpi-valor" id="dash-bajas" style="color: var(--peligro);">0</div><div class="kpi-label" style="color: var(--peligro);">Mortalidad / Bajas</div></div>
+                    <div class="kpi-caja" onclick="window.cambiarVista('vista-informe', document.querySelectorAll('.nav-item')[3]); document.getElementById('f-inf-modo').value='eventos'; window.cambiarModoReporte();" title="Ver todos los registros históricos procesados"><div class="kpi-valor" id="dash-acciones">0</div><div class="kpi-label">Historial Procesado</div></div>
                 </div>
                 <div class="tarjeta" id="contenedor-alertas" style="display:none;"><div class="tarjeta-titulo" style="color:var(--alerta);">⚠ Alertas (Deslizar)</div><div id="lista-alertas"></div></div>
                 <div id="contenedor-graficos-dinamicos"></div>
@@ -780,7 +780,12 @@
                 </div>
 
                 <div class="tarjeta" id="panel-analiticas">
-                    <div class="tarjeta-titulo">📊 Analíticas en Dashboard (Máx 3)</div>
+                    <div class="tarjeta-titulo">📊 Analíticas Visibles en Dashboard</div>
+                    <p style="font-size:11px; color:var(--muted); margin:0 0 10px 0;">Selecciona cuántas analíticas deseas ver en tu pantalla principal (puedes activar desde 1 hasta las 11 completas):</p>
+                    <div style="display:flex; gap:8px; margin-bottom:12px;">
+                        <button type="button" class="btn-mini" style="background:var(--secundario); color:white; border:none; padding:6px 12px; font-weight:bold;" onclick="seleccionarTodosGraficos(true)">✅ Activar Todas (11)</button>
+                        <button type="button" class="btn-mini" style="padding:6px 12px; font-weight:bold;" onclick="seleccionarTodosGraficos(false)">Deseleccionar</button>
+                    </div>
                     <div style="display:flex; flex-direction:column; gap:8px;">
                         <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="1" onchange="verificarLimiteGraficos(this)"> <span>1. Tasa de Preñez Dinámica</span></label>
                         <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="2" onchange="verificarLimiteGraficos(this)"> <span>2. Composición de Hacienda</span></label>
@@ -1703,7 +1708,7 @@
                     }
                 }).catch(e => {});
 
-                const prefs = window.lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
+                const prefs = window.lsGet('tc_prefs', ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
 
                 db.collection('estancias').doc(m).onSnapshot({ includeMetadataChanges: true }, docE => {
                     let hNombre = usHacienda || "HACIENDA";
@@ -1816,8 +1821,9 @@
         }
 
         window.obtenerNombreCategoriaLegible = function(sigla) {
-            if(!sigla) return "Sin Categoría";
+            if(!sigla || sigla === "-" || sigla === "null" || sigla === "undefined" || String(sigla).trim() === "") return "Sin Categoría";
             let s = String(sigla).trim().toUpperCase();
+            if(s === "SIN CATEGORÍA" || s === "SIN CATEGORIA") return "Sin Categoría";
             if(s.startsWith('V:')) return "Vaca / Vaquilla";
             if(s.startsWith('VV:')) return "Vaca Vieja";
             if(s.startsWith('TH:')) return "Ternera Hembra";
@@ -1868,10 +1874,11 @@
                 if(el) {
                     let curr = el.value;
                     let opts = '<option value="ALL">🐄 Todas las Categorías</option>';
+                    opts += '<option value="Sin Categoría">⚠️ Sin Categoría</option>';
                     catsSet.add("Vaca / Vaquilla"); catsSet.add("Vaca Vieja"); catsSet.add("Ternera Hembra");
                     catsSet.add("Ternero Macho"); catsSet.add("Desmamante Hembra"); catsSet.add("Desmamante Macho");
                     catsSet.add("Toros"); catsSet.add("Novillos"); catsSet.add("Bueyes / Señuelos");
-                    Array.from(catsSet).sort().forEach(c => { opts += `<option value="${c}">${c}</option>`; });
+                    Array.from(catsSet).filter(c => c !== "Sin Categoría" && c !== "-").sort().forEach(c => { opts += `<option value="${c}">${c}</option>`; });
                     el.innerHTML = opts;
                     if(curr && curr !== "") el.value = curr;
                 }
@@ -2755,35 +2762,104 @@
             }, 100);
         }
 
-        window.verificarLimiteGraficos = function(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { alert('Solo puede fijar 3 gráficas simultáneas.'); checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); window.lsSet('tc_prefs', prefs); if(dbCache.length > 0) window.procesarDatosDashboard(); } }
+        window.verificarLimiteGraficos = function() {
+            const checks = document.querySelectorAll('.chk-graf:checked');
+            const prefs = Array.from(checks).map(c => c.value);
+            window.lsSet('tc_prefs', prefs);
+            if(dbCache.length > 0) window.procesarDatosDashboard();
+        };
+
+        window.seleccionarTodosGraficos = function(activar) {
+            document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = activar; });
+            window.verificarLimiteGraficos();
+        };
 
         window.filtrarDesdeDashboard = function(tipo, valor) {
             window.cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]);
-            document.getElementById('buscador-lista').value = "";
+            
+            let elEstado = document.getElementById('filtro-reg-estado');
+            let elLote = document.getElementById('filtro-reg-lote');
+            let elCat = document.getElementById('filtro-reg-cat');
+            let elDx = document.getElementById('filtro-reg-dx');
+            let elBusq = document.getElementById('buscador-lista');
 
-            if(tipo === 'estado') {
-                document.getElementById('filtro-reg-estado').value = valor;
-                document.getElementById('filtro-reg-dx').value = 'ALL';
-                document.getElementById('filtro-reg-lote').value = 'ALL';
-                document.getElementById('filtro-reg-cat').value = 'ALL';
-            } else if(tipo === 'lote') {
-                document.getElementById('filtro-reg-estado').value = 'vivos';
-                document.getElementById('filtro-reg-lote').value = valor;
-                document.getElementById('filtro-reg-cat').value = 'ALL';
-                document.getElementById('filtro-reg-dx').value = 'ALL';
-            } else if(tipo === 'categoria') {
-                document.getElementById('filtro-reg-estado').value = 'vivos';
-                document.getElementById('filtro-reg-cat').value = valor;
-                document.getElementById('filtro-reg-lote').value = 'ALL';
-                document.getElementById('filtro-reg-dx').value = 'ALL';
-            } else if(tipo === 'dx') {
-                document.getElementById('filtro-reg-estado').value = 'vivos';
-                document.getElementById('filtro-reg-dx').value = valor;
-                document.getElementById('filtro-reg-lote').value = 'ALL';
-                document.getElementById('filtro-reg-cat').value = 'ALL';
+            if (elEstado) elEstado.value = 'vivos';
+            if (elLote) elLote.value = 'ALL';
+            if (elCat) elCat.value = 'ALL';
+            if (elDx) elDx.value = 'ALL';
+            if (elBusq) elBusq.value = '';
+
+            if (tipo === 'estado') {
+                if (elEstado) elEstado.value = valor;
+            } else if (tipo === 'categoria') {
+                if (elCat) {
+                    let found = false;
+                    for (let i = 0; i < elCat.options.length; i++) {
+                        if (elCat.options[i].value.toLowerCase() === valor.toLowerCase() || elCat.options[i].text.toLowerCase() === valor.toLowerCase()) {
+                            elCat.selectedIndex = i;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        let opt = document.createElement('option');
+                        opt.value = valor;
+                        opt.text = valor;
+                        elCat.appendChild(opt);
+                        elCat.value = valor;
+                    }
+                }
+            } else if (tipo === 'lote') {
+                if (elLote) {
+                    let found = false;
+                    for (let i = 0; i < elLote.options.length; i++) {
+                        if (elLote.options[i].value.toLowerCase() === valor.toLowerCase() || elLote.options[i].text.toLowerCase() === valor.toLowerCase()) {
+                            elLote.selectedIndex = i;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        let opt = document.createElement('option');
+                        opt.value = valor;
+                        opt.text = valor;
+                        elLote.appendChild(opt);
+                        elLote.value = valor;
+                    }
+                }
+            } else if (tipo === 'lote_prenada') {
+                if (elDx) elDx.value = 'Preñada';
+                if (elLote) {
+                    for (let i = 0; i < elLote.options.length; i++) {
+                        if (elLote.options[i].value.toLowerCase() === valor.toLowerCase()) {
+                            elLote.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+            } else if (tipo === 'dx') {
+                if (elDx) elDx.value = valor;
+            } else if (tipo === 'condicion') {
+                if (elBusq) elBusq.value = valor;
+            } else if (tipo === 'vientre_vacio') {
+                if (elDx) elDx.value = 'Vacía';
+                if (valor && valor.includes('Sangre') && elBusq) {
+                    elBusq.value = 'Sangre';
+                }
+            } else if (tipo === 'sanidad_global') {
+                if (elBusq) elBusq.value = (valor === 'Con Registro' ? 'Sanidad' : '');
+            } else if (tipo === 'toro') {
+                if (elDx) elDx.value = 'Preñada';
+                if (elBusq) elBusq.value = valor;
+            } else if (tipo === 'baja_causa') {
+                if (elEstado) elEstado.value = 'bajas';
+                if (elBusq) elBusq.value = valor;
+            } else if (tipo === 'busqueda') {
+                if (elBusq) elBusq.value = valor;
             }
+
             window.cargarListaRegistro();
-        }
+        };
 
         window.procesarDatosDashboard = function() {
             const datosActivos = window.obtenerRegistrosActivos(); 
@@ -2905,29 +2981,29 @@
                 else if(g === '4') {
                     let t = g4.opt + g4.bp + g4.sp || 1;
                     let d4 = { "Óptima": g4.opt, "Bajo Peso": g4.bp, "Sobrepeso": g4.sp };
-                    html += makePieAndBars("Condición Corporal", d4, t, 'estado');
+                    html += makePieAndBars("Condición Corporal", d4, t, 'condicion');
                 }
                 else if(g === '5') {
                     let t = g5.norm + g5.san || 1;
                     let d5 = { "Normal": g5.norm, "Sangre/Problema": g5.san };
-                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'estado');
+                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'vientre_vacio');
                 }
                 else if(g === '6') {
                     let t = unicas.length;
                     let d6 = { "Con Registro": g6.con, "Sin Registros": g6.sin };
-                    html += makePieAndBars("Sanidad Global", d6, t, 'estado');
+                    html += makePieAndBars("Sanidad Global", d6, t, 'sanidad_global');
                 }
                 else if(g === '7') {
                     let d7 = {}; Object.keys(g7).forEach(k => d7[k] = g7[k].p);
-                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote');
+                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote_prenada');
                 }
                 else if(g === '8') {
                     let d8 = {}; Object.keys(g8).forEach(k => d8[k] = g8[k].p);
-                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'estado');
+                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'toro');
                 }
                 else if(g === '9') {
                     let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0;
-                    html += `<div class="tarjeta"><div class="tarjeta-titulo">Promedio de Pesos</div><div class="grid-kpis"><div class="kpi-caja" onclick="window.filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" style="font-size:20px;">${pv} Kg</div><div class="kpi-label">Vacas</div></div><div class="kpi-caja" onclick="window.filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" style="font-size:20px;">${pt} Kg</div><div class="kpi-label">Terneros</div></div></div></div>`;
+                    html += `<div class="tarjeta"><div class="tarjeta-titulo">Promedio de Pesos</div><div class="grid-kpis"><div class="kpi-caja" onclick="window.filtrarDesdeDashboard('categoria', 'Vaca / Vaquilla')"><div class="kpi-valor" style="font-size:20px;">${pv} Kg</div><div class="kpi-label">Vacas</div></div><div class="kpi-caja" onclick="window.filtrarDesdeDashboard('categoria', 'Ternero Macho')"><div class="kpi-valor" style="font-size:20px;">${pt} Kg</div><div class="kpi-label">Terneros</div></div></div></div>`;
                 }
                 else if(g === '10') {
                     let d10 = { "Pesajes": g10.peso, "Diagnósticos": g10.dx, "Nutrición": g10.nut, "Sanidad": g10.san };
@@ -2936,7 +3012,7 @@
                 }
                 else if(g === '11') {
                     let t11 = cantBajas || 1;
-                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'estado');
+                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'baja_causa');
                 }
                 htmlGraficos += html;
             }); document.getElementById('contenedor-graficos-dinamicos').innerHTML = htmlGraficos;
@@ -2977,8 +3053,11 @@
                 if (estadoFiltro === 'vivos' && esBaja) return;
                 if (estadoFiltro === 'bajas' && !esBaja) return;
 
-                let cat = "-", lote = "General", dx = "-";
-                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
+                let cat = "Sin Categoría", lote = "General", dx = "-";
+                const uP = regs.find(d => d.accion === 'Perfil Master');
+                if(uP && uP.detalles) {
+                    cat = String(uP.detalles).split('|')[0] || "Sin Categoría";
+                }
                 const uC = regs.find(d => d.accion === 'Actualización de Datos');
                 if(uC) {
                     let v = String(uC.valor||"").split('|');
@@ -2996,23 +3075,26 @@
 
                 let catLegible = window.obtenerNombreCategoriaLegible(cat);
 
-                if (loteFiltro !== "ALL" && !lote.includes(loteFiltro)) return;
-                if (catFiltro !== "ALL" && !catLegible.includes(catFiltro)) return;
+                if (loteFiltro !== "ALL" && !lote.toLowerCase().includes(loteFiltro.toLowerCase())) return;
+
+                // FILTRO ESTRICTO DE CATEGORÍA
+                if (catFiltro === "Sin Categoría") {
+                    if (catLegible !== "Sin Categoría" && cat !== "Sin Categoría" && cat !== "-") return;
+                } else if (catFiltro !== "ALL" && !catLegible.toLowerCase().includes(catFiltro.toLowerCase())) {
+                    return;
+                }
 
                 if (dxFiltro === "Preñada") {
                     if (!esPre) return;
                 } else if (dxFiltro === "Vacía") {
                     if (!esVacia) return;
-                } else if (dxFiltro !== "ALL" && !dx.includes(dxFiltro)) {
+                } else if (dxFiltro !== "ALL" && !dx.toLowerCase().includes(dxFiltro.toLowerCase())) {
                     return;
                 }
 
                 if (txtBusqueda !== "") {
-                    let matchTexto = car.toLowerCase().includes(txtBusqueda) ||
-                                     catLegible.toLowerCase().includes(txtBusqueda) ||
-                                     lote.toLowerCase().includes(txtBusqueda) ||
-                                     dx.toLowerCase().includes(txtBusqueda);
-                    if (!matchTexto) return;
+                    let historialTexto = (car + " " + catLegible + " " + lote + " " + dx + " " + regs.map(r => (r.accion||"") + " " + (r.valor||"") + " " + (r.detalles||"")).join(" ")).toLowerCase();
+                    if (!historialTexto.includes(txtBusqueda)) return;
                 }
 
                 listaFiltrada.push({ car, catLegible, lote, dx, esBaja });
@@ -3025,7 +3107,7 @@
             }
 
             let htmlHTML = "";
-            let limiteRender = 100;
+            let limiteRender = 150;
             listaFiltrada.slice(0, limiteRender).forEach(item => {
                 let badgeBaja = item.esBaja ? `<span style="background:var(--peligro); color:white; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px;">BAJA</span>` : '';
                 htmlHTML += `<li onclick="window.navegarDesdeLista('${item.car}')">
@@ -3042,7 +3124,7 @@
                 htmlHTML += `<li style="text-align:center; color:var(--muted); padding:20px;"> Mostrando los primeros ${limiteRender} resultados. Usa el buscador para encontrar más.</li>`;
             }
             ul.innerHTML = htmlHTML;
-        }
+        };
 
         window.navegarDesdeLista = function(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); window.buscarCaravanaBtn(); }
 
