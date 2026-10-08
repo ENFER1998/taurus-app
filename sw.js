@@ -1,23 +1,26 @@
 // Taurus Control - Service Worker PWA (Offline 100%)
-const CACHE_NAME = 'taurus-cache-v3';
+const CACHE_NAME = 'taurus-cache-v4';
 
+// NOTA PARA GITHUB PAGES / SUBDIRECTORIOS:
+// Usamos rutas relativas (sin '/' inicial) para que funcionen tanto en https://dominio/taurus-app/ como en la raíz '/'
 const urlsToCache = [
   './',
-  '/index.html',
-  '/test.html',
-  '/pc.html',
-  '/taurusadmin.html',
-  '/taurusadminmobile.html',
-  '/taurus_control_corregido.html',
-  '/taurus_control_reparado.html',
-  '/manifest.json',
-  '/gemini-svg.png',
-  '/launchericon-48x48.png',
-  '/launchericon-72x72.png',
-  '/launchericon-96x96.png',
-  '/launchericon-144x144.png',
-  '/launchericon-192x192.png',
-  '/launchericon-512x512.png',
+  'index.html',
+  'test.html',
+  'mobiletest.html',
+  'pc.html',
+  'taurusadmin.html',
+  'taurusadminmobile.html',
+  'taurus_control_corregido.html',
+  'taurus_control_reparado.html',
+  'manifest.json',
+  'gemini-svg.png',
+  'launchericon-48x48.png',
+  'launchericon-72x72.png',
+  'launchericon-96x96.png',
+  'launchericon-144x144.png',
+  'launchericon-192x192.png',
+  'launchericon-512x512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js',
   'https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js',
@@ -31,11 +34,15 @@ self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
       console.log('[Taurus SW] Precachando archivos del sistema...');
-      // Se agregan uno por uno para que si falta un archivo opcional, los demás se guarden
       await Promise.allSettled(
-        urlsToCache.map(url => 
-          cache.add(url).catch(err => console.warn(`[Taurus SW] Omitiendo archivo no encontrado: ${url}`))
-        )
+        urlsToCache.map(async (url) => {
+          try {
+            await cache.add(url);
+            console.log(`[Taurus SW] Guardado con éxito: ${url}`);
+          } catch(err) {
+            console.warn(`[Taurus SW] Omitiendo archivo no encontrado: ${url}`);
+          }
+        })
       );
     })
   );
@@ -59,13 +66,15 @@ self.addEventListener('activate', (e) => {
 
 // 3. INTERCEPTOR DE PETICIONES
 self.addEventListener('fetch', (e) => {
-  // A. Solo cachear peticiones GET (evita errores con POST / PUT)
+  // Solo peticiones GET
   if (e.request.method !== 'GET') return;
 
   const url = new URL(e.request.url);
 
-  // B. Ignorar extensiones de navegador y servicios de streaming / push
+  // Ignorar protocolos no-http (ej: chrome-extension:)
   if (!url.protocol.startsWith('http')) return;
+
+  // Ignorar OneSignal y APIs de Google / Firestore streaming
   if (
     url.hostname.includes('onesignal.com') ||
     url.hostname.includes('script.google.com') ||
@@ -75,7 +84,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // C. Estrategia para NAVEGACIÓN (Páginas HTML): Network First con Respaldo a cualquier HTML en caché
+  // A. NAVEGACIÓN (Páginas HTML): Network First con Respaldo
   if (e.request.mode === 'navigate' || (e.request.headers.get('accept') && e.request.headers.get('accept').includes('text/html'))) {
     e.respondWith(
       fetch(e.request)
@@ -88,26 +97,24 @@ self.addEventListener('fetch', (e) => {
         })
         .catch(async () => {
           console.log('[Taurus SW] Sin red, buscando pantalla en caché para:', e.request.url);
-          // Buscar coincidencia exacta
           const match = await caches.match(e.request, { ignoreSearch: true });
           if (match) return match;
 
-          // Si la ruta exacta no está, servir cualquier vista principal disponible en caché
-          const fallback = await caches.match('./') || 
-                           await caches.match('/index.html') || 
-                           await caches.match('/taurus_control_reparado.html') ||
-                           await caches.match('/taurus_control_corregido.html');
+          // Respaldo de navegación adaptable a cualquier ruta o subcarpeta
+          const fallback = await caches.match('test.html') ||
+                           await caches.match('taurus_control_reparado.html') ||
+                           await caches.match('index.html') ||
+                           await caches.match('./');
           return fallback;
         })
     );
     return;
   }
 
-  // D. Estrategia para ACTIVOS ESTÁTICOS (JS, CSS, Imágenes, Librerías CDN): Cache First con actualización en fondo
+  // B. ACTIVOS ESTÁTICOS (JS, CSS, Imágenes, Librerías): Cache First con actualización en fondo
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Si hay conexión, refrescar en segundo plano para la próxima vez
         fetch(e.request)
           .then((networkResponse) => {
             if (networkResponse && networkResponse.status === 200 && (networkResponse.type === 'basic' || networkResponse.type === 'cors')) {
@@ -119,7 +126,6 @@ self.addEventListener('fetch', (e) => {
         return cachedResponse;
       }
 
-      // Si no estaba en caché, pedir a la red y almacenar
       return fetch(e.request)
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200 && (networkResponse.type === 'basic' || networkResponse.type === 'cors')) {
@@ -129,7 +135,6 @@ self.addEventListener('fetch', (e) => {
           return networkResponse;
         })
         .catch(() => {
-          // Si falló por completo y era una imagen, evitar romper la página
           return cachedResponse;
         });
     })
