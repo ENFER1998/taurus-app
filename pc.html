@@ -296,7 +296,7 @@
         <div class="topbar">
             <div class="topbar-title" id="topbar-estancia">TERMINAL CORPORATIVA DE TRAZABILIDAD</div>
             <div class="topbar-right" style="display:flex; gap:10px; align-items:center;">
-                <div id="estado-red" class="badge online" style="padding: 6px 12px; font-size: 11px; margin: 0;">🟢 Conectado</div>
+                <div id="estado-red" class="badge online" style="padding: 6px 12px; font-size: 11px; margin: 0; cursor:pointer;" onclick="verificarConexionReal()">🟢 Conectado</div>
             </div>
         </div>
 
@@ -315,13 +315,13 @@
             </div>
 
             <div class="grid-3" style="margin-bottom: 20px;">
-                <div class="kpi-box" style="border-color: var(--primary);" onclick="filtrarDesdeDashboard('estado', 'vivos')">
+                <div class="kpi-box" style="border-color: var(--primary);" onclick="filtrarDesdeDashboard('estado', 'vivos')" title="Ver todas las cabezas vivas">
                     <span>Inventario General Activo</span><strong id="dash-cabezas">0</strong>
                 </div>
-                <div class="kpi-box" style="border-color: var(--danger);" onclick="filtrarDesdeDashboard('estado', 'bajas')">
+                <div class="kpi-box" style="border-color: var(--danger);" onclick="filtrarDesdeDashboard('estado', 'bajas')" title="Ver todas las bajas / mortalidad">
                     <span>Mortalidad / Bajas</span><strong id="dash-bajas">0</strong>
                 </div>
-                <div class="kpi-box" style="border-color: var(--success);">
+                <div class="kpi-box" style="border-color: var(--success); cursor:pointer;" onclick="cambiarVista('v-reporte', document.querySelectorAll('.sidebar-nav li')[3]); document.getElementById('f-inf-modo').value='eventos'; cambiarModoReporte();" title="Ver historial de tratamientos y pesajes">
                     <span>Registros Históricos Procesados</span><strong id="dash-acciones">0</strong>
                 </div>
             </div>
@@ -341,55 +341,76 @@
         <div id="v-ficha" class="vista oculto">
             <h2 class="titulo-seccion">Expediente Clínico Individual</h2>
             
-            <div id="tarjeta-rafaga" class="tarjeta" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid var(--primary); background: var(--bg-card);">
+            <div id="tarjeta-rafaga" class="tarjeta" style="margin-bottom: 12px; padding: 12px 18px; border-left: 4px solid var(--primary); background: var(--bg-card);">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div style="display:flex; align-items:center; gap:10px;">
-                        <span style="font-size:24px;">⚡</span>
+                        <span style="font-size:20px;">⚡</span>
                         <div>
-                            <strong style="display:block; color:var(--text-main); font-size:14px;">Modo Ráfaga (Automático)</strong>
-                            <span style="font-size:11px; color:var(--text-muted);">Automatización al recibir datos del bastón/balanza</span>
+                            <strong style="display:block; color:var(--text-main); font-size:13px;">Modo Ráfaga</strong>
+                            <span style="font-size:11px; color:var(--text-muted);">Automático por hardware o manual por teclado</span>
                         </div>
                     </div>
-                    <button type="button" id="btn-toggle-rafaga" class="btn-outline" style="font-weight:bold; padding: 6px 12px; font-size:12px;" onclick="toggleRafaga()">APAGADO</button>
+                    <button type="button" id="btn-toggle-rafaga" class="btn-outline" style="font-weight:bold; padding: 5px 14px; font-size:11px;" onclick="toggleRafaga()">APAGADO</button>
                 </div>
-                
-                <!-- INTEGRACIÓN BLUETOOTH EN PC -->
-                <div style="margin-top:12px; padding:10px; background:rgba(37,99,235,0.08); border-radius:4px; border:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="font-size:16px;">📶</span>
-                        <span id="lbl-estado-bluetooth" style="font-size:12px; font-weight:bold; color:var(--text-muted);">Bluetooth: Desconectado</span>
+
+                <div id="opciones-rafaga" class="oculto" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border);">
+                    <!-- Modalidad compacta -->
+                    <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+                        <span style="font-size:11px; font-weight:bold; color:var(--text-muted); white-space:nowrap;">Modalidad:</span>
+                        <select id="rafaga-modalidad" class="form-control" style="padding:6px 10px; font-size:12px; height:34px; margin:0;" onchange="verificarRafagaCustom()">
+                            <option value="rfid">📡 Antena / Balanza Automática</option>
+                            <option value="manual">⌨️ Carga Rápida (Teclado)</option>
+                        </select>
                     </div>
-                    <button type="button" class="btn-outline" id="btn-conectar-ble" style="padding:5px 12px; font-size:12px; background:var(--primary); color:white; border-color:var(--primary);" onclick="conectarBluetoothBLE()">Conectar Balanza / Bastón</button>
-                </div>
-                <div id="opciones-rafaga" class="oculto" style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border);">
-                    <div class="grid-2">
-                        <div class="form-grupo">
-                            <label style="font-size:11px; color:var(--text-muted); font-weight:bold; display:block; margin-bottom:5px;">Acción combinada con el peso:</label>
-                            <select id="rafaga-accion" class="form-control" style="padding:8px; font-size:13px; font-weight:bold;" onchange="verificarRafagaCustom()">
-                                <option value="solo_peso">⚖️ Solo Registrar Peso</option>
+
+                    <!-- CAJA DE RÁFAGA MANUAL PARA PC (RP obligatorio, Peso Kg exclusivo y opcional si solo tratamiento/tacto) -->
+                    <div id="caja-rafaga-manual" class="form-grupo oculto" style="display:none; gap:8px; margin-bottom:8px; background: rgba(37, 99, 235, 0.08); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border);">
+                        <input type="text" id="rm-caravana" class="form-control" placeholder="Nº RP" style="flex:1; margin:0; padding:6px 10px; font-size:12px; height:32px;" onkeyup="if(event.key === 'Enter') { if(document.getElementById('rm-valor').value.trim() !== '') ejecutarRafagaManual(); else document.getElementById('rm-valor').focus(); }">
+                        <input type="number" step="0.5" id="rm-valor" class="form-control" placeholder="Peso Kg (Opcional)" style="flex:1; margin:0; padding:6px 10px; font-size:12px; height:32px;" onkeyup="if(event.key === 'Enter') ejecutarRafagaManual()">
+                        <button type="button" class="btn btn-primary" style="margin:0; width:auto; padding:0 16px; font-size:11px;" onclick="ejecutarRafagaManual()">▶ Cargar</button>
+                    </div>
+
+                    <!-- Selector de Acción de Ráfaga -->
+                    <div style="display:flex; gap:10px; margin-bottom:8px;">
+                        <div style="flex:1; min-width:0;">
+                            <select id="rafaga-accion" class="form-control" style="padding:6px 10px; font-size:12px; height:34px; margin:0;" onchange="verificarRafagaCustom()">
+                                <option value="solo_peso">⚖️ Solo Peso</option>
+                                <option value="tacto">🩺 Tacto / Diagnóstico</option>
                                 <option value="Vacuna Aftosa">💉 Vacuna Aftosa</option>
                                 <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
-                                <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario (Ivermectina)</option>
-                                <option value="Vitamina ADE">💉 Vitamina ADE / Reconstituyente</option>
-                                <option value="OTRO">✏️ Personalizado (Escribir otro)...</option>
+                                <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario</option>
+                                <option value="Vitamina ADE">💉 Vitamina ADE</option>
+                                <option value="OTRO">✏️ Personalizado...</option>
                             </select>
-                            <input type="text" id="rafaga-prod-custom" class="form-control oculto" placeholder="Escriba el producto o tratamiento..." style="margin-top:8px; padding:8px; font-size:13px;">
+                            <input type="text" id="rafaga-prod-custom" class="form-control oculto" placeholder="Escriba el producto..." style="margin-top:6px; padding:6px 8px; font-size:12px; height:30px;">
                         </div>
-                        <div id="caja-rafaga-detalles" class="form-grupo oculto">
-                            <label style="font-size:11px; color:var(--text-muted); font-weight:bold; display:block; margin-bottom:5px;">Dosis y Nota / Observación:</label>
-                            <input type="text" id="rafaga-detalles" class="form-control" placeholder="Ej: 5ml - Lote 12 | Subcutánea" style="padding:8px; font-size:13px; margin-bottom:10px;">
-                            
-                            <label style="font-size:11px; color:var(--warning); display:block; margin-bottom:5px; font-weight:bold;">⏳ Próxima Dosis a este lote:</label>
-                            <select id="rafaga-recordatorio" class="form-control" style="padding:8px; font-size:13px; border-color: var(--warning);">
-                                <option value="0">Sin recordatorio (Única dosis)</option>
-                                <option value="15">Avisar en 15 días</option>
-                                <option value="21">Avisar en 21 días</option>
-                                <option value="30">Avisar en 1 mes</option>
-                                <option value="90">Avisar en 3 meses</option>
-                                <option value="180">Avisar en 6 meses</option>
-                                <option value="365">Avisar en 1 año</option>
-                            </select>
+                        <div id="caja-rafaga-detalles" class="oculto" style="flex:1; min-width:0; display:none;">
+                            <input type="text" id="rafaga-detalles" class="form-control" placeholder="Dosis / Nota (opcional)" style="padding:6px 10px; font-size:12px; height:34px; margin:0;">
                         </div>
+                    </div>
+
+                    <!-- Opciones dinámicas para Tacto / Diagnóstico -->
+                    <div id="caja-rafaga-dx" class="oculto" style="display:none; align-items:center; gap:8px; margin-bottom:8px;">
+                        <span style="font-size:11px; font-weight:bold; color:var(--success); white-space:nowrap;">Diagnóstico:</span>
+                        <select id="rafaga-dx-resultado" class="form-control" style="padding:4px 8px; font-size:11px; height:30px; margin:0; border-color: var(--success); font-weight:bold;">
+                            <option value="Preñada">✅ Preñada</option>
+                            <option value="Vacía">❌ Vacía</option>
+                            <option value="Vacía (Sangre)">🩸 Vacía (Sangre)</option>
+                        </select>
+                    </div>
+
+                    <!-- Próxima dosis para Sanidad -->
+                    <div id="caja-rafaga-recordatorio" class="oculto" style="display:none; align-items:center; gap:8px;">
+                        <span style="font-size:11px; font-weight:bold; color:var(--warning); white-space:nowrap;">Próxima dosis:</span>
+                        <select id="rafaga-recordatorio" class="form-control" style="padding:4px 8px; font-size:11px; height:30px; margin:0; border-color: var(--warning);">
+                            <option value="0">Sin recordatorio</option>
+                            <option value="15">En 15 días</option>
+                            <option value="21">En 21 días</option>
+                            <option value="30">En 1 mes</option>
+                            <option value="90">En 3 meses</option>
+                            <option value="180">En 6 meses</option>
+                            <option value="365">En 1 año</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -524,13 +545,6 @@
 
                 <!-- FILTROS INVENTARIO PDF -->
                 <div id="filtros-inventario" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
-                    <div style="flex: 1 1 100%; margin-bottom: 5px;">
-                        <label style="font-size:11px; font-weight:bold; color:var(--primary); margin-bottom:4px; display:block;">📅 Fecha de Corte del Inventario (Dejar en blanco para ver HOY):</label>
-                        <div style="display:flex; gap:8px;">
-                            <input type="date" id="f-inf-inv-fecha" class="form-control" style="flex:1; margin:0;" onchange="actualizarInformeAvanzado()">
-                            <button class="btn-outline" type="button" onclick="document.getElementById('f-inf-inv-fecha').value=''; actualizarInformeAvanzado();" style="padding:0 15px; font-size:12px;">Hoy</button>
-                        </div>
-                    </div>
                     <select class="form-control" style="width:auto; flex:1;" id="f-inf-lote" onchange="actualizarInformeAvanzado()">
                         <option value="ALL">🏷️ Todos los Lotes</option>
                         <option value="Hacienda General">Hacienda General</option>
@@ -595,18 +609,7 @@
 
                 <!-- FILTROS EVENTOS PDF -->
                 <div id="filtros-eventos" style="display:none; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
-                    <select class="form-control" style="width:auto;" id="f-inf-rango-fecha" onchange="manejarRangoFechas()">
-                        <option value="puntual">📅 Día Específico (Seleccionar Fecha)</option>
-                        <option value="hoy">Trabajos de Hoy</option>
-                        <option value="7">Últimos 7 Días</option>
-                        <option value="30" selected>Últimos 30 Días</option>
-                        <option value="custom">📅 Rango Manual...</option>
-                        <option value="todo">Ver Todo el Historial</option>
-                    </select>
-                    <div id="caja-fecha-puntual" style="display:none; flex: 1 1 100%; margin-bottom:4px;">
-                        <label style="font-size:11px; font-weight:bold; color:var(--primary); margin-bottom:4px; display:block;">📅 Fecha Exacta de los Trabajos:</label>
-                        <input type="date" id="f-inf-fecha-puntual" class="form-control" style="margin:0;" onchange="actualizarInformeAvanzado()">
-                    </div>
+                    <select class="form-control" style="width:auto;" id="f-inf-rango-fecha" onchange="manejarRangoFechas()"><option value="30">Últimos 30 Días</option><option value="hoy">Trabajos de Hoy</option><option value="7">Últimos 7 Días</option><option value="todo">Ver Todo</option><option value="custom">📅 Rango Manual...</option></select>
                     <select class="form-control" style="width:auto;" onchange="document.getElementById('f-inf-accion-oculto').value = this.value; actualizarInformeAvanzado();"><option value="ALL">Todos los Trabajos</option><option value="Sanidad">💉 Sanidad</option><option value="Peso">⚖ Pesos</option><option value="Diagnóstico">🩺 Tactos</option><option value="Inseminación">🧬 Reproducción</option><option value="Nutrición">🌾 Nutrición</option></select>
                     <input type="hidden" id="f-inf-accion-oculto" value="ALL">
                     <input type="text" id="f-inf-keyword" class="form-control" style="width:auto; flex:1;" placeholder="Buscar producto o detalles..." onkeyup="filtrarInformeDebounced()">
@@ -644,7 +647,7 @@
                         <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">👤 Mi Perfil</h3>
                         <div class="dato-box">
                             <span>Usuario Activo</span>
-                            <strong id="lbl-perfil-usu">-</strong>
+                            <strong id="lbl-perfil-usu">-</strong><input type="hidden" id="usuario-activo-lbl">
                         </div>
                         <div class="dato-box" id="panel-licencia" style="margin-top:10px;">
                             <span>Vencimiento de Licencia</span>
@@ -747,14 +750,10 @@
 
                 <div>
                     <div class="tarjeta">
-                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px; color:var(--text-main);">🤖 Asistente Cora (IA)</h3>
-                        <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <div>
-                                <span style="font-weight: bold; color: var(--text-main); display:block;">Botón Flotante de Cora</span>
-                                <span style="font-size:11px; color:var(--text-muted);">Activar o desactivar asistente por voz</span>
-                            </div>
-                            <button type="button" class="btn-outline" id="btn-toggle-cora-vis-pc" style="padding: 6px 12px; font-size: 12px;" onclick="toggleCoraVisibilidad()">Desactivar</button>
-                        </div>
+                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px; color:var(--text-main);">📶 Dispositivos y Hardware Taurus</h3>
+                        <p style="font-size:12px; color:var(--text-muted); margin:0; line-height:1.6;">
+                            Puedes vincular tu <strong>Antena RFID y Balanza Taurus</strong>, bastones y lectores inalámbricos directamente desde la <strong>Configuración de Bluetooth o USB</strong> de tu PC. Taurus se comunica de forma 100% automática en segundo plano: una vez vinculado en tu sistema, empieza a trabajar y los datos ingresarán solos sin pasos manuales ni avisos molestos.
+                        </p>
                     </div>
 
                     <div class="tarjeta">
@@ -767,6 +766,11 @@
                     
                     <div class="tarjeta" id="panel-analiticas">
                         <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">📊 Analíticas Visibles en Dashboard</h3>
+                        <p style="font-size:11px; color:var(--text-muted); margin:0 0 10px 0;">Selecciona cuántas analíticas deseas desplegar en pantalla (puedes activar desde 1 hasta las 11 completas):</p>
+                        <div style="display:flex; gap:8px; margin-bottom:12px;">
+                            <button type="button" class="btn btn-outline" style="padding:6px 12px; font-size:12px; background:var(--primary); color:white; border-color:var(--primary);" onclick="seleccionarTodosGraficos(true)">✅ Activar Todas (11)</button>
+                            <button type="button" class="btn btn-outline" style="padding:6px 12px; font-size:12px;" onclick="seleccionarTodosGraficos(false)">Deseleccionar</button>
+                        </div>
                         <div style="display:flex; flex-direction:column; gap:8px;">
                             <label><input type="checkbox" class="chk-graf" value="1" onchange="verificarLimiteGraficos(this)"> <span>1. Tasa de Preñez Dinámica</span></label>
                             <label><input type="checkbox" class="chk-graf" value="2" onchange="verificarLimiteGraficos(this)"> <span>2. Composición de Hacienda</span></label>
@@ -789,10 +793,66 @@
     </div>
 
     <!-- MODALES GANADEROS -->
-    <div id="m-baja" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-baja')">&times;</span><h3>💀 Registro de Baja / Muerte</h3><div class="form-grupo"><label>Causa de Baja / Venta</label><select class="form-control" id="i-baja-causa"><option>Enfermedad</option><option>Accidente</option><option>Depredador</option><option>Natural / Desconocida</option><option>Venta / Faena</option></select></div><div class="form-grupo"><label>Observaciones (Opcional)</label><textarea class="form-control textarea" id="i-baja-txt" placeholder="Detalles de la baja..."></textarea></div><button type="button" class="btn-guardar" style="background:var(--danger);" onclick="prepararGuardado('m-baja', 'Baja')">Confirmar Baja</button></div></div>
-    <div id="m-renombrar" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-renombrar')">&times;</span><h3>Modificar Número RP</h3><p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">El historial clínico se enlazará al nuevo número.</p><div class="form-grupo"><label>Nuevo Número RP</label><input type="text" class="form-control" id="f-nueva-caravana" autocomplete="off"></div><button type="button" class="btn-guardar" onclick="guardarCambioCaravana()">Confirmar Cambio</button></div></div>
-    <div id="m-nota" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-nota')">&times;</span><h3>Anotación Libre</h3><div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt" placeholder="Describa la observación general..."></textarea></div><button type="button" class="btn-guardar" onclick="prepararGuardado('m-nota', 'Comentario')">Guardar en Historial</button></div></div>
-    <div id="m-rfid" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-rfid')">&times;</span><h3>Vincular Bastón RFID</h3><p style="font-size:13px; color:var(--text-muted); margin-bottom:15px; line-height: 1.5;">El chip leído (<strong id="lbl-rfid-scaneado" style="color:var(--primary);"></strong>) no está asignado. Ingrese el RP para vincularlo.</p><div class="form-grupo"><label>Caravana Visual (RP)</label><input type="text" class="form-control" id="f-rfid-caravana" autocomplete="off" placeholder="Ej: 1234"></div><button type="button" class="btn-guardar" onclick="guardarVinculacionRFID()">Vincular y Abrir Ficha</button></div></div>
+    <div id="m-baja" class="modal">
+        <div class="modal-body">
+            <span class="btn-cerrar" onclick="cerrarModal('m-baja')">&times;</span>
+            <h3>💀 Registro de Baja / Muerte</h3>
+            <div class="form-grupo">
+                <label>Causa de Baja / Venta</label>
+                <select class="form-control" id="i-baja-causa" onchange="verificarSelectOtro(this, 'baja-otro')">
+                    <option>Enfermedad</option>
+                    <option>Accidente</option>
+                    <option>Depredador</option>
+                    <option>Natural / Desconocida</option>
+                    <option>Venta / Faena</option>
+                    <option value="OTRO">✏️ Personalizado (Escribir otro)...</option>
+                </select>
+                <input type="text" id="baja-otro" class="form-control oculto" placeholder="Escriba la causa..." style="margin-top:8px;">
+            </div>
+            <div class="form-grupo">
+                <label>Observaciones (Opcional)</label>
+                <textarea class="form-control textarea" id="i-baja-txt" placeholder="Detalles de la baja..."></textarea>
+            </div>
+            <button type="button" class="btn-guardar" style="background:var(--danger);" onclick="prepararGuardado('m-baja', 'Baja')">Confirmar Baja</button>
+        </div>
+    </div>
+
+    <div id="m-renombrar" class="modal">
+        <div class="modal-body">
+            <span class="btn-cerrar" onclick="cerrarModal('m-renombrar')">&times;</span>
+            <h3>Modificar Número RP</h3>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">El historial clínico se enlazará al nuevo número.</p>
+            <div class="form-grupo">
+                <label>Nuevo Número RP</label>
+                <input type="text" class="form-control" id="f-nueva-caravana" autocomplete="off">
+            </div>
+            <button type="button" class="btn-guardar" onclick="guardarCambioCaravana()">Confirmar Cambio</button>
+        </div>
+    </div>
+
+    <div id="m-nota" class="modal">
+        <div class="modal-body">
+            <span class="btn-cerrar" onclick="cerrarModal('m-nota')">&times;</span>
+            <h3>Anotación Libre</h3>
+            <div class="form-grupo">
+                <textarea class="form-control textarea" id="f-comentario-txt" placeholder="Describa la observación general..."></textarea>
+            </div>
+            <button type="button" class="btn-guardar" onclick="prepararGuardado('m-nota', 'Comentario')">Guardar en Historial</button>
+        </div>
+    </div>
+
+    <div id="m-rfid" class="modal">
+        <div class="modal-body">
+            <span class="btn-cerrar" onclick="cerrarModal('m-rfid')">&times;</span>
+            <h3>Vincular Bastón RFID</h3>
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px; line-height: 1.5;">El chip leído (<strong id="lbl-rfid-scaneado" style="color:var(--primary);"></strong>) no está asignado. Ingrese el RP para vincularlo.</p>
+            <div class="form-grupo">
+                <label>Caravana Visual (RP)</label>
+                <input type="text" class="form-control" id="f-rfid-caravana" autocomplete="off" placeholder="Ej: 1234">
+            </div>
+            <button type="button" class="btn-guardar" onclick="guardarVinculacionRFID()">Vincular y Abrir Ficha</button>
+        </div>
+    </div>
     
     <div id="m-perfil" class="modal">
         <div class="modal-body">
@@ -812,29 +872,185 @@
         </div>
     </div>
     
-    <div id="m-clasi" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-clasi')">&times;</span><h3>Clasificación y Ubicación</h3><div class="form-grupo"><label>Categoría Oficial</label><select class="form-control" id="input-cat-rapida"><option value="TH: Ternera Hembra">TH: Ternera Hembra</option><option value="TM: Ternero Macho">TM: Ternero Macho</option><option value="DH: Desmamante Hembra">DH: Desmamante Hembra</option><option value="DM: Desmamante Macho">DM: Desmamante Macho</option><option value="V: Vaca/Vaquilla">V: Vaca/Vaquilla</option><option value="VV: Vaca Vieja">VV: Vaca Vieja</option><option value="Toros">Toros</option><option value="Novillos">Novillos</option><option value="Bueyes">Bueyes / Señuelos</option></select></div><div class="form-grupo"><label>Lote Asignado</label><input type="text" list="lista-lotes" class="form-control" id="input-lote-rapido"><datalist id="lista-lotes"><option value="Hacienda General"></option><option value="Lecheras"></option><option value="Preñadas"></option><option value="Inseminadas"></option></datalist></div><div class="form-grupo"><label>Carimbo Manual (Opcional)</label><input type="number" class="form-control" id="input-carimbo-rapido" placeholder="Solo si desconoces el mes de nacimiento"></div><button type="button" class="btn-guardar" onclick="guardarClasificacion()">Actualizar Ubicación</button></div></div>
-    
-    <div id="m-dx" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-dx')">&times;</span><h3>Resultado de Tacto</h3><div class="form-grupo"><select class="form-control" id="i-dx-sel"><option>Preñada</option><option>Vacía</option><option>Vacía (Sangre)</option></select></div><div class="form-grupo"><label>Observación del Veterinario</label><textarea class="form-control textarea" id="i-dx-txt"></textarea></div><button type="button" class="btn-guardar" onclick="prepararGuardado('m-dx', 'Diagnóstico')">Registrar Tacto</button></div></div>
-    <div id="m-peso" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-peso')">&times;</span><h3>Registro de Peso</h3><div class="form-grupo"><input type="number" step="0.5" class="form-control" id="i-peso-val" placeholder="Peso detectado en Kg"></div><div class="form-grupo"><label>Condición Corporal</label><select class="form-control" id="i-peso-cond"><option>Óptima</option><option>Bajo Peso</option><option>Sobrepeso</option></select></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-peso-txt"></textarea></div><button type="button" class="btn-guardar" onclick="prepararGuardado('m-peso', 'Peso')">Registrar Peso</button></div></div>
-    
-    <div id="m-sani" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-sani')">&times;</span><h3>Control Sanitario</h3><div class="form-grupo"><label>Tipo de Aplicación</label><select class="form-control" id="i-sani-sel"><option>Antiparasitario</option><option>Vacuna Aftosa</option><option>Tratamiento General</option></select></div><div class="form-grupo"><label>Producto Utilizado</label><input type="text" class="form-control" id="i-sani-lote" placeholder="Marca del producto o Número de Lote"></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div>
-        <div class="form-grupo">
-            <label style="color:var(--warning);">⏳ Próxima Dosis / Recordatorio</label>
-            <select class="form-control" id="i-sani-recordatorio" style="border-color: var(--warning);">
-                <option value="0">Sin recordatorio (Única dosis)</option>
-                <option value="15">Avisarme en 15 días</option>
-                <option value="21">Avisarme en 21 días</option>
-                <option value="30">Avisarme en 1 mes</option>
-                <option value="90">Avisarme en 3 meses</option>
-                <option value="180">Avisarme en 6 meses</option>
-                <option value="365">Avisarme en 1 año</option>
-            </select>
+    <div id="m-clasi" class="modal">
+        <div class="modal-body">
+            <span class="btn-cerrar" onclick="cerrarModal('m-clasi')">&times;</span>
+            <h3>Clasificación y Ubicación</h3>
+            <div class="form-grupo">
+                <label>Categoría Oficial</label>
+                <select class="form-control" id="input-cat-rapida">
+                    <option value="TH: Ternera Hembra">TH: Ternera Hembra</option>
+                    <option value="TM: Ternero Macho">TM: Ternero Macho</option>
+                    <option value="DH: Desmamante Hembra">DH: Desmamante Hembra</option>
+                    <option value="DM: Desmamante Macho">DM: Desmamante Macho</option>
+                    <option value="V: Vaca/Vaquilla">V: Vaca/Vaquilla</option>
+                    <option value="VV: Vaca Vieja">VV: Vaca Vieja</option>
+                    <option value="Toros">Toros</option>
+                    <option value="Novillos">Novillos</option>
+                    <option value="Bueyes">Bueyes / Señuelos</option>
+                </select>
+            </div>
+            <div class="form-grupo">
+                <label>Lote Asignado</label>
+                <select class="form-control" id="input-lote-rapido" onchange="verificarSelectOtro(this, 'lote-otro')">
+                    <option>Hacienda General</option>
+                    <option>Lecheras</option>
+                    <option>Preñadas</option>
+                    <option>Inseminadas</option>
+                    <option>Destete</option>
+                    <option>Enfermería</option>
+                    <option value="OTRO">✏️ Personalizado (Escribir otro)...</option>
+                </select>
+                <input type="text" id="lote-otro" class="form-control oculto" placeholder="Escriba el nombre del lote..." style="margin-top:8px;">
+            </div>
+            <div class="form-grupo">
+                <label>Carimbo Manual (Opcional)</label>
+                <input type="number" class="form-control" id="input-carimbo-rapido" placeholder="Solo si desconoces el mes de nacimiento">
+            </div>
+            <button type="button" class="btn-guardar" onclick="guardarClasificacion()">Actualizar Ubicación</button>
         </div>
-        <button type="button" class="btn-guardar" onclick="prepararGuardado('m-sani', 'Sanidad')">Registrar Sanidad</button></div></div>
+    </div>
+    
+    <div id="m-dx" class="modal">
+        <div class="modal-body">
+            <span class="btn-cerrar" onclick="cerrarModal('m-dx')">&times;</span>
+            <h3>Resultado de Tacto</h3>
+            <div class="form-grupo">
+                <select class="form-control" id="i-dx-sel" onchange="verificarSelectOtro(this, 'dx-otro')">
+                    <option value="Preñada">✅ Preñada</option>
+                    <option value="Vacía">❌ Vacía</option>
+                    <option value="Vacía (Sangre)">🩸 Vacía (Sangre)</option>
+                    <option value="OTRO">✏️ Personalizado (Escribir otro)...</option>
+                </select>
+                <input type="text" id="dx-otro" class="form-control oculto" placeholder="Escriba el diagnóstico..." style="margin-top:8px;">
+            </div>
+            <div class="form-grupo">
+                <label>Observación del Veterinario</label>
+                <textarea class="form-control textarea" id="i-dx-txt"></textarea>
+            </div>
+            <button type="button" class="btn-guardar" onclick="prepararGuardado('m-dx', 'Diagnóstico')">Registrar Tacto</button>
+        </div>
+    </div>
+
+    <div id="m-peso" class="modal">
+        <div class="modal-body">
+            <span class="btn-cerrar" onclick="cerrarModal('m-peso')">&times;</span>
+            <h3>Registro de Peso</h3>
+            <div class="form-grupo">
+                <input type="number" step="0.5" class="form-control" id="i-peso-val" placeholder="Peso detectado en Kg" style="font-size:22px; font-weight:bold; text-align:center;">
+            </div>
+            <div class="form-grupo">
+                <label>Condición Corporal</label>
+                <select class="form-control" id="i-peso-cond" onchange="verificarSelectOtro(this, 'peso-otro')">
+                    <option>Óptima</option>
+                    <option>Bajo Peso</option>
+                    <option>Sobrepeso</option>
+                    <option value="OTRO">✏️ Otra condición...</option>
+                </select>
+                <input type="text" id="peso-otro" class="form-control oculto" placeholder="Especificar..." style="margin-top:8px;">
+            </div>
+            <div class="form-grupo">
+                <label>Notas Opcionales</label>
+                <textarea class="form-control textarea" id="i-peso-txt"></textarea>
+            </div>
+            <button type="button" class="btn-guardar" onclick="prepararGuardado('m-peso', 'Peso')">Registrar Peso</button>
+        </div>
+    </div>
+    
+    <div id="m-sani" class="modal">
+        <div class="modal-body">
+            <span class="btn-cerrar" onclick="cerrarModal('m-sani')">&times;</span>
+            <h3>Control Sanitario</h3>
+            <div class="form-grupo">
+                <label>Tipo de Aplicación / Producto</label>
+                <select class="form-control" id="i-sani-sel" onchange="verificarSelectOtro(this, 'sani-otro')">
+                    <option>Antiparasitario (Ivermectina)</option>
+                    <option>Vacuna Aftosa</option>
+                    <option>Vacuna Carbunclo</option>
+                    <option>Vitamina ADE</option>
+                    <option>Tratamiento General</option>
+                    <option value="OTRO">✏️ Personalizado (Escribir otro)...</option>
+                </select>
+                <input type="text" id="sani-otro" class="form-control oculto" placeholder="Escriba el producto..." style="margin-top:8px;">
+            </div>
+            <div class="form-grupo">
+                <label>Lote / Detalles del Producto</label>
+                <input type="text" class="form-control" id="i-sani-lote" placeholder="Marca del producto o Número de Lote">
+            </div>
+            <div class="form-grupo">
+                <label>Notas Opcionales</label>
+                <textarea class="form-control textarea" id="i-sani-txt"></textarea>
+            </div>
+            <div class="form-grupo">
+                <label style="color:var(--warning);">⏳ Próxima Dosis / Recordatorio</label>
+                <select class="form-control" id="i-sani-recordatorio" style="border-color: var(--warning);">
+                    <option value="0">Sin recordatorio (Única dosis)</option>
+                    <option value="15">Avisarme en 15 días</option>
+                    <option value="21">Avisarme en 21 días</option>
+                    <option value="30">Avisarme en 1 mes</option>
+                    <option value="90">Avisarme en 3 meses</option>
+                    <option value="180">Avisarme en 6 meses</option>
+                    <option value="365">Avisarme en 1 año</option>
+                </select>
+            </div>
+            <button type="button" class="btn-guardar" onclick="prepararGuardado('m-sani', 'Sanidad')">Registrar Sanidad</button>
+        </div>
+    </div>
         
-    <div id="m-ins" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-ins')">&times;</span><h3>Registro de Inseminación</h3><div class="form-grupo"><label>Profesional a Cargo</label><input type="text" class="form-control" id="i-ins-quien" placeholder="Nombre del Inseminador"></div><div class="form-grupo"><label>Genética Utilizada</label><input type="text" class="form-control" id="i-ins-toro" placeholder="Toro o Código de Pajuela"></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-ins-txt"></textarea></div><button type="button" class="btn-guardar" onclick="prepararGuardado('m-ins', 'Inseminación')">Registrar Servicio</button></div></div>
-    <div id="m-nut" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-nut')">&times;</span><h3>Suplemento Nutricional</h3><div class="form-grupo"><label>Alimento Suministrado</label><input type="text" class="form-control" id="i-nut-prod" list="lista-alimentos"><datalist id="lista-alimentos"><option value="FOSFO Plus! 90f (Sal Mineral)"></option><option value="FOSFO Plus! Proteica Ternero"></option><option value="Forraje / Pastura"></option></datalist></div><div class="form-grupo"><label>Dosificación</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 0.50gr/kg/día..."></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div><button type="button" class="btn-guardar" onclick="prepararGuardado('m-nut', 'Nutrición')">Registrar Nutrición</button></div></div>
-        <!-- MODAL DE EDICIÓN CON FECHA Y HORA -->
+    <div id="m-ins" class="modal">
+        <div class="modal-body">
+            <span class="btn-cerrar" onclick="cerrarModal('m-ins')">&times;</span>
+            <h3>Registro de Inseminación</h3>
+            <div class="form-grupo">
+                <label>Método / Inseminador</label>
+                <select class="form-control" id="i-ins-quien" onchange="verificarSelectOtro(this, 'ins-otro')">
+                    <option>IATF</option>
+                    <option>Monta Natural</option>
+                    <option>Repaso con Toro</option>
+                    <option value="OTRO">✏️ Otro método/inseminador...</option>
+                </select>
+                <input type="text" id="ins-otro" class="form-control oculto" placeholder="Especificar..." style="margin-top:8px;">
+            </div>
+            <div class="form-grupo">
+                <label>Genética Utilizada</label>
+                <input type="text" class="form-control" id="i-ins-toro" placeholder="Toro o Código de Pajuela">
+            </div>
+            <div class="form-grupo">
+                <label>Notas Opcionales</label>
+                <textarea class="form-control textarea" id="i-ins-txt"></textarea>
+            </div>
+            <button type="button" class="btn-guardar" onclick="prepararGuardado('m-ins', 'Inseminación')">Registrar Servicio</button>
+        </div>
+    </div>
+
+    <div id="m-nut" class="modal">
+        <div class="modal-body">
+            <span class="btn-cerrar" onclick="cerrarModal('m-nut')">&times;</span>
+            <h3>Suplemento Nutricional</h3>
+            <div class="form-grupo">
+                <label>Alimento Suministrado</label>
+                <select class="form-control" id="i-nut-prod" onchange="verificarSelectOtro(this, 'nut-otro')">
+                    <option>Sal Mineral</option>
+                    <option>Sal Proteica</option>
+                    <option>Forraje / Pastura</option>
+                    <option>Balanceado</option>
+                    <option value="OTRO">✏️ Otro alimento...</option>
+                </select>
+                <input type="text" id="nut-otro" class="form-control oculto" placeholder="Escriba el alimento..." style="margin-top:8px;">
+            </div>
+            <div class="form-grupo">
+                <label>Dosificación</label>
+                <input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 0.50gr/kg/día...">
+            </div>
+            <div class="form-grupo">
+                <label>Notas Opcionales</label>
+                <textarea class="form-control textarea" id="i-nut-txt"></textarea>
+            </div>
+            <button type="button" class="btn-guardar" onclick="prepararGuardado('m-nut', 'Nutrición')">Registrar Nutrición</button>
+        </div>
+    </div>
+
+    <!-- MODAL DE EDICIÓN CON FECHA Y HORA -->
     <div id="modal-editar-registro" class="modal">
         <div class="modal-body">
             <span class="btn-cerrar" onclick="cerrarModal('modal-editar-registro')">&times;</span>
@@ -855,7 +1071,19 @@
             <button type="button" class="btn-guardar" onclick="guardarEdicionRegistro()">Guardar Cambios</button>
         </div>
     </div>
-    <div id="m-traza" class="modal"><div class="modal-body" style="width:700px;"><span class="btn-cerrar" onclick="cerrarModal('m-traza')">&times;</span><h3>Trazabilidad Completa del RP</h3><div style="max-height:450px;overflow-y:auto; margin-top:15px;"><table class="tabla-datos"><thead><tr><th>Fecha</th><th>Acción</th><th>Valor Principal</th><th>Detalles Adicionales</th><th>Acción</th></tr></thead><tbody id="tb-traza"></tbody></table></div></div></div>
+
+    <div id="m-traza" class="modal">
+        <div class="modal-body large">
+            <span class="btn-cerrar" onclick="cerrarModal('m-traza')">&times;</span>
+            <h3>Trazabilidad Completa del RP</h3>
+            <div style="max-height:450px;overflow-y:auto; margin-top:15px;">
+                <table class="tabla-datos">
+                    <thead><tr><th>Fecha</th><th>Acción</th><th>Valor Principal</th><th>Detalles Adicionales</th><th>Acción</th></tr></thead>
+                    <tbody id="tb-traza"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
     <!-- BOTÓN AURA DE CORA Y ESTADO -->
     <button id="btn-aura" title="Hablar con Cora">
@@ -956,30 +1184,19 @@
 
         function procesarAlertaServidor(msg, id) {
             const banner = document.getElementById('banner-alerta-global');
-            const modal = document.getElementById('modal-alerta-global');
-            if (!msg || !id) {
-                if(banner) banner.classList.add('oculto');
-                if(modal) modal.style.display = 'none';
-                return;
-            }
+            if (!msg || !id) { banner.classList.add('oculto'); return; }
             let leidas = lsGet('tc_alertas_leidas', []);
             let mostradas = lsGet('tc_alertas_mostradas', []); 
-            let profile = lsGet('tc_user_profile', {});
-            let leidasProfile = profile.alertas_leidas || [];
-
-            if (!leidas.includes(id) && !leidasProfile.includes(id)) {
+            if (!leidas.includes(id)) {
                 alertaGlobalIdActual = id;
                 document.getElementById('txt-alerta-global').innerText = msg;
                 document.getElementById('txt-banner-alerta').innerText = msg;
                 if (!mostradas.includes(id)) {
-                    modal.style.display = 'flex';
+                    document.getElementById('modal-alerta-global').style.display = 'flex';
                     lanzarNotificacionEscritorio("Aviso Importante", msg);
                 }
                 banner.classList.remove('oculto');
-            } else {
-                banner.classList.add('oculto');
-                modal.style.display = 'none';
-            }
+            } else { banner.classList.add('oculto'); }
         }
 
         function cerrarPopUpAlerta() {
@@ -990,13 +1207,13 @@
                 if (!leidas.includes(alertaGlobalIdActual)) {
                     leidas.push(alertaGlobalIdActual);
                     lsSet('tc_alertas_leidas', leidas);
-                }
-                if(navigator.onLine && usActivo) {
-                    try {
-                        db.collection('usuarios').doc(usActivo).update({
-                            alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
-                        });
-                    } catch(e) {}
+                    if(navigator.onLine && usActivo) {
+                        try {
+                            db.collection('usuarios').doc(usActivo).update({
+                                alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
+                            });
+                        } catch(e) {}
+                    }
                 }
             }
             document.getElementById('modal-alerta-global').style.display = 'none';
@@ -1009,13 +1226,13 @@
                 if(!leidas.includes(alertaGlobalIdActual)) {
                     leidas.push(alertaGlobalIdActual);
                     lsSet('tc_alertas_leidas', leidas);
-                }
-                if(navigator.onLine && usActivo) {
-                    try {
-                        db.collection('usuarios').doc(usActivo).update({
-                            alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
-                        });
-                    } catch(e) {}
+                    if(navigator.onLine && usActivo) {
+                        try {
+                            db.collection('usuarios').doc(usActivo).update({
+                                alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
+                            });
+                        } catch(e) {}
+                    }
                 }
             }
             document.getElementById('modal-alerta-global').style.display = 'none';
@@ -1028,98 +1245,221 @@
         }
 
         let rafagaActiva = false;
-        let sesionRafaga = {
-            activa: false,
-            inicio: null,
-            accion: '',
-            detalles: '',
-            animales: new Set()
-        };
-
-        function registrarEventoEspecial(accion, valor, detalles) {
-            if(!maestroId) return;
-            const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
-            const docRef = colRef.doc();
-            const obj = {
-                id: docRef.id,
-                fecha: new Date().toISOString(),
-                accion: accion,
-                caravana: "---",
-                valor: valor,
-                detalles: detalles + ` | Op: ${usNombre}`,
-                maestro: maestroId,
-                autor_email: usActivo,
-                autor_nombre: usNombre,
-                autor_rol: usRol
-            };
-            if (navigator.onLine) {
-                docRef.set(obj).catch(()=>{});
-            }
-        }
-
         window.toggleRafaga = function() {
             rafagaActiva = !rafagaActiva;
             const btn = document.getElementById('btn-toggle-rafaga');
             const opciones = document.getElementById('opciones-rafaga');
-            
             if(rafagaActiva) {
-                sesionRafaga.activa = true;
-                sesionRafaga.inicio = new Date();
-                sesionRafaga.animales = new Set();
-
-                let selAccion = document.getElementById('rafaga-accion') ? document.getElementById('rafaga-accion').value : 'solo_peso';
-                let customProd = (document.getElementById('rafaga-prod-custom') && !document.getElementById('rafaga-prod-custom').classList.contains('oculto')) ? document.getElementById('rafaga-prod-custom').value.trim() : '';
-                let prodNombre = (selAccion === 'OTRO' ? customProd : (selAccion === 'solo_peso' ? 'Solo Pesaje' : selAccion)) || 'Tratamiento General';
-                sesionRafaga.accion = prodNombre;
-                sesionRafaga.detalles = document.getElementById('rafaga-detalles') ? document.getElementById('rafaga-detalles').value.trim() : '';
-
-                btn.innerText = "ENCENDIDO (0)";
-                btn.style.background = "var(--primary)";
-                btn.style.color = "white";
-                btn.style.borderColor = "var(--primary)";
-                opciones.classList.remove('oculto');
-                verificarRafagaCustom();
-
-                // Notificación de inicio de ráfaga
-                let isDueno = usRol.includes('Propietario') || usRol.includes('Dueño');
-                let rolEtiqueta = isDueno ? 'Propietario' : 'Operador';
-                let msgInicio = `⚡ ${usNombre} (${rolEtiqueta}) inició Modo Ráfaga en ${usHacienda} [Configurado: ${prodNombre}]`;
-                notificarPropietario(msgInicio);
-                mostrarToast(`⚡ Modo Ráfaga Iniciado: ${prodNombre}`);
-                registrarEventoEspecial('Ráfaga_Inicio', prodNombre, `Iniciado por ${usNombre} (${rolEtiqueta})`);
+                btn.innerText = "ENCENDIDO"; btn.style.background = "var(--primary)"; btn.style.color = "white"; btn.style.borderColor = "var(--primary)";
+                opciones.classList.remove('oculto'); verificarRafagaCustom();
             } else {
-                let total = sesionRafaga.animales.size;
-                let accionRealizada = sesionRafaga.accion || 'Tratamiento / Pesaje';
-                
-                if (total > 0) {
-                    let isDueno = usRol.includes('Propietario') || usRol.includes('Dueño');
-                    let rolEtiqueta = isDueno ? 'Propietario' : 'Operador';
-                    let msgFin = `🏁 ${usNombre} (${rolEtiqueta}) finalizó Modo Ráfaga en ${usHacienda}: Se cargaron ${total} animales [Tratamiento: ${accionRealizada}]`;
-                    notificarPropietario(msgFin);
-                    mostrarToast(`🏁 Ráfaga finalizada: ${total} animales procesados`);
-                    registrarEventoEspecial('Ráfaga_Fin', `${total} animales`, `Finalizado por ${usNombre} | Acción: ${accionRealizada}`);
-                } else {
-                    mostrarToast("Modo Ráfaga apagado");
-                }
-
-                sesionRafaga.activa = false;
-                sesionRafaga.animales.clear();
-                btn.innerText = "APAGADO";
-                btn.style.background = "transparent";
-                btn.style.color = "var(--text-main)";
-                btn.style.borderColor = "var(--border)";
+                btn.innerText = "APAGADO"; btn.style.background = "transparent"; btn.style.color = "var(--text-main)"; btn.style.borderColor = "var(--border)";
                 opciones.classList.add('oculto');
             }
         };
 
-        window.verificarRafagaCustom = function() {
-            const sel = document.getElementById('rafaga-accion').value;
-            const customInput = document.getElementById('rafaga-prod-custom');
-            const detallesBox = document.getElementById('caja-rafaga-detalles');
-            if(sel === 'solo_peso') { customInput.classList.add('oculto'); detallesBox.classList.add('oculto'); } 
-            else { detallesBox.classList.remove('oculto'); if(sel === 'OTRO') { customInput.classList.remove('oculto'); customInput.focus(); } else { customInput.classList.add('oculto'); } }
+        
+
+
+                function verificarSelectOtro(selectElement, inputId) {
+            let input = document.getElementById(inputId);
+            if(!input) return;
+            if(selectElement.value === 'OTRO') {
+                input.classList.remove('oculto');
+                input.focus();
+            } else {
+                input.classList.add('oculto');
+            }
+        }
+
+        window.verificarSelectOtro = verificarSelectOtro;
+
+        async function verificarConexionReal() {
+            setEstadoRed(false, '🔄 Verificando red...');
+            if(!navigator.onLine) {
+                setEstadoRed(false, '🔴 Red Local');
+                return;
+            }
+            try {
+                await sincronizarPendientesAuto();
+                await db.collection('sistema').doc('config').get();
+                setEstadoRed(true, '🟢 Conectado');
+                mostrarToast('🟢 Conexión activa verificada');
+            } catch(e) {
+                setEstadoRed(false, '🔴 Red Local (Sin internet)');
+            }
+        }
+
+        window.verificarConexionReal = verificarConexionReal;
+
+                window.ejecutarRafagaManual = function() {
+            let inputRp = document.getElementById('rm-caravana');
+            let inputVal = document.getElementById('rm-valor');
+            let rp = inputRp ? inputRp.value.trim().toUpperCase() : '';
+            let pesoVal = inputVal ? inputVal.value.trim().replace(',', '.') : '';
+            if(!rp) return;
+            rpActivo = rp;
+            
+            let sel = document.getElementById('rafaga-accion') ? document.getElementById('rafaga-accion').value : 'solo_peso';
+            let notas = document.getElementById('rafaga-detalles') ? document.getElementById('rafaga-detalles').value.trim() : '';
+            let recordatorio = document.getElementById('rafaga-recordatorio') ? document.getElementById('rafaga-recordatorio').value : '0';
+
+            // 1. Si se cargó peso en el campo exclusivo de peso
+            if(pesoVal && !isNaN(parseFloat(pesoVal))) {
+                let numKg = parseFloat(pesoVal).toFixed(1);
+                ejecutarAccion('Peso', numKg + " Kg", "Ráfaga Manual", null);
+            } else if(sel === 'solo_peso') {
+                mostrarToast("⚠️ Ingrese los Kg para este animal");
+                if(inputVal) inputVal.focus();
+                return;
+            }
+
+            // 2. Si la acción es Tacto
+            if(sel === 'tacto') {
+                let dxSel = document.getElementById('rafaga-dx-resultado') ? document.getElementById('rafaga-dx-resultado').value : 'Preñada';
+                ejecutarAccion('Diagnóstico', "Dx: " + dxSel, "Ráfaga Manual", null);
+            }
+            // 3. Si la acción es Tratamiento / Vacuna
+            else if(sel !== 'solo_peso') {
+                let customInput = document.getElementById('rafaga-prod-custom');
+                let producto = sel === 'OTRO' ? ((customInput && customInput.value.trim()) || 'Tratamiento General') : sel;
+                let detCompleto = (notas ? notas + " | " : "") + "Ráfaga Manual";
+                if (recordatorio !== "0" && recordatorio !== "") detCompleto += ` | [RECORDATORIO:${recordatorio}]`;
+                ejecutarAccion('Sanidad', producto, detCompleto, null);
+            }
+
+            emitirBeepHardware('combo');
+            mostrarToast("✅ Cargado RP: " + rp);
+            if(inputRp) { inputRp.value = ""; inputRp.focus(); }
+            if(inputVal) inputVal.value = "";
         };
 
+                window.verificarRafagaCustom = function() {
+            const sel = document.getElementById('rafaga-accion') ? document.getElementById('rafaga-accion').value : 'solo_peso';
+            const modalidad = document.getElementById('rafaga-modalidad') ? document.getElementById('rafaga-modalidad').value : 'rfid';
+            const customInput = document.getElementById('rafaga-prod-custom');
+            const detallesBox = document.getElementById('caja-rafaga-detalles');
+            const dxBox = document.getElementById('caja-rafaga-dx');
+            const recordatorioBox = document.getElementById('caja-rafaga-recordatorio');
+            const cajaManual = document.getElementById('caja-rafaga-manual');
+            
+            if(cajaManual) {
+                if(modalidad === 'manual') {
+                    cajaManual.style.display = 'flex';
+                    cajaManual.classList.remove('oculto');
+                    let inputRp = document.getElementById('rm-caravana');
+                    if(inputRp) setTimeout(() => inputRp.focus(), 100);
+                } else {
+                    cajaManual.style.display = 'none';
+                    cajaManual.classList.add('oculto');
+                }
+            }
+            
+            if(sel === 'solo_peso') {
+                if(customInput) customInput.classList.add('oculto');
+                if(detallesBox) { detallesBox.style.display = 'none'; detallesBox.classList.add('oculto'); }
+                if(dxBox) { dxBox.style.display = 'none'; dxBox.classList.add('oculto'); }
+                if(recordatorioBox) { recordatorioBox.style.display = 'none'; recordatorioBox.classList.add('oculto'); }
+            } else if(sel === 'tacto') {
+                if(customInput) customInput.classList.add('oculto');
+                if(detallesBox) { detallesBox.style.display = 'none'; detallesBox.classList.add('oculto'); }
+                if(dxBox) { dxBox.style.display = 'flex'; dxBox.classList.remove('oculto'); }
+                if(recordatorioBox) { recordatorioBox.style.display = 'none'; recordatorioBox.classList.add('oculto'); }
+            } else {
+                if(dxBox) { dxBox.style.display = 'none'; dxBox.classList.add('oculto'); }
+                if(detallesBox) { detallesBox.style.display = 'block'; detallesBox.classList.remove('oculto'); }
+                if(recordatorioBox) { recordatorioBox.style.display = 'flex'; recordatorioBox.classList.remove('oculto'); }
+                if(sel === 'OTRO') {
+                    if(customInput) { customInput.classList.remove('oculto'); customInput.focus(); }
+                } else {
+                    if(customInput) customInput.classList.add('oculto');
+                }
+            }
+        };
+
+        // =========================================================================
+        // SOPORTE ELECTRON PUERTO SERIAL / COM (USB-RS232 BALANZAS)
+        // =========================================================================
+        let serialPort = null;
+        let serialReader = null;
+
+        async function conectarSerialCOM() {
+            
+            
+
+            if (!navigator.serial) {
+                alert('ℹ️ Web Serial API no detectada en este entorno.\n\nSi usas Electron, asegúrate de habilitar los permisos de puerto serie o conecta la balanza en modo Teclado HID.');
+                return;
+            }
+
+            if (serialPort) {
+                try {
+                    if(serialReader) await serialReader.cancel();
+                    await serialPort.close();
+                } catch(e){}
+                serialPort = null;
+                serialReader = null;
+                if(btn) btn.innerText = '🔌 Conectar Balanza COM / USB';
+                
+                mostrarToast('Puerto serie desconectado.');
+                return;
+            }
+
+            try {
+                serialPort = await navigator.serial.requestPort();
+                await serialPort.open({ baudRate: 9600 });
+                if(btn) btn.innerText = '🔌 Desconectar Puerto COM';
+                
+                
+
+                const textDecoder = new TextDecoderStream();
+                const readableStreamClosed = serialPort.readable.pipeTo(textDecoder.writable);
+                const reader = textDecoder.readable.getReader();
+                serialReader = reader;
+                let bufferSerial = '';
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    bufferSerial += value;
+                    if (bufferSerial.includes('\n') || bufferSerial.includes('\r')) {
+                        let lineas = bufferSerial.split(/[\r\n]+/);
+                        bufferSerial = lineas.pop();
+                        lineas.forEach(l => {
+                            let limpia = l.trim();
+                            if (limpia.length > 0) procesarDatoHardware(limpia);
+                        });
+                    }
+                }
+            } catch(err) {
+                console.warn('[Serial Error]:', err);
+                if(btn) btn.innerText = '🔌 Conectar Balanza COM / USB';
+            }
+        }
+
+        window.conectarSerialCOM = conectarSerialCOM;
+
+        // PUENTE NATIVO PARA ELECTRON IPC (PRELOAD O MAIN PROCESS)
+        if (typeof window !== 'undefined') {
+            window.recibirDatoBluetooth = function(data) {
+                procesarDatoHardware(data);
+            };
+            window.recibirTagNFC = function(tagHex) {
+                procesarDatoHardware(tagHex);
+            };
+            if (window.electronAPI && typeof window.electronAPI.onHardwareData === 'function') {
+                window.electronAPI.onHardwareData((event, data) => procesarDatoHardware(data));
+            } else if (typeof window.require === 'function') {
+                try {
+                    const { ipcRenderer } = window.require('electron');
+                    if (ipcRenderer) {
+                        ipcRenderer.on('hardware-data', (event, data) => procesarDatoHardware(data));
+                        ipcRenderer.on('bluetooth-data', (event, data) => procesarDatoHardware(data));
+                        ipcRenderer.on('scale-data', (event, data) => procesarDatoHardware(data));
+                    }
+                } catch(e) {}
+            }
+        }
 
         function setEstadoRed(online, texto = null) {
             const b = document.getElementById('estado-red');
@@ -1168,14 +1508,7 @@
 
         function notificarPropietario(mensaje) {
             if(!navigator.onLine) return;
-            let isDueno = usRol.includes('Propietario') || usRol.includes('Dueño');
-            const fd = new URLSearchParams();
-            fd.append('accion', 'notificar_accion');
-            fd.append('maestro', maestroId);
-            fd.append('mensaje', mensaje);
-            fd.append('remitente_es_dueno', isDueno);
-            fd.append('remitente_nombre', usNombre);
-            fd.append('remitente_usuario', usActivo);
+            const fd = new URLSearchParams(); fd.append('accion', 'notificar_accion'); fd.append('maestro', maestroId); fd.append('mensaje', mensaje);
             fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
         }
 
@@ -1199,22 +1532,8 @@
                 if(unsubscribeConfig) unsubscribeConfig();
                 unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot(doc => {
                     if(doc.exists) {
-                        const conf = doc.data() || {};
-                        let msg = (conf.alerta_global || "").trim();
-                        let alertaId = conf.alerta_id || (msg ? "alerta_id_" + encodeURIComponent(msg).slice(0, 20) : "");
-                        let expira = conf.alerta_expira || 0;
-                        
-                        let esAntiguoHola = msg.toLowerCase() === 'hola' ||
-                                            msg.toLowerCase() === '⏳ aviso: hola' ||
-                                            msg.toLowerCase().includes('aviso importante hola') ||
-                                            msg.toLowerCase() === 'aviso importante: hola';
-
-                        if (!msg || esAntiguoHola || (expira > 0 && Date.now() > expira)) {
-                            procesarAlertaServidor("", "");
-                        } else {
-                            procesarAlertaServidor(msg, alertaId);
-                        }
-
+                        const conf = doc.data();
+                        procesarAlertaServidor(conf.alerta_global, "alerta_fb");
                         const pantMant = document.getElementById('pantalla-mantenimiento');
                         if(conf.mantenimiento) {
                             if(pantMant) pantMant.classList.remove('oculto');
@@ -1245,22 +1564,13 @@
                     fusionarDatos(nuevosDatos);
 
                     if (notificar.length > 0 && mapAnterior.size > 0) {
-                        let propFlag = usRol.includes('Propietario') || usRol.includes('Dueño');
-                        // Solo los dueños reciben notificaciones y NUNCA de sus propias acciones
-                        if (propFlag && notificar.length <= 5) {
+                        if (notificar.length <= 3) {
                             notificar.forEach(n => {
-                                let opNombre = n.autor_nombre || (n.detalles && n.detalles.includes("Op: ") ? n.detalles.split("Op: ")[1].trim() : (n.usuario || "Un usuario"));
-                                let opEmail = n.autor_email || n.usuario || "";
-                                
-                                let esAutorMismo = (opEmail && usActivo && opEmail.toLowerCase() === usActivo.toLowerCase()) ||
-                                                   (opNombre && usNombre && opNombre.toLowerCase() === usNombre.toLowerCase());
-
-                                if (!esAutorMismo && n.maestro === maestroId) {
-                                    if (n.accion === 'Ráfaga_Inicio' || n.accion === 'Ráfaga_Fin') {
-                                        lanzarNotificacionEscritorio("⚡ Modo Ráfaga Taurus", `${opNombre}: ${n.valor}`);
-                                    } else if (n.caravana !== '---' && n.caravana !== 'null' && String(n.caravana).toLowerCase() !== 'null') {
-                                        lanzarNotificacionEscritorio("Alerta Taurus", `${opNombre} registró [${n.accion}] al RP ${n.caravana}`);
-                                    }
+                                let op = n.usuario || "Un operador";
+                                if (n.detalles && n.detalles.includes("Op: ")) { op = n.detalles.split("Op: ")[1].trim(); }
+                                let propFlag = usRol.includes('Propietario') || usRol.includes('Dueño');
+                                if(propFlag && op.toLowerCase() !== usNombre.toLowerCase() && n.caravana !== '---') {
+                                    lanzarNotificacionEscritorio("Alerta Taurus", `${op} registró [${n.accion}] al RP ${n.caravana}`);
                                 }
                             });
                         }
@@ -1390,7 +1700,7 @@
                 document.getElementById('main-content').classList.remove('oculto');
                 document.getElementById('pantalla-mantenimiento').classList.add('oculto');
                 if(tabSeleccionado) { cambiarVista(vistaInicial, tabSeleccionado); } else { cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4]); }
-                sincronizarPendientesAuto(); cargarListasFiltrosSelects(); aplicarVisibilidadCoraPC();
+                sincronizarPendientesAuto(); cargarListasFiltrosSelects();
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
 
@@ -1473,8 +1783,9 @@
         }
 
         function obtenerNombreCategoriaLegible(sigla) {
-            if(!sigla) return "Sin Categoría";
+            if(!sigla || sigla === "-" || sigla === "null" || sigla === "undefined" || String(sigla).trim() === "") return "Sin Categoría";
             let s = String(sigla).trim().toUpperCase();
+            if(s === "SIN CATEGORÍA" || s === "SIN CATEGORIA") return "Sin Categoría";
             if(s.startsWith('V:')) return "Vaca / Vaquilla";
             if(s.startsWith('VV:')) return "Vaca Vieja";
             if(s.startsWith('TH:')) return "Ternera Hembra";
@@ -1525,10 +1836,11 @@
                 if(el) {
                     let curr = el.value;
                     let opts = '<option value="ALL">🐄 Todas las Categorías</option>';
+                    opts += '<option value="Sin Categoría">⚠️ Sin Categoría</option>';
                     catsSet.add("Vaca / Vaquilla"); catsSet.add("Vaca Vieja"); catsSet.add("Ternera Hembra"); 
                     catsSet.add("Ternero Macho"); catsSet.add("Desmamante Hembra"); catsSet.add("Desmamante Macho"); 
                     catsSet.add("Toros"); catsSet.add("Novillos"); catsSet.add("Bueyes / Señuelos");
-                    Array.from(catsSet).sort().forEach(c => { opts += `<option value="${c}">${c}</option>`; });
+                    Array.from(catsSet).filter(c => c !== "Sin Categoría" && c !== "-").sort().forEach(c => { opts += `<option value="${c}">${c}</option>`; });
                     el.innerHTML = opts;
                     if(curr && curr !== "") el.value = curr;
                 }
@@ -1626,70 +1938,56 @@
         }
 
         function ejecutarAccion(tipo, val, det, modalId) {
-            let car = rpActivo;
-            if (tipo.includes('Operador') || tipo === 'Alta Operador' || tipo === 'Edición Operador' || tipo === 'Baja Operador' || tipo.startsWith('Ráfaga_')) {
-                car = "---";
-            } else if (!car || String(car).toLowerCase() === "null" || car === "undefined") {
-                car = "---";
-            }
-
-            if (rafagaActiva && car !== "---") {
-                sesionRafaga.animales.add(String(car));
-                const btnR = document.getElementById('btn-toggle-rafaga');
-                if (btnR) btnR.innerText = `ENCENDIDO (${sesionRafaga.animales.size})`;
-            }
-
-            const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
-            const docRef = colRef.doc();
-            const obj = {
-                id: docRef.id,
-                fecha: new Date().toISOString(),
-                accion: tipo,
-                caravana: car,
-                valor: val,
-                detalles: det + ` | Op: ${usNombre}`,
-                maestro: maestroId,
-                autor_email: usActivo,
-                autor_nombre: usNombre,
-                autor_rol: usRol
-            };
-            dbCache.unshift(obj);
-            historiaCache = null;
-            activosCache = null;
-            buscarCaravanaBtn(rpActivo);
-            procesarDatosDashboard();
+            const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: rpActivo, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
+            dbCache.unshift(obj); historiaCache = null; activosCache = null; buscarCaravanaBtn(rpActivo); procesarDatosDashboard();
             if(modalId) cerrarModal(modalId);
-            
-            if(!rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador' && tipo !== 'Alta Operador' && tipo !== 'Baja Operador' && !tipo.startsWith('Ráfaga_')) {
+            if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador') {
                 notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
             }
             if(navigator.onLine) { 
-                docRef.set(obj).catch(e => {
+                db.collection('estancias').doc(maestroId).collection('eventos').add(obj).catch(e => {
                     let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); 
                 });
             } else { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); }
         }
 
         function prepararGuardado(mId, t) { 
-            if(!rpActivo) return; let v = "-", d = ""; const i = document.getElementById(mId).querySelectorAll('.form-control, .textarea'); 
-            if(t === 'Comentario') { d = i[0].value; } 
-            else if(t === 'Peso') { v = i[0].value + " Kg"; d = `Cond: ${i[1].value}. Notas: ${i[2].value}`; } 
-            else if(t === 'Sanidad') { let recordatorio = document.getElementById('i-sani-recordatorio').value; v = i[0].value; d = `Lote: ${i[1].value}. Notas: ${i[2].value}`; if (recordatorio !== "0") { d += ` | [RECORDATORIO:${recordatorio}]`; } } 
-            else if(t === 'Diagnóstico') { v = "Dx: " + i[0].value; d = i[1].value || "-"; } 
-            else if(t === 'Inseminación') { v = "Toro: " + i[1].value; d = `Ins: ${i[0].value}. Notas: ${i[2].value}`; } 
-            else if(t === 'Nutrición') { v = i[0].value; d = `Ración: ${i[1].value}. Notas: ${i[2].value}`; } 
-            else if(t === 'Baja') { v = i[0].value; d = i[1].value || "Sin observaciones"; }
+            if(!rpActivo) return;
+            let v = '-', d = ''; 
+            let val = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : '';
+            let valOtro = (selId, otroId) => { let s = val(selId); return s === 'OTRO' ? val(otroId) : s; };
+
+            if(t === 'Comentario') { d = val('f-comentario-txt'); } 
+            else if(t === 'Peso') { v = val('i-peso-val') + ' Kg'; d = 'Cond: ' + valOtro('i-peso-cond', 'peso-otro') + '. Notas: ' + val('i-peso-txt'); } 
+            else if(t === 'Sanidad') { 
+                let recordatorio = val('i-sani-recordatorio'); 
+                v = valOtro('i-sani-sel', 'sani-otro'); 
+                d = 'Lote: ' + val('i-sani-lote') + '. Notas: ' + val('i-sani-txt'); 
+                if (recordatorio !== '0' && recordatorio !== '') { d += ' | [RECORDATORIO:' + recordatorio + ']'; } 
+            } 
+            else if(t === 'Diagnóstico') { v = 'Dx: ' + valOtro('i-dx-sel', 'dx-otro'); d = val('i-dx-txt') || '-'; } 
+            else if(t === 'Inseminación') { v = 'Toro: ' + val('i-ins-toro'); d = 'Método: ' + valOtro('i-ins-quien', 'ins-otro') + '. Notas: ' + val('i-ins-txt'); } 
+            else if(t === 'Nutrición') { v = valOtro('i-nut-prod', 'nut-otro'); d = 'Ración: ' + val('i-nut-rac') + '. Notas: ' + val('i-nut-txt'); } 
+            else if(t === 'Baja') { v = valOtro('i-baja-causa', 'baja-otro'); d = val('i-baja-txt') || 'Sin observaciones'; }
             
             if(t === 'Baja') {
                 ejecutarAccion(t, v, d, mId); 
-                let rpArchivado = rpActivo + "-BAJA-" + Math.floor(Math.random() * 10000);
+                let rpArchivado = rpActivo + '-BAJA-' + Math.floor(Math.random() * 10000);
                 setTimeout(() => {
                     ejecutarAccion('Cambio de Caravana', rpArchivado, 'RP archivado por Baja/Muerte', null);
-                    alert(`Baja registrada exitosamente. La caravana original (${rpActivo}) ha quedado libre y vacía de datos.`);
+                    alert('Baja registrada exitosamente. La caravana original (' + rpActivo + ') ha quedado libre y vacía de datos.');
                     rpActivo = rpArchivado; buscarCaravanaBtn(rpArchivado);
                 }, 400);
             } else { ejecutarAccion(t, v, d, mId); }
-            i.forEach(el => el.value = ''); 
+
+            // Limpiar campos visuales
+            let modalEl = document.getElementById(mId);
+            if(modalEl) {
+                modalEl.querySelectorAll('.form-control, .textarea').forEach(el => {
+                    if(el.tagName !== 'SELECT' && el.type !== 'hidden') el.value = '';
+                });
+                modalEl.querySelectorAll('input[id$="-otro"]').forEach(el => el.classList.add('oculto'));
+            }
         }
 
         function mostrarCarimboCalculado() {
@@ -1717,68 +2015,18 @@
             }
         }
 
-        function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'm-clasi'); }
+        function guardarClasificacion() { 
+            if(!rpActivo) return; 
+            let cat = document.getElementById('input-cat-rapida').value;
+            let selLote = document.getElementById('input-lote-rapido').value;
+            let lote = selLote === 'OTRO' ? document.getElementById('lote-otro').value : selLote;
+            let carimbo = document.getElementById('input-carimbo-rapido').value || '-';
+            ejecutarAccion('Actualización de Datos', 'Cat: ' + cat + ' | Carimbo: ' + carimbo, 'Lote: ' + lote, 'm-clasi'); 
+        }
+
         function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'm-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
         function borrarCaravana() { if(!rpActivo) return; if(confirm(`¿ELIMINAR todo el historial de la caravana ${rpActivo}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null); alert("Historial eliminado. El número quedó libre."); cambiarVista('v-dash', document.querySelectorAll('.sidebar-nav li')[0]); } }
-        function abrirEdicionRegistro(id) {
-            if(!id || id === 'undefined') { alert("Este registro aún no se sincronizó con la nube. Espere un momento."); return; }
-            let reg = dbCache.find(r => r.id === id);
-            if(!reg) return;
-            document.getElementById('edit-reg-id').value = id; 
-            document.getElementById('edit-reg-valor').value = reg.valor || ""; 
-            document.getElementById('edit-reg-detalles').value = reg.detalles || "";
-            
-            if(reg.fecha) {
-                let fechaLocal = new Date(reg.fecha);
-                fechaLocal.setMinutes(fechaLocal.getMinutes() - fechaLocal.getTimezoneOffset());
-                document.getElementById('edit-reg-fecha').value = fechaLocal.toISOString().slice(0,16);
-            }
-
-            cerrarModal('m-traza');
-            abrirModal('modal-editar-registro');
-        }
-
-        async function guardarEdicionRegistro() {
-            let id = document.getElementById('edit-reg-id').value; 
-            let nValor = document.getElementById('edit-reg-valor').value; 
-            let nDetalles = document.getElementById('edit-reg-detalles').value;
-            let nFecha = document.getElementById('edit-reg-fecha').value; 
-            
-            if(!navigator.onLine) { alert("Necesitas conexión a internet para editar."); return; }
-            try {
-                let isoFecha = new Date(nFecha).toISOString();
-                await db.collection('estancias').doc(maestroId).collection('eventos').doc(id).update({ valor: nValor, detalles: nDetalles, fecha: isoFecha });
-                
-                let i = dbCache.findIndex(r => r.id === id);
-                if(i !== -1) { 
-                    dbCache[i].valor = nValor; 
-                    dbCache[i].detalles = nDetalles; 
-                    dbCache[i].fecha = isoFecha;
-                    historiaCache = null; activosCache = null; 
-                    buscarCaravanaBtn(rpActivo); 
-                }
-                cerrarModal('modal-editar-registro'); 
-                mostrarToast("✅ Modificado exitosamente."); 
-                verTrazabilidad();
-            } catch(e) { alert("Error al modificar."); }
-        }
-
-        function verTrazabilidad() {
-            abrirModal('m-traza');
-            let h = "";
-            obtenerHistorial(rpActivo).forEach(r => {
-                let btnEdit = r.id ? `<button onclick="abrirEdicionRegistro('${r.id}')" style="background:transparent; border:1px solid var(--border); color:var(--text-muted); border-radius:4px; padding:2px 8px; cursor:pointer; font-size:11px;">✏️ Editar</button>` : '';
-                h += `<tr>
-                    <td style="white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td>
-                    <td><strong>${r.accion}</strong></td>
-                    <td>${r.valor}</td>
-                    <td style="font-size:12px;">${r.detalles}</td>
-                    <td>${btnEdit}</td>
-                </tr>`;
-            });
-            const tb = document.getElementById('tb-traza');
-            if(tb) tb.innerHTML = h;
-        }
+        function verTrazabilidad() { abrirModal('m-traza'); let h = ""; obtenerHistorial(rpActivo).forEach(r => { h += `<tr><td style="white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${r.accion}</strong></td><td>${r.valor}</td><td style="font-size:12px;">${r.detalles}</td></tr>`; }); document.getElementById('tb-traza').innerHTML = h; }
 
         function cambiarModoReporte() {
             const modo = document.getElementById('f-inf-modo').value;
@@ -1794,33 +2042,13 @@
         }
 
         function manejarRangoFechas() {
-            const rango = document.getElementById('f-inf-rango-fecha').value;
-            const cajaManual = document.getElementById('caja-fechas-custom');
-            const cajaPuntual = document.getElementById('caja-fecha-puntual');
-            const dPuntual = document.getElementById('f-inf-fecha-puntual');
-            const dDesde = document.getElementById('f-inf-desde');
-            const dHasta = document.getElementById('f-inf-hasta');
-            let hoy = new Date();
-            let desde = new Date();
-
-            if (rango === 'puntual') {
-                if (cajaPuntual) cajaPuntual.style.display = 'block';
-                if (cajaManual) cajaManual.style.display = 'none';
-                if (dPuntual && !dPuntual.value) dPuntual.value = hoy.toISOString().split('T')[0];
-            } else if (rango === 'custom') {
-                if (cajaPuntual) cajaPuntual.style.display = 'none';
-                if (cajaManual) cajaManual.style.display = 'flex';
-                if (dDesde && !dDesde.value) dDesde.value = hoy.toISOString().split('T')[0];
-                if (dHasta && !dHasta.value) dHasta.value = hoy.toISOString().split('T')[0];
-            } else {
-                if (cajaPuntual) cajaPuntual.style.display = 'none';
-                if (cajaManual) cajaManual.style.display = 'none';
-                if (rango === 'hoy') { }
-                else if (rango === '7') { desde.setDate(hoy.getDate() - 7); }
-                else if (rango === '30') { desde.setDate(hoy.getDate() - 30); }
-                else if (rango === 'todo') { desde = new Date('2000-01-01'); }
-                if (dDesde) dDesde.value = desde.toISOString().split('T')[0];
-                if (dHasta) dHasta.value = hoy.toISOString().split('T')[0];
+            const rango = document.getElementById('f-inf-rango-fecha').value; const cajaManual = document.getElementById('caja-fechas-custom');
+            const dDesde = document.getElementById('f-inf-desde'); const dHasta = document.getElementById('f-inf-hasta');
+            let hoy = new Date(); let desde = new Date();
+            if (rango === 'custom') { cajaManual.style.display = 'flex'; } else {
+                cajaManual.style.display = 'none';
+                if(rango === 'hoy') { } else if (rango === '7') { desde.setDate(hoy.getDate() - 7); } else if (rango === '30') { desde.setDate(hoy.getDate() - 30); } else if (rango === 'todo') { desde = new Date('2000-01-01'); }
+                dDesde.value = desde.toISOString().split('T')[0]; dHasta.value = hoy.toISOString().split('T')[0];
             }
             actualizarInformeAvanzado();
         }
@@ -1842,156 +2070,88 @@
             actualizarInformeAvanzado();
         }
 
-                function calcularDiferenciaPeso(rp, fechaActual, valorAct) {
-            let historia = obtenerHistorial(rp).filter(r => r.accion === 'Peso' && new Date(r.fecha) < new Date(fechaActual)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-            if(historia.length > 0) {
-                let pAnt = parseFloat(String(historia[0].valor).replace(/[^\d.-]/g, ''));
-                let pAct = parseFloat(String(valorAct).replace(/[^\d.-]/g, ''));
-                if(!isNaN(pAnt) && !isNaN(pAct)) {
-                    let diff = (pAct - pAnt).toFixed(1);
-                    let textoDiff = diff > 0 ? `Subió ${diff} Kg desde el último pesaje` : (diff < 0 ? `Bajó ${Math.abs(diff)} Kg desde el último pesaje` : `Mantuvo peso exacto`);
-                    return `\n(Peso anterior: ${pAnt} Kg | ${textoDiff})`;
-                }
-            }
-            return "";
-        }
-
         function obtenerBadgeAccion(accion) {
             if(accion === 'Sanidad') return `Sanidad`; if(accion === 'Peso') return `Peso`; if(accion === 'Diagnóstico') return `Tacto`; if(accion === 'Inseminación') return `Reproducción`; if(accion === 'Nutrición') return `Nutrición`; if(accion === 'Baja') return `Baja / Muerte`;
             return `${accion}`;
         }
 
         function actualizarInformeAvanzado() {
-            const modo = document.getElementById('f-inf-modo').value;
-            const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
-
-            const datosActivos = obtenerRegistrosActivos();
-            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && String(c).toLowerCase() !== "null" && c !== "undefined" && c !== ""))];
-
+            const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
+            const datosActivos = obtenerRegistrosActivos(); 
+            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; 
+            
             const tbodyMasivo = document.getElementById('tb-informe-masivo');
             const tbodyBajas = document.getElementById('tb-informe-bajas');
             const tbodyEventos = document.getElementById('tb-informe-eventos');
             const tbodyIndiv = document.getElementById('tb-informe-individual');
-
+            
             document.getElementById('tabla-masiva').classList.add('oculto');
             document.getElementById('tabla-bajas').classList.add('oculto');
             document.getElementById('tabla-eventos').classList.add('oculto');
             document.getElementById('tabla-individual').classList.add('oculto');
-
+            
+            let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja'));
+            
             const cajaKpiPre = document.getElementById('caja-kpi-prenadas');
             const lblTotal = document.getElementById('lbl-inf-total');
 
-            // CASO A: DOSSIER INDIVIDUAL
             if(fRp !== "") {
-                rpPrint = fRp;
-                document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar Dossier: ${fRp.toUpperCase()}`;
-                document.getElementById('tabla-individual').classList.remove('oculto');
-                const regsRaw = obtenerHistorial(fRp);
-                let hInd = "";
-                pdfExportData = [];
-                
-                const fRango = document.getElementById('f-inf-rango-fecha') ? document.getElementById('f-inf-rango-fecha').value : 'todo';
-                const fPuntual = document.getElementById('f-inf-fecha-puntual') ? document.getElementById('f-inf-fecha-puntual').value : '';
-                const fDesde = document.getElementById('f-inf-desde') ? document.getElementById('f-inf-desde').value : '';
-                const fHasta = document.getElementById('f-inf-hasta') ? document.getElementById('f-inf-hasta').value : '';
-
-                let regs = regsRaw.filter(r => {
-                    if (['Alta Operador', 'Edición Operador', 'Baja Operador', 'Perfil Master', 'Actualización de Datos', 'Cambio de Caravana', 'Borrar_Caravana'].includes(r.accion) || String(r.accion).includes('Vinculacion')) return false;
-                    let rDate = new Date(r.fecha);
-                    if (fRango === 'puntual' && fPuntual) {
-                        let fP = new Date(fPuntual + 'T00:00:00');
-                        let fPFin = new Date(fPuntual + 'T23:59:59');
-                        if (rDate < fP || rDate > fPFin) return false;
-                    } else if (fRango === 'custom') {
-                        if (fDesde && rDate < new Date(fDesde + 'T00:00:00')) return false;
-                        if (fHasta && rDate > new Date(fHasta + 'T23:59:59')) return false;
-                    }
-                    return true;
-                });
-
+                rpPrint = fRp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Dossier: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
+                const regs = obtenerHistorial(fRp); let hInd = ""; pdfExportData = [];
                 regs.forEach(r => {
-                    let fDate = new Date(r.fecha).toLocaleString();
-                    let badge = obtenerBadgeAccion(r.accion);
-                    let vFinal = r.valor;
-                    if (r.accion === 'Peso') vFinal += calcularDiferenciaPeso(fRp, r.fecha, r.valor);
-                    
-                    pdfExportData.push([fDate, badge, vFinal, r.detalles]);
-                    hInd += `<tr><td style="white-space:nowrap;">${fDate}</td><td><strong>${badge}</strong></td><td style="white-space:pre-wrap;">${vFinal}</td><td>${r.detalles}</td></tr>`;
+                    if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') {
+                        let fDate = new Date(r.fecha).toLocaleDateString();
+                        let badge = obtenerBadgeAccion(r.accion);
+                        pdfExportData.push([fDate, badge, r.valor, r.detalles]);
+                        hInd+=`<tr><td>${fDate}</td><td><strong>${badge}</strong></td><td>${r.valor}</td><td>${r.detalles}</td></tr>`;
+                    }
                 });
-                tbodyIndiv.innerHTML = hInd || '<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--text-muted);">Sin eventos registrados para este animal en el periodo seleccionado.</td></tr>';
-                document.getElementById('inf-total').innerText = regs.length;
-                if (cajaKpiPre) cajaKpiPre.style.display = 'none';
-                if (lblTotal) lblTotal.innerText = "Registros Clínicos";
+                tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.filter(r => !r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master').length; document.getElementById('inf-prenadas').innerText = "-"; 
+                if(lblTotal) lblTotal.innerText = "REGISTROS";
                 return;
             }
 
-            rpPrint = "";
-            document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar PDF`;
+            rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar PDF`;
 
-            // CASO B: INVENTARIO (CON FECHA DE CORTE HISTÓRICA O ACTUAL)
             if(modo === 'inventario') {
                 document.getElementById('tabla-masiva').classList.remove('oculto');
                 if (cajaKpiPre) cajaKpiPre.style.display = 'block';
-                if (lblTotal) lblTotal.innerText = "Animales";
-
-                const fCorte = document.getElementById('f-inf-inv-fecha') ? document.getElementById('f-inf-inv-fecha').value : '';
-                const fCorteDate = fCorte ? new Date(fCorte + 'T23:59:59') : null;
+                if (lblTotal) lblTotal.innerText = "CABEZAS LISTADAS";
 
                 const fLote = document.getElementById('f-inf-lote').value;
                 const fCat = document.getElementById('f-inf-cat').value;
                 const fDx = document.getElementById('f-inf-dx').value;
                 const fCarimbo = document.getElementById('f-inf-carimbo').value;
-
-                tbodyMasivo.innerHTML = "";
-                let countTotal = 0;
-                let countPre = 0;
+                
+                tbodyMasivo.innerHTML = ""; let countTotal = 0; let countPre = 0;
+                
                 let bufferHTML = "";
-                let maxRows = 120;
-                pdfExportData = [];
-
-                unicas.forEach(car => {
-                    const regs = obtenerHistorial(car);
-                    let regsCorte = fCorteDate ? regs.filter(r => new Date(r.fecha) <= fCorteDate) : regs;
-                    if (regsCorte.length === 0) return;
-
-                    let uBaja = regsCorte.find(r => r.accion === 'Baja');
-                    if (uBaja) return;
-
-                    let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
-                    const uP = regsCorte.find(d => d.accion === 'Perfil Master');
-                    if (uP) cat = String(uP.detalles || "").split('|')[0] || "-";
-
-                    const uC = regsCorte.find(d => d.accion === 'Actualización de Datos');
-                    if (uC) {
-                        let v = String(uC.valor || "").split('|');
-                        cat = v[0] ? v[0].replace('Cat:', '').trim() : cat;
-                        carimbo = v[1] ? v[1].replace('Carimbo:', '').trim() : "-";
-                        lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:', '').trim() : "-";
-                    }
+                let maxRows = 100; pdfExportData = [];
+                vivas.forEach(car => {
+                    const regs = obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
+                    const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
+                    const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
+                    if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles||"split('|')[0]") ? String(uC.detalles||"split('|')[0]").replace('Lote:','').trim() : "-"; }
                     let catLegible = obtenerNombreCategoriaLegible(cat);
-
-                    const uPeso = regsCorte.find(d => String(d.accion).includes('Peso'));
-                    if (uPeso) {
-                        let fPesoStr = new Date(uPeso.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'});
-                        peso = `${uPeso.valor || "-"} (${fPesoStr})`;
-                    }
-
-                    const uDx = regsCorte.find(d => d.accion === 'Diagnóstico');
+                    const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
+                    const uDx = regs.find(d => d.accion === 'Diagnóstico'); 
+                    
                     let loteLow = lote.toLowerCase();
-                    let notasStr = regsCorte.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
+                    let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
                     let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
                     let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
+                    
                     dx = uDx ? uDx.valor : (esPre ? "Preñada" : (esVacia ? "Vacía" : "-"));
-
-                    let pasaFiltro = true;
-                    if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false;
-                    if(fCat !== "ALL" && !catLegible.includes(fCat)) pasaFiltro = false;
+                    
+                    let pasaFiltro = true; 
+                    if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false; 
+                    if(fCat !== "ALL" && !catLegible.includes(fCat)) pasaFiltro = false; 
                     if(fDx === "Preñada" && !esPre) pasaFiltro = false;
                     if(fDx === "Vacía" && !esVacia) pasaFiltro = false;
-                    if(fCarimbo !== "ALL" && carimbo !== fCarimbo) pasaFiltro = false;
-
-                    if(pasaFiltro) {
-                        countTotal++;
+                    if(fCarimbo !== "ALL" && carimbo !== fCarimbo) pasaFiltro = false; 
+                    
+                    if(pasaFiltro) { 
+                        countTotal++; 
                         if(esPre) countPre++;
                         pdfExportData.push([`${car} - Cb:${carimbo}`, catLegible, lote, peso, dx]);
                         if (countTotal <= maxRows) {
@@ -1999,25 +2159,21 @@
                         }
                     }
                 });
-
-                if(countTotal > maxRows) bufferHTML += `<tr><td colspan="5" style="text-align:center; padding:10px; font-weight:bold; color:var(--text-muted);">Mostrando primeros ${maxRows} animales de ${countTotal}. Descargue el PDF para ver el inventario completo.</td></tr>`;
-                tbodyMasivo.innerHTML = bufferHTML || '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">No hay animales activos con estos criterios de búsqueda.</td></tr>';
-                document.getElementById('inf-total').innerText = countTotal;
+                if(countTotal > maxRows) bufferHTML += `<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-muted);">Mostrando 100 resultados de ${countTotal}. Use filtros o descargue el PDF completo.</td></tr>`;
+                tbodyMasivo.innerHTML = bufferHTML;
+                document.getElementById('inf-total').innerText = countTotal; 
                 document.getElementById('inf-prenadas').innerText = countPre;
-
-            // CASO C: BAJAS Y MORTALIDAD
+                
             } else if(modo === 'bajas') {
                 document.getElementById('tabla-bajas').classList.remove('oculto');
                 if (cajaKpiPre) cajaKpiPre.style.display = 'none';
-                if (lblTotal) lblTotal.innerText = "Bajas / Muertes";
+                if (lblTotal) lblTotal.innerText = "BAJAS / MORTALIDAD";
 
                 const fCausa = document.getElementById('f-inf-baja-causa').value;
-                const fDesdeBajas = document.getElementById('f-inf-baja-desde').value;
-                const fHastaBajas = document.getElementById('f-inf-baja-hasta').value;
+                const fDesde = document.getElementById('f-inf-baja-desde').value;
+                const fHasta = document.getElementById('f-inf-baja-hasta').value;
 
-                let bufferBajas = "";
-                let maxBajas = 100;
-                pdfExportData = [];
+                let bufferBajas = ""; let maxBajas = 100; pdfExportData = [];
                 let countBajas = 0;
 
                 unicas.forEach(car => {
@@ -2027,148 +2183,45 @@
 
                     let pasa = true;
                     if (fCausa !== "ALL" && !String(rBaja.valor).toLowerCase().includes(fCausa.toLowerCase())) pasa = false;
-                    if (fDesdeBajas && new Date(rBaja.fecha) < new Date(fDesdeBajas + 'T00:00:00')) pasa = false;
-                    if (fHastaBajas && new Date(rBaja.fecha) > new Date(fHastaBajas + 'T23:59:59')) pasa = false;
+                    if (fDesde && new Date(rBaja.fecha) < new Date(fDesde + 'T00:00:00')) pasa = false;
+                    if (fHasta && new Date(rBaja.fecha) > new Date(fHasta + 'T23:59:59')) pasa = false;
 
                     if (pasa) {
                         countBajas++;
                         let fDate = new Date(rBaja.fecha).toLocaleDateString();
-                        pdfExportData.push([fDate, car, rBaja.valor, rBaja.detalles || '-']);
+                        pdfExportData.push([fDate, car, rBaja.valor, rBaja.detalles||'-']);
                         if(countBajas <= maxBajas) {
-                            bufferBajas += `<tr><td>${fDate}</td><td><strong>${car}</strong></td><td style="color:var(--danger); font-weight:bold;">${rBaja.valor}</td><td>${rBaja.detalles || '-'}</td></tr>`;
+                            bufferBajas += `<tr><td>${fDate}</td><td><strong>${car}</strong></td><td style="color:var(--danger); font-weight:bold;">${rBaja.valor}</td><td>${rBaja.detalles||'-'}</td></tr>`;
                         }
                     }
                 });
-                tbodyBajas.innerHTML = bufferBajas || '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">Sin bajas registradas en el periodo.</td></tr>';
+                if(countBajas > maxBajas) bufferBajas += `<tr><td colspan="4" style="text-align:center; padding:15px; font-weight:bold; color:var(--text-muted);">Mostrando ${maxBajas} resultados de ${countBajas}. Descargue el PDF para ver el informe completo.</td></tr>`;
+                tbodyBajas.innerHTML = bufferBajas;
                 document.getElementById('inf-total').innerText = countBajas;
 
-            // CASO D: TRATAMIENTOS Y PROCEDIMIENTOS (DÍA PUNTUAL O RANGO, CON AGRUPACIÓN UNIFICADA)
             } else {
                 document.getElementById('tabla-eventos').classList.remove('oculto');
                 if (cajaKpiPre) cajaKpiPre.style.display = 'none';
-                if (lblTotal) lblTotal.innerText = "Tratamientos / Animales";
+                if (lblTotal) lblTotal.innerText = "TRABAJOS LISTADOS";
 
-                const fRango = document.getElementById('f-inf-rango-fecha') ? document.getElementById('f-inf-rango-fecha').value : '30';
-                const fPuntual = document.getElementById('f-inf-fecha-puntual') ? document.getElementById('f-inf-fecha-puntual').value : '';
-                const fDesde = document.getElementById('f-inf-desde') ? document.getElementById('f-inf-desde').value : '';
-                const fHasta = document.getElementById('f-inf-hasta') ? document.getElementById('f-inf-hasta').value : '';
-                const fAcc = document.getElementById('f-inf-accion-oculto').value;
-                const fKey = document.getElementById('f-inf-keyword').value.trim().toLowerCase();
-
-                let eventos = datosActivos.filter(d => {
-                    if (!d.caravana || d.caravana === "---" || String(d.caravana).toLowerCase() === "null" || d.caravana === "undefined") return false;
-                    if (['Alta Operador', 'Edición Operador', 'Baja Operador', 'Perfil Master', 'Actualización de Datos', 'Cambio de Caravana', 'Borrar_Caravana', 'Baja'].includes(d.accion)) return false;
-                    if (String(d.accion).includes('Vinculacion')) return false;
-                    return true;
-                });
-
-                if (fAcc !== "ALL") eventos = eventos.filter(d => d.accion === fAcc);
-
-                if (fRango === 'puntual' && fPuntual) {
-                    let dIni = new Date(fPuntual + 'T00:00:00');
-                    let dFin = new Date(fPuntual + 'T23:59:59');
-                    eventos = eventos.filter(d => {
-                        let evDate = new Date(d.fecha);
-                        return evDate >= dIni && evDate <= dFin;
-                    });
-                } else if (fRango === 'custom') {
-                    if (fDesde) eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00'));
-                    if (fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59'));
-                } else if (fDesde && fHasta) {
-                    eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00') && new Date(d.fecha) <= new Date(fHasta + 'T23:59:59'));
-                }
-
-                if (fKey) {
-                    eventos = eventos.filter(d => (String(d.caravana) + String(d.valor) + String(d.detalles)).toLowerCase().includes(fKey));
-                }
-
-                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-
-                let bufferEvt = "";
-                let maxEvt = 150;
-                pdfExportData = [];
-
-                let agrupadosPorAnimal = {};
-
-                eventos.forEach(r => {
-                    let fDateObj = new Date(r.fecha);
-                    let fDateStr = isNaN(fDateObj.getTime()) ? String(r.fecha).substring(0, 10) : fDateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                    
-                    let key = `${r.caravana}_${fDateStr}`;
-                    if (!agrupadosPorAnimal[key]) {
-                        let regsAnimal = obtenerHistorial(r.caravana);
-                        let cat = "-", lote = "-";
-                        const uC = regsAnimal.find(d => d.accion === 'Actualización de Datos');
-                        if (uC) {
-                            let v = String(uC.valor || "").split('|');
-                            cat = v[0] ? v[0].replace('Cat:', '').trim() : cat;
-                            lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:', '').trim() : lote;
-                        }
-                        let catLegible = obtenerNombreCategoriaLegible(cat);
-
-                        agrupadosPorAnimal[key] = {
-                            fecha: fDateStr,
-                            rp: r.caravana,
-                            catLegible: catLegible,
-                            lote: lote,
-                            procs: [],
-                            valores: [],
-                            detalles: []
-                        };
-                    }
-
+                const fAcc = document.getElementById('f-inf-accion-oculto').value; const fDesde = document.getElementById('f-inf-desde').value; const fHasta = document.getElementById('f-inf-hasta').value; const fKey = document.getElementById('f-inf-keyword').value.trim().toLowerCase();
+                let eventos = datosActivos.filter(d => !d.accion.includes('Vinculacion') && d.accion !== 'Perfil Master' && d.accion !== 'Actualización de Datos' && d.caravana !== "---" && d.accion !== 'Baja' && d.accion !== 'Baja Operador');
+                if(fAcc !== "ALL") eventos = eventos.filter(d => d.accion === fAcc); if(fDesde) eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00'));
+                if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); if(fKey) eventos = eventos.filter(d => (String(d.valor) + String(d.detalles)).toLowerCase().includes(fKey));
+                
+                let bufferEvt = ""; let maxEvt = 100; pdfExportData = []; let evtCount = 0;
+                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => {
+                    evtCount++;
+                    let fDate = new Date(r.fecha).toLocaleDateString();
                     let badge = obtenerBadgeAccion(r.accion);
-                    if (!agrupadosPorAnimal[key].procs.includes(badge)) {
-                        agrupadosPorAnimal[key].procs.push(badge);
-                    }
-
-                    let vFinal = r.valor;
-                    if (r.accion === 'Peso') {
-                        vFinal += calcularDiferenciaPeso(r.caravana, r.fecha, r.valor);
-                    }
-                    agrupadosPorAnimal[key].valores.push(`${badge}: ${vFinal}`);
-
-                    if (r.detalles && r.detalles !== '-' && r.detalles.trim() !== '') {
-                        let detLimpio = r.detalles.trim();
-                        if (!agrupadosPorAnimal[key].detalles.includes(detLimpio)) {
-                            agrupadosPorAnimal[key].detalles.push(detLimpio);
-                        }
+                    pdfExportData.push([fDate, r.caravana, badge, `${r.valor} - ${r.detalles}`]);
+                    if(evtCount <= maxEvt) {
+                        bufferEvt += `<tr><td style="white-space:nowrap;">${fDate}</td><td><strong>${r.caravana}</strong></td><td>${badge}</td><td><strong>${r.valor}</strong><br><span style="color:var(--text-muted);">${r.detalles}</span></td></tr>`;
                     }
                 });
-
-                let gruposArray = Object.values(agrupadosPorAnimal);
-                let countAnimales = gruposArray.length;
-
-                gruposArray.forEach((grp, idx) => {
-                    let procsTexto = grp.procs.join(", ");
-                    let valoresTexto = grp.valores.join(" | ");
-                    let detallesTexto = grp.detalles.length > 0 ? grp.detalles.join(" | ") : "-";
-
-                    pdfExportData.push([
-                        grp.fecha,
-                        grp.rp,
-                        `${grp.catLegible} (${grp.lote})`,
-                        procsTexto,
-                        valoresTexto,
-                        detallesTexto
-                    ]);
-
-                    if (idx < maxEvt) {
-                        bufferEvt += `<tr>
-                            <td style="white-space:nowrap; font-size:12px;"><strong>${grp.fecha}</strong></td>
-                            <td><strong style="font-size:15px; color:var(--primary);">${grp.rp}</strong></td>
-                            <td style="font-size:11px;">${grp.catLegible}<br><span style="color:var(--text-muted);">${grp.lote}</span></td>
-                            <td style="font-size:12px; font-weight:bold; color:var(--text-main);">${procsTexto}</td>
-                            <td style="font-size:12px; white-space:pre-wrap; line-height:1.4;">${valoresTexto}</td>
-                            <td style="font-size:11px; color:var(--text-muted);">${detallesTexto}</td>
-                        </tr>`;
-                    }
-                });
-
-                if (countAnimales > maxEvt) bufferEvt += `<tr><td colspan="6" style="text-align:center; padding:15px; font-weight:bold; color:var(--text-muted);">Mostrando primeros ${maxEvt} animales de ${countAnimales}. Descargue el PDF para ver todos.</td></tr>`;
-                tbodyEventos.innerHTML = bufferEvt || '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted);">No se registraron tratamientos ni procedimientos en la fecha seleccionada.</td></tr>';
-                document.getElementById('inf-total').innerText = countAnimales;
-                if (lblTotal) lblTotal.innerText = "Animales Tratados";
+                if(evtCount > maxEvt) bufferEvt += `<tr><td colspan="4" style="text-align:center; padding:15px; font-weight:bold; color:var(--text-muted);">Mostrando ${maxEvt} resultados de ${evtCount}. Descargue el PDF para ver el informe completo.</td></tr>`;
+                tbodyEventos.innerHTML = bufferEvt;
+                document.getElementById('inf-total').innerText = eventos.length; 
             }
         }
 
@@ -2264,37 +2317,13 @@
                         doc.save(filename);
 
                     } else {
-                        let fDesde = document.getElementById('f-inf-desde').value;
-                        let fHasta = document.getElementById('f-inf-hasta').value;
-                        let rText = fDesde && fHasta ? ` (Periodo: ${fDesde} a ${fHasta})` : '';
-                        const fRango = document.getElementById('f-inf-rango-fecha') ? document.getElementById('f-inf-rango-fecha').value : '';
-                        const fPuntual = document.getElementById('f-inf-fecha-puntual') ? document.getElementById('f-inf-fecha-puntual').value : '';
-                        let subTitulo = "Reporte de Trabajos y Procedimientos Clínicos";
-                        if (fRango === 'puntual' && fPuntual) subTitulo += ` - Día: ${fPuntual}`;
-                        else if (rText) subTitulo += rText;
-
-                        addMembrete(subTitulo);
+                        addMembrete("Reporte de Trabajos y Procedimientos");
                         const totalReg = document.getElementById('inf-total').innerText;
-                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Animales / Cabezas Procesadas: ${cleanPDFText(totalReg)}`, 14, 43);
+                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Procedimientos Listados: ${cleanPDFText(totalReg)}`, 14, 43);
 
                         const tableData = pdfExportData.map(row => row.map(cell => cleanPDFText(cell).replace(/\n/g, ' ')));
-                        doc.autoTable({
-                            startY: 48,
-                            theme: 'grid',
-                            head: [['Fecha', 'Caravana / RP', 'Categoría / Lote', 'Procedimientos Realizados', 'Sanidad / Tratamientos / Pesaje', 'Observaciones / Detalles']],
-                            body: tableData,
-                            styles: { fontSize: 7, cellPadding: 2.5, overflow: 'linebreak' },
-                            headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold', halign: 'center' },
-                            columnStyles: {
-                                0: { cellWidth: 20, halign: 'center' },
-                                1: { cellWidth: 24, halign: 'center', fontStyle: 'bold' },
-                                2: { cellWidth: 32 },
-                                3: { cellWidth: 30, fontStyle: 'bold' },
-                                4: { cellWidth: 50 },
-                                5: { cellWidth: 'auto' }
-                            }
-                        });
-
+                        doc.autoTable({ startY: 48, theme: 'grid', head: [['Fecha', 'Caravana', 'Trabajo Realizado', 'Detalles Extras']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 2: { cellWidth: 40 }, 3: { cellWidth: 'auto' } } });
+                        
                         let filename = 'Reporte_Tratamientos.pdf';
                         doc.save(filename);
                     }
@@ -2303,40 +2332,108 @@
             }, 100);
         }
 
-        function verificarLimiteGraficos(checkbox) {
+        function verificarLimiteGraficos() {
             const checks = document.querySelectorAll('.chk-graf:checked');
             const prefs = Array.from(checks).map(c => c.value);
             lsSet('tc_prefs_pc', prefs);
             if(dbCache.length > 0) procesarDatosDashboard();
         }
 
+        window.verificarLimiteGraficos = verificarLimiteGraficos;
+
+        window.seleccionarTodosGraficos = function(activar) {
+            document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = activar; });
+            verificarLimiteGraficos();
+        };
+
         function filtrarDesdeDashboard(tipo, valor) {
             cambiarVista('v-base', document.querySelectorAll('.sidebar-nav li')[2]);
-            document.getElementById('buscador-lista').value = "";
             
-            if(tipo === 'estado') {
-                document.getElementById('filtro-reg-estado').value = valor;
-                document.getElementById('filtro-reg-dx').value = 'ALL';
-                document.getElementById('filtro-reg-lote').value = 'ALL';
-                document.getElementById('filtro-reg-cat').value = 'ALL';
-            } else if(tipo === 'lote') {
-                document.getElementById('filtro-reg-estado').value = 'vivos';
-                document.getElementById('filtro-reg-lote').value = valor;
-                document.getElementById('filtro-reg-cat').value = 'ALL';
-                document.getElementById('filtro-reg-dx').value = 'ALL';
-            } else if(tipo === 'categoria') {
-                document.getElementById('filtro-reg-estado').value = 'vivos';
-                document.getElementById('filtro-reg-cat').value = valor;
-                document.getElementById('filtro-reg-lote').value = 'ALL';
-                document.getElementById('filtro-reg-dx').value = 'ALL';
-            } else if(tipo === 'dx') {
-                document.getElementById('filtro-reg-estado').value = 'vivos';
-                document.getElementById('filtro-reg-dx').value = valor;
-                document.getElementById('filtro-reg-lote').value = 'ALL';
-                document.getElementById('filtro-reg-cat').value = 'ALL';
+            let elEstado = document.getElementById('filtro-reg-estado');
+            let elLote = document.getElementById('filtro-reg-lote');
+            let elCat = document.getElementById('filtro-reg-cat');
+            let elDx = document.getElementById('filtro-reg-dx');
+            let elBusq = document.getElementById('buscador-lista');
+
+            if (elEstado) elEstado.value = 'vivos';
+            if (elLote) elLote.value = 'ALL';
+            if (elCat) elCat.value = 'ALL';
+            if (elDx) elDx.value = 'ALL';
+            if (elBusq) elBusq.value = '';
+
+            if (tipo === 'estado') {
+                if (elEstado) elEstado.value = valor;
+            } else if (tipo === 'categoria') {
+                if (elCat) {
+                    let found = false;
+                    for (let i = 0; i < elCat.options.length; i++) {
+                        if (elCat.options[i].value.toLowerCase() === valor.toLowerCase() || elCat.options[i].text.toLowerCase() === valor.toLowerCase()) {
+                            elCat.selectedIndex = i;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        let opt = document.createElement('option');
+                        opt.value = valor;
+                        opt.text = valor;
+                        elCat.appendChild(opt);
+                        elCat.value = valor;
+                    }
+                }
+            } else if (tipo === 'lote') {
+                if (elLote) {
+                    let found = false;
+                    for (let i = 0; i < elLote.options.length; i++) {
+                        if (elLote.options[i].value.toLowerCase() === valor.toLowerCase() || elLote.options[i].text.toLowerCase() === valor.toLowerCase()) {
+                            elLote.selectedIndex = i;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        let opt = document.createElement('option');
+                        opt.value = valor;
+                        opt.text = valor;
+                        elLote.appendChild(opt);
+                        elLote.value = valor;
+                    }
+                }
+            } else if (tipo === 'lote_prenada') {
+                if (elDx) elDx.value = 'Preñada';
+                if (elLote) {
+                    for (let i = 0; i < elLote.options.length; i++) {
+                        if (elLote.options[i].value.toLowerCase() === valor.toLowerCase()) {
+                            elLote.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+            } else if (tipo === 'dx') {
+                if (elDx) elDx.value = valor;
+            } else if (tipo === 'condicion') {
+                if (elBusq) elBusq.value = valor;
+            } else if (tipo === 'vientre_vacio') {
+                if (elDx) elDx.value = 'Vacía';
+                if (valor && valor.includes('Sangre') && elBusq) {
+                    elBusq.value = 'Sangre';
+                }
+            } else if (tipo === 'sanidad_global') {
+                if (elBusq) elBusq.value = (valor === 'Con Registro' ? 'Sanidad' : '');
+            } else if (tipo === 'toro') {
+                if (elDx) elDx.value = 'Preñada';
+                if (elBusq) elBusq.value = valor;
+            } else if (tipo === 'baja_causa') {
+                if (elEstado) elEstado.value = 'bajas';
+                if (elBusq) elBusq.value = valor;
+            } else if (tipo === 'busqueda') {
+                if (elBusq) elBusq.value = valor;
             }
+
             cargarListaRegistro();
         }
+
+        window.filtrarDesdeDashboard = filtrarDesdeDashboard;
 
         function procesarDatosDashboard() {
             const datosActivos = obtenerRegistrosActivos(); 
@@ -2460,29 +2557,29 @@
                 else if(g === '4') { 
                     let t = g4.opt + g4.bp + g4.sp || 1; 
                     let d4 = { "Óptima": g4.opt, "Bajo Peso": g4.bp, "Sobrepeso": g4.sp };
-                    html += makePieAndBars("Condición Corporal", d4, t, 'estado'); 
+                    html += makePieAndBars("Condición Corporal", d4, t, 'condicion'); 
                 } 
                 else if(g === '5') { 
                     let t = g5.norm + g5.san || 1; 
                     let d5 = { "Normal": g5.norm, "Sangre/Problema": g5.san };
-                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'estado'); 
+                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'vientre_vacio'); 
                 } 
                 else if(g === '6') { 
                     let t = unicas.length; 
                     let d6 = { "Con Registro": g6.con, "Sin Registros": g6.sin };
-                    html += makePieAndBars("Sanidad Global", d6, t, 'estado'); 
+                    html += makePieAndBars("Sanidad Global", d6, t, 'sanidad_global'); 
                 } 
                 else if(g === '7') { 
                     let d7 = {}; Object.keys(g7).forEach(k => d7[k] = g7[k].p);
-                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote'); 
+                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote_prenada'); 
                 } 
                 else if(g === '8') { 
                     let d8 = {}; Object.keys(g8).forEach(k => d8[k] = g8[k].p);
-                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'estado'); 
+                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'toro'); 
                 } 
                 else if(g === '9') { 
                     let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; 
-                    html += `<div class="tarjeta"><h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Promedio de Pesos</h4><div class="grid-2"><div class="kpi-box" style="padding:10px;" onclick="filtrarDesdeDashboard('estado', 'vivos')"><strong style="font-size:20px; color:var(--text-main);">${pv} Kg</strong><span>Vacas</span></div><div class="kpi-box" style="padding:10px;" onclick="filtrarDesdeDashboard('estado', 'vivos')"><strong style="font-size:20px; color:var(--text-main);">${pt} Kg</strong><span>Terneros</span></div></div></div>`; 
+                    html += `<div class="tarjeta"><h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Promedio de Pesos</h4><div class="grid-2"><div class="kpi-box" style="padding:10px;" onclick="filtrarDesdeDashboard('categoria', 'Vaca / Vaquilla')"><strong style="font-size:20px; color:var(--text-main);">${pv} Kg</strong><span>Vacas</span></div><div class="kpi-box" style="padding:10px;" onclick="filtrarDesdeDashboard('categoria', 'Ternero Macho')"><strong style="font-size:20px; color:var(--text-main);">${pt} Kg</strong><span>Terneros</span></div></div></div>`; 
                 } 
                 else if(g === '10') { 
                     let d10 = { "Pesajes": g10.peso, "Diagnósticos": g10.dx, "Nutrición": g10.nut, "Sanidad": g10.san };
@@ -2491,7 +2588,7 @@
                 } 
                 else if(g === '11') { 
                     let t11 = cantBajas || 1;
-                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'estado'); 
+                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'baja_causa'); 
                 }
                 htmlGraficos += html;
             }); document.getElementById('contenedor-graficos').innerHTML = htmlGraficos;
@@ -2532,8 +2629,11 @@
                 if (estadoFiltro === 'vivos' && esBaja) return;
                 if (estadoFiltro === 'bajas' && !esBaja) return;
 
-                let cat = "-", lote = "General", dx = "-";
-                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
+                let cat = "Sin Categoría", lote = "General", dx = "-";
+                const uP = regs.find(d => d.accion === 'Perfil Master');
+                if(uP && uP.detalles) {
+                    cat = String(uP.detalles).split('|')[0] || "Sin Categoría";
+                }
                 const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
                 if(uC) { 
                     let v = String(uC.valor||"").split('|'); 
@@ -2551,23 +2651,26 @@
 
                 let catLegible = obtenerNombreCategoriaLegible(cat);
 
-                if (loteFiltro !== "ALL" && !lote.includes(loteFiltro)) return;
-                if (catFiltro !== "ALL" && !catLegible.includes(catFiltro)) return;
+                if (loteFiltro !== "ALL" && !lote.toLowerCase().includes(loteFiltro.toLowerCase())) return;
+
+                // FILTRO ESTRICTO DE CATEGORÍA
+                if (catFiltro === "Sin Categoría") {
+                    if (catLegible !== "Sin Categoría" && cat !== "Sin Categoría" && cat !== "-") return;
+                } else if (catFiltro !== "ALL" && !catLegible.toLowerCase().includes(catFiltro.toLowerCase())) {
+                    return;
+                }
                 
                 if (dxFiltro === "Preñada") {
                     if (!esPre) return;
                 } else if (dxFiltro === "Vacía") {
                     if (!esVacia) return;
-                } else if (dxFiltro !== "ALL" && !dx.includes(dxFiltro)) {
+                } else if (dxFiltro !== "ALL" && !dx.toLowerCase().includes(dxFiltro.toLowerCase())) {
                     return;
                 }
 
                 if (txtBusqueda !== "") {
-                    let matchTexto = car.toLowerCase().includes(txtBusqueda) || 
-                                     catLegible.toLowerCase().includes(txtBusqueda) || 
-                                     lote.toLowerCase().includes(txtBusqueda) || 
-                                     dx.toLowerCase().includes(txtBusqueda);
-                    if (!matchTexto) return;
+                    let historialTexto = (car + " " + catLegible + " " + lote + " " + dx + " " + regs.map(r => (r.accion||"") + " " + (r.valor||"") + " " + (r.detalles||"")).join(" ")).toLowerCase();
+                    if (!historialTexto.includes(txtBusqueda)) return;
                 }
 
                 listaFiltrada.push({ car, catLegible, lote, dx, esBaja });
@@ -2580,7 +2683,7 @@
             }
 
             let htmlHTML = "";
-            let limiteRender = 100;
+            let limiteRender = 150;
             listaFiltrada.slice(0, limiteRender).forEach(item => {
                 let badgeBaja = item.esBaja ? `<span style="background:var(--danger); color:white; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px;">BAJA</span>` : '';
                 htmlHTML += `<tr onclick="navegarDesdeLista('${item.car}')">
@@ -2588,7 +2691,7 @@
                     <td style="color:var(--text-main);">${item.catLegible}</td>
                     <td style="color:var(--text-main);">${item.lote}</td>
                     <td style="color:var(--text-main);">${item.dx}</td>
-                    <td><button class="btn-outline">Abrir Ficha</button></td>
+                    <td><button class="btn-outline" style="padding:4px 8px; font-size:11px;">Abrir Ficha</button></td>
                 </tr>`;
             });
             if(listaFiltrada.length > limiteRender) {
@@ -2925,38 +3028,6 @@
           };
 
           window.speechSynthesis.speak(utterance);
-        }
-
-                window.toggleCoraVisibilidad = function() {
-            let activo = localStorage.getItem('tc_cora_activo_pc') !== 'no';
-            let nuevo = activo ? 'no' : 'si';
-            localStorage.setItem('tc_cora_activo_pc', nuevo);
-            aplicarVisibilidadCoraPC();
-        };
-
-        function aplicarVisibilidadCoraPC() {
-            let activo = localStorage.getItem('tc_cora_activo_pc') !== 'no';
-            const btnA = document.getElementById('btn-aura');
-            const btnToggle = document.getElementById('btn-toggle-cora-vis-pc');
-            if (btnToggle) {
-                btnToggle.innerText = activo ? 'Ocultar' : 'Activar';
-                btnToggle.style.color = activo ? 'var(--danger)' : 'var(--primary)';
-            }
-            if (btnA) {
-                if (!activo) {
-                    btnA.style.display = 'none';
-                    const est = document.getElementById('estado-ia');
-                    if(est) est.style.display = 'none';
-                } else {
-                    let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
-                    let tienePermisoCora = isPropietario || usRol.includes('cora');
-                    if (navigator.onLine && tienePermisoCora) {
-                        btnA.style.display = 'flex';
-                    } else {
-                        btnA.style.display = 'none';
-                    }
-                }
-            }
         }
 
         const ReconocimientoVoz = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -3405,263 +3476,43 @@
         }
 
 
-                // =========================================================================
-        // MOTOR DE AUDIO (BEEPER HARDWARE)
-        // =========================================================================
-        function emitirBeepHardware(tipo = 'exito') {
-            try {
-                const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                if (!AudioCtx) return;
-                const ctx = new AudioCtx();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-
-                if (tipo === 'combo') {
-                    osc.frequency.setValueAtTime(880, ctx.currentTime);
-                    osc.frequency.setValueAtTime(1320, ctx.currentTime + 0.1);
-                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-                    osc.start(ctx.currentTime);
-                    osc.stop(ctx.currentTime + 0.25);
-                } else if (tipo === 'rfid') {
-                    osc.frequency.setValueAtTime(1046.5, ctx.currentTime);
-                    gain.gain.setValueAtTime(0.25, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
-                    osc.start(ctx.currentTime);
-                    osc.stop(ctx.currentTime + 0.12);
-                } else if (tipo === 'peso') {
-                    osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-                    gain.gain.setValueAtTime(0.25, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-                    osc.start(ctx.currentTime);
-                    osc.stop(ctx.currentTime + 0.15);
-                } else {
-                    osc.frequency.setValueAtTime(440, ctx.currentTime);
-                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-                    osc.start(ctx.currentTime);
-                    osc.stop(ctx.currentTime + 0.2);
-                }
-            } catch(e) {}
-        }
-
-        // =========================================================================
-        // PARSEADOR UNIVERSAL DE HARDWARE (ESP32, TRU-TEST, ALLFLEX, BALANZAS)
-        // =========================================================================
-        function procesarDatoHardware(rawInput) {
-            if (!rawInput) return;
-            let s = String(rawInput).trim();
-            if (s.length === 0) return;
-            console.log('[Taurus PC Hardware Input]:', s);
-
-            let rpExtraido = null;
-            let pesoExtraido = null;
-
-            if (s.startsWith('{') && s.endsWith('}')) {
-                try {
-                    let d = JSON.parse(s);
-                    rpExtraido = d.rp || d.caravana || d.rfid || d.tag || null;
-                    if (d.peso !== undefined || d.weight !== undefined) {
-                        pesoExtraido = parseFloat(d.peso !== undefined ? d.peso : d.weight);
-                    }
-                } catch(e) {}
-            }
-
-            if (!rpExtraido) {
-                let mKV = s.match(/(?:RP|TAG|RFID|CARAVANA|ID)[:=\s]+([a-zA-Z0-9_-]+).*?(?:PESO|WEIGHT|KG|W)[:=\s]+([\d.]+)/i);
-                if (mKV) {
-                    rpExtraido = mKV[1];
-                    pesoExtraido = parseFloat(mKV[2]);
-                }
-            }
-
-            if (!rpExtraido) {
-                let partes = s.split(/[,;\t|/]+/);
-                if (partes.length === 2) {
-                    let p1 = partes[0].trim();
-                    let p2 = partes[1].replace(/[^\d.]/g, '').trim();
-                    let p2Num = parseFloat(p2);
-                    if (!isNaN(p2Num) && p2Num > 0 && p1.length > 0) {
-                        rpExtraido = p1;
-                        pesoExtraido = p2Num;
-                    }
-                }
-            }
-
-            if (rpExtraido && pesoExtraido !== null && !isNaN(pesoExtraido)) {
-                let tagNorm = String(rpExtraido).trim().toLowerCase();
-                let esRFID = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === tagNorm);
-                let rpFinal = esRFID ? esRFID.caravana : String(rpExtraido).trim().toUpperCase();
-
-                rpActivo = rpFinal;
-                forzarSaltoAFicha();
-                let buscador = document.getElementById('buscador-caravana');
-                if (buscador) buscador.value = rpFinal;
-                buscarCaravanaBtn(rpFinal);
-
-                let pStr = pesoExtraido.toFixed(1) + " Kg";
-                let sel = document.getElementById('rafaga-accion') ? document.getElementById('rafaga-accion').value : 'solo_peso';
-                let notas = document.getElementById('rafaga-detalles') ? document.getElementById('rafaga-detalles').value.trim() : '';
-                let recordatorio = document.getElementById('rafaga-recordatorio') ? document.getElementById('rafaga-recordatorio').value : '0';
-
-                ejecutarAccion('Peso', pStr, "Automático (ESP32 Antena + Balanza)", null);
-                if (sel !== 'solo_peso') {
-                    let customInput = document.getElementById('rafaga-prod-custom');
-                    let producto = sel === 'OTRO' ? ((customInput && customInput.value.trim()) || 'Tratamiento General') : sel;
-                    let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga Bluetooth";
-                    if (recordatorio !== "0") detCompleto += ` | [RECORDATORIO:${recordatorio}]`;
-                    ejecutarAccion('Sanidad', producto, detCompleto, null);
-                }
-
-                emitirBeepHardware('combo');
-                mostrarToast(`⚡ [RP: ${rpFinal}] Pesado: ${pStr} + Sanidad registrada`);
-                return;
-            }
-
-            let tieneIndPeso = /(?:PESO|WEIGHT|KG|KGS|ST,GS|\+)/i.test(s) || (s.includes('.') && s.length <= 7);
-            let mPeso = s.match(/(?:PESO|W|ST,GS|[+])?[:=\s]*([\d]+(?:\.[\d]+)?)\s*(?:KG|KGS)?$/i);
-            if (tieneIndPeso && mPeso) {
-                let pNum = parseFloat(mPeso[1]);
-                if (pNum >= 5.0 && pNum <= 2500.0) {
-                    if (rpActivo && rpActivo !== "---") {
-                        let pStr = pNum.toFixed(1) + " Kg";
-                        if (typeof rafagaActiva !== 'undefined' && rafagaActiva) {
-                            let sel = document.getElementById('rafaga-accion').value;
-                            let notas = document.getElementById('rafaga-detalles').value.trim();
-                            let recordatorio = document.getElementById('rafaga-recordatorio').value;
-                            ejecutarAccion('Peso', pStr, "Automático (Balanza)", null);
-                            if (sel !== 'solo_peso') {
-                                let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
-                                let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga";
-                                if (recordatorio !== "0") detCompleto += ` | [RECORDATORIO:${recordatorio}]`;
-                                ejecutarAccion('Sanidad', producto, detCompleto, null);
-                            }
-                            emitirBeepHardware('combo');
-                            mostrarToast(`✅ Guardado: ${pStr} para RP ${rpActivo}`);
-                        } else {
-                            forzarSaltoAFicha();
-                            abrirModal('m-peso');
-                            let inputPeso = document.getElementById('i-peso-val');
-                            if (inputPeso) inputPeso.value = pNum;
-                            emitirBeepHardware('peso');
-                        }
-                    } else {
-                        alert("⚖️ Balanza detectó: " + pNum + " Kg. Identifique primero la caravana del animal.");
-                    }
-                    return;
-                }
-            }
-
-            let digitosSolo = s.replace(/\D/g, '');
-            let esIsoTag = (digitosSolo.length === 15 && (digitosSolo.startsWith('9') || digitosSolo.startsWith('8')));
-            let tagFinal = esIsoTag ? digitosSolo : s.replace(/^(?:TAG|RFID|ID|RP)[:=\s]+/i, '').trim().toUpperCase();
-
-            emitirBeepHardware('rfid');
-            forzarSaltoAFicha();
-            if (typeof window.recibirTagNFC === "function") window.recibirTagNFC(tagFinal);
-        }
-
-        let bleDevice = null;
-        let bleServer = null;
-        let bleRxCharacteristic = null;
-        let bleBuffer = "";
-
-        async function conectarBluetoothBLE() {
-            const btn = document.getElementById('btn-conectar-ble');
-            const lbl = document.getElementById('lbl-estado-bluetooth');
-
-            if (!navigator.bluetooth) {
-                alert("ℹ️ Tu navegador no soporta Web Bluetooth directamente.\n\nPuedes conectar tu balanza o bastón vía Teclado HID (Bluetooth) en Windows/Mac y Taurus Control leerá las pesadas automáticamente.");
-                return;
-            }
-
-            if (bleDevice && bleDevice.gatt && bleDevice.gatt.connected) {
-                bleDevice.gatt.disconnect();
-                if (btn) btn.innerText = "Conectar Balanza / Bastón";
-                if (lbl) { lbl.innerText = "Bluetooth: Desconectado"; lbl.style.color = "var(--text-muted)"; }
-                return;
-            }
-
-            try {
-                if (btn) btn.innerText = "Buscando...";
-                bleDevice = await navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true,
-                    optionalServices: [
-                        '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
-                        '0000ffe0-0000-1000-8000-00805f9b34fb',
-                        '000018f0-0000-1000-8000-00805f9b34fb',
-                        '49535343-fe7d-4ae5-8fa9-9fafd205e455'
-                    ]
-                });
-
-                bleDevice.addEventListener('gattserverdisconnected', () => {
-                    if (btn) btn.innerText = "Conectar Balanza / Bastón";
-                    if (lbl) { lbl.innerText = "Bluetooth: Desconectado"; lbl.style.color = "var(--text-muted)"; }
-                    mostrarToast("⚠️ Dispositivo Bluetooth desconectado.");
-                });
-
-                if (btn) btn.innerText = "Conectando...";
-                bleServer = await bleDevice.gatt.connect();
-
-                let services = await bleServer.getPrimaryServices();
-                let foundChar = null;
-
-                for (let s of services) {
-                    try {
-                        let chars = await s.getCharacteristics();
-                        for (let c of chars) {
-                            if (c.properties.notify || c.properties.indicate) {
-                                foundChar = c;
-                                break;
-                            }
-                        }
-                    } catch(e) {}
-                    if (foundChar) break;
-                }
-
-                if (foundChar) {
-                    bleRxCharacteristic = foundChar;
-                    await bleRxCharacteristic.startNotifications();
-                    bleRxCharacteristic.addEventListener('characteristicvaluechanged', (event) => {
-                        let dec = new TextDecoder('utf-8');
-                        let chunk = dec.decode(event.target.value);
-                        bleBuffer += chunk;
-                        if (bleBuffer.includes('\n') || bleBuffer.includes('\r')) {
-                            let lineas = bleBuffer.split(/[\r\n]+/);
-                            bleBuffer = lineas.pop();
-                            lineas.forEach(l => {
-                                let limpia = l.trim();
-                                if (limpia.length > 0) procesarDatoHardware(limpia);
-                            });
-                        }
-                    });
-
-                    if (btn) btn.innerText = "Desconectar";
-                    if (lbl) { lbl.innerText = `🟢 Conectado: ${bleDevice.name || 'Balanza / Bastón'}`; lbl.style.color = "var(--success)"; }
-                    mostrarToast(`🟢 Conectado con éxito a ${bleDevice.name || 'Dispositivo'}`);
-                } else {
-                    if (btn) btn.innerText = "Conectado (HID)";
-                    if (lbl) { lbl.innerText = `🟢 Conectado: ${bleDevice.name || 'Dispositivo'}`; lbl.style.color = "var(--success)"; }
-                }
-            } catch(error) {
-                console.warn('[Bluetooth BLE Error]:', error);
-                if (btn) btn.innerText = "Conectar Balanza / Bastón";
-                if (lbl) { lbl.innerText = "Bluetooth: Desconectado"; lbl.style.color = "var(--text-muted)"; }
-            }
-        }
-
         let bufferTeclado = "";
         let timeoutTeclado;
         document.addEventListener('keydown', function(event) {
             if(event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'CapsLock') return;
-            if(event.target && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA')) return;
-
             if (event.key === 'Enter') {
-                if (bufferTeclado.trim().length > 0) {
-                    event.preventDefault();
-                    procesarDatoHardware(bufferTeclado);
+                if (bufferTeclado.length > 2) {
+                    event.preventDefault(); 
+                    let dataLimpia = bufferTeclado.replace(/[^a-zA-Z0-9.-]/g, '').trim().toUpperCase(); 
+                    let esPeso = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
+                    if (esPeso) {
+                        if (typeof rpActivo !== 'undefined' && rpActivo && rpActivo !== "---") {
+                            if(typeof rafagaActiva !== 'undefined' && rafagaActiva) {
+                                let sel = document.getElementById('rafaga-accion').value;
+                                let notas = document.getElementById('rafaga-detalles').value.trim();
+                                let recordatorioRafaga = document.getElementById('rafaga-recordatorio').value; 
+                                ejecutarAccion('Peso', dataLimpia + " Kg", "Automático (Ráfaga)", null);
+                                if(sel !== 'solo_peso') {
+                                    let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
+                                    let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga";
+                                    if (recordatorioRafaga !== "0") { detCompleto += ` | [RECORDATORIO:${recordatorioRafaga}]`; }
+                                    ejecutarAccion('Sanidad', producto, detCompleto, null);
+                                }
+                                if(typeof mostrarToast === 'function') mostrarToast("✅ ¡Guardado!");
+                            } else {
+                                forzarSaltoAFicha();
+                                if (typeof abrirModal === "function") abrirModal('m-peso');
+                                let inputPeso = document.getElementById('i-peso-val');
+                                if (inputPeso) inputPeso.value = dataLimpia;
+                            }
+                        } else {
+                            alert("⚖️ Peso recibido: " + dataLimpia + " Kg. ¡Debes leer la caravana de un animal primero!");
+                        }
+                    } else {
+                        let tagLimpio = dataLimpia.replace(/TAG/gi, '');
+                        forzarSaltoAFicha();
+                        if (typeof window.recibirTagNFC === "function") { window.recibirTagNFC(tagLimpio); }
+                    }
                 }
                 bufferTeclado = "";
                 clearTimeout(timeoutTeclado);
@@ -3670,7 +3521,7 @@
             if (event.key.length === 1) {
                 bufferTeclado += event.key;
                 clearTimeout(timeoutTeclado);
-                timeoutTeclado = setTimeout(() => { bufferTeclado = ""; }, 800); 
+                timeoutTeclado = setTimeout(() => { bufferTeclado = ""; }, 500); 
             }
         });
     </script>
