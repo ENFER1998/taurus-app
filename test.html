@@ -802,7 +802,10 @@
         const db = firebase.firestore();
 
         try {
-            db.enablePersistence().catch((err) => {});
+            // Sincronización entre pestañas ayuda al modo offline robusto
+            db.enablePersistence({synchronizeTabs:true}).catch((err) => {
+                console.log("Error persistence:", err);
+            });
         } catch(e) {}
 
         function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
@@ -817,26 +820,39 @@
 
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
-                db.collection('usuarios').doc(user.email).get().then(doc => {
-                    if (doc.exists) {
-                        const userData = doc.data();
-                        lsSet('tc_user_profile', userData);
-                        if(userData.alertas_leidas) lsSet('tc_alertas_leidas', userData.alertas_leidas);
+                let cachedProfile = lsGet('tc_user_profile', null);
+                let bootConCache = false;
 
-                        if(userData.vencimiento) {
-                            let fLimit = new Date(userData.vencimiento.includes('T') ? userData.vencimiento : userData.vencimiento + "T23:59:59");
-                            if(new Date() > fLimit) {
-                                cerrarSesion(); alert("Su licencia ha vencido."); return;
+                // BOOT INMEDIATO DESDE CACHÉ (SOLUCIÓN MODO OFFLINE)
+                if (cachedProfile && cachedProfile.email === user.email) {
+                    arrancarSistemaFirebase(user.email, cachedProfile.maestroId, cachedProfile.rol, cachedProfile.nombre, cachedProfile.hacienda, cachedProfile.features);
+                    bootConCache = true;
+                }
+
+                // INTENTAR OBTENER DATOS FRESCOS SI HAY RED
+                if (navigator.onLine) {
+                    db.collection('usuarios').doc(user.email).get().then(doc => {
+                        if (doc.exists) {
+                            const userData = doc.data();
+                            userData.email = user.email;
+                            lsSet('tc_user_profile', userData);
+                            if(userData.alertas_leidas) lsSet('tc_alertas_leidas', userData.alertas_leidas);
+
+                            if(userData.vencimiento) {
+                                let fLimit = new Date(userData.vencimiento.includes('T') ? userData.vencimiento : userData.vencimiento + "T23:59:59");
+                                if(new Date() > fLimit) { cerrarSesion(); alert("Su licencia ha vencido."); return; }
+                            }
+                            if (!bootConCache) {
+                                arrancarSistemaFirebase(user.email, userData.maestroId, userData.rol, userData.nombre, userData.hacienda, userData.features);
                             }
                         }
-                        arrancarSistemaFirebase(user.email, userData.maestroId, userData.rol, userData.nombre, userData.hacienda, userData.features);
-                    }
-                }).catch(e => {
-                    let cachedProfile = lsGet('tc_user_profile', null);
-                    if (cachedProfile) {
-                        arrancarSistemaFirebase(user.email, cachedProfile.maestroId, cachedProfile.rol, cachedProfile.nombre, cachedProfile.hacienda, cachedProfile.features);
-                    }
-                });
+                    }).catch(e => {
+                        console.warn("Fallo de red al obtener perfil de usuario, operando con caché.");
+                    });
+                }
+            } else {
+                document.getElementById('pantalla-login').classList.remove('oculto');
+                document.getElementById('pantalla-app').classList.add('oculto');
             }
         });
 
@@ -851,175 +867,6 @@
             t.style.zIndex = '9999'; t.style.fontWeight = 'bold'; t.style.boxShadow = '0 4px 15px rgba(0,0,0,0.4)'; t.style.fontSize = '14px'; t.style.textAlign = 'center';
             document.body.appendChild(t);
             setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() => t.remove(), 500); }, 3000);
-        }
-
-        function solicitarPermisoNotificaciones() {
-            if (!("Notification" in window)) return;
-            if (Notification.permission !== "granted" && Notification.permission !== "denied") {
-                Notification.requestPermission();
-            }
-        }
-
-        function lanzarNotificacionEscritorio(titulo, mensaje) {
-            if (!("Notification" in window)) return;
-            if (Notification.permission === "granted") {
-                new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' });
-            } else if (Notification.permission !== "denied") {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                        new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' });
-                    }
-                });
-            }
-        }
-
-        function procesarAlertaServidor(msg, id) {
-            const banner = document.getElementById('banner-alerta-global');
-            if (!msg || !id) { banner.classList.add('oculto'); return; }
-            let leidas = lsGet('tc_alertas_leidas', []); let mostradas = lsGet('tc_alertas_mostradas', []);
-            if (!leidas.includes(id)) {
-                alertaGlobalIdActual = id;
-                document.getElementById('txt-alerta-global').innerText = msg;
-                document.getElementById('txt-banner-alerta').innerText = msg;
-                if (!mostradas.includes(id)) { document.getElementById('modal-alerta-global').style.display = 'flex'; }
-                banner.classList.remove('oculto');
-            } else { banner.classList.add('oculto'); }
-        }
-
-        function cerrarPopUpAlerta() {
-            if (alertaGlobalIdActual) {
-                let mostradas = lsGet('tc_alertas_mostradas', []);
-                if (!mostradas.includes(alertaGlobalIdActual)) { mostradas.push(alertaGlobalIdActual); lsSet('tc_alertas_mostradas', mostradas); }
-                let leidas = lsGet('tc_alertas_leidas', []);
-                if (!leidas.includes(alertaGlobalIdActual)) {
-                    leidas.push(alertaGlobalIdActual);
-                    lsSet('tc_alertas_leidas', leidas);
-                    if(navigator.onLine && usActivo) {
-                        try {
-                            db.collection('usuarios').doc(usActivo).update({
-                                alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
-                            });
-                        } catch(e) {}
-                    }
-                }
-            }
-            document.getElementById('modal-alerta-global').style.display = 'none';
-            document.getElementById('banner-alerta-global').classList.add('oculto');
-        }
-
-        window.marcarAlertaLeida = function() {
-            if (alertaGlobalIdActual) {
-                let leidas = lsGet('tc_alertas_leidas', []);
-                if(!leidas.includes(alertaGlobalIdActual)) {
-                    leidas.push(alertaGlobalIdActual);
-                    lsSet('tc_alertas_leidas', leidas);
-                    if(navigator.onLine && usActivo) {
-                        try {
-                            db.collection('usuarios').doc(usActivo).update({
-                                alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
-                            });
-                        } catch(e) {}
-                    }
-                }
-            }
-            document.getElementById('modal-alerta-global').style.display = 'none';
-            document.getElementById('banner-alerta-global').classList.add('oculto');
-        }
-
-        let rafagaActiva = false;
-        window.toggleRafaga = function() {
-            rafagaActiva = !rafagaActiva;
-            const btn = document.getElementById('btn-toggle-rafaga');
-            const opciones = document.getElementById('opciones-rafaga');
-            if(rafagaActiva) {
-                btn.innerText = "ENCENDIDO"; btn.style.background = "var(--secundario)"; btn.style.color = "white";
-                opciones.classList.remove('oculto'); verificarRafagaCustom();
-            } else {
-                btn.innerText = "APAGADO"; btn.style.background = "transparent"; btn.style.color = "var(--texto)";
-                opciones.classList.add('oculto');
-            }
-        };
-
-        window.verificarRafagaCustom = function() {
-            const sel = document.getElementById('rafaga-accion').value;
-            const modalidad = document.getElementById('rafaga-modalidad') ? document.getElementById('rafaga-modalidad').value : 'rfid';
-            const customInput = document.getElementById('rafaga-prod-custom');
-            const detallesBox = document.getElementById('caja-rafaga-detalles');
-            const cajaManual = document.getElementById('caja-rafaga-manual');
-            
-            if(modalidad === 'manual') cajaManual.classList.remove('oculto'); else cajaManual.classList.add('oculto');
-            
-            if(sel === 'solo_peso') { customInput.classList.add('oculto'); detallesBox.classList.add('oculto'); }
-            else { detallesBox.classList.remove('oculto'); if(sel === 'OTRO') { customInput.classList.remove('oculto'); customInput.focus(); } else { customInput.classList.add('oculto'); } }
-        };
-
-        window.ejecutarRafagaManual = function() {
-            let rp = document.getElementById('rm-caravana').value.trim().toUpperCase();
-            let val = document.getElementById('rm-valor').value.trim().toUpperCase();
-            if(!rp || !val) return;
-            rpActivo = rp;
-            let sel = document.getElementById('rafaga-accion').value; let notas = document.getElementById('rafaga-detalles').value.trim(); let recordatorio = document.getElementById('rafaga-recordatorio').value; 
-            
-            if(!isNaN(val) || val.includes('.')) { ejecutarAccion('Peso', val + " Kg", "Automático (Ráfaga Manual)", null); } 
-            else { ejecutarAccion('Sanidad', val, "Automático (Ráfaga Manual)", null); }
-            
-            if(sel !== 'solo_peso') {
-                let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
-                let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga Manual";
-                if (recordatorio !== "0") detCompleto += ` | [RECORDATORIO:${recordatorio}]`;
-                ejecutarAccion('Sanidad', producto, detCompleto, null);
-            }
-            mostrarToast("✅ Combo asignado al RP: " + rp);
-            document.getElementById('rm-caravana').value = ""; document.getElementById('rm-valor').value = ""; document.getElementById('rm-caravana').focus();
-        };
-
-        function setEstadoRed(online, texto = null) {
-            const b = document.getElementById('estado-red');
-            if(!b) return;
-            if(texto) { b.innerText = texto; }
-            else if(navigator.onLine || online) { b.classList.remove('offline'); b.innerText = '🟢 Conectado'; }
-            else { b.classList.add('offline'); b.innerText = '🔴 Red Local'; }
-
-            const btnAura = document.getElementById('btn-aura');
-            if (btnAura) {
-               let userProfile = lsGet('tc_user_profile', {});
-               let isPropietario = String(userProfile.rol||"").includes('Propietario') || String(userProfile.rol||"").includes('Dueño');
-               let tienePermisoCora = isPropietario || String(userProfile.rol||"").includes('cora');
-               
-               if ((navigator.onLine || online) && tienePermisoCora) {
-                   btnAura.style.display = 'flex';
-               } else {
-                   btnAura.style.display = 'none';
-                   const estadoIA = document.getElementById('estado-ia');
-                   if (estadoIA) estadoIA.style.display = 'none';
-               }
-            }
-        }
-
-        window.addEventListener('online', () => setEstadoRed(true)); window.addEventListener('offline', () => setEstadoRed(false));
-
-        async function procesarIngreso() {
-            let u = document.getElementById('usuario').value.trim();
-            const p = document.getElementById('password').value.trim();
-            const btn = document.getElementById('btn-ingreso');
-            const err = document.getElementById('error-login');
-            if(!u || !p) return;
-            btn.disabled = true; btn.innerText = "Verificando..."; err.style.display = 'none';
-            let email = u.includes('@') ? u.toLowerCase() : u.toLowerCase() + '@taurus.com';
-            try {
-                await firebase.auth().signInWithEmailAndPassword(email, p);
-            } catch(error) {
-                err.innerText = "Usuario no registrado en Firebase o clave incorrecta.";
-                err.style.display = 'block';
-                btn.disabled = false; btn.innerText = "Iniciar Sesión";
-            }
-        }
-
-        function notificarPropietario(mensaje) {
-            if(!navigator.onLine) return;
-            let isDueno = usRol.includes('Propietario') || usRol.includes('Dueño');
-            const fd = new URLSearchParams(); fd.append('accion', 'notificar_accion'); fd.append('maestro', maestroId); fd.append('mensaje', mensaje); fd.append('remitente_es_dueno', isDueno);
-            fetch("https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec", { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
         }
 
         function arrancarSistemaFirebase(u, m, r, nombreCompleto, hacienda, featuresStr) {
@@ -1052,7 +899,8 @@
                 if(unsubscribeEventos) unsubscribeEventos();
 
                 let renderTimeout;
-                unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot(snapshot => {
+                // OFFLINE FIX: includeMetadataChanges permite que Firestore dispare eventos usando solo el caché instantáneamente
+                unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot({ includeMetadataChanges: true }, snapshot => {
                     let nuevosDatos = [];
                     snapshot.forEach(doc => { let d = doc.data(); d.id = doc.id; nuevosDatos.push(d); });
 
@@ -1067,7 +915,7 @@
                                 let op = n.usuario || "Un operador";
                                 if (n.detalles && n.detalles.includes("Op: ")) { op = n.detalles.split("Op: ")[1].trim(); }
                                 let isDuenoActual = usRol.includes('Propietario') || usRol.includes('Dueño');
-                                if(isDuenoActual && n.maestro === maestroId && op.toLowerCase() !== usNombre.toLowerCase() && n.caravana !== '---') {
+                                if(isDuenoActual && n.maestro === maestroId && op.toLowerCase() !== usNombre.toLowerCase() && n.caravana !== '---' && n.caravana !== 'null') {
                                     lanzarNotificacionEscritorio("Alerta Taurus", `${op} registró [${n.accion}] al RP ${n.caravana}`);
                                 }
                             });
@@ -1096,13 +944,6 @@
                             if (isPropietario) {
                                 await OneSignal.Slidedown.promptPush();
                                 OneSignal.User.PushSubscription.optIn();
-
-                                OneSignal.Notifications.addEventListener('foregroundWillDisplay', function(event) {
-                                    const notif = event.notification;
-                                    if(notif.body && notif.body.includes(usNombre)) {
-                                        event.preventDefault();
-                                    }
-                                });
                             } else {
                                 OneSignal.User.PushSubscription.optOut();
                             }
@@ -1159,7 +1000,7 @@
 
                 const prefs = lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
 
-                db.collection('estancias').doc(m).onSnapshot(docE => {
+                db.collection('estancias').doc(m).onSnapshot({ includeMetadataChanges: true }, docE => {
                     let hNombre = usHacienda || "HACIENDA";
                     let hLogo = "gemini-svg.png";
                     if (docE.exists) {
@@ -1181,6 +1022,20 @@
                 document.getElementById('pantalla-mantenimiento').classList.add('oculto');
                 if(tabSeleccionado) { cambiarVista(vistaInicial, tabSeleccionado); } else { cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
                 sincronizarPendientesAuto(); cargarListasFiltrosSelects(); cargarListaOperadores();
+                
+                // Cachear recursos extraños para offline
+                if ('caches' in window) {
+                    caches.open('taurus-v1-assets').then(cache => {
+                        cache.addAll([
+                            location.href,
+                            'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+                            'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js',
+                            'https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js',
+                            'https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js',
+                            'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js'
+                        ]).catch(()=>{});
+                    });
+                }
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
 
@@ -1225,7 +1080,9 @@
             let historiaPorRP = {};
             dbAsc.forEach(evt => {
                 let rp = String(evt.caravana);
-                if(rp === "---" || !rp) return;
+                // Purga silenciosa de errores previos con caravana "null"
+                if(rp === "---" || rp === "null" || rp === "undefined" || !rp) return;
+                
                 if(!historiaPorRP[rp]) historiaPorRP[rp] = [];
                 if(evt.accion === 'Borrar_Caravana') {
                     historiaPorRP[rp] = [];
@@ -1251,8 +1108,12 @@
             if (activosCache) return activosCache;
             let historia = procesarEventos();
             let validos = [];
-            for(let rp in historia) { validos.push(...historia[rp]); }
-            const globalEvents = dbCache.filter(d => d.caravana === "---" || !d.caravana);
+            for(let rp in historia) {
+                if (rp !== "---" && rp !== "null" && rp !== "undefined") {
+                    validos.push(...historia[rp]); 
+                }
+            }
+            const globalEvents = dbCache.filter(d => d.caravana === "---" || !d.caravana || String(d.caravana) === "null");
             activosCache = [...validos, ...globalEvents].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
             return activosCache;
         }
@@ -1279,7 +1140,7 @@
 
         function cargarListasFiltrosSelects() {
             let datosActivos = obtenerRegistrosActivos();
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && c !== "null" && c !== "undefined" && c !== ""))];
             let lotesSet = new Set();
             let catsSet = new Set();
 
@@ -1356,6 +1217,7 @@
                         let p2 = parseFloat(String(pesoAnterior.valor).replace(/[^\d.-]/g, '')); let d2 = new Date(pesoAnterior.fecha);
                         let diffTime = Math.abs(d1 - d2); let dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                         if(dias >= 1) { 
+                            // FIX: parseFloat elimina los ceros innecesarios (ej. 39.000 se vuelve 39)
                             let gdp = parseFloat(((p1 - p2) / dias).toFixed(3)); 
                             if(gdp > 0) gdpHtml = `<span style="color:var(--exito); font-weight:bold; font-size:12px;">🚀 +${gdp} Kg/día</span>`; 
                             else if(gdp < 0) gdpHtml = `<span style="color:var(--peligro); font-weight:bold; font-size:12px;">⚠️ ${gdp} Kg/día</span>`; 
@@ -1431,10 +1293,18 @@
         }
 
         function ejecutarAccion(tipo, val, det, modalId) {
-            const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: rpActivo, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
+            let car = rpActivo;
+            // FIX: Operaciones administrativas NO deben tener caravana asignada para evitar crear animales "null"
+            if (tipo.includes('Operador') || tipo === 'Alta Operador' || tipo === 'Edición Operador' || tipo === 'Baja Operador') {
+                car = "---";
+            } else if (!car || car === "null" || car === "undefined") {
+                car = "---";
+            }
+            
+            const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: car, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
             dbCache.unshift(obj); historiaCache = null; activosCache = null; buscarCaravanaBtn(rpActivo); procesarDatosDashboard();
             if(modalId) cerrarModal(modalId);
-            if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador') {
+            if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador' && tipo !== 'Alta Operador' && tipo !== 'Baja Operador') {
                 notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
             }
             if(navigator.onLine) {
@@ -1534,6 +1404,7 @@
             document.getElementById('edit-reg-valor').value = reg.valor || ""; 
             document.getElementById('edit-reg-detalles').value = reg.detalles || "";
             
+            // FIX: Cargar la fecha original al editar
             if(reg.fecha) {
                 let fechaLocal = new Date(reg.fecha);
                 fechaLocal.setMinutes(fechaLocal.getMinutes() - fechaLocal.getTimezoneOffset());
@@ -1551,14 +1422,15 @@
             
             if(!navigator.onLine) { alert("Necesitas conexión a internet para editar."); return; }
             try {
-                let isoFecha = new Date(nFecha).toISOString(); 
+                // FIX: Guardar también la nueva fecha modificada
+                let isoFecha = new Date(nFecha).toISOString();
                 await db.collection('estancias').doc(maestroId).collection('eventos').doc(id).update({ valor: nValor, detalles: nDetalles, fecha: isoFecha });
                 
                 let i = dbCache.findIndex(r => r.id === id);
                 if(i !== -1) { 
                     dbCache[i].valor = nValor; 
                     dbCache[i].detalles = nDetalles; 
-                    dbCache[i].fecha = isoFecha; 
+                    dbCache[i].fecha = isoFecha;
                     historiaCache = null; activosCache = null; 
                     buscarCaravanaBtn(rpActivo); 
                 }
@@ -1618,7 +1490,7 @@
         function actualizarInformeAvanzado() {
             const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
             const datosActivos = obtenerRegistrosActivos();
-            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
+            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && c !== "null" && c !== "undefined" && c !== ""))];
 
             const tbodyMasivo = document.getElementById('tb-informe-masivo');
             const tbodyBajas = document.getElementById('tb-informe-bajas');
@@ -1914,7 +1786,7 @@
 
         function procesarDatosDashboard() {
             const datosActivos = obtenerRegistrosActivos(); 
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && c !== "null" && c !== "undefined" && c !== ""))];
             let vivas = []; let cantBajas = datosActivos.filter(r => r.accion === 'Baja').length;
             unicas.forEach(car => { if(!obtenerHistorial(car).some(x => x.accion === 'Baja')) { vivas.push(car); } }); unicas = vivas;
             
@@ -2087,7 +1959,7 @@
 
         function cargarListaRegistro() {
             const datosActivos = obtenerRegistrosActivos();
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && c !== "null" && c !== "undefined" && c !== ""))];
 
             let estadoFiltro = document.getElementById('filtro-reg-estado').value;
             let loteFiltro = document.getElementById('filtro-reg-lote').value;
