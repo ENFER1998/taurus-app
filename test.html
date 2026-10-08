@@ -128,8 +128,8 @@
 
         .contenedor-scroll-analitica { max-height: 130px; overflow-y: auto; padding-right: 5px; flex: 1; }
 
-        .caja-filtros-rapidos { background: #1e293b; padding: 12px; border-radius: 8px; border: 1px solid var(--borde); margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; }
-        body.tema-claro .caja-filtros-rapidos { background: #ffffff !important; border-color: var(--borde) !important; }
+        .caja-filtros-rapidos { background: #1e293b; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--borde); margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px; }
+        body.tema-claro .caja-filtros-rapidos { background: #1e293b; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--borde); margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px; }
 
         .contenedor-permisos { display: flex; flex-direction: column; gap: 8px; background: #1e293b; padding: 10px; border: 1px solid var(--borde); border-radius: 8px; }
         body.tema-claro .contenedor-permisos { background: #ffffff !important; border-color: var(--borde) !important; }
@@ -172,7 +172,7 @@
         .filtros-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; width: 100%; }
         
         .lista-animales { list-style: none; padding: 0; margin: 0; }
-        .lista-animales li { padding: 15px; border-bottom: 1px solid var(--borde); display: flex; justify-content: space-between; align-items: center; cursor: pointer;}
+        .lista-animales li { padding: 10px 12px; border-bottom: 1px solid var(--borde); display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .lista-animales li:hover { background: rgba(59,130,246,0.05); }
         
         .btn-descargar { width: 100%; background: var(--exito); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; margin-bottom: 20px;}
@@ -367,18 +367,6 @@
                         <button class="btn-mini" id="btn-toggle-rafaga" style="border-color:var(--borde); font-weight:bold;" onclick="toggleRafaga()">APAGADO</button>
                     </div>
                     
-                    <!-- BARRA DE INTEGRACIÓN BLUETOOTH (ESP32 / TRU-TEST / BALANZAS) -->
-                    <div style="margin-top:12px; padding:10px; background:rgba(59,130,246,0.08); border-radius:8px; border:1px solid var(--borde); display:flex; flex-direction:column; gap:8px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
-                            <div style="display:flex; align-items:center; gap:6px;">
-                                <span style="font-size:16px;">📶</span>
-                                <span id="lbl-estado-bluetooth" style="font-size:12px; font-weight:bold; color:var(--muted);">Bluetooth: Desconectado</span>
-                            </div>
-                            <button class="btn-mini" id="btn-conectar-ble" style="background:var(--secundario); color:white; border:none; padding:6px 12px;" onclick="conectarBluetoothBLE()">Conectar Balanza / Bastón</button>
-                        </div>
-                        <span style="font-size:11px; color:var(--muted); line-height:1.3;">Compatible con <strong>ESP32 Taurus (Antena RFID + Balanza ESP-NOW)</strong>, bastones <strong>Tru-Test, Allflex y genéricos</strong> (vía Bluetooth BLE o Teclado HID en iOS/Android).</span>
-                    </div>
-
                     <div id="opciones-rafaga" class="oculto" style="margin-top:15px; padding-top:15px; border-top:1px solid var(--borde);">
                         <div class="form-grupo" style="margin-bottom:15px;">
                             <label style="font-size:11px;">Modalidad de Ráfaga:</label>
@@ -389,7 +377,7 @@
                         </div>
                         <div id="caja-rafaga-manual" class="form-grupo oculto" style="display:flex; gap:10px; margin-bottom:15px; background: rgba(59, 130, 246, 0.1); padding: 10px; border-radius: 8px;">
                             <input type="text" id="rm-caravana" class="form-control" placeholder="Nº RP" style="flex:1;" onkeyup="if(event.key === 'Enter') document.getElementById('rm-valor').focus()">
-                            <input type="text" id="rm-valor" class="form-control" placeholder="Valor Principal (Ej: 300)" style="flex:1;" onkeyup="if(event.key === 'Enter') ejecutarRafagaManual()">
+                            <input type="text" id="rm-valor" class="form-control" placeholder="Peso Kg (Opcional)" style="flex:1;" onkeyup="if(event.key === 'Enter') ejecutarRafagaManual()">
                             <button class="btn-mini" style="background:var(--secundario); color:white; border:none;" onclick="ejecutarRafagaManual()">▶</button>
                         </div>
                         <div class="form-grupo" style="margin-bottom:10px;">
@@ -402,6 +390,13 @@
                                 <option value="Vitamina ADE">💉 Vitamina ADE / Reconstituyente</option>
                                 <option value="OTRO">✏ Personalizado (Escribir otro)...</option>
                             </select>
+                            <div id="caja-rafaga-dx" class="oculto" style="margin-top:6px;">
+                                <select id="rafaga-dx-val" class="form-control" style="padding:6px 8px; font-size:12px; font-weight:bold;">
+                                    <option value="Preñada">✅ Preñada</option>
+                                    <option value="Vacía">❌ Vacía</option>
+                                    <option value="Vacía (Sangre)">🩸 Vacía (Sangre)</option>
+                                </select>
+                            </div>
                             <input type="text" id="rafaga-prod-custom" class="form-control oculto" placeholder="Escriba el producto..." style="margin-top:8px;">
                         </div>
                         <div id="caja-rafaga-detalles" class="form-grupo oculto" style="margin-bottom:0;">
@@ -422,7 +417,7 @@
                     </div>
                 </div>
 
-                <div class="buscador-contenedor">
+                <div class="buscador-contenedor" style="margin-bottom:8px;">
                     <input type="text" id="buscador-caravana" class="buscador-input" placeholder="Nº Caravana / RP" onkeyup="if(event.key === 'Enter') buscarCaravanaBtn()">
                     <button class="buscador-btn" onclick="buscarCaravanaBtn()">Buscar</button>
                 </div>
@@ -499,12 +494,13 @@
                                 <option value="ALL">🏷️ Lote (Todos)</option>
                             </select>
                             <select id="filtro-reg-cat" class="form-control" style="flex:1; min-width:0;" onchange="cargarListaRegistro()">
-                                <option value="ALL">🐄 Categoría (Todas)</option>
+                    <option value="ALL">🐄 Categoría (Todas)</option>
+                    <option value="Sin Categoría">🐄 Sin Categoría</option>
                             </select>
                         </div>
                     </div>
 
-                    <div class="buscador-contenedor">
+                    <div class="buscador-contenedor" style="margin-bottom:8px;">
                         <input type="text" id="buscador-lista" class="buscador-input" placeholder="Buscar por RP, raza, notas..." onkeyup="filtrarListaRegistroDebounced()">
                         <button class="buscador-btn" onclick="cargarListaRegistro()">Limpiar</button>
                     </div>
@@ -514,17 +510,11 @@
 
             <div id="vista-informe" class="vista oculto">
                 
-                <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid var(--borde);">
-                    <img id="preview-logo-reporte" src="gemini-svg.png" style="width:50px; height:50px; object-fit:contain; border-radius:8px; background:white; padding:2px;">
-                    <div>
-                        <span style="font-size:11px; color:var(--muted); font-weight:bold; text-transform:uppercase;">Membrete PDF</span>
-                        <strong id="preview-nombre-reporte" style="display:block; font-size:16px; color:var(--texto);">Hacienda</strong>
-                    </div>
-                </div>
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--borde);"><img id="preview-logo-reporte" src="gemini-svg.png" style="width:34px; height:34px; object-fit:contain; border-radius:6px; background:white; padding:2px;"><div><span style="font-size:10px; color:var(--muted); font-weight:bold; text-transform:uppercase;">Membrete PDF</span><strong id="preview-nombre-reporte" style="display:block; font-size:14px; color:var(--texto); line-height:1.1;">Hacienda</strong></div></div>
 
                 <div class="tarjeta">
                     <!-- SELECTOR DE FORMATO ESTRUCTURADO Y SEGURO -->
-                    <div class="form-grupo" style="margin-bottom:12px;">
+                    <div class="form-grupo" style="margin-bottom:8px;">
                         <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">SELECCIONA EL TIPO DE REPORTE:</label>
                         <select class="form-control" id="f-inf-modo" onchange="cambiarModoReporte()" style="border-color: var(--secundario); font-weight: bold; background-color: var(--secundario); color: white;">
                             <option value="inventario">📊 INVENTARIO (Por Lote y Categorías)</option>
@@ -659,12 +649,13 @@
                         </div>
                     </div>
                     
-                    <div class="grid-kpis" style="margin-bottom:15px;">
-                        <div class="kpi-caja" style="padding:10px;"><div class="kpi-valor" id="inf-total" style="font-size:20px;">0</div><div class="kpi-label" id="lbl-inf-total">Animales</div></div>
-                        <div class="kpi-caja" style="padding:10px;" id="caja-kpi-prenadas"><div class="kpi-valor" id="inf-prenadas" style="font-size:20px; color:var(--exito);">0</div><div class="kpi-label">Preñadas</div></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin:8px 0 12px 0; gap:8px; flex-wrap:wrap; background:rgba(255,255,255,0.03); padding:8px 10px; border-radius:8px; border:1px solid var(--borde);">
+                        <div style="font-size:13px; font-weight:600; color:var(--muted); display:flex; align-items:center; gap:8px;">
+                            <span><span id="lbl-inf-total">Listados</span>: <strong id="inf-total" style="color:var(--texto); font-size:15px;">0</strong></span>
+                            <span id="caja-kpi-prenadas">| Preñadas: <strong id="inf-prenadas" style="color:var(--exito); font-size:15px;">0</strong></span>
+                        </div>
+                        <button class="btn-descargar" id="btn-print-magico" onclick="ejecutarDescargaPDF()" style="margin-bottom:0; padding:10px 16px; font-size:14px; width:auto; flex-shrink:0;">🖨️ Descargar PDF</button>
                     </div>
-                    
-                    <button class="btn-descargar" id="btn-print-magico" onclick="ejecutarDescargaPDF()">🖨️ Descargar PDF</button>
 
                     <div class="tabla-responsive">
                         <table class="tabla-informe" id="tabla-masiva"><thead><tr><th>RP y Carimbo</th><th>Categoría</th><th>Lote</th><th>Últ. Peso</th><th>Dx</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
@@ -683,6 +674,12 @@
                     <div class="form-grupo" id="panel-licencia"><label>Vencimiento de Licencia:</label><input type="text" id="lbl-licencia" class="form-control" readonly style="font-weight:bold;"></div>
                     <div class="form-grupo" style="margin-top: 15px;"><label>Cambiar mi Contraseña (Mín. 6 caracteres)</label><input type="password" id="nueva-clave" class="form-control" placeholder="Mínimo 6 caracteres"></div>
                     <button class="btn-guardar" onclick="cambiarMiContrasena()">Actualizar Contraseña</button>
+                </div>
+                <div class="tarjeta">
+                    <div class="tarjeta-titulo">📡 Conectividad de Básculas y Lectores</div>
+                    <p style="font-size:13px; color:var(--muted); line-height:1.5; margin:0;">
+                        Compatible con antena RFID y balanza Taurus. Las básculas electrónicas y bastones RFID se vinculan de manera transparente en segundo plano a través de la configuración Bluetooth de su dispositivo móvil. El sistema detecta y procesa las lecturas de peso y caravana automáticamente sin necesidad de sincronización manual.
+                    </p>
                 </div>
                 
                 <div class="tarjeta" id="panel-membrete">
@@ -1070,6 +1067,14 @@
                 console.log("[Taurus Firestore] Persistencia multi-pestaña:", err.code);
             });
         } catch(e) {}
+
+        function esCaravanaValida(c) {
+            if (c === null || c === undefined) return false;
+            let s = String(c).trim();
+            if (!s || s === "---" || s === "-" || s.toLowerCase() === "null" || s.toLowerCase() === "undefined" || s.toLowerCase() === "nan") return false;
+            return true;
+        }
+        window.esCaravanaValida = esCaravanaValida;
 
         var dbCache = []; var historiaCache = null; var activosCache = null; var rpActivo = null; var usActivo = ""; var maestroId = ""; var usRol = ""; var rpPrint = ""; var pdfExportData = [];
         var usNombre = ""; var usHacienda = ""; var rfidPendiente = ""; var alertaGlobalIdActual = "";
@@ -1641,7 +1646,7 @@
 
         window.cargarListasFiltrosSelects = function() {
             let datosActivos = window.obtenerRegistrosActivos();
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && String(c).toLowerCase() !== "null" && c !== "undefined" && c !== ""))];
+            let unicas = [...new Set(datosActivos.map(d => d.caravana).filter(esCaravanaValida).map(c => String(c).trim()))];
             let lotesSet = new Set();
             let catsSet = new Set();
 
@@ -1687,220 +1692,229 @@
             });
         }
 
-        window.buscarCaravanaBtn = function(rpForzado = null) {
+        function buscarCaravanaBtn(rpForzado = null) {
             try {
-                let rp = rpForzado ? rpForzado : document.getElementById('buscador-caravana').value.trim();
-                if(!esCaravanaValida(rp)) return;
+                let rp = rpForzado ? String(rpForzado).trim() : (document.getElementById('buscador-caravana') ? document.getElementById('buscador-caravana').value.trim() : ""); 
+                if(!esCaravanaValida(rp)) return; 
                 let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === rp.toLowerCase());
-                if(esRFIDRegistrado) rp = esRFIDRegistrado.caravana;
+                if(esRFIDRegistrado && esCaravanaValida(esRFIDRegistrado.caravana)) rp = String(esRFIDRegistrado.caravana).trim();
 
-                rpActivo = rp; 
-                document.getElementById('ficha-animal').classList.remove('oculto');
-                const elCaravanaTop = document.getElementById('val-caravana'); 
+                rpActivo = rp;
+                const elFicha = document.getElementById('ficha-animal');
+                if(elFicha) {
+                    elFicha.classList.remove('oculto');
+                    elFicha.style.display = 'block';
+                }
+                const elCaravanaTop = document.getElementById('val-caravana');
                 if(elCaravanaTop) elCaravanaTop.innerText = rp;
                 
-                const regs = window.obtenerHistorial(rp);
+                const regs = obtenerHistorial(rp); 
                 const uBaja = regs.find(d => d.accion === 'Baja');
                 const badgeBaja = document.getElementById('badge-estado-animal');
-                if(uBaja) { 
-                    badgeBaja.style.display = 'block'; 
-                    badgeBaja.innerText = "BAJA: " + uBaja.valor.toUpperCase(); 
-                } else { 
-                    badgeBaja.style.display = 'none'; 
+                if(badgeBaja) {
+                    if(uBaja) {
+                        badgeBaja.style.display = 'inline-block';
+                        badgeBaja.innerText = "BAJA: " + String(uBaja.valor).toUpperCase();
+                    } else {
+                        badgeBaja.style.display = 'none';
+                    }
                 }
 
-                let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", nutricion="-", sanidad="-", inseminacion="-", htmlNotas="";
+                let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", nutricion="-", sanidad="-", inseminacion="-", htmlNotas=""; 
                 let gdpHtml = "";
-
-                // Detección y Cálculo de Pesaje
                 let todosLosPesos = regs.filter(d => String(d.accion).includes('Peso'));
                 if(todosLosPesos.length >= 1) {
                     let pesoActual = todosLosPesos[0];
-                    let p1 = parseFloat(String(pesoActual.valor).replace(/[^\d.-]/g, '')); 
-                    let d1 = new Date(pesoActual.fecha); 
+                    let p1 = parseFloat(String(pesoActual.valor).replace(/[^\d.-]/g, ''));
+                    let d1 = new Date(pesoActual.fecha);
+                    let f1_str = pesoActual.fecha.split('T')[0] || ""; 
                     let pesoAnterior = null;
-                    for(let i = 1; i < todosLosPesos.length; i++) { 
-                        let pTest = parseFloat(String(todosLosPesos[i].valor).replace(/[^\d.-]/g, ''));
-                        let diffT = Math.abs(d1 - new Date(todosLosPesos[i].fecha));
-                        if(pTest !== p1 || diffT > 86400000) { pesoAnterior = todosLosPesos[i]; break; } 
+                    for(let i = 1; i < todosLosPesos.length; i++) {
+                        let fTemp_str = todosLosPesos[i].fecha.split('T')[0] || "";
+                        if(f1_str !== fTemp_str && fTemp_str !== "") { pesoAnterior = todosLosPesos[i]; break; }
                     }
                     if(pesoAnterior) {
-                        let p2 = parseFloat(String(pesoAnterior.valor).replace(/[^\d.-]/g, '')); 
+                        let p2 = parseFloat(String(pesoAnterior.valor).replace(/[^\d.-]/g, ''));
                         let d2 = new Date(pesoAnterior.fecha);
-                        let diffTime = Math.abs(d1 - d2); 
-                        let dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                        if(dias >= 1 && !isNaN(p1) && !isNaN(p2)) { 
-                            let gdp = parseFloat(((p1 - p2) / dias).toFixed(3)); 
-                            if(gdp > 0) gdpHtml = `<span style="color:var(--exito); font-weight:bold; font-size:12px;">🚀 +${gdp} Kg/día</span>`; 
-                            else if(gdp < 0) gdpHtml = `<span style="color:var(--peligro); font-weight:bold; font-size:12px;">⚠️ ${gdp} Kg/día</span>`; 
-                            else gdpHtml = `<span style="color:var(--muted); font-weight:bold; font-size:12px;">⚖️ Mantuvo su peso</span>`; 
+                        let diffTime = Math.abs(d1 - d2);
+                        let dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                        if(dias >= 1) {
+                            let gdp = ((p1 - p2) / dias).toFixed(3);
+                            if(gdp > 0) gdpHtml = `<span style="color:var(--success, #10b981); font-weight:bold; font-size:11px;">🚀 +${gdp} Kg/día</span>`;
+                            else if(gdp < 0) gdpHtml = `<span style="color:var(--danger, #ef4444); font-weight:bold; font-size:11px;">⚠️ ${gdp} Kg/día</span>`;
+                            else gdpHtml = `<span style="color:var(--text-muted, #94a3b8); font-weight:bold; font-size:11px;">⚖️ Mantuvo su peso</span>`;
                         }
                     } else {
-                        if(todosLosPesos.length > 1) { 
-                            gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Múltiples pesos idénticos/mismo día)</span>`; 
-                        } else { 
-                            gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Falta peso histórico)</span>`; 
-                        }
+                        if(todosLosPesos.length > 1) { gdpHtml = `<span style="color:var(--text-muted, #94a3b8); font-size:10px; font-style:italic;">(Pesos del mismo día)</span>`; }
+                        else { gdpHtml = `<span style="color:var(--text-muted, #94a3b8); font-size:10px; font-style:italic;">(Falta peso histórico)</span>`; }
                     }
                 }
-                const elGdp = document.getElementById('val-gdp'); 
-                if (elGdp) elGdp.innerHTML = gdpHtml;
+                const elGdp = document.getElementById('val-gdp'); if (elGdp) elGdp.innerHTML = gdpHtml;
 
                 if(regs.length > 0) {
-                    const uP = regs.find(d => d.accion === 'Perfil Master');
-                    if(uP) { 
-                        let p = String(uP.valor || "").split('|'); 
-                        raza = p[0] || "-"; 
-                        edad = p[1] || "-"; 
-                        padre = p[2] || "-"; 
-                        madre = p[3] || "-"; 
-                        cat = String(uP.detalles || "").split('|')[0] || "-"; 
-                    }
-                    const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                    if(uC) { 
-                        let v = String(uC.valor || "").split('|'); 
-                        cat = v[0] ? v[0].replace('Cat:','').trim() : cat; 
-                        carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; 
-                        lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-"; 
-                    }
-                    
-                    const uPeso = regs.find(d => String(d.accion).includes('Peso')); 
+                    const uP = regs.find(d => d.accion === 'Perfil Master'); 
+                    if(uP) {
+                        let p = String(uP.valor || "").split('|');
+                        raza = p[0] || "-"; edad = p[1] || "-"; padre = p[2] || "-"; madre = p[3] || "-";
+                        cat = String(uP.detalles || "").split('|')[0] || "-";
+                    } 
+                    const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
+                    if(uC) {
+                        let v = String(uC.valor || "").split('|');
+                        cat = v[0] ? v[0].replace('Cat:','').trim() : cat;
+                        carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-";
+                        lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-";
+                    } 
+                    const uPeso = regs.find(d => String(d.accion).includes('Peso'));
                     if(uPeso) {
-                        let fPesoStr = uPeso.fecha ? new Date(uPeso.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'}) : '';
-                        peso = `${uPeso.valor || "-"} <span style="font-size:11px; color:var(--muted); display:block; margin-top:2px;">(Pesado: ${fPesoStr})</span>`;
-                    }
+                        let fPesoStr = "";
+                        if(uPeso.fecha) {
+                            try {
+                                let dt = new Date(uPeso.fecha);
+                                if(!isNaN(dt.getTime())) fPesoStr = ` <span style="font-size:11px; color:var(--text-muted, #94a3b8); display:block; margin-top:2px;">(Pesado: ${dt.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'})})</span>`;
+                            } catch(e) {}
+                        }
+                        peso = `${uPeso.valor || "-"} Kg${fPesoStr}`;
+                    } 
+                    const uDx = regs.find(d => d.accion === 'Diagnóstico'); 
                     
-                    const uDx = regs.find(d => d.accion === 'Diagnóstico');
                     let loteLow = lote.toLowerCase();
                     let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
                     let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
                     let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
                     dx = uDx ? uDx.valor : (esPre ? "Preñada" : (esVacia ? "Vacía" : "-"));
 
-                    // ÚLTIMA SANIDAD
-                    const uSan = regs.find(d => {
-                        let acc = String(d.accion || "").trim().toLowerCase();
-                        return acc === 'sanidad' || acc.includes('sanid') || acc.includes('vacun') || acc.includes('tratamient') || acc.includes('antiparasit');
-                    });
-                    if(uSan) {
-                        let valSan = (uSan.valor && uSan.valor !== '-') ? uSan.valor : 'Tratamiento General';
-                        let detSan = uSan.detalles ? uSan.detalles.split('| Op:')[0].trim() : '';
-                        let fSanStr = uSan.fecha ? new Date(uSan.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'}) : '';
-                        sanidad = `${valSan}`;
-                        if(detSan && detSan !== '-' && detSan !== 'Sin observaciones adicionales' && detSan !== 'Sin notas') {
-                            sanidad += ` <span style="font-size:11px; color:var(--muted); font-weight:normal;">(${detSan})</span>`;
-                        }
-                        if(fSanStr) {
-                            sanidad += `<span style="font-size:11px; color:var(--muted); display:block; margin-top:2px;">(Aplicado: ${fSanStr})</span>`;
-                        }
-                    }
-
-                    // ÚLTIMA INSEMINACIÓN
-                    const uIns = regs.find(d => {
-                        let acc = String(d.accion || "").trim().toLowerCase();
-                        return acc === 'inseminación' || acc === 'inseminacion' || acc.includes('insemin') || acc.includes('monta') || acc.includes('reproducc');
-                    });
-                    if(uIns) {
-                        let fInsStr = uIns.fecha ? new Date(uIns.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'}) : '';
-                        inseminacion = `${uIns.valor || "-"}`;
-                        if(uIns.detalles && uIns.detalles !== '-') {
-                            let detIns = uIns.detalles.split('| Op:')[0].trim();
-                            if(detIns) inseminacion += ` <span style="font-size:11px; color:var(--muted); font-weight:normal;">(${detIns})</span>`;
-                        }
-                        if(fInsStr) {
-                            inseminacion += `<span style="font-size:11px; color:var(--muted); display:block; margin-top:2px;">(Fecha: ${fInsStr})</span>`;
-                        }
-                    }
-
-                    // RÉGIMEN NUTRICIONAL
                     const uNut = regs.find(d => {
-                        let acc = String(d.accion || "").trim().toLowerCase();
-                        return acc === 'nutrición' || acc === 'nutricion' || acc.includes('nutri') || acc.includes('aliment');
+                        let a = String(d.accion || "").trim().toLowerCase();
+                        return a.includes('nutrici') || a.includes('suplement');
                     });
                     if(uNut) {
-                        let fNutStr = uNut.fecha ? new Date(uNut.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'}) : '';
-                        nutricion = `${uNut.valor || "-"}`;
-                        if(uNut.detalles && uNut.detalles !== '-') {
-                            let detNut = uNut.detalles.split('| Op:')[0].trim();
-                            if(detNut) nutricion += ` <span style="font-size:11px; color:var(--muted); font-weight:normal;">(${detNut})</span>`;
+                        let fNutStr = "";
+                        if(uNut.fecha) {
+                            try {
+                                let dt = new Date(uNut.fecha);
+                                if(!isNaN(dt.getTime())) fNutStr = ` (Registrado: ${dt.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'})})`;
+                            } catch(e) {}
                         }
-                        if(fNutStr) {
-                            nutricion += `<span style="font-size:11px; color:var(--muted); display:block; margin-top:2px;">(Registrado: ${fNutStr})</span>`;
-                        }
+                        let valNut = uNut.valor || "";
+                        let detNut = uNut.detalles ? String(uNut.detalles).replace(/\|\s*Op:[^|]*/g, '').trim() : "";
+                        let textoNut = valNut;
+                        if(detNut && detNut !== "-" && detNut !== valNut) textoNut += (textoNut ? " | " : "") + detNut;
+                        nutricion = (textoNut || "-") + fNutStr;
                     }
 
+                    const uSan = regs.find(d => {
+                        let a = String(d.accion || "").trim().toLowerCase();
+                        return a.includes('sanidad') || a.includes('vacuna') || a.includes('tratamiento') || a.includes('antiparasitario');
+                    });
+                    if(uSan) {
+                        let fSanStr = "";
+                        if(uSan.fecha) {
+                            try {
+                                let dt = new Date(uSan.fecha);
+                                if(!isNaN(dt.getTime())) fSanStr = ` (Aplicado: ${dt.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'})})`;
+                            } catch(e) {}
+                        }
+                        let valSan = uSan.valor || "";
+                        let detSan = uSan.detalles ? String(uSan.detalles).replace(/\|\s*Op:[^|]*/g, '').trim() : "";
+                        let textoSan = valSan;
+                        if(detSan && detSan !== "-" && detSan !== valSan) textoSan += (textoSan ? " | " : "") + detSan;
+                        sanidad = (textoSan || "-") + fSanStr;
+                    }
+
+                    const uIns = regs.find(d => {
+                        let a = String(d.accion || "").trim().toLowerCase();
+                        return a.includes('insemin') || a.includes('servicio') || a.includes('monta');
+                    });
+                    if(uIns) {
+                        let fInsStr = "";
+                        if(uIns.fecha) {
+                            try {
+                                let dt = new Date(uIns.fecha);
+                                if(!isNaN(dt.getTime())) fInsStr = ` (Inseminado: ${dt.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'})})`;
+                            } catch(e) {}
+                        }
+                        let valIns = uIns.valor || "";
+                        let detIns = uIns.detalles ? String(uIns.detalles).replace(/\|\s*Op:[^|]*/g, '').trim() : "";
+                        let textoIns = valIns;
+                        if(detIns && detIns !== "-" && detIns !== valIns) textoIns += (textoIns ? " | " : "") + detIns;
+                        inseminacion = (textoIns || "-") + fInsStr;
+                    }
+                    
                     let ultComentario = "Sin comentarios.";
                     regs.forEach(r => {
                         try {
-                            let acc = String(r.accion).trim(); 
-                            let det = String(r.detalles || ""); 
-                            let notaTexto = "";
-                            if (acc === 'Comentario') { 
-                                notaTexto = det.split('|')[0] || ""; 
-                                if(ultComentario === "Sin comentarios.") ultComentario = notaTexto; 
-                            } else if (det.includes('Notas:')) { 
-                                let parts = det.split('Notas:'); 
-                                if (parts.length > 1) { 
-                                    let n = parts[1].split('|')[0].trim(); 
-                                    if(n && n !== "-" && n !== "") notaTexto = `[${acc}] ${n}`; 
-                                } 
-                            }
+                            let acc = String(r.accion).trim(); let det = String(r.detalles || ""); let notaTexto = "";
+                            if (acc === 'Comentario') { notaTexto = det.split('|')[0] || ""; if(ultComentario === "Sin comentarios.") ultComentario = notaTexto; } 
+                            else if (det.includes('Notas:')) { let parts = det.split('Notas:'); if (parts.length > 1) { let n = parts[1].split('|')[0].trim(); if(n && n !== "-" && n !== "") notaTexto = `[${acc}] ${n}`; } }
+                            if (notaTexto && notaTexto !== "-" && notaTexto.toLowerCase() !== "sin comentarios.") { htmlNotas += `<div class="nota-item"><span class="f">${new Date(r.fecha).toLocaleDateString()}</span><span class="t">${notaTexto}</span></div>`; }
                         } catch(e) {}
                     });
-                    document.getElementById('val-comentario').innerText = ultComentario;
+                    const elComentario = document.getElementById('val-comentario');
+                    if(elComentario) elComentario.innerText = ultComentario;
                 } else {
-                    document.getElementById('val-comentario').innerText = "Sin comentarios.";
+                    const elComentario = document.getElementById('val-comentario');
+                    if(elComentario) elComentario.innerText = "Sin comentarios.";
                 }
+                if(htmlNotas === "") htmlNotas = "<span style='font-size:13px; color:var(--text-muted, #94a3b8); font-style:italic;'>Sin anotaciones extra.</span>";
                 
-                const elCat = document.getElementById('val-categoria'); if(elCat) elCat.innerText = window.obtenerNombreCategoriaLegible(cat);
+                const elCat = document.getElementById('val-categoria'); if(elCat) elCat.innerText = obtenerNombreCategoriaLegible(cat);
                 const elPeso = document.getElementById('val-peso'); if(elPeso) elPeso.innerHTML = peso;
                 const elDx = document.getElementById('val-dx'); if(elDx) elDx.innerText = dx;
                 const elLote = document.getElementById('val-lote'); if(elLote) elLote.innerText = lote;
                 const elCarimbo = document.getElementById('val-carimbo'); if(elCarimbo) elCarimbo.innerText = carimbo;
                 const elGenealogia = document.getElementById('val-genealogia'); if(elGenealogia) elGenealogia.innerText = padre + " / " + madre;
-                const elNutricion = document.getElementById('val-nutricion'); if(elNutricion) elNutricion.innerHTML = nutricion;
-                const elSanidad = document.getElementById('val-sanidad'); if(elSanidad) elSanidad.innerHTML = sanidad;
-                const elInseminacion = document.getElementById('val-inseminacion'); if(elInseminacion) elInseminacion.innerHTML = inseminacion;
+                const elNutricion = document.getElementById('val-nutricion'); if(elNutricion) elNutricion.innerText = nutricion;
+                const elSanidad = document.getElementById('val-sanidad'); if(elSanidad) elSanidad.innerText = sanidad;
+                const elInseminacion = document.getElementById('val-inseminacion'); if(elInseminacion) elInseminacion.innerText = inseminacion;
+                const elNotas = document.getElementById('val-notas'); if(elNotas) elNotas.innerHTML = htmlNotas;
                 const elRaza = document.getElementById('val-raza'); if(elRaza) elRaza.innerText = raza;
+                
                 const elEdad = document.getElementById('val-edad'); if(elEdad) elEdad.innerText = edad;
-
-                const fRaza = document.getElementById('f-raza'); if(fRaza) fRaza.value = raza !== "-" ? raza : "";
-                const fNacimiento = document.getElementById('f-nacimiento');
-                if(fNacimiento) { fNacimiento.value = edad !== "-" ? edad : ""; window.mostrarCarimboCalculado(); }
-                const fPadre = document.getElementById('f-padre'); if(fPadre) fPadre.value = padre !== "-" ? padre : "";
-                const fMadre = document.getElementById('f-madre'); if(fMadre) fMadre.value = madre !== "-" ? madre : "";
-                const inputCarimbo = document.getElementById('input-carimbo-rapido'); if(inputCarimbo) inputCarimbo.value = carimbo !== "-" ? carimbo : "";
-                
-                const selectLote = document.getElementById('input-lote-rapido');
-                if(selectLote) {
-                    let encontrado = false;
-                    for(let i=0; i<selectLote.options.length; i++) {
-                        if(selectLote.options[i].value === lote || selectLote.options[i].text === lote) {
-                            selectLote.selectedIndex = i; encontrado = true; break;
+                const fRaza = document.getElementById('f-raza'); if(fRaza) fRaza.value = raza !== "-" ? raza : ""; 
+                const fNacimiento = document.getElementById('f-nacimiento'); 
+                if(fNacimiento) {
+                    fNacimiento.value = edad !== "-" ? edad : "";
+                    if(typeof mostrarCarimboCalculado === 'function') mostrarCarimboCalculado();
+                    else if(typeof window.mostrarCarimboCalculado === 'function') window.mostrarCarimboCalculado();
+                } 
+                const fPadre = document.getElementById('f-padre'); if(fPadre) fPadre.value = padre !== "-" ? padre : ""; 
+                const fMadre = document.getElementById('f-madre'); if(fMadre) fMadre.value = madre !== "-" ? madre : ""; 
+                const inputCarimbo = document.getElementById('input-carimbo-rapido'); if(inputCarimbo) inputCarimbo.value = carimbo !== "-" ? carimbo : ""; 
+                const inputLote = document.getElementById('input-lote-rapido');
+                if(inputLote) {
+                    if(inputLote.tagName === 'SELECT') {
+                        let encontrado = false;
+                        for(let i=0; i<inputLote.options.length; i++) {
+                            if(inputLote.options[i].value === lote || inputLote.options[i].text === lote) {
+                                inputLote.selectedIndex = i; encontrado = true; break;
+                            }
                         }
-                    }
-                    if(!encontrado && lote !== "-") { 
-                        selectLote.value = 'OTRO'; 
-                        window.verificarSelectOtro(selectLote, 'lote-otro'); 
-                        document.getElementById('lote-otro').value = lote; 
-                    } else { 
-                        window.verificarSelectOtro(selectLote, 'lote-otro'); 
-                    }
-                }
-
-                const fComentario = document.getElementById('f-comentario-txt'); if(fComentario) fComentario.value = "";
-                
-                const catSelect = document.getElementById('input-cat-rapida');
-                if(catSelect) { 
-                    for(let i=0; i<catSelect.options.length; i++) { 
-                        if(catSelect.options[i].value.includes(cat) || catSelect.options[i].text.includes(cat)) {
-                            catSelect.selectedIndex = i; 
-                            break;
+                        if(!encontrado && lote !== "-") {
+                            inputLote.value = 'OTRO';
+                            if(typeof verificarSelectOtro === 'function') verificarSelectOtro(inputLote, 'lote-otro');
+                            else if(typeof window.verificarSelectOtro === 'function') window.verificarSelectOtro(inputLote, 'lote-otro');
+                            const lOtro = document.getElementById('lote-otro');
+                            if(lOtro) lOtro.value = lote;
+                        } else {
+                            if(typeof verificarSelectOtro === 'function') verificarSelectOtro(inputLote, 'lote-otro');
+                            else if(typeof window.verificarSelectOtro === 'function') window.verificarSelectOtro(inputLote, 'lote-otro');
                         }
-                    } 
+                    } else {
+                        inputLote.value = lote !== "-" ? lote : "";
+                    }
+                } 
+                const fComentario = document.getElementById('f-comentario-txt'); if(fComentario) fComentario.value = ""; 
+                
+                const catSelect = document.getElementById('input-cat-rapida'); 
+                if(catSelect) {
+                    for(let i=0; i<catSelect.options.length; i++) {
+                        if(catSelect.options[i].value === cat || catSelect.options[i].value.includes(cat)) catSelect.selectedIndex = i;
+                    }
                 }
             } catch(e) { console.error("Error al visualizar ficha", e); }
-        };
+        }
+        window.buscarCaravanaBtn = buscarCaravanaBtn;
 
         window.ejecutarAccion = function(tipo, val, det, modalId) {
             let car = rpActivo;
@@ -2670,7 +2684,7 @@
 
         window.procesarDatosDashboard = function() {
             const datosActivos = window.obtenerRegistrosActivos(); 
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && String(c).toLowerCase() !== "null" && c !== "undefined" && c !== ""))];
+            let unicas = [...new Set(datosActivos.map(d => d.caravana).filter(esCaravanaValida).map(c => String(c).trim()))];
             let vivas = []; let cantBajas = datosActivos.filter(r => r.accion === 'Baja').length;
             unicas.forEach(car => { if(!window.obtenerHistorial(car).some(x => x.accion === 'Baja')) { vivas.push(car); } }); unicas = vivas;
             
@@ -2841,10 +2855,10 @@
             timeoutBuscadorInforme = setTimeout(() => { window.actualizarInformeAvanzado(); }, 400);
         }
 
-        window.cargarListaRegistro = function() {
-            const datosActivos = window.obtenerRegistrosActivos();
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && String(c).toLowerCase() !== "null" && c !== "undefined" && c !== ""))];
-
+        function cargarListaRegistro() {
+            const datosActivos = obtenerRegistrosActivos();
+            let unicas = [...new Set(datosActivos.map(d => d.caravana).filter(esCaravanaValida).map(c => String(c).trim()))];
+            
             let estadoFiltro = document.getElementById('filtro-reg-estado').value;
             let loteFiltro = document.getElementById('filtro-reg-lote').value;
             let catFiltro = document.getElementById('filtro-reg-cat').value;
@@ -2854,7 +2868,7 @@
             let listaFiltrada = [];
 
             unicas.forEach(car => {
-                const regs = window.obtenerHistorial(car);
+                const regs = obtenerHistorial(car);
                 let esBaja = regs.some(r => r.accion === 'Baja');
 
                 if (estadoFiltro === 'vivos' && esBaja) return;
@@ -2862,26 +2876,30 @@
 
                 let cat = "-", lote = "General", dx = "-";
                 const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
-                const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                if(uC) {
-                    let v = String(uC.valor||"").split('|');
-                    cat = v[0] ? v[0].replace('Cat:','').trim() : cat;
-                    lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-";
+                const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
+                if(uC) { 
+                    let v = String(uC.valor||"").split('|'); 
+                    cat = v[0] ? v[0].replace('Cat:','').trim() : cat; 
+                    lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; 
                 }
-                const uDx = regs.find(d => d.accion === 'Diagnóstico');
-
+                const uDx = regs.find(d => d.accion === 'Diagnóstico'); 
+                
                 let loteLow = lote.toLowerCase();
                 let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
                 let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
                 let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
-
+                
                 dx = uDx ? uDx.valor : (esPre ? "Preñada" : (esVacia ? "Vacía" : "-"));
 
-                let catLegible = window.obtenerNombreCategoriaLegible(cat);
+                let catLegible = obtenerNombreCategoriaLegible(cat);
 
                 if (loteFiltro !== "ALL" && !lote.includes(loteFiltro)) return;
-                if (catFiltro !== "ALL" && !catLegible.includes(catFiltro)) return;
-
+                if (catFiltro === "Sin Categoría") {
+                    if (catLegible !== "Sin Categoría") return;
+                } else if (catFiltro !== "ALL" && !catLegible.includes(catFiltro)) {
+                    return;
+                }
+                
                 if (dxFiltro === "Preñada") {
                     if (!esPre) return;
                 } else if (dxFiltro === "Vacía") {
@@ -2891,9 +2909,9 @@
                 }
 
                 if (txtBusqueda !== "") {
-                    let matchTexto = car.toLowerCase().includes(txtBusqueda) ||
-                                     catLegible.toLowerCase().includes(txtBusqueda) ||
-                                     lote.toLowerCase().includes(txtBusqueda) ||
+                    let matchTexto = car.toLowerCase().includes(txtBusqueda) || 
+                                     catLegible.toLowerCase().includes(txtBusqueda) || 
+                                     lote.toLowerCase().includes(txtBusqueda) || 
                                      dx.toLowerCase().includes(txtBusqueda);
                     if (!matchTexto) return;
                 }
@@ -2901,33 +2919,61 @@
                 listaFiltrada.push({ car, catLegible, lote, dx, esBaja });
             });
 
-            const ul = document.getElementById('tb-registro'); ul.innerHTML = "";
+            const ul = document.getElementById('tb-registro');
+            if(!ul) return;
+            ul.innerHTML = "";
+            let esTabla = ul.tagName === 'TBODY' || ul.tagName === 'TABLE';
             if(listaFiltrada.length === 0) {
-                ul.innerHTML = '<li style="text-align:center; color:var(--muted); padding:20px;">No se encontraron registros con estos filtros.</li>';
+                ul.innerHTML = esTabla ? '<tr><td colspan="5" style="text-align:center; color:var(--text-muted, #94a3b8); padding:20px;">No se encontraron registros con estos filtros.</td></tr>' : '<li style="text-align:center; color:var(--muted, #94a3b8); padding:20px;">No se encontraron registros con estos filtros.</li>';
                 return;
             }
 
             let htmlHTML = "";
             let limiteRender = 100;
-            listaFiltrada.slice(0, limiteRender).forEach(item => {
-                let badgeBaja = item.esBaja ? `<span style="background:var(--peligro); color:white; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px;">BAJA</span>` : '';
-                htmlHTML += `<li onclick="window.navegarDesdeLista('${item.car}')">
-                    <div style="display:flex; flex-direction:column; gap:4px;">
-                        <div style="display:flex; align-items:center;">
-                            <strong style="font-size:18px; color:var(--texto);">${item.car}</strong>${badgeBaja}
+            if(esTabla) {
+                listaFiltrada.slice(0, limiteRender).forEach(item => {
+                    let badgeBaja = item.esBaja ? `<span style="background:var(--danger, #ef4444); color:white; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px;">BAJA</span>` : '';
+                    htmlHTML += `<tr onclick="navegarDesdeLista('${item.car}')" style="cursor:pointer;">
+                        <td style="color:var(--text-main);"><strong>${item.car}</strong>${badgeBaja}</td>
+                        <td style="color:var(--text-main);">${item.catLegible}</td>
+                        <td style="color:var(--text-main);">${item.lote}</td>
+                        <td style="color:var(--text-main);">${item.dx}</td>
+                        <td><button class="btn-outline" style="padding:4px 10px; font-size:12px;">Abrir Ficha</button></td>
+                    </tr>`;
+                });
+                if(listaFiltrada.length > limiteRender) {
+                    htmlHTML += `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:15px;">Mostrando ${limiteRender} de ${listaFiltrada.length} resultados. Utilice el buscador.</td></tr>`;
+                }
+            } else {
+                listaFiltrada.slice(0, limiteRender).forEach(item => {
+                    let badgeBaja = item.esBaja ? `<span style="background:var(--peligro, #ef4444); color:white; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px;">BAJA</span>` : '';
+                    htmlHTML += `<li onclick="window.navegarDesdeLista('${item.car}')" style="padding:10px 12px; cursor:pointer;">
+                        <div style="display:flex; flex-direction:column; gap:3px;">
+                            <div style="display:flex; align-items:center;">
+                                <strong style="font-size:17px; color:var(--texto);">${item.car}</strong>${badgeBaja}
+                            </div>
+                            <span style="font-size:12px; color:var(--muted);">${item.catLegible} | Lote: ${item.lote} | Dx: ${item.dx}</span>
                         </div>
-                        <span style="font-size:12px; color:var(--muted);">${item.catLegible} | Lote: ${item.lote} | Dx: ${item.dx}</span>
-                    </div>
-                    <span style="font-size:20px; color:var(--texto);">›</span>
-                </li>`;
-            });
-            if(listaFiltrada.length > limiteRender) {
-                htmlHTML += `<li style="text-align:center; color:var(--muted); padding:20px;"> Mostrando los primeros ${limiteRender} resultados. Usa el buscador para encontrar más.</li>`;
+                        <span style="font-size:18px; color:var(--texto);">›</span>
+                    </li>`;
+                });
+                if(listaFiltrada.length > limiteRender) {
+                    htmlHTML += `<li style="text-align:center; color:var(--muted); padding:15px;">Mostrando los primeros ${limiteRender} resultados. Usa el buscador.</li>`;
+                }
             }
             ul.innerHTML = htmlHTML;
         }
+        window.cargarListaRegistro = cargarListaRegistro;
 
-        window.navegarDesdeLista = function(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); window.buscarCaravanaBtn(); }
+        function navegarDesdeLista(car) {
+            if(!esCaravanaValida(car)) return;
+            const buscador = document.getElementById('buscador-caravana');
+            if(buscador) buscador.value = car;
+            const navBtn = document.querySelector('.nav-item[onclick*="vista-manga"]') || document.querySelectorAll('.nav-item')[1];
+            window.cambiarVista('vista-manga', navBtn);
+            window.buscarCaravanaBtn(car);
+        }
+        window.navegarDesdeLista = navegarDesdeLista;
 
         window.guardarDisenoServidor = function() {
             const n = document.getElementById('cfg-nom').value.trim();
@@ -3219,7 +3265,7 @@
         };
 
         // =========================================================================
-        // PARSEADOR UNIVERSAL DE HARDWARE (ESP32 TAURUS, TRU-TEST, ALLFLEX, BALANZAS)
+        // PARSEADOR UNIVERSAL DE HARDWARE (Hardware TAURUS, TRU-TEST, ALLFLEX, BALANZAS)
         // =========================================================================
         window.procesarDatoHardware = function(rawInput) {
             if (!rawInput) return;
@@ -3230,7 +3276,7 @@
             let rpExtraido = null;
             let pesoExtraido = null;
 
-            // 1. Detección de JSON (ESP32 Taurus formato JSON)
+            // 1. Detección de JSON (Taurus Hardware formato JSON)
             if (s.startsWith('{') && s.endsWith('}')) {
                 try {
                     let d = JSON.parse(s);
@@ -3281,7 +3327,7 @@
                 let notas = document.getElementById('rafaga-detalles') ? document.getElementById('rafaga-detalles').value.trim() : '';
                 let recordatorio = document.getElementById('rafaga-recordatorio') ? document.getElementById('rafaga-recordatorio').value : '0';
 
-                window.ejecutarAccion('Peso', pStr, "Automático (ESP32 Antena + Balanza)", null);
+                window.ejecutarAccion('Peso', pStr, "Automático (Antena RFID + Balanza Taurus)", null);
                 if (sel !== 'solo_peso') {
                     let customInput = document.getElementById('rafaga-prod-custom');
                     let producto = sel === 'OTRO' ? ((customInput && customInput.value.trim()) || 'Tratamiento General') : sel;
@@ -3374,7 +3420,7 @@
                 bleDevice = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
                     optionalServices: [
-                        '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // Nordic UART (ESP32 estándar)
+                        '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // Nordic UART (Hardware estándar)
                         '0000ffe0-0000-1000-8000-00805f9b34fb', // HM-10 / CC2541 común en balanzas
                         '000018f0-0000-1000-8000-00805f9b34fb', // Tru-Test BLE
                         '49535343-fe7d-4ae5-8fa9-9fafd205e455'  // Microchip IS1678
