@@ -1,241 +1,3 @@
-
-
-
-
-Configuración de Gemini Spark
-Presentó las funcionalidades y capacidades del asistente personal.
-
-beta
-
-Pasos del plan
-
-Conversación con Gemini
-revisa y repara este html y pasamelo
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-He revisado el código HTML, CSS y JavaScript del archivo, identificando y reparando varios errores estructurales, funciones faltantes y fallos de lógica:
-
-Implementación de funciones faltantes:
-
-guardarVinculacionRFID(): Se invocaba en el modal de vinculación de chips (#modal-rfid), pero no estaba implementada en JavaScript, provocando un error de referencia al intentar asociar un chip a un animal.
-
-togglePermisos(): Se llamaba en el evento onchange del selector de rol de usuario (#op-rol), pero no existía en el script. Ahora conmuta adecuadamente la visibilidad de la sección de permisos según si el usuario es Operador o Propietario.
-
-Corrección de sintaxis en el procesamiento de lotes:
-
-En la función actualizarInformeAvanzado(), la extracción del lote contenía un error tipográfico literal ("split('|')[0]" dentro del fallback de cadena), impidiendo la correcta lectura del lote y afectando los filtros de inventario.
-
-Corrección de visualización en filtros de informes:
-
-Los paneles #filtros-bajas y #filtros-eventos incluían la clase .oculto (display: none !important). La función cambiarModoReporte() únicamente alteraba la propiedad en línea style.display = 'flex', la cual era invalidada por la regla !important del CSS. Se corrigió para añadir y remover la clase .oculto según el modo activo.
-
-Prevención de intercepción errónea del lector de balanza/teclado:
-
-El capturador global de eventos keydown procesaba cualquier entrada con Enter. Si el operador escribía un número en un campo de texto o buscador (por ejemplo, buscar el RP "120") y presionaba Enter, el script lo interpretaba como lectura de balanza electrónica y guardaba un pesaje no deseado. Se restringió para ignorar la captura cuando el foco se encuentra dentro de campos INPUT o TEXTAREA.
-
-Manejo de instancias secundarias en Firebase Auth:
-
-crearOperador() y la eliminación de cuentas utilizaban identificadores fijos de app secundaria (SecondaryAppPeon y SecondaryAppGhostDelete). En caso de error previo en la autenticación, la aplicación secundaria no se liberaba y bloqueaba los siguientes registros con un error de app duplicada. Se implementaron identificadores dinámicos con limpieza garantizada en bloques finally.
-
-Restablecimiento de campos personalizados en modales:
-
-Al registrar datos con la opción "OTRO" seleccionada, el campo de texto libre permanecía visible al volver a abrir el modal. Se añadió la limpieza y ocultamiento automático de estos campos tras guardar.
-
-Compatibilidad y resguardo de la API de Voz (Cora):
-
-Se añadieron verificaciones para comprobar la disponibilidad de window.speechSynthesis antes de acceder a sus métodos y eventos, previniendo fallos en navegadores o WebViews que no la implementan.
-
-Preservación de datos fuera de línea en el cierre de sesión:
-
-La rutina de cierre de sesión limpiaba por completo el almacenamiento local, borrando eventos locales pendientes de sincronización (tc_pendientes). Se ajustó para conservar los registros pendientes hasta que haya conexión.
-
-El archivo corregido se encuentra disponible a continuación:
-
-Icono de HTML
-taurus_control_reparado
- HTML 
-Ves cómo se ve, ahí te mandé dos prints de cómo se ven los botones desplegables para seleccionar. Creo que en todos los botones desplegables para seleccionar están así al momento de el tema de buscar una caravana, o sea, buscar, poner fecha quiero decir, en el ves que dice buscar por RP y tipo respeta las fechas, pero qué fecha si no hay ningún botón de calendario para poner la fecha del inventario en qué fecha querés buscar. Y otra cosa, en tratamientos también quiero por fecha, pero no solamente por quiero por fecha para controlar todos los tratamientos que se hicieron en una fecha en específico. Ponele que a 50 caravanas se le aplicó algo el 5 de abril, quiero poder irme al 5 de abril y ver todo lo que se aplicó el 5 de abril o todo lo que se hizo o cuánto peso tenía en ese entonces. Cualquier cosa quiero poder saber de todas las caravanas todo el tiempo, en todo el tiempo, cronológicamente. Y eso está no está funcionando bien. No sé qué pasa, no sé qué pasó. Después quiero en el modo offline tiene que funcionar al 100%. Esta es una app web que está en seguramente ya sabes, y que está en Android como por Android Studio y está con iOS en Safari como app web directamente y o sea, PWA creo que es. Y tiene que funcionar el Bluetooth, tiene que funcionar el modo offline en todas las plataformas, que es lo primordial. Eso también al poner el modo offline se queda en sin red o red local dice y en rojo. Eso está bien, pero de repente vos seguís en modo offline y de repente cambia a conectado como si fuera que vos tenés internet y es mentira, no hay. Ese es un problema. Y que, qué se yo, en modo offline cuando no uso por mucho tiempo la app en modo offline se queda como si fuera una página en blanco. O sea, sale como si fuera que no hay internet y que la página no se puede cargar tanto en Android como en iOS pasa eso. Después quiero que verifiques el tema del Bluetooth, el comportamiento del Bluetooth para que se integre con cualquier bastón RFID de cualquier marca, ya sea Tru-Test o cualquier marca china, lo mismo, sino que se pueda integrar y que funcione en iOS, que funcione en Android y que funcione en el sistema que yo quiero, el sistema que yo Quiero, o sea, en De Taurus es una antena, te explico para que se pueda integrar, una antena RFID que va a leer la caravana va a tener un ESP32. Este ESP32 va a enviar el número de caravana por ESP-NOW a otra ESP32 que va a estar conectada a la balanza para medir el peso. Entonces la balanza ya va a saber qué caravana es y por Bluetooth se conecta ya sea a iOS o Android por Bluetooth o PC de mesa, da igual. Conectas por Bluetooth al ESP32 que tiene la balanza y ahí te va a tirar ya cargado para el modo ráfaga. Te va a tirar cargado lo que es el RFID, el peso nuevo y todo lo que se ponga en el modo ráfaga, sino que quiero que revises que esté todo eso bien integrado en el HTML y como te digo, que funcione con cualquier bastón que haya en el mercado. Y enfocarnos al 100% en el modo offline.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Se han analizado las capturas y se ha realizado una reingeniería completa del sistema para solucionar los problemas visuales, de filtrado temporal, de funcionamiento fuera de línea y de integración de hardware.
-
-1. Corrección de las flechas repetidas en los selectores (v v v v v)
-Causa identificada: En el modo claro, la regla CSS aplicaba background: #ffffff; sobre los elementos .form-control. En la especificación CSS, la propiedad abreviada background reinicia todas las propiedades de fondo a sus valores por defecto, provocando que background-repeat pasara a repeat y background-position a 0% 0%. Al aplicarse el SVG de la flecha, esta se duplicaba horizontalmente a lo largo de todo el ancho del selector.
-
-Solución implementada: Se reemplazó por background-color: #ffffff; y se aseguraron las reglas background-repeat: no-repeat !important;, background-position: right 1rem center !important; y background-size: 1.2em auto !important; para todos los desplegables tanto en tema claro como oscuro, con flecha blanca contrastada para el botón azul de selección de reporte (#f-inf-modo).
-
-2. Filtros de calendario para Inventario Histórico y Tratamientos por día puntual
-Inventario a fecha de corte histórica:
-
-Se añadió el campo 📅 Fecha de Corte del Inventario en la pestaña de Inventario.
-
-Al seleccionar una fecha (o dejarla vacía para ver el día actual), el sistema reconstruye el estado del rodeo a esa fecha exacta: calcula el último peso registrado hasta ese día, el diagnóstico (preñada/vacía) vigente en ese momento, el lote asignado y descarta animales que hayan nacido después o sido dados de baja antes de esa fecha.
-
-Tratamientos y Sanidad por día puntual (ej. 5 de abril):
-
-Se incorporó la opción 📅 Día Específico (Seleccionar Fecha) en el selector temporal. Al activarse, aparece un selector de calendario donde puedes elegir cualquier fecha exacta (por ejemplo, el 5 de abril).
-
-El sistema filtra y lista cronológicamente todos los animales tratados o pesados en esa jornada específica, detallando: hora, RP / caravana, categoría, lote, tipo de trabajo (sanidad, pesaje, tacto, etc.), producto o peso registrado, observaciones y operador.
-
-La exportación a PDF genera una planilla oficial de campo correspondiente a esa jornada con todas las columnas organizadas.
-
-Dossier individual por RP:
-
-Se añadió un contenedor directo para ingresar el número de caravana con rango de fechas para auditar la trazabilidad histórica completa de un animal específico.
-
-3. Modo Offline al 100% y corrección del falso "Conectado"
-Causa del falso conectado: El escuchador en tiempo real de Firestore (onSnapshot), al no detectar red, lee inmediatamente la base de datos local desde IndexedDB activando snapshot.metadata.fromCache = true. El código anterior llamaba incondicionalmente a setEstadoRed(true), engañando a la interfaz y mostrándola en verde.
-
-Solución implementada: Se integró la verificación de snapshot.metadata.fromCache y navigator.onLine. Si los datos provienen de la caché local o no hay conexión real, la aplicación se mantiene en 🔴 Red Local (o 💾 Guardado local (Pendiente) si hay eventos por sincronizar). Al tocar el indicador, se ejecuta verificarConexionReal() para probar la conectividad y enviar los pendientes acumulados.
-
-Solución a la página en blanco: Se implementó un arranque inmediato (arranqueInmediatoOffline). Si el dispositivo ya tiene una sesión iniciada guardada en localStorage, la aplicación carga de inmediato todo el rodeo y la interfaz sin esperar la respuesta de red de Firebase.
-
-Archivo Service Worker (sw.js): Se generó el archivo sw.js con estrategia Cache-First para librerías externas (Firebase, jsPDF, OneSignal) y recursos visuales, permitiendo que la PWA en iOS (Safari) y Android (WebView / Chrome) abra instantáneamente sin conexión.
-
-4. Integración universal Bluetooth (ESP32 Taurus, Tru-Test y balanzas)
-Arquitectura de comunicación para el sistema ESP32 (Antena RFID + Balanza por ESP-NOW):
-
-Se implementó el motor window.procesarDatoHardware(texto), capaz de interpretar cadenas combinadas enviadas por el ESP32 de la balanza a través de Bluetooth (por ejemplo: RP:1234,PESO:385.5, 1234,385.5, TAG:982... PESO:410 o JSON {"rp":"1234","peso":385.5}).
-
-Al recibir el paquete, el sistema identifica el animal, consulta la base de datos para verificar si es un chip RFID vinculado, abre la ficha clínica del animal y, si el Modo Ráfaga está activo, registra el peso y aplica el tratamiento programado automáticamente.
-
-Compatibilidad con bastones RFID del mercado (Tru-Test XRS2/SRS2, Allflex, bastones chinos):
-
-Reconoce chips de 15 dígitos bajo norma ISO 11784/11785 (prefijos 982, 985, etc.) y prefijos TAG:.
-
-Diferencia automáticamente una lectura de caravana de una lectura de peso para evitar que un número corto (como la caravana "339") sea interpretado por error como pesaje.
-
-Canales de conexión compatibles:
-
-Web Bluetooth API: Botón directo en pantalla (Conectar Balanza / Bastón) para emparejar por BLE (Nordic UART / HM-10 / Tru-Test) en Chrome en Android o PC.
-
-Modo Teclado Bluetooth (HID): Funciona tanto en iOS como en Android vinculando el dispositivo en los ajustes del sistema operativo; las lecturas se reciben en segundo plano sin interrumpir los campos de texto activos.
-
-Puente Android Studio: Expone window.recibirDatoBluetooth(datos) para llamadas directas desde código nativo Java/Kotlin.
-
-Feedback acústico en manga (Beeper Offline):
-
-Utiliza la Web Audio API nativa para emitir un tono acústico diferenciado: tono corto al leer un chip RFID y doble tono armónico al completar un registro de pesaje/tratamiento en modo ráfaga, permitiendo operar sin necesidad de mirar la pantalla constantemente.
-
-Archivos generados
-Aplicación web principal corregida y actualizada:
-
-Icono de HTML
-taurus_control_reparado
- HTML 
-Service Worker PWA para soporte fuera de línea (colocar en la misma carpeta que el archivo HTML):
-
-Icono de JS
-sw
- JS 
-
-
-
-Gemini es una IA y puede cometer errores.
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1299,26 +1061,28 @@ Gemini es una IA y puede cometer errores.
 
         try {
             db.settings({
-                localCache: firebase.firestore.persistentLocalCache({
-                    tabManager: firebase.firestore.persistentMultipleTabManager()
-                })
+                cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
             });
-        } catch(e) {
-            try { db.enablePersistence({synchronizeTabs:true}); } catch(err) {}
-        }
+        } catch(e) {}
+
+        try {
+            db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+                console.log("[Taurus Firestore] Persistencia multi-pestaña:", err.code);
+            });
+        } catch(e) {}
 
         var dbCache = []; var historiaCache = null; var activosCache = null; var rpActivo = null; var usActivo = ""; var maestroId = ""; var usRol = ""; var rpPrint = ""; var pdfExportData = [];
         var usNombre = ""; var usHacienda = ""; var rfidPendiente = ""; var alertaGlobalIdActual = "";
         var unsubscribeEventos = null; var unsubscribeConfig = null;
 
-        window.lsSet = function(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
-        window.lsGet = function(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
+        window.lsSet = function(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} };
+        window.lsGet = function(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } };
 
         
         // =========================================================================
         // ARRANQUE INMEDIATO FUERA DE LÍNEA (EVITA PÁGINA EN BLANCO EN MODO OFFLINE)
         // =========================================================================
-        (function() {
+        ;(function() {
             try {
                 let cachedProfile = window.lsGet('tc_user_profile', null);
                 let cachedDB = window.lsGet('tc_db', []);
