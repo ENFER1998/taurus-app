@@ -497,18 +497,6 @@
                         </select>
                     </div>
 
-                    <!-- FILTRO UNIVERSAL DE FECHAS (Visible para Reportes de Sanidad y Bajas) -->
-                    <div id="caja-fechas-global" class="form-grupo oculto" style="display:none; gap:10px; margin-bottom:15px; background: rgba(59, 130, 246, 0.1); padding: 10px; border-radius: 8px; border: 1px solid var(--secundario);">
-                        <div style="flex:1;">
-                            <label style="font-size:11px; font-weight:bold; color:var(--secundario); display:block; margin-bottom:4px;">📅 Fecha Desde:</label>
-                            <input type="date" id="f-inf-desde" class="form-control" onchange="actualizarInformeAvanzado()" style="background:#ffffff; color:#000;">
-                        </div>
-                        <div style="flex:1;">
-                            <label style="font-size:11px; font-weight:bold; color:var(--secundario); display:block; margin-bottom:4px;">📅 Fecha Hasta:</label>
-                            <input type="date" id="f-inf-hasta" class="form-control" onchange="actualizarInformeAvanzado()" style="background:#ffffff; color:#000;">
-                        </div>
-                    </div>
-
                     <!-- FILTROS DE INVENTARIO -->
                     <div id="filtros-inventario" class="filtros-grid">
                         <div class="form-grupo" style="margin-bottom:8px;">
@@ -573,18 +561,40 @@
                                 <option value="Venta">Venta / Faena</option>
                             </select>
                         </div>
+                        <div class="form-grupo" style="margin-bottom:8px;">
+                            <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Periodo Histórico:</label>
+                            <select class="form-control" id="f-inf-baja-rango" onchange="manejarRangoFechasBajas()">
+                                <option value="todo">Ver Todo el Historial</option>
+                                <option value="30">Últimos 30 Días</option>
+                                <option value="90">Últimos 3 Meses</option>
+                                <option value="365">Último Año</option>
+                                <option value="custom">📅 Rango Manual...</option>
+                            </select>
+                        </div>
+                        <div id="caja-fechas-bajas" style="display:none; gap:10px; width:100%;">
+                            <input type="date" id="f-inf-baja-desde" class="form-control" style="flex:1; min-width:0;" onchange="actualizarInformeAvanzado()">
+                            <input type="date" id="f-inf-baja-hasta" class="form-control" style="flex:1; min-width:0;" onchange="actualizarInformeAvanzado()">
+                        </div>
                     </div>
 
                     <!-- FILTROS DE TRATAMIENTOS / HISTORIAL -->
                     <div id="filtros-eventos" class="filtros-grid oculto" style="display: none;">
                         <div class="form-grupo" style="margin-bottom:8px;">
-                            <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Tipo de Trabajo a Filtrar:</label>
-                            <select class="form-control" id="f-inf-accion-oculto" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Trabajos</option><option value="Sanidad">💉 Sanidad / Tratamientos</option><option value="Peso">⚖️ Pesos</option><option value="Diagnóstico">🩺 Tactos</option><option value="Inseminación">🧬 Reproducción</option><option value="Nutrición">🌾 Nutrición</option></select>
+                            <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Rango de Fecha:</label>
+                            <select class="form-control" id="f-inf-rango-fecha" onchange="manejarRangoFechas()"><option value="30">Últimos 30 Días</option><option value="hoy">Trabajos de Hoy</option><option value="7">Últimos 7 Días</option><option value="todo">Ver Todo el Historial</option><option value="custom">📅 Rango Manual...</option></select>
                         </div>
-                        <input type="text" id="f-inf-keyword" class="form-control" placeholder="🔍 Buscar producto, vacuna, nota o lote..." onkeyup="filtrarInformeDebounced()">
+                        <div id="caja-fechas-custom" style="display:none; gap:10px; width:100%; margin-bottom:8px;">
+                            <input type="date" id="f-inf-desde" class="form-control" style="flex:1; min-width:0;" onchange="actualizarInformeAvanzado()">
+                            <input type="date" id="f-inf-hasta" class="form-control" style="flex:1; min-width:0;" onchange="actualizarInformeAvanzado()">
+                        </div>
+                        <div class="form-grupo" style="margin-bottom:8px;">
+                            <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Tipo de Trabajo:</label>
+                            <select class="form-control" id="f-inf-accion-oculto" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Trabajos</option><option value="Sanidad">💉 Sanidad</option><option value="Peso">⚖️ Pesos</option><option value="Diagnóstico">🩺 Tactos</option><option value="Inseminación">🧬 Reproducción</option><option value="Nutrición">🌾 Nutrición</option></select>
+                        </div>
+                        <input type="text" id="f-inf-keyword" class="form-control" placeholder="🔍 Buscar producto, nota o lote..." onkeyup="filtrarInformeDebounced()">
                     </div>
 
-                    <input type="text" id="f-inf-rp" class="form-control" style="margin-bottom:15px; border-color:var(--exito);" placeholder="🔍 Buscar Dossier RP (Respeta fechas 👆)" onkeyup="filtrarInformeDebounced()">
+                    <input type="text" id="f-inf-rp" class="form-control" style="margin-bottom:15px; border-color:var(--exito);" placeholder="🔍 Dossier Individual (Respeta filtros de fecha 👆)" onkeyup="filtrarInformeDebounced()">
                     
                     <div class="grid-kpis" style="margin-bottom:15px;">
                         <div class="kpi-caja" style="padding:10px;"><div class="kpi-valor" id="inf-total" style="font-size:20px;">0</div><div class="kpi-label" id="lbl-inf-total">Animales</div></div>
@@ -1021,9 +1031,9 @@
                         window.lsSet('tc_user_profile', userData);
                         if(userData.alertas_leidas) window.lsSet('tc_alertas_leidas', userData.alertas_leidas);
 
-                        if(userData.vencimiento) {
+                        if(userData.vencimiento && userData.vencimiento !== 'Heredado' && userData.vencimiento !== 'Perpetua') {
                             let fLimit = new Date(userData.vencimiento.includes('T') ? userData.vencimiento : userData.vencimiento + "T23:59:59");
-                            if(new Date() > fLimit) { window.cerrarSesion(); alert("Su licencia ha vencido."); return; }
+                            if(!isNaN(fLimit.getTime()) && new Date() > fLimit) { window.cerrarSesion(); alert("Su licencia ha vencido."); return; }
                         }
                         if (!bootConCache) {
                             window.arrancarSistemaFirebase(user.email, userData.maestroId, userData.rol, userData.nombre, userData.hacienda, userData.features);
@@ -1392,19 +1402,12 @@
                     }
                 });
 
-                // Inicializar fechas globales a los últimos 30 días
-                let hoyInit = new Date();
-                let hace30Init = new Date(); hace30Init.setDate(hoyInit.getDate() - 30);
-                document.getElementById('f-inf-desde').value = hace30Init.toISOString().split('T')[0];
-                document.getElementById('f-inf-hasta').value = hoyInit.toISOString().split('T')[0];
-
+                document.getElementById('f-inf-rango-fecha').value = "30"; window.manejarRangoFechas(); if(window.manejarRangoFechasBajas) window.manejarRangoFechasBajas();
                 document.getElementById('pantalla-login').classList.add('oculto');
                 document.getElementById('pantalla-app').classList.remove('oculto');
                 document.getElementById('pantalla-mantenimiento').classList.add('oculto');
-                
                 if(tabSeleccionado) { window.cambiarVista(vistaInicial, tabSeleccionado); } else { window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
                 window.sincronizarPendientesAuto(); window.cargarListasFiltrosSelects(); window.cargarListaOperadores();
-                window.cambiarModoReporte(); // Aplica visibilidad de las fechas inicialmente
                 
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
@@ -1520,8 +1523,7 @@
                 if(uC) {
                     let v = String(uC.valor||"").split('|');
                     if(v[0]) catsSet.add(window.obtenerNombreCategoriaLegible(v[0].replace('Cat:','').trim()));
-                    let detStr = String(uC.detalles||"");
-                    let l = detStr.split('|')[0];
+                    let l = String(uC.detalles||"").split('|')[0];
                     if(l) lotesSet.add(l.replace('Lote:','').trim());
                 } else {
                     const uP = regs.find(d => d.accion === 'Perfil Master');
@@ -1603,13 +1605,7 @@
                     const uP = regs.find(d => d.accion === 'Perfil Master');
                     if(uP) { let p = String(uP.valor || "").split('|'); raza = p[0] || "-"; edad = p[1] || "-"; padre = p[2] || "-"; madre = p[3] || "-"; cat = String(uP.detalles || "").split('|')[0] || "-"; }
                     const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                    if(uC) { 
-                        let v = String(uC.valor || "").split('|'); 
-                        cat = v[0] ? v[0].replace('Cat:','').trim() : cat; 
-                        carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; 
-                        let detStr = String(uC.detalles || "");
-                        lote = detStr.split('|')[0] ? detStr.split('|')[0].replace('Lote:','').trim() : "-"; 
-                    }
+                    if(uC) { let v = String(uC.valor || "").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-"; }
                     
                     const uPeso = regs.find(d => String(d.accion).includes('Peso')); 
                     if(uPeso) {
@@ -1688,14 +1684,16 @@
                 car = "---";
             }
 
-            const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: car, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
+            const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
+            const docRef = colRef.doc();
+            const obj = { id: docRef.id, fecha: new Date().toISOString(), accion: tipo, caravana: car, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
             dbCache.unshift(obj); historiaCache = null; activosCache = null; window.buscarCaravanaBtn(rpActivo); window.procesarDatosDashboard();
             if(modalId) window.cerrarModal(modalId);
             if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador' && tipo !== 'Alta Operador' && tipo !== 'Baja Operador') {
                 window.notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
             }
             if(navigator.onLine) {
-                db.collection('estancias').doc(maestroId).collection('eventos').add(obj).catch(e => {
+                docRef.set(obj).catch(e => {
                     let p = window.lsGet('tc_pendientes', []); p.push(obj); window.lsSet('tc_pendientes', p);
                 });
             } else { let p = window.lsGet('tc_pendientes', []); p.push(obj); window.lsSet('tc_pendientes', p); }
@@ -1734,8 +1732,8 @@
             document.getElementById(mId).querySelectorAll('.form-control, .textarea').forEach(el => {
                 if(el.tagName !== 'SELECT' && el.type !== 'hidden') el.value = '';
             });
-            document.getElementById(mId).querySelectorAll('.oculto').forEach(el => {
-                if(el.tagName === 'INPUT' && !el.id.includes('buscador')) el.classList.add('oculto');
+            document.getElementById(mId).querySelectorAll('input[id$="-otro"]').forEach(el => {
+                el.classList.add('oculto');
             });
             document.getElementById(mId).querySelectorAll('select').forEach(el => {
                 if(el.id !== 'rafaga-modalidad' && el.id !== 'rafaga-accion' && el.id !== 'rafaga-recordatorio') el.selectedIndex = 0;
@@ -1783,17 +1781,26 @@
             if(confirm(`⚠️ ¿ELIMINAR TODO EL HISTORIAL de la caravana ${rpActivo} permanentemente? Esto purgará la base de datos.`)) { 
                 try {
                     const snapshot = await db.collection('estancias').doc(maestroId).collection('eventos').where('caravana', '==', rpActivo).get();
-                    const batch = db.batch();
-                    snapshot.forEach(doc => { batch.delete(doc.ref); });
-                    await batch.commit();
+                    if (!snapshot.empty) {
+                        const docs = snapshot.docs;
+                        for (let i = 0; i < docs.length; i += 400) {
+                            const batch = db.batch();
+                            docs.slice(i, i + 400).forEach(doc => batch.delete(doc.ref));
+                            await batch.commit();
+                        }
+                    }
                     
                     dbCache = dbCache.filter(d => d.caravana !== rpActivo);
+                    window.lsSet('tc_db', dbCache);
                     historiaCache = null; activosCache = null;
                     alert("Historial purgado completamente. El RP quedó libre."); 
                     window.cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); 
-                } catch(e) { alert("Error de red al intentar purgar el historial."); }
+                } catch(e) { 
+                    console.error("Error al purgar historial:", e);
+                    alert("Error de red al intentar purgar el historial."); 
+                }
             } 
-        }
+        };
 
         window.verHistorial = function() { 
             window.abrirModal('modal-historial'); 
@@ -1860,22 +1867,49 @@
             const fInv = document.getElementById('filtros-inventario');
             const fBajas = document.getElementById('filtros-bajas');
             const fEvt = document.getElementById('filtros-eventos');
-            const fFechas = document.getElementById('caja-fechas-global');
-            const fRp = document.getElementById('f-inf-rp').value.trim();
             
-            if (fInv) fInv.style.display = (modo === 'inventario') ? 'flex' : 'none';
-            if (fBajas) fBajas.style.display = (modo === 'bajas') ? 'flex' : 'none';
-            if (fEvt) fEvt.style.display = (modo === 'eventos') ? 'flex' : 'none';
-            
-            // Las fechas aplican para Historial (Eventos), Bajas y Dossier Individual
-            if (fFechas) {
-                if (modo === 'eventos' || modo === 'bajas' || fRp !== "") {
-                    fFechas.style.display = 'flex';
-                } else {
-                    fFechas.style.display = 'none';
-                }
+            if (fInv) {
+                if (modo === 'inventario') { fInv.classList.remove('oculto'); fInv.style.display = 'flex'; }
+                else { fInv.classList.add('oculto'); fInv.style.display = 'none'; }
             }
+            if (fBajas) {
+                if (modo === 'bajas') { fBajas.classList.remove('oculto'); fBajas.style.display = 'flex'; }
+                else { fBajas.classList.add('oculto'); fBajas.style.display = 'none'; }
+            }
+            if (fEvt) {
+                if (modo === 'eventos') { fEvt.classList.remove('oculto'); fEvt.style.display = 'flex'; }
+                else { fEvt.classList.add('oculto'); fEvt.style.display = 'none'; }
+            }
+            
+            window.actualizarInformeAvanzado();
+        }
 
+        window.manejarRangoFechas = function() {
+            const rango = document.getElementById('f-inf-rango-fecha').value; const cajaManual = document.getElementById('caja-fechas-custom');
+            const dDesde = document.getElementById('f-inf-desde'); const dHasta = document.getElementById('f-inf-hasta');
+            let hoy = new Date(); let desde = new Date();
+            if (rango === 'custom') { cajaManual.style.display = 'flex'; } else {
+                cajaManual.style.display = 'none';
+                if(rango === 'hoy') { } else if (rango === '7') { desde.setDate(hoy.getDate() - 7); } else if (rango === '30') { desde.setDate(hoy.getDate() - 30); } else if (rango === 'todo') { desde = new Date('2000-01-01'); }
+                dDesde.value = desde.toISOString().split('T')[0]; dHasta.value = hoy.toISOString().split('T')[0];
+            }
+            window.actualizarInformeAvanzado();
+        }
+
+        window.manejarRangoFechasBajas = function() {
+            const rango = document.getElementById('f-inf-baja-rango').value;
+            const cajaManual = document.getElementById('caja-fechas-bajas');
+            const dDesde = document.getElementById('f-inf-baja-desde');
+            const dHasta = document.getElementById('f-inf-baja-hasta');
+            let hoy = new Date(); let desde = new Date();
+            if (rango === 'custom') { cajaManual.style.display = 'flex'; } else {
+                cajaManual.style.display = 'none';
+                if(rango === '30') { desde.setDate(hoy.getDate() - 30); }
+                else if (rango === '90') { desde.setDate(hoy.getDate() - 90); }
+                else if (rango === '365') { desde.setDate(hoy.getDate() - 365); }
+                else if (rango === 'todo') { desde = new Date('2000-01-01'); }
+                dDesde.value = desde.toISOString().split('T')[0]; dHasta.value = hoy.toISOString().split('T')[0];
+            }
             window.actualizarInformeAvanzado();
         }
 
@@ -1902,7 +1936,6 @@
             const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
             const fDesde = document.getElementById('f-inf-desde').value; 
             const fHasta = document.getElementById('f-inf-hasta').value;
-            const fFechas = document.getElementById('caja-fechas-global');
 
             const datosActivos = window.obtenerRegistrosActivos();
             const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && String(c).toLowerCase() !== "null" && c !== "undefined" && c !== ""))];
@@ -1923,7 +1956,6 @@
             const lblTotal = document.getElementById('lbl-inf-total');
 
             if(fRp !== "") {
-                if(fFechas) fFechas.style.display = 'flex'; // Forzamos mostrar fechas en búsqueda por Dossier
                 rpPrint = fRp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Dossier: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
                 const regsRaw = window.obtenerHistorial(fRp); let hInd = ""; pdfExportData = [];
                 
@@ -1946,8 +1978,6 @@
                 tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.length; document.getElementById('inf-prenadas').innerText = "-";
                 if(lblTotal) lblTotal.innerText = "Registros";
                 return;
-            } else {
-                if(fFechas) fFechas.style.display = (modo === 'eventos' || modo === 'bajas') ? 'flex' : 'none';
             }
 
             rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar PDF`;
@@ -1970,13 +2000,7 @@
                     const regs = window.obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
                     const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                    if(uC) { 
-                        let v = String(uC.valor||"").split('|'); 
-                        cat = v[0] ? v[0].replace('Cat:','').trim() : cat; 
-                        carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; 
-                        let detStr = String(uC.detalles||"");
-                        lote = detStr.split('|')[0] ? detStr.split('|')[0].replace('Lote:','').trim() : "-"; 
-                    }
+                    if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-"; }
                     let catLegible = window.obtenerNombreCategoriaLegible(cat);
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-";
                     const uDx = regs.find(d => d.accion === 'Diagnóstico');
@@ -2015,6 +2039,8 @@
                 if (lblTotal) lblTotal.innerText = "Bajas / Muertes";
 
                 const fCausa = document.getElementById('f-inf-baja-causa').value;
+                const fDesdeBajas = document.getElementById('f-inf-baja-desde').value;
+                const fHastaBajas = document.getElementById('f-inf-baja-hasta').value;
 
                 let bufferBajas = ""; let maxBajas = 100; pdfExportData = [];
                 let countBajas = 0;
@@ -2026,8 +2052,8 @@
 
                     let pasa = true;
                     if (fCausa !== "ALL" && !String(rBaja.valor).toLowerCase().includes(fCausa.toLowerCase())) pasa = false;
-                    if (fDesde && new Date(rBaja.fecha) < new Date(fDesde + 'T00:00:00')) pasa = false;
-                    if (fHasta && new Date(rBaja.fecha) > new Date(fHasta + 'T23:59:59')) pasa = false;
+                    if (fDesdeBajas && new Date(rBaja.fecha) < new Date(fDesdeBajas + 'T00:00:00')) pasa = false;
+                    if (fHastaBajas && new Date(rBaja.fecha) > new Date(fHastaBajas + 'T23:59:59')) pasa = false;
 
                     if (pasa) {
                         countBajas++;
@@ -2119,7 +2145,7 @@
                         if (regs.length === 0) { alert("Sin registros para este RP."); btn.innerText = textoOriginal; return; }
                         let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
                         const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor||"").split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=String(uP.detalles||"").split('|')[0]||"-"; }
-                        const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; let detS = String(uC.detalles||""); lote=detS.split('|')[0]?detS.split('|')[0].replace('Lote:','').trim():"-"; }
+                        const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; lote=String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; }
                         let catLegible = window.obtenerNombreCategoriaLegible(cat);
                         const uPeso = regs.find(d => String(d.accion).includes('Peso')); if(uPeso) peso = uPeso.valor || "-";
                         const uDx = regs.find(d => d.accion === 'Diagnóstico');
@@ -2151,8 +2177,8 @@
 
                     } else if (modo === 'bajas') {
                         let fCausa = document.getElementById('f-inf-baja-causa').value;
-                        let fDesdeBajas = document.getElementById('f-inf-desde').value;
-                        let fHastaBajas = document.getElementById('f-inf-hasta').value;
+                        let fDesdeBajas = document.getElementById('f-inf-baja-desde').value;
+                        let fHastaBajas = document.getElementById('f-inf-baja-hasta').value;
                         let rText = fDesdeBajas && fHastaBajas ? `(Periodo: ${fDesdeBajas} a ${fHastaBajas})` : '';
                         let titulo = (fCausa !== "ALL") ? `Reporte de Bajas - Causa: ${fCausa} ${rText}` : `Reporte Oficial de Bajas y Mortalidad ${rText}`;
                         addMembrete(titulo);
@@ -2249,12 +2275,7 @@
             
             unicas.forEach(car => {
                 const regs = window.obtenerHistorial(car); let catRaw = "Sin Categoría", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                if(uC) { 
-                    let v=String(uC.valor||"").split('|'); 
-                    catRaw = v[0] ? v[0].replace('Cat:','').trim() : "Sin Categoría"; 
-                    let detS = String(uC.detalles||"");
-                    lote = detS.split('|')[0] ? detS.split('|')[0].replace('Lote:','').trim() : "-"; 
-                }
+                if(uC) { let v=String(uC.valor||"").split('|'); catRaw = v[0] ? v[0].replace('Cat:','').trim() : "Sin Categoría"; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; }
                 else {
                     const uP = regs.find(d => d.accion === 'Perfil Master');
                     if(uP && uP.detalles) { catRaw = String(uP.detalles).split('|')[0] || "Sin Categoría"; }
@@ -2436,8 +2457,7 @@
                 if(uC) {
                     let v = String(uC.valor||"").split('|');
                     cat = v[0] ? v[0].replace('Cat:','').trim() : cat;
-                    let detS = String(uC.detalles||"");
-                    lote = detS.split('|')[0] ? detS.split('|')[0].replace('Lote:','').trim() : "-";
+                    lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-";
                 }
                 const uDx = regs.find(d => d.accion === 'Diagnóstico');
 
@@ -2530,6 +2550,19 @@
             }
         }
 
+        
+        window.togglePermisos = function() {
+            const rolEl = document.getElementById('op-rol');
+            const caja = document.getElementById('caja-permisos');
+            if (caja && rolEl) {
+                if (rolEl.value === 'Propietario') {
+                    caja.classList.add('oculto');
+                } else {
+                    caja.classList.remove('oculto');
+                }
+            }
+        };
+
         window.crearOperador = async function() { 
             if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
             const n = document.getElementById('op-nombre').value.trim();
@@ -2548,7 +2581,7 @@
             btn.innerHTML = "⏳ Registrando..."; btn.disabled = true;
             let email = u.includes('@') ? u : u + '@taurus.com';
             try {
-                const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryAppPeon");
+                const secAppName = "SecondaryAppPeon_" + Date.now(); const secondaryApp = firebase.initializeApp(firebaseConfig, secAppName);
                 await secondaryApp.auth().createUserWithEmailAndPassword(email, p);
                 await secondaryApp.auth().signOut();
                 await secondaryApp.delete(); 
@@ -2603,7 +2636,7 @@
         }
 
         window.gestionarAuthGhostParaBorrado = async function(email, claveActual) {
-            const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryAppGhostDelete");
+            const secAppName = "SecondaryAppGhostDelete_" + Date.now(); const secondaryApp = firebase.initializeApp(firebaseConfig, secAppName);
             try {
                 await secondaryApp.auth().signInWithEmailAndPassword(email, claveActual);
                 await secondaryApp.auth().currentUser.delete();
@@ -2667,12 +2700,16 @@
             let mostradas = localStorage.getItem('tc_alertas_mostradas');
             let prefs = localStorage.getItem('tc_prefs');
             let tema = localStorage.getItem('tc_tema');
+            let pendientes = localStorage.getItem('tc_pendientes');
+            let dbData = localStorage.getItem('tc_db');
             firebase.auth().signOut().then(() => {
                 localStorage.clear(); 
                 if(leidas) localStorage.setItem('tc_alertas_leidas', leidas);
                 if(mostradas) localStorage.setItem('tc_alertas_mostradas', mostradas);
                 if(prefs) localStorage.setItem('tc_prefs', prefs);
                 if(tema) localStorage.setItem('tc_tema', tema);
+                if(pendientes) localStorage.setItem('tc_pendientes', pendientes);
+                if(dbData) localStorage.setItem('tc_db', dbData);
                 window.location.reload(); 
             });
         }
@@ -2683,6 +2720,29 @@
                 window.cambiarVista('vista-manga', tabFicha);
             }
         }
+
+        
+        window.guardarVinculacionRFID = function() {
+            const inputCar = document.getElementById('f-rfid-caravana');
+            const rp = inputCar ? inputCar.value.trim().toUpperCase() : '';
+            if (!rp) {
+                alert("Por favor ingrese el número de RP / Caravana.");
+                if (inputCar) inputCar.focus();
+                return;
+            }
+            if (!rfidPendiente) {
+                alert("No hay ningún chip RFID pendiente de vinculación.");
+                return;
+            }
+            rpActivo = rp;
+            window.ejecutarAccion('Vinculación RFID', rfidPendiente.trim().toLowerCase(), `Chip vinculado: ${rfidPendiente}`, 'modal-rfid');
+            window.mostrarToast(`✅ Chip ${rfidPendiente} vinculado al RP ${rp}`);
+            rfidPendiente = "";
+            window.forzarSaltoAFicha();
+            const buscador = document.getElementById('buscador-caravana');
+            if (buscador) buscador.value = rp;
+            window.buscarCaravanaBtn(rp);
+        };
 
         window.recibirTagNFC = function(tagHex) {
             let dataMinuscula = String(tagHex).trim().toLowerCase();
@@ -2707,6 +2767,8 @@
         let timeoutTeclado;
         document.addEventListener('keydown', function(event) {
             if(event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'CapsLock') return;
+            // No interceptar si el usuario está escribiendo activamente dentro de un input o textarea
+            if(event.target && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA')) return;
             if (event.key === 'Enter') {
                 if (bufferTeclado.length > 2) {
                     event.preventDefault(); 
@@ -2764,9 +2826,11 @@
       let coraHistorial = [];
       let audioDesbloqueado = false;
 
-      window.speechSynthesis.onvoiceschanged = () => {
-        vocesDisponibles = window.speechSynthesis.getVoices();
-      };
+      if ('speechSynthesis' in window && window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = () => {
+          vocesDisponibles = window.speechSynthesis.getVoices();
+        };
+      }
 
       if (ReconocimientoVoz) {
         reconocimiento = new ReconocimientoVoz();
@@ -2909,6 +2973,7 @@
       }
 
       function hablarCora(texto) {
+          if (!('speechSynthesis' in window) || !window.speechSynthesis) return;
           window.speechSynthesis.cancel();
           interrupcionManual = false;
           const utterance = new SpeechSynthesisUtterance(texto);
