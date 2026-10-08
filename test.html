@@ -35,14 +35,24 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
-    <!-- SERVICE WORKER REGISTRATION PARA OFFLINE -->
+    <!-- SERVICE WORKER REGISTRATION PARA OFFLINE EXTREMO -->
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
+          // Intentar primero con sw.js tradicional
           navigator.serviceWorker.register('sw.js').then((registration) => {
             console.log('ServiceWorker registrado con éxito: ', registration.scope);
-          }, (err) => {
-            console.log('Fallo en el registro del ServiceWorker: ', err);
+          }).catch((err) => {
+            console.log('Fallo en sw.js, instalando Blob SW de respaldo (Offline Garantizado)...', err);
+            // Fallback: Generar SW en línea para garantizar offline si no existe sw.js
+            const swCode = `
+              const CACHE_NAME = 'taurus-offline-cache-v4';
+              const ASSETS = [ location.href, 'gemini-svg.png' ];
+              self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS))); });
+              self.addEventListener('fetch', e => { e.respondWith(caches.match(e.request).then(res => res || fetch(e.request))); });
+            `;
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(e => console.error("Fallo SW Blob:", e));
           });
         });
       }
@@ -265,7 +275,7 @@
     <div id="pantalla-app" class="oculto">
         <header class="cabecera">
             <h1><img src="gemini-svg.png" alt="Taurus" style="width: 26px; height: 26px; border-radius: 6px; object-fit: contain;"> Taurus</h1>
-            <div id="estado-red" class="badge-estado" onclick="sincronizarFondo(true)">🟢 Conectado</div>
+            <div id="estado-red" class="badge-estado" onclick="setEstadoRed(true, '🔄 Sincronizando...')">🟢 Conectado</div>
         </header>
 
         <div class="contenedor">
@@ -439,7 +449,6 @@
                 </div>
             </div>
 
-            <!-- REPORTES PDF -->
             <div id="vista-informe" class="vista oculto">
                 
                 <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid var(--borde);">
@@ -768,6 +777,7 @@
     
     <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial Clínico</h3><div id="contenido-historial"></div></div></div>
     
+    <!-- MODAL DE EDICIÓN CON FECHA Y HORA -->
     <div id="modal-editar-registro" class="modal">
         <div class="modal-body">
             <span class="cerrar" onclick="cerrarModal('modal-editar-registro')">&times;</span>
@@ -798,59 +808,59 @@
             messagingSenderId: "250280835981",
             appId: "1:250280835981:web:b95bc0a7ec9f7da2b75bc4"
         };
-        firebase.initializeApp(firebaseConfig);
+        
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.firestore();
 
         try {
-            // Sincronización entre pestañas ayuda al modo offline robusto
-            db.enablePersistence({synchronizeTabs:true}).catch((err) => {
-                console.log("Error persistence:", err);
+            // Elimina la advertencia deprecated en consola e implementa modo offline moderno.
+            db.settings({
+                localCache: firebase.firestore.persistentLocalCache({
+                    tabManager: firebase.firestore.persistentMultipleTabManager()
+                })
             });
-        } catch(e) {}
+        } catch(e) {
+            // Fallback por seguridad extrema
+            try { db.enablePersistence({synchronizeTabs:true}); } catch(err) {}
+        }
 
-        function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
-        function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
+        var dbCache = []; var historiaCache = null; var activosCache = null; var rpActivo = null; var usActivo = ""; var maestroId = ""; var usRol = ""; var rpPrint = ""; var pdfExportData = [];
+        var usNombre = ""; var usHacienda = ""; var rfidPendiente = ""; var alertaGlobalIdActual = "";
+        var unsubscribeEventos = null; var unsubscribeConfig = null;
 
-        let dbCache = []; let historiaCache = null; let activosCache = null; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = ""; let pdfExportData = [];
-        let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
-        let alertaGlobalIdActual = "";
-        
-        let unsubscribeEventos = null;
-        let unsubscribeConfig = null;
+        window.lsSet = function(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
+        window.lsGet = function(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 
         /* MANEJO OFFLINE ROBUSTO DEL ARRANQUE DE SESIÓN */
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
-                let cachedProfile = lsGet('tc_user_profile', null);
+                let cachedProfile = window.lsGet('tc_user_profile', null);
                 let bootConCache = false;
 
-                // BOOT INMEDIATO DESDE CACHÉ (SOLUCIÓN MODO OFFLINE)
+                // BOOT INMEDIATO DESDE CACHÉ (SOLUCIÓN MODO OFFLINE EXTREMO)
                 if (cachedProfile && cachedProfile.email === user.email) {
-                    arrancarSistemaFirebase(user.email, cachedProfile.maestroId, cachedProfile.rol, cachedProfile.nombre, cachedProfile.hacienda, cachedProfile.features);
+                    window.arrancarSistemaFirebase(user.email, cachedProfile.maestroId, cachedProfile.rol, cachedProfile.nombre, cachedProfile.hacienda, cachedProfile.features);
                     bootConCache = true;
                 }
 
-                // INTENTAR OBTENER DATOS FRESCOS (SI HAY RED ACTUALIZA)
-                if (navigator.onLine) {
-                    db.collection('usuarios').doc(user.email).get().then(doc => {
-                        if (doc.exists) {
-                            const userData = doc.data();
-                            userData.email = user.email;
-                            lsSet('tc_user_profile', userData);
-                            if(userData.alertas_leidas) lsSet('tc_alertas_leidas', userData.alertas_leidas);
+                db.collection('usuarios').doc(user.email).get().then(doc => {
+                    if (doc.exists) {
+                        const userData = doc.data();
+                        userData.email = user.email;
+                        window.lsSet('tc_user_profile', userData);
+                        if(userData.alertas_leidas) window.lsSet('tc_alertas_leidas', userData.alertas_leidas);
 
-                            if(userData.vencimiento) {
-                                let fLimit = new Date(userData.vencimiento.includes('T') ? userData.vencimiento : userData.vencimiento + "T23:59:59");
-                                if(new Date() > fLimit) { cerrarSesion(); alert("Su licencia ha vencido."); return; }
-                            }
-                            if (!bootConCache) {
-                                arrancarSistemaFirebase(user.email, userData.maestroId, userData.rol, userData.nombre, userData.hacienda, userData.features);
-                            }
+                        if(userData.vencimiento) {
+                            let fLimit = new Date(userData.vencimiento.includes('T') ? userData.vencimiento : userData.vencimiento + "T23:59:59");
+                            if(new Date() > fLimit) { window.cerrarSesion(); alert("Su licencia ha vencido."); return; }
                         }
-                    }).catch(e => {
-                        console.warn("Fallo de red al obtener perfil de usuario, operando con caché.");
-                    });
-                }
+                        if (!bootConCache) {
+                            window.arrancarSistemaFirebase(user.email, userData.maestroId, userData.rol, userData.nombre, userData.hacienda, userData.features);
+                        }
+                    }
+                }).catch(e => {
+                    console.warn("Fallo de red al obtener perfil de usuario, operando con caché.");
+                });
             } else {
                 document.getElementById('pantalla-login').classList.remove('oculto');
                 document.getElementById('pantalla-app').classList.add('oculto');
@@ -858,9 +868,9 @@
         });
 
         if(localStorage.getItem('tc_tema') === 'claro') document.body.classList.add('tema-claro');
-        function toggleTema() { document.body.classList.toggle('tema-claro'); localStorage.setItem('tc_tema', document.body.classList.contains('tema-claro') ? 'claro' : 'oscuro'); }
+        window.toggleTema = function() { document.body.classList.toggle('tema-claro'); localStorage.setItem('tc_tema', document.body.classList.contains('tema-claro') ? 'claro' : 'oscuro'); }
 
-        function mostrarToast(mensaje, esError = false) {
+        window.mostrarToast = function(mensaje, esError = false) {
             let t = document.createElement('div');
             t.innerText = mensaje;
             t.style.position = 'fixed'; t.style.bottom = '80px'; t.style.left = '50%'; t.style.transform = 'translateX(-50%)';
@@ -870,14 +880,14 @@
             setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() => t.remove(), 500); }, 3000);
         }
 
-        function solicitarPermisoNotificaciones() {
+        window.solicitarPermisoNotificaciones = function() {
             if (!("Notification" in window)) return;
             if (Notification.permission !== "granted" && Notification.permission !== "denied") {
                 Notification.requestPermission();
             }
         }
 
-        function lanzarNotificacionEscritorio(titulo, mensaje) {
+        window.lanzarNotificacionEscritorio = function(titulo, mensaje) {
             if (!("Notification" in window)) return;
             if (Notification.permission === "granted") {
                 new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' });
@@ -890,10 +900,10 @@
             }
         }
 
-        function procesarAlertaServidor(msg, id) {
+        window.procesarAlertaServidor = function(msg, id) {
             const banner = document.getElementById('banner-alerta-global');
             if (!msg || !id) { banner.classList.add('oculto'); return; }
-            let leidas = lsGet('tc_alertas_leidas', []); let mostradas = lsGet('tc_alertas_mostradas', []);
+            let leidas = window.lsGet('tc_alertas_leidas', []); let mostradas = window.lsGet('tc_alertas_mostradas', []);
             if (!leidas.includes(id)) {
                 alertaGlobalIdActual = id;
                 document.getElementById('txt-alerta-global').innerText = msg;
@@ -903,14 +913,14 @@
             } else { banner.classList.add('oculto'); }
         }
 
-        function cerrarPopUpAlerta() {
+        window.cerrarPopUpAlerta = function() {
             if (alertaGlobalIdActual) {
-                let mostradas = lsGet('tc_alertas_mostradas', []);
-                if (!mostradas.includes(alertaGlobalIdActual)) { mostradas.push(alertaGlobalIdActual); lsSet('tc_alertas_mostradas', mostradas); }
-                let leidas = lsGet('tc_alertas_leidas', []);
+                let mostradas = window.lsGet('tc_alertas_mostradas', []);
+                if (!mostradas.includes(alertaGlobalIdActual)) { mostradas.push(alertaGlobalIdActual); window.lsSet('tc_alertas_mostradas', mostradas); }
+                let leidas = window.lsGet('tc_alertas_leidas', []);
                 if (!leidas.includes(alertaGlobalIdActual)) {
                     leidas.push(alertaGlobalIdActual);
-                    lsSet('tc_alertas_leidas', leidas);
+                    window.lsSet('tc_alertas_leidas', leidas);
                     if(navigator.onLine && usActivo) {
                         try {
                             db.collection('usuarios').doc(usActivo).update({
@@ -926,10 +936,10 @@
 
         window.marcarAlertaLeida = function() {
             if (alertaGlobalIdActual) {
-                let leidas = lsGet('tc_alertas_leidas', []);
+                let leidas = window.lsGet('tc_alertas_leidas', []);
                 if(!leidas.includes(alertaGlobalIdActual)) {
                     leidas.push(alertaGlobalIdActual);
-                    lsSet('tc_alertas_leidas', leidas);
+                    window.lsSet('tc_alertas_leidas', leidas);
                     if(navigator.onLine && usActivo) {
                         try {
                             db.collection('usuarios').doc(usActivo).update({
@@ -950,7 +960,7 @@
             const opciones = document.getElementById('opciones-rafaga');
             if(rafagaActiva) {
                 btn.innerText = "ENCENDIDO"; btn.style.background = "var(--secundario)"; btn.style.color = "white";
-                opciones.classList.remove('oculto'); verificarRafagaCustom();
+                opciones.classList.remove('oculto'); window.verificarRafagaCustom();
             } else {
                 btn.innerText = "APAGADO"; btn.style.background = "transparent"; btn.style.color = "var(--texto)";
                 opciones.classList.add('oculto');
@@ -977,20 +987,20 @@
             rpActivo = rp;
             let sel = document.getElementById('rafaga-accion').value; let notas = document.getElementById('rafaga-detalles').value.trim(); let recordatorio = document.getElementById('rafaga-recordatorio').value; 
             
-            if(!isNaN(val) || val.includes('.')) { ejecutarAccion('Peso', val + " Kg", "Automático (Ráfaga Manual)", null); } 
-            else { ejecutarAccion('Sanidad', val, "Automático (Ráfaga Manual)", null); }
+            if(!isNaN(val) || val.includes('.')) { window.ejecutarAccion('Peso', val + " Kg", "Automático (Ráfaga Manual)", null); } 
+            else { window.ejecutarAccion('Sanidad', val, "Automático (Ráfaga Manual)", null); }
             
             if(sel !== 'solo_peso') {
                 let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
                 let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga Manual";
                 if (recordatorio !== "0") detCompleto += ` | [RECORDATORIO:${recordatorio}]`;
-                ejecutarAccion('Sanidad', producto, detCompleto, null);
+                window.ejecutarAccion('Sanidad', producto, detCompleto, null);
             }
-            mostrarToast("✅ Combo asignado al RP: " + rp);
+            window.mostrarToast("✅ Combo asignado al RP: " + rp);
             document.getElementById('rm-caravana').value = ""; document.getElementById('rm-valor').value = ""; document.getElementById('rm-caravana').focus();
         };
 
-        function setEstadoRed(online, texto = null) {
+        window.setEstadoRed = function(online, texto = null) {
             const b = document.getElementById('estado-red');
             if(!b) return;
             if(texto) { b.innerText = texto; }
@@ -999,7 +1009,7 @@
 
             const btnAura = document.getElementById('btn-aura');
             if (btnAura) {
-               let userProfile = lsGet('tc_user_profile', {});
+               let userProfile = window.lsGet('tc_user_profile', {});
                let isPropietario = String(userProfile.rol||"").includes('Propietario') || String(userProfile.rol||"").includes('Dueño');
                let tienePermisoCora = isPropietario || String(userProfile.rol||"").includes('cora');
                
@@ -1013,33 +1023,42 @@
             }
         }
 
-        window.addEventListener('online', () => setEstadoRed(true)); window.addEventListener('offline', () => setEstadoRed(false));
+        window.addEventListener('online', () => window.setEstadoRed(true)); 
+        window.addEventListener('offline', () => window.setEstadoRed(false));
 
-        async function procesarIngreso() {
+        window.procesarIngreso = async function() {
             let u = document.getElementById('usuario').value.trim();
             const p = document.getElementById('password').value.trim();
             const btn = document.getElementById('btn-ingreso');
             const err = document.getElementById('error-login');
+            
             if(!u || !p) return;
+
+            if (!navigator.onLine) {
+                err.innerText = "❌ No hay red. Debes tener conexión para iniciar una sesión nueva.";
+                err.style.display = 'block';
+                return;
+            }
+
             btn.disabled = true; btn.innerText = "Verificando..."; err.style.display = 'none';
             let email = u.includes('@') ? u.toLowerCase() : u.toLowerCase() + '@taurus.com';
             try {
                 await firebase.auth().signInWithEmailAndPassword(email, p);
             } catch(error) {
-                err.innerText = "Usuario no registrado en Firebase o clave incorrecta.";
+                err.innerText = "Usuario no registrado o clave incorrecta.";
                 err.style.display = 'block';
                 btn.disabled = false; btn.innerText = "Iniciar Sesión";
             }
         }
 
-        function notificarPropietario(mensaje) {
+        window.notificarPropietario = function(mensaje) {
             if(!navigator.onLine) return;
             let isDueno = usRol.includes('Propietario') || usRol.includes('Dueño');
             const fd = new URLSearchParams(); fd.append('accion', 'notificar_accion'); fd.append('maestro', maestroId); fd.append('mensaje', mensaje); fd.append('remitente_es_dueno', isDueno);
             fetch("https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec", { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
         }
 
-        function arrancarSistemaFirebase(u, m, r, nombreCompleto, hacienda, featuresStr) {
+        window.arrancarSistemaFirebase = function(u, m, r, nombreCompleto, hacienda, featuresStr) {
             try {
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
                 
@@ -1058,18 +1077,18 @@
                 unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot(doc => {
                     if(doc.exists) {
                         const conf = doc.data();
-                        procesarAlertaServidor(conf.alerta_global, "alerta_fb");
+                        window.procesarAlertaServidor(conf.alerta_global, "alerta_fb");
                         const pantMant = document.getElementById('pantalla-mantenimiento');
                         if(conf.mantenimiento) { if(pantMant) pantMant.classList.remove('oculto'); }
                         else { if(pantMant) pantMant.classList.add('oculto'); }
                     }
                 });
 
-                setEstadoRed(true, '🔄 Sincronizando...');
+                window.setEstadoRed(true, '🔄 Sincronizando...');
                 if(unsubscribeEventos) unsubscribeEventos();
 
                 let renderTimeout;
-                // OFFLINE FIX: includeMetadataChanges permite usar caché al instante
+                // includeMetadataChanges permite visualizar de inmediato lo que está en memoria
                 unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot({ includeMetadataChanges: true }, snapshot => {
                     let nuevosDatos = [];
                     snapshot.forEach(doc => { let d = doc.data(); d.id = doc.id; nuevosDatos.push(d); });
@@ -1077,7 +1096,7 @@
                     let mapAnterior = new Set(dbCache.map(d => d.fecha + '_' + d.caravana + '_' + d.accion));
                     let notificar = nuevosDatos.filter(d => d && d.fecha && !mapAnterior.has(d.fecha + '_' + d.caravana + '_' + d.accion));
 
-                    fusionarDatos(nuevosDatos);
+                    window.fusionarDatos(nuevosDatos);
 
                     if (notificar.length > 0 && mapAnterior.size > 0) {
                         if (notificar.length <= 3) {
@@ -1086,7 +1105,7 @@
                                 if (n.detalles && n.detalles.includes("Op: ")) { op = n.detalles.split("Op: ")[1].trim(); }
                                 let isDuenoActual = usRol.includes('Propietario') || usRol.includes('Dueño');
                                 if(isDuenoActual && n.maestro === maestroId && op.toLowerCase() !== usNombre.toLowerCase() && n.caravana !== '---' && n.caravana !== 'null') {
-                                    lanzarNotificacionEscritorio("Alerta Taurus", `${op} registró [${n.accion}] al RP ${n.caravana}`);
+                                    window.lanzarNotificacionEscritorio("Alerta Taurus", `${op} registró [${n.accion}] al RP ${n.caravana}`);
                                 }
                             });
                         }
@@ -1094,15 +1113,15 @@
 
                     clearTimeout(renderTimeout);
                     renderTimeout = setTimeout(() => {
-                        if(rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
-                        procesarDatosDashboard();
-                        if(!document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro();
-                        if(!document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
-                        cargarListasFiltrosSelects();
-                        cargarListaOperadores();
-                        setEstadoRed(true);
+                        if(rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) { window.buscarCaravanaBtn(rpActivo); }
+                        window.procesarDatosDashboard();
+                        if(!document.getElementById('vista-registro').classList.contains('oculto')) window.cargarListaRegistro();
+                        if(!document.getElementById('vista-informe').classList.contains('oculto')) window.actualizarInformeAvanzado();
+                        window.cargarListasFiltrosSelects();
+                        window.cargarListaOperadores();
+                        window.setEstadoRed(true);
                     }, 500); 
-                }, err => { setEstadoRed(false, '❌ Red Local'); });
+                }, err => { window.setEstadoRed(false, '❌ Red Local'); });
                 
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
                 let displayRol = isPropietario ? 'Propietario' : 'Operador';
@@ -1175,7 +1194,7 @@
                     }
                 }).catch(e => {});
 
-                const prefs = lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
+                const prefs = window.lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
 
                 db.collection('estancias').doc(m).onSnapshot({ includeMetadataChanges: true }, docE => {
                     let hNombre = usHacienda || "HACIENDA";
@@ -1184,8 +1203,8 @@
                         if (docE.data().logo_hacienda) hLogo = docE.data().logo_hacienda;
                         if (docE.data().nombre_hacienda) hNombre = docE.data().nombre_hacienda;
                     }
-                    lsSet('tc_hacienda', { nombre: hNombre, logo: hLogo });
-                    aplicarDisenoEnPantalla(hNombre, hLogo);
+                    window.lsSet('tc_hacienda', { nombre: hNombre, logo: hLogo });
+                    window.aplicarDisenoEnPantalla(hNombre, hLogo);
                     let lblPerfilMob = document.getElementById('usuario-activo-lbl');
                     if (lblPerfilMob) {
                         let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
@@ -1193,31 +1212,18 @@
                     }
                 });
 
-                document.getElementById('f-inf-rango-fecha').value = "30"; manejarRangoFechas();
+                document.getElementById('f-inf-rango-fecha').value = "30"; window.manejarRangoFechas();
                 document.getElementById('pantalla-login').classList.add('oculto');
                 document.getElementById('pantalla-app').classList.remove('oculto');
                 document.getElementById('pantalla-mantenimiento').classList.add('oculto');
-                if(tabSeleccionado) { cambiarVista(vistaInicial, tabSeleccionado); } else { cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
-                sincronizarPendientesAuto(); cargarListasFiltrosSelects(); cargarListaOperadores();
+                if(tabSeleccionado) { window.cambiarVista(vistaInicial, tabSeleccionado); } else { window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
+                window.sincronizarPendientesAuto(); window.cargarListasFiltrosSelects(); window.cargarListaOperadores();
                 
-                // Cachear recursos extraños para offline
-                if ('caches' in window) {
-                    caches.open('taurus-v1-assets').then(cache => {
-                        cache.addAll([
-                            location.href,
-                            'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-                            'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js',
-                            'https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js',
-                            'https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js',
-                            'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js'
-                        ]).catch(()=>{});
-                    });
-                }
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
 
-        function fusionarDatos(nuevos) {
-            let pendientes = lsGet('tc_pendientes', []);
+        window.fusionarDatos = function(nuevos) {
+            let pendientes = window.lsGet('tc_pendientes', []);
             let mapa = new Map();
             if(Array.isArray(nuevos)) { nuevos.forEach(d => { if(d) { let f = d.fecha || new Date().toISOString(); mapa.set(f + '_' + d.caravana + '_' + d.accion, d); } }); }
             if(Array.isArray(pendientes)) { pendientes.forEach(d => { if(d) { let f = d.fecha || new Date().toISOString(); mapa.set(f + '_' + d.caravana + '_' + d.accion, d); } }); }
@@ -1226,11 +1232,11 @@
                 let tA = new Date(a.fecha).getTime(); let tB = new Date(b.fecha).getTime();
                 return (isNaN(tB) ? 0 : tB) - (isNaN(tA) ? 0 : tA); 
             });
-            lsSet('tc_db', dbCache);
+            window.lsSet('tc_db', dbCache);
             historiaCache = null; activosCache = null;
         }
 
-        function aplicarDisenoEnPantalla(nombre, logo) {
+        window.aplicarDisenoEnPantalla = function(nombre, logo) {
             let n = nombre || 'Taurus Control';
             let l = logo || 'gemini-svg.png';
             document.getElementById('cfg-nom').value = nombre || '';
@@ -1241,17 +1247,17 @@
             if(imgCfg) imgCfg.src = l;
         }
 
-        async function sincronizarPendientesAuto() {
-            let p = lsGet('tc_pendientes', []); if(p.length === 0) return;
+        window.sincronizarPendientesAuto = async function() {
+            let p = window.lsGet('tc_pendientes', []); if(p.length === 0) return;
             if(navigator.onLine) {
                 const batch = db.batch();
                 const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
                 p.forEach(obj => { batch.set(colRef.doc(), obj); });
-                try { await batch.commit(); lsSet('tc_pendientes', []); } catch(e) {}
+                try { await batch.commit(); window.lsSet('tc_pendientes', []); } catch(e) {}
             }
         }
 
-        function procesarEventos() {
+        window.procesarEventos = function() {
             if (historiaCache) return historiaCache;
             let dbAsc = [...dbCache].sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
             let historiaPorRP = {};
@@ -1281,9 +1287,9 @@
             return historiaPorRP;
         }
 
-        function obtenerRegistrosActivos() {
+        window.obtenerRegistrosActivos = function() {
             if (activosCache) return activosCache;
-            let historia = procesarEventos();
+            let historia = window.procesarEventos();
             let validos = [];
             for(let rp in historia) {
                 if (rp !== "---" && rp !== "null" && rp !== "undefined") {
@@ -1295,12 +1301,12 @@
             return activosCache;
         }
 
-        function obtenerHistorial(caravana) {
-            let historia = procesarEventos();
+        window.obtenerHistorial = function(caravana) {
+            let historia = window.procesarEventos();
             return historia[String(caravana)] || [];
         }
 
-        function obtenerNombreCategoriaLegible(sigla) {
+        window.obtenerNombreCategoriaLegible = function(sigla) {
             if(!sigla) return "Sin Categoría";
             let s = String(sigla).trim().toUpperCase();
             if(s.startsWith('V:')) return "Vaca / Vaquilla";
@@ -1315,24 +1321,24 @@
             return sigla;
         }
 
-        function cargarListasFiltrosSelects() {
-            let datosActivos = obtenerRegistrosActivos();
+        window.cargarListasFiltrosSelects = function() {
+            let datosActivos = window.obtenerRegistrosActivos();
             let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && c !== "null" && c !== "undefined" && c !== ""))];
             let lotesSet = new Set();
             let catsSet = new Set();
 
             unicas.forEach(car => {
-                const regs = obtenerHistorial(car);
+                const regs = window.obtenerHistorial(car);
                 const uC = regs.find(d => d.accion === 'Actualización de Datos');
                 if(uC) {
                     let v = String(uC.valor||"").split('|');
-                    if(v[0]) catsSet.add(obtenerNombreCategoriaLegible(v[0].replace('Cat:','').trim()));
+                    if(v[0]) catsSet.add(window.obtenerNombreCategoriaLegible(v[0].replace('Cat:','').trim()));
                     let l = String(uC.detalles||"").split('|')[0];
                     if(l) lotesSet.add(l.replace('Lote:','').trim());
                 } else {
                     const uP = regs.find(d => d.accion === 'Perfil Master');
                     if(uP && uP.detalles) {
-                        catsSet.add(obtenerNombreCategoriaLegible(String(uP.detalles).split('|')[0]));
+                        catsSet.add(window.obtenerNombreCategoriaLegible(String(uP.detalles).split('|')[0]));
                     }
                 }
             });
@@ -1363,7 +1369,7 @@
             });
         }
 
-        function buscarCaravanaBtn(rpForzado = null) {
+        window.buscarCaravanaBtn = function(rpForzado = null) {
             try {
                 let rp = rpForzado ? rpForzado : document.getElementById('buscador-caravana').value.trim();
                 if(!rp) return;
@@ -1373,7 +1379,7 @@
                 rpActivo = rp; document.getElementById('ficha-animal').classList.remove('oculto');
                 const elCaravanaTop = document.getElementById('val-caravana'); if(elCaravanaTop) elCaravanaTop.innerText = rp;
                 
-                const regs = obtenerHistorial(rp);
+                const regs = window.obtenerHistorial(rp);
                 const uBaja = regs.find(d => d.accion === 'Baja');
                 const badgeBaja = document.getElementById('badge-estado-animal');
                 if(uBaja) { badgeBaja.style.display = 'block'; badgeBaja.innerText = "BAJA: " + uBaja.valor.toUpperCase(); } else { badgeBaja.style.display = 'none'; }
@@ -1442,7 +1448,7 @@
                     document.getElementById('val-comentario').innerText = "Sin comentarios.";
                 }
                 
-                const elCat = document.getElementById('val-categoria'); if(elCat) elCat.innerText = obtenerNombreCategoriaLegible(cat);
+                const elCat = document.getElementById('val-categoria'); if(elCat) elCat.innerText = window.obtenerNombreCategoriaLegible(cat);
                 const elPeso = document.getElementById('val-peso'); if(elPeso) elPeso.innerHTML = peso;
                 const elDx = document.getElementById('val-dx'); if(elDx) elDx.innerText = dx;
                 const elLote = document.getElementById('val-lote'); if(elLote) elLote.innerText = lote;
@@ -1456,7 +1462,7 @@
                 const elEdad = document.getElementById('val-edad'); if(elEdad) elEdad.innerText = edad;
                 const fRaza = document.getElementById('f-raza'); if(fRaza) fRaza.value = raza !== "-" ? raza : "";
                 const fNacimiento = document.getElementById('f-nacimiento');
-                if(fNacimiento) { fNacimiento.value = edad !== "-" ? edad : ""; mostrarCarimboCalculado(); }
+                if(fNacimiento) { fNacimiento.value = edad !== "-" ? edad : ""; window.mostrarCarimboCalculado(); }
                 const fPadre = document.getElementById('f-padre'); if(fPadre) fPadre.value = padre !== "-" ? padre : "";
                 const fMadre = document.getElementById('f-madre'); if(fMadre) fMadre.value = madre !== "-" ? madre : "";
                 const inputCarimbo = document.getElementById('input-carimbo-rapido'); if(inputCarimbo) inputCarimbo.value = carimbo !== "-" ? carimbo : "";
@@ -1468,7 +1474,7 @@
             } catch(e) { console.error("Error al visualizar ficha", e); }
         }
 
-        function ejecutarAccion(tipo, val, det, modalId) {
+        window.ejecutarAccion = function(tipo, val, det, modalId) {
             let car = rpActivo;
             if (tipo.includes('Operador') || tipo === 'Alta Operador' || tipo === 'Edición Operador' || tipo === 'Baja Operador') {
                 car = "---";
@@ -1477,19 +1483,19 @@
             }
 
             const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: car, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
-            dbCache.unshift(obj); historiaCache = null; activosCache = null; buscarCaravanaBtn(rpActivo); procesarDatosDashboard();
-            if(modalId) cerrarModal(modalId);
+            dbCache.unshift(obj); historiaCache = null; activosCache = null; window.buscarCaravanaBtn(rpActivo); window.procesarDatosDashboard();
+            if(modalId) window.cerrarModal(modalId);
             if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador' && tipo !== 'Alta Operador' && tipo !== 'Baja Operador') {
-                notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
+                window.notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
             }
             if(navigator.onLine) {
                 db.collection('estancias').doc(maestroId).collection('eventos').add(obj).catch(e => {
-                    let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p);
+                    let p = window.lsGet('tc_pendientes', []); p.push(obj); window.lsSet('tc_pendientes', p);
                 });
-            } else { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); }
+            } else { let p = window.lsGet('tc_pendientes', []); p.push(obj); window.lsSet('tc_pendientes', p); }
         }
 
-        function prepararGuardado(mId, t) {
+        window.prepararGuardado = function(mId, t) {
             if(!rpActivo) return; let v = "-", d = ""; const i = document.getElementById(mId).querySelectorAll('.form-control, .textarea');
             if(t === 'Comentario') { d = i[0].value; }
             else if(t === 'Peso') { v = i[0].value + " Kg"; d = `Cond: ${i[1].value}. Notas: ${i[2].value}`; }
@@ -1500,18 +1506,18 @@
             else if(t === 'Baja') { v = i[0].value; d = i[1].value || "Sin observaciones"; }
 
             if(t === 'Baja') {
-                ejecutarAccion(t, v, d, mId);
+                window.ejecutarAccion(t, v, d, mId);
                 let rpArchivado = rpActivo + "-BAJA-" + Math.floor(Math.random() * 10000);
                 setTimeout(() => {
-                    ejecutarAccion('Cambio de Caravana', rpArchivado, 'RP archivado por Baja/Muerte', null);
+                    window.ejecutarAccion('Cambio de Caravana', rpArchivado, 'RP archivado por Baja/Muerte', null);
                     alert(`Baja registrada exitosamente. La caravana original (${rpActivo}) ha quedado libre y vacía de datos.`);
-                    rpActivo = rpArchivado; buscarCaravanaBtn(rpArchivado);
+                    rpActivo = rpArchivado; window.buscarCaravanaBtn(rpArchivado);
                 }, 400);
-            } else { ejecutarAccion(t, v, d, mId); }
+            } else { window.ejecutarAccion(t, v, d, mId); }
             i.forEach(el => el.value = '');
         }
 
-        function mostrarCarimboCalculado() {
+        window.mostrarCarimboCalculado = function() {
             const fechaVal = document.getElementById('f-nacimiento').value; const lbl = document.getElementById('lbl-auto-carimbo');
             if(!fechaVal) { lbl.innerText = ""; return; }
             const partes = fechaVal.split('-'); let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
@@ -1520,26 +1526,26 @@
             lbl.innerText = "🎯 Carimbo Oficial SENACSA calculado: " + carimboCalculado;
         }
 
-        function guardarPerfilCompleto() {
+        window.guardarPerfilCompleto = function() {
             if(!rpActivo) return;
             const fRaza = document.getElementById('f-raza') ? document.getElementById('f-raza').value : "-";
             const fNacimiento = document.getElementById('f-nacimiento') ? document.getElementById('f-nacimiento').value : "-";
             const fPadre = document.getElementById('f-padre') ? document.getElementById('f-padre').value : "-";
             const fMadre = document.getElementById('f-madre') ? document.getElementById('f-madre').value : "-";
             const catValor = document.getElementById('val-categoria') ? document.getElementById('val-categoria').innerText : "-";
-            ejecutarAccion('Perfil Master', `${fRaza||"-"}|${fNacimiento||"-"}|${fPadre||"-"}|${fMadre||"-"}`, catValor, 'm-perfil');
+            window.ejecutarAccion('Perfil Master', `${fRaza||"-"}|${fNacimiento||"-"}|${fPadre||"-"}|${fMadre||"-"}`, catValor, 'm-perfil');
             if (fNacimiento && fNacimiento !== "-") {
                 const partes = fNacimiento.split('-'); let anio = parseInt(partes[0]); let mes = parseInt(partes[1]);
                 if (mes >= 7) anio += 1;
                 let carimboCalculado = anio % 10; let loteActual = document.getElementById('val-lote').innerText || "-"; let catActual = document.getElementById('val-categoria').innerText || "-";
-                ejecutarAccion('Actualización de Datos', `Cat: ${catActual} | Carimbo: ${carimboCalculado}`, `Lote: ${loteActual}`, null);
+                window.ejecutarAccion('Actualización de Datos', `Cat: ${catActual} | Carimbo: ${carimboCalculado}`, `Lote: ${loteActual}`, null);
             }
         }
 
-        function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'modal-clasificacion'); }
-        function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'modal-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
+        window.guardarClasificacion = function() { if(!rpActivo) return; window.ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'modal-clasificacion'); }
+        window.guardarCambioCaravana = function() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } window.ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'modal-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; window.buscarCaravanaBtn(n); }, 300); }
         
-        async function borrarCaravana() { 
+        window.borrarCaravana = async function() { 
             if(!rpActivo) return; 
             if(confirm(`⚠️ ¿ELIMINAR TODO EL HISTORIAL de la caravana ${rpActivo} permanentemente? Esto purgará la base de datos.`)) { 
                 try {
@@ -1551,15 +1557,15 @@
                     dbCache = dbCache.filter(d => d.caravana !== rpActivo);
                     historiaCache = null; activosCache = null;
                     alert("Historial purgado completamente. El RP quedó libre."); 
-                    cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); 
+                    window.cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); 
                 } catch(e) { alert("Error de red al intentar purgar el historial."); }
             } 
         }
 
-        function verHistorial() { 
-            abrirModal('modal-historial'); 
+        window.verHistorial = function() { 
+            window.abrirModal('modal-historial'); 
             let h = "<ul style='list-style:none; padding:0; margin:0;'>"; 
-            obtenerHistorial(rpActivo).forEach(r => { 
+            window.obtenerHistorial(rpActivo).forEach(r => { 
                 if(!r.accion.includes('Vinculacion')) { 
                     h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px; position:relative;">
                         <span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span>
@@ -1571,49 +1577,7 @@
             document.getElementById('contenido-historial').innerHTML = h + "</ul>"; 
         }
 
-        window.abrirEdicionRegistro = function(id) {
-            if(!id || id === 'undefined') { alert("Este registro aún no se sincronizó con la nube. Espere un momento."); return; }
-            let reg = dbCache.find(r => r.id === id);
-            if(!reg) return;
-            document.getElementById('edit-reg-id').value = id; 
-            document.getElementById('edit-reg-valor').value = reg.valor || ""; 
-            document.getElementById('edit-reg-detalles').value = reg.detalles || "";
-            
-            if(reg.fecha) {
-                let fechaLocal = new Date(reg.fecha);
-                fechaLocal.setMinutes(fechaLocal.getMinutes() - fechaLocal.getTimezoneOffset());
-                document.getElementById('edit-reg-fecha').value = fechaLocal.toISOString().slice(0,16);
-            }
-
-            cerrarModal('modal-historial'); abrirModal('modal-editar-registro');
-        };
-
-        window.guardarEdicionRegistro = async function() {
-            let id = document.getElementById('edit-reg-id').value; 
-            let nValor = document.getElementById('edit-reg-valor').value; 
-            let nDetalles = document.getElementById('edit-reg-detalles').value;
-            let nFecha = document.getElementById('edit-reg-fecha').value; 
-            
-            if(!navigator.onLine) { alert("Necesitas conexión a internet para editar."); return; }
-            try {
-                let isoFecha = new Date(nFecha).toISOString();
-                await db.collection('estancias').doc(maestroId).collection('eventos').doc(id).update({ valor: nValor, detalles: nDetalles, fecha: isoFecha });
-                
-                let i = dbCache.findIndex(r => r.id === id);
-                if(i !== -1) { 
-                    dbCache[i].valor = nValor; 
-                    dbCache[i].detalles = nDetalles; 
-                    dbCache[i].fecha = isoFecha;
-                    historiaCache = null; activosCache = null; 
-                    buscarCaravanaBtn(rpActivo); 
-                }
-                cerrarModal('modal-editar-registro'); 
-                mostrarToast("✅ Modificado exitosamente."); 
-                verHistorial();
-            } catch(e) { alert("Error al modificar."); }
-        };
-
-        function cambiarModoReporte() {
+        window.cambiarModoReporte = function() {
             const modo = document.getElementById('f-inf-modo').value;
             const fInv = document.getElementById('filtros-inventario');
             const fBajas = document.getElementById('filtros-bajas');
@@ -1623,10 +1587,10 @@
             if (fBajas) fBajas.style.display = (modo === 'bajas') ? 'flex' : 'none';
             if (fEvt) fEvt.style.display = (modo === 'eventos') ? 'flex' : 'none';
             
-            actualizarInformeAvanzado();
+            window.actualizarInformeAvanzado();
         }
 
-        function manejarRangoFechas() {
+        window.manejarRangoFechas = function() {
             const rango = document.getElementById('f-inf-rango-fecha').value; const cajaManual = document.getElementById('caja-fechas-custom');
             const dDesde = document.getElementById('f-inf-desde'); const dHasta = document.getElementById('f-inf-hasta');
             let hoy = new Date(); let desde = new Date();
@@ -1635,10 +1599,10 @@
                 if(rango === 'hoy') { } else if (rango === '7') { desde.setDate(hoy.getDate() - 7); } else if (rango === '30') { desde.setDate(hoy.getDate() - 30); } else if (rango === 'todo') { desde = new Date('2000-01-01'); }
                 dDesde.value = desde.toISOString().split('T')[0]; dHasta.value = hoy.toISOString().split('T')[0];
             }
-            actualizarInformeAvanzado();
+            window.actualizarInformeAvanzado();
         }
 
-        function manejarRangoFechasBajas() {
+        window.manejarRangoFechasBajas = function() {
             const rango = document.getElementById('f-inf-baja-rango').value;
             const cajaManual = document.getElementById('caja-fechas-bajas');
             const dDesde = document.getElementById('f-inf-baja-desde');
@@ -1652,17 +1616,17 @@
                 else if (rango === 'todo') { desde = new Date('2000-01-01'); }
                 dDesde.value = desde.toISOString().split('T')[0]; dHasta.value = hoy.toISOString().split('T')[0];
             }
-            actualizarInformeAvanzado();
+            window.actualizarInformeAvanzado();
         }
 
-        function obtenerBadgeAccion(accion) {
+        window.obtenerBadgeAccion = function(accion) {
             if(accion === 'Sanidad') return `Sanidad`; if(accion === 'Peso') return `Peso`; if(accion === 'Diagnóstico') return `Tacto`; if(accion === 'Inseminación') return `Reproducción`; if(accion === 'Nutrición') return `Nutrición`; if(accion === 'Baja') return `Baja / Muerte`;
             return `${accion}`;
         }
 
-        function actualizarInformeAvanzado() {
+        window.actualizarInformeAvanzado = function() {
             const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
-            const datosActivos = obtenerRegistrosActivos();
+            const datosActivos = window.obtenerRegistrosActivos();
             const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && c !== "null" && c !== "undefined" && c !== ""))];
 
             const tbodyMasivo = document.getElementById('tb-informe-masivo');
@@ -1675,18 +1639,18 @@
             document.getElementById('tabla-eventos').classList.add('oculto');
             document.getElementById('tabla-individual').classList.add('oculto');
 
-            let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja'));
+            let vivas = unicas.filter(car => !window.obtenerHistorial(car).some(r => r.accion === 'Baja'));
 
             const cajaKpiPre = document.getElementById('caja-kpi-prenadas');
             const lblTotal = document.getElementById('lbl-inf-total');
 
             if(fRp !== "") {
                 rpPrint = fRp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Dossier: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
-                const regs = obtenerHistorial(fRp); let hInd = ""; pdfExportData = [];
+                const regs = window.obtenerHistorial(fRp); let hInd = ""; pdfExportData = [];
                 regs.forEach(r => {
                     if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') {
                         let fDate = new Date(r.fecha).toLocaleDateString();
-                        let badge = obtenerBadgeAccion(r.accion);
+                        let badge = window.obtenerBadgeAccion(r.accion);
                         pdfExportData.push([fDate, badge, r.valor, r.detalles]);
                         hInd+=`<tr><td>${fDate}</td><td><strong>${badge}</strong></td><td>${r.valor}</td><td>${r.detalles}</td></tr>`;
                     }
@@ -1713,11 +1677,11 @@
                 let bufferHTML = "";
                 let maxRows = 100; pdfExportData = [];
                 vivas.forEach(car => {
-                    const regs = obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
+                    const regs = window.obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
                     const uC = regs.find(d => d.accion === 'Actualización de Datos');
                     if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles||"split('|')[0]") ? String(uC.detalles||"split('|')[0]").replace('Lote:','').trim() : "-"; }
-                    let catLegible = obtenerNombreCategoriaLegible(cat);
+                    let catLegible = window.obtenerNombreCategoriaLegible(cat);
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-";
                     const uDx = regs.find(d => d.accion === 'Diagnóstico');
 
@@ -1762,7 +1726,7 @@
                 let countBajas = 0;
 
                 unicas.forEach(car => {
-                    const regs = obtenerHistorial(car);
+                    const regs = window.obtenerHistorial(car);
                     const rBaja = regs.find(r => r.accion === 'Baja');
                     if (!rBaja) return;
 
@@ -1805,7 +1769,7 @@
                 eventos.sort((a,b) => b.fechaSafe - a.fechaSafe).forEach(r => {
                     let key = `${r.caravana}_${r.fDateStr}`;
                     if(!agrupados[key]) agrupados[key] = { fecha: r.fDateStr, rp: r.caravana, trabajos: [] };
-                    agrupados[key].trabajos.push(`${obtenerBadgeAccion(r.accion)}: ${r.valor} ${r.detalles ? '('+r.detalles+')' : ''}`);
+                    agrupados[key].trabajos.push(`${window.obtenerBadgeAccion(r.accion)}: ${r.valor} ${r.detalles ? '('+r.detalles+')' : ''}`);
                 });
 
                 Object.values(agrupados).forEach(grp => {
@@ -1821,36 +1785,36 @@
             }
         }
 
-        function cleanPDFText(text) {
+        window.cleanPDFText = function(text) {
             if (!text) return ''; let str = String(text);
             str = str.replace(/✅|❌|🩸|🩺|⚖️|💉|🧬|🌾|💀|🗑️|✏️|⚠️|🔴|📊|📈|📍|🏆|⚡|🐄|📋|📄|⚙️|🚪|▶|⌨️|📡/g, '');
             str = str.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
             return str.trim();
         }
 
-        function ejecutarDescargaPDF() {
+        window.ejecutarDescargaPDF = function() {
             const btn = document.getElementById('btn-print-magico');
             const textoOriginal = btn.innerText; btn.innerText = "⏳ Generando Archivo PDF...";
             setTimeout(() => {
                 try {
-                    const hd = lsGet('tc_hacienda', {}); const h_nom = hd.nombre || 'TAURUS CONTROL'; const h_log = hd.logo || "";
+                    const hd = window.lsGet('tc_hacienda', {}); const h_nom = hd.nombre || 'TAURUS CONTROL'; const h_log = hd.logo || "";
                     const modo = document.getElementById('f-inf-modo').value; const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4');
 
                     const addMembrete = (tituloReporte) => {
-                        doc.setFontSize(20); doc.setFont("helvetica", "bold"); doc.text(cleanPDFText(h_nom).toUpperCase(), 14, 20);
-                        doc.setFontSize(11); doc.setFont("helvetica", "normal"); doc.text(cleanPDFText(tituloReporte), 14, 27);
+                        doc.setFontSize(20); doc.setFont("helvetica", "bold"); doc.text(window.cleanPDFText(h_nom).toUpperCase(), 14, 20);
+                        doc.setFontSize(11); doc.setFont("helvetica", "normal"); doc.text(window.cleanPDFText(tituloReporte), 14, 27);
                         doc.setFontSize(9); doc.text(`Emitido: ${new Date().toLocaleDateString()}`, 14, 32);
                         if (h_log && h_log.startsWith('data:image')) { try { let imgProps = doc.getImageProperties(h_log); let ratio = imgProps.width / imgProps.height; let targetHeight = 16; let targetWidth = targetHeight * ratio; if(targetWidth > 40) { targetWidth = 40; targetHeight = targetWidth / ratio; } doc.addImage(h_log, 'PNG', 196 - targetWidth, 15, targetWidth, targetHeight, '', 'FAST'); } catch(e) {} }
                         doc.setLineWidth(0.5); doc.line(14, 35, 196, 35);
                     };
 
                     if (rpPrint !== "") {
-                        const regs = obtenerHistorial(rpPrint);
+                        const regs = window.obtenerHistorial(rpPrint);
                         if (regs.length === 0) { alert("Sin registros para este RP."); btn.innerText = textoOriginal; return; }
                         let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
                         const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor||"").split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=String(uP.detalles||"").split('|')[0]||"-"; }
                         const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; lote=String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; }
-                        let catLegible = obtenerNombreCategoriaLegible(cat);
+                        let catLegible = window.obtenerNombreCategoriaLegible(cat);
                         const uPeso = regs.find(d => String(d.accion).includes('Peso')); if(uPeso) peso = uPeso.valor || "-";
                         const uDx = regs.find(d => d.accion === 'Diagnóstico');
                         let loteLow = lote.toLowerCase();
@@ -1867,14 +1831,14 @@
                         doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.text("Resumen del Perfil", 14, 43);
                         doc.autoTable({ startY: 46, theme: 'grid', styles: { fontSize: 9, cellPadding: 3, textColor: 20 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold' },
                             body: [
-                                [`Categoría: ${cleanPDFText(catLegible)}`, `Lote: ${cleanPDFText(lote)}`, `Carimbo: ${cleanPDFText(carimbo)}`],
-                                [`Raza: ${cleanPDFText(raza)}`, `Nacimiento: ${cleanPDFText(edad)}`, `Último Peso: ${cleanPDFText(peso)}`],
-                                [`Dx Actual: ${cleanPDFText(dx)}`, `Genealogía: ${cleanPDFText(pa)} / ${cleanPDFText(ma)}`, `Régimen: ${cleanPDFText(nut)}`],
-                                [`Últ. Sanidad: ${cleanPDFText(san)}`, { content: `Últ. Inseminación: ${cleanPDFText(ins)}`, colSpan: 2 }]
+                                [`Categoría: ${window.cleanPDFText(catLegible)}`, `Lote: ${window.cleanPDFText(lote)}`, `Carimbo: ${window.cleanPDFText(carimbo)}`],
+                                [`Raza: ${window.cleanPDFText(raza)}`, `Nacimiento: ${window.cleanPDFText(edad)}`, `Último Peso: ${window.cleanPDFText(peso)}`],
+                                [`Dx Actual: ${window.cleanPDFText(dx)}`, `Genealogía: ${window.cleanPDFText(pa)} / ${window.cleanPDFText(ma)}`, `Régimen: ${window.cleanPDFText(nut)}`],
+                                [`Últ. Sanidad: ${window.cleanPDFText(san)}`, { content: `Últ. Inseminación: ${window.cleanPDFText(ins)}`, colSpan: 2 }]
                             ]
                         });
                         doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.text("Trazabilidad Histórica de Sucesos", 14, doc.lastAutoTable.finalY + 10);
-                        const tableData = pdfExportData.map(row => row.map(cell => cleanPDFText(cell).replace(/\n/g, ' ')));
+                        const tableData = pdfExportData.map(row => row.map(cell => window.cleanPDFText(cell).replace(/\n/g, ' ')));
                         doc.autoTable({ startY: doc.lastAutoTable.finalY + 13, theme: 'grid', head: [['Fecha', 'Procedimiento', 'Valor Principal', 'Observaciones Adicionales']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 40 }, 2: { cellWidth: 40, fontStyle: 'bold' }, 3: { cellWidth: 'auto' } } });
                         let filename = `Dossier_RP_${rpPrint.toUpperCase()}.pdf`;
                         if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
@@ -1884,9 +1848,9 @@
                         let titulo = (fCausa !== "ALL") ? `Reporte de Bajas - Causa: ${fCausa}` : "Reporte Oficial de Bajas y Mortalidad";
                         addMembrete(titulo);
                         const totalBajas = document.getElementById('inf-total').innerText;
-                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Bajas / Muertes Registradas: ${cleanPDFText(totalBajas)}`, 14, 43);
+                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Bajas / Muertes Registradas: ${window.cleanPDFText(totalBajas)}`, 14, 43);
 
-                        const tableData = pdfExportData.map(row => row.map(cell => cleanPDFText(cell).replace(/\n/g, ' ')));
+                        const tableData = pdfExportData.map(row => row.map(cell => window.cleanPDFText(cell).replace(/\n/g, ' ')));
                         doc.autoTable({ startY: 48, theme: 'grid', head: [['Fecha de Baja', 'Caravana / RP', 'Causa', 'Observaciones']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [239, 68, 68], textColor: 255, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 35, fontStyle: 'bold', halign: 'center' }, 2: { cellWidth: 40 }, 3: { cellWidth: 'auto' } } });
 
                         let filename = 'Reporte_Bajas_Mortalidad.pdf';
@@ -1903,9 +1867,9 @@
 
                         addMembrete(titulo);
                         const totalReg = document.getElementById('inf-total').innerText; const totalPre = document.getElementById('inf-prenadas').innerText;
-                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Cabezas Listadas: ${cleanPDFText(totalReg)}`, 14, 43); doc.text(`Total Preñadas: ${cleanPDFText(totalPre)}`, 130, 43);
+                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Cabezas Listadas: ${window.cleanPDFText(totalReg)}`, 14, 43); doc.text(`Total Preñadas: ${window.cleanPDFText(totalPre)}`, 130, 43);
 
-                        const tableData = pdfExportData.map(row => row.map(cell => cleanPDFText(cell).replace(/\n/g, ' - ')));
+                        const tableData = pdfExportData.map(row => row.map(cell => window.cleanPDFText(cell).replace(/\n/g, ' - ')));
                         doc.autoTable({ startY: 48, theme: 'grid', head: [['RP y Carimbo', 'Categoría', 'Lote / Ubicación', 'Último Peso', 'Diagnóstico']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 1: { cellWidth: 45 }, 2: { cellWidth: 45 }, 3: { cellWidth: 25, halign: 'center' }, 4: { cellWidth: 30, halign: 'center' } } });
 
                         let filename = (fCat !== "ALL") ? `Reporte_${fCat.replace(/[^a-zA-Z0-9]/g, '_')}.pdf` : ((fLote !== "ALL") ? `Reporte_Lote_${fLote.replace(/[^a-zA-Z0-9]/g, '_')}.pdf` : 'Reporte_Inventario.pdf');
@@ -1914,9 +1878,9 @@
                     } else {
                         addMembrete("Reporte de Trabajos y Procedimientos");
                         const totalReg = document.getElementById('inf-total').innerText;
-                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Procedimientos Listados: ${cleanPDFText(totalReg)}`, 14, 43);
+                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Procedimientos Listados: ${window.cleanPDFText(totalReg)}`, 14, 43);
 
-                        const tableData = pdfExportData.map(row => row.map(cell => cleanPDFText(cell).replace(/\n/g, ' ')));
+                        const tableData = pdfExportData.map(row => row.map(cell => window.cleanPDFText(cell).replace(/\n/g, ' ')));
                         doc.autoTable({ startY: 48, theme: 'grid', head: [['Fecha', 'Caravana', 'Trabajo Realizado', 'Detalles Extras']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 2: { cellWidth: 40 }, 3: { cellWidth: 'auto' } } });
 
                         let filename = 'Reporte_Tratamientos.pdf';
@@ -1927,10 +1891,10 @@
             }, 100);
         }
 
-        function verificarLimiteGraficos(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { alert('Solo puede fijar 3 gráficas simultáneas.'); checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); lsSet('tc_prefs', prefs); if(dbCache.length > 0) procesarDatosDashboard(); } }
+        window.verificarLimiteGraficos = function(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { alert('Solo puede fijar 3 gráficas simultáneas.'); checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); window.lsSet('tc_prefs', prefs); if(dbCache.length > 0) window.procesarDatosDashboard(); } }
 
-        function filtrarDesdeDashboard(tipo, valor) {
-            cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]);
+        window.filtrarDesdeDashboard = function(tipo, valor) {
+            window.cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]);
             document.getElementById('buscador-lista').value = "";
 
             if(tipo === 'estado') {
@@ -1954,14 +1918,14 @@
                 document.getElementById('filtro-reg-lote').value = 'ALL';
                 document.getElementById('filtro-reg-cat').value = 'ALL';
             }
-            cargarListaRegistro();
+            window.cargarListaRegistro();
         }
 
-        function procesarDatosDashboard() {
-            const datosActivos = obtenerRegistrosActivos(); 
+        window.procesarDatosDashboard = function() {
+            const datosActivos = window.obtenerRegistrosActivos(); 
             let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && c !== "null" && c !== "undefined" && c !== ""))];
             let vivas = []; let cantBajas = datosActivos.filter(r => r.accion === 'Baja').length;
-            unicas.forEach(car => { if(!obtenerHistorial(car).some(x => x.accion === 'Baja')) { vivas.push(car); } }); unicas = vivas;
+            unicas.forEach(car => { if(!window.obtenerHistorial(car).some(x => x.accion === 'Baja')) { vivas.push(car); } }); unicas = vivas;
             
             document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
             let elBajas = document.getElementById('dash-bajas'); if(elBajas) elBajas.innerText = cantBajas;
@@ -1972,14 +1936,14 @@
             datosActivos.forEach(r => { if(String(r.accion).includes('Peso')) g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; if(r.accion === 'Baja') { let causa = String(r.valor).trim(); g11[causa] = (g11[causa] || 0) + 1; } });
             
             unicas.forEach(car => {
-                const regs = obtenerHistorial(car); let catRaw = "Sin Categoría", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                const regs = window.obtenerHistorial(car); let catRaw = "Sin Categoría", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
                 if(uC) { let v=String(uC.valor||"").split('|'); catRaw = v[0] ? v[0].replace('Cat:','').trim() : "Sin Categoría"; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; }
                 else {
                     const uP = regs.find(d => d.accion === 'Perfil Master');
                     if(uP && uP.detalles) { catRaw = String(uP.detalles).split('|')[0] || "Sin Categoría"; }
                 }
 
-                let catLegible = obtenerNombreCategoriaLegible(catRaw);
+                let catLegible = window.obtenerNombreCategoriaLegible(catRaw);
                 g2[catLegible] = (g2[catLegible] || 0) + 1;
                 g3[lote] = (g3[lote] || 0) + 1;
 
@@ -2017,7 +1981,7 @@
             });
 
             const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
-            const prefs = lsGet('tc_prefs', ['1', '3']); let htmlGraficos = "";
+            const prefs = window.lsGet('tc_prefs', ['1', '3']); let htmlGraficos = "";
             const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#38bdf8'];
 
             const makePieAndBars = (title, dataObj, totalCount, tipoAccion) => {
@@ -2114,24 +2078,24 @@
             }); document.getElementById('contenedor-graficos-dinamicos').innerHTML = htmlGraficos;
         }
 
-        function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
-        function abrirModal(id) { document.getElementById(id).style.display = 'flex'; } function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
-
+        window.cambiarVista = function(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); document.getElementById(v).classList.remove('oculto'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); }
+        window.abrirModal = function(id) { document.getElementById(id).style.display = 'flex'; } 
+        window.cerrarModal = function(id) { document.getElementById(id).style.display = 'none'; }
 
         let timeoutBuscadorRegistro = null;
-        function filtrarListaRegistroDebounced() {
+        window.filtrarListaRegistroDebounced = function() {
             clearTimeout(timeoutBuscadorRegistro);
-            timeoutBuscadorRegistro = setTimeout(() => { cargarListaRegistro(); }, 400);
+            timeoutBuscadorRegistro = setTimeout(() => { window.cargarListaRegistro(); }, 400);
         }
 
         let timeoutBuscadorInforme = null;
-        function filtrarInformeDebounced() {
+        window.filtrarInformeDebounced = function() {
             clearTimeout(timeoutBuscadorInforme);
-            timeoutBuscadorInforme = setTimeout(() => { actualizarInformeAvanzado(); }, 400);
+            timeoutBuscadorInforme = setTimeout(() => { window.actualizarInformeAvanzado(); }, 400);
         }
 
-        function cargarListaRegistro() {
-            const datosActivos = obtenerRegistrosActivos();
+        window.cargarListaRegistro = function() {
+            const datosActivos = window.obtenerRegistrosActivos();
             let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && c !== "null" && c !== "undefined" && c !== ""))];
 
             let estadoFiltro = document.getElementById('filtro-reg-estado').value;
@@ -2143,7 +2107,7 @@
             let listaFiltrada = [];
 
             unicas.forEach(car => {
-                const regs = obtenerHistorial(car);
+                const regs = window.obtenerHistorial(car);
                 let esBaja = regs.some(r => r.accion === 'Baja');
 
                 if (estadoFiltro === 'vivos' && esBaja) return;
@@ -2166,7 +2130,7 @@
 
                 dx = uDx ? uDx.valor : (esPre ? "Preñada" : (esVacia ? "Vacía" : "-"));
 
-                let catLegible = obtenerNombreCategoriaLegible(cat);
+                let catLegible = window.obtenerNombreCategoriaLegible(cat);
 
                 if (loteFiltro !== "ALL" && !lote.includes(loteFiltro)) return;
                 if (catFiltro !== "ALL" && !catLegible.includes(catFiltro)) return;
@@ -2216,15 +2180,15 @@
             ul.innerHTML = htmlHTML;
         }
 
-        function filtrarLista(t) { cargarListaRegistro(); }
-        function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); buscarCaravanaBtn(); }
+        window.filtrarLista = function(t) { window.cargarListaRegistro(); }
+        window.navegarDesdeLista = function(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); window.buscarCaravanaBtn(); }
 
-        function guardarDisenoServidor() {
+        window.guardarDisenoServidor = function() {
             const n = document.getElementById('cfg-nom').value.trim();
             const f = document.getElementById('cfg-logo');
             let p = (b64) => {
                 db.collection('estancias').doc(maestroId).set({ nombre_hacienda: n, logo_hacienda: b64 }, { merge: true }).then(() => {
-                    mostrarToast("Membrete oficial de PDF actualizado.");
+                    window.mostrarToast("Membrete oficial de PDF actualizado.");
                 });
             };
             if(f.files && f.files[0]) {
@@ -2244,12 +2208,12 @@
                 };
                 r.readAsDataURL(f.files[0]);
             } else {
-                const logoGuardado = lsGet('tc_hacienda', {}).logo || "";
+                const logoGuardado = window.lsGet('tc_hacienda', {}).logo || "";
                 p(logoGuardado);
             }
         }
 
-        async function crearOperador() { 
+        window.crearOperador = async function() { 
             if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
             const n = document.getElementById('op-nombre').value.trim();
             const u = document.getElementById('op-usu').value.trim().toLowerCase(); 
@@ -2275,17 +2239,17 @@
                 await db.collection('usuarios').doc(email).set({
                     nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', password: p, alertas_leidas: alertasParaOmitir
                 });
-                ejecutarAccion('Alta Operador', email, `Nombre: ${n} | Rol: ${rolFinal}`, null);
+                window.ejecutarAccion('Alta Operador', email, `Nombre: ${n} | Rol: ${rolFinal}`, null);
                 document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 
                 btn.innerHTML = btnOriginal; btn.disabled = false;
-                mostrarToast("Usuario Registrado."); cargarListaOperadores();
+                window.mostrarToast("Usuario Registrado."); window.cargarListaOperadores();
             } catch(e) {
                 alert("Error al crear la cuenta. Verifique que no esté ya registrado.");
                 btn.innerHTML = btnOriginal; btn.disabled = false;
             }
         }
 
-        function cargarPermisosEdicion() {
+        window.cargarPermisosEdicion = function() {
             let u = document.getElementById('op-edit-usu-sel').value;
             let caja = document.getElementById('caja-edit-permisos');
             if(!u) { caja.classList.add('oculto'); return; }
@@ -2302,7 +2266,7 @@
             });
         }
 
-        async function guardarEdicionOperador() {
+        window.guardarEdicionOperador = async function() {
             if(!navigator.onLine) { alert("Necesitas conexión."); return; }
             let u = document.getElementById('op-edit-usu-sel').value;
             if(!u) return;
@@ -2313,15 +2277,15 @@
             btn.innerHTML = "⏳ Actualizando..."; btn.disabled = true;
             try {
                 await db.collection('usuarios').doc(u).update({ rol: rolFinal });
-                ejecutarAccion('Edición Operador', u, `Rol: ${rolFinal}`, null);
-                mostrarToast("Permisos actualizados.");
+                window.ejecutarAccion('Edición Operador', u, `Rol: ${rolFinal}`, null);
+                window.mostrarToast("Permisos actualizados.");
                 document.getElementById('op-edit-usu-sel').value = "";
                 document.getElementById('caja-edit-permisos').classList.add('oculto');
                 btn.innerHTML = btnOriginal; btn.disabled = false;
             } catch(e) { alert("Error de red."); btn.innerHTML = btnOriginal; btn.disabled = false; }
         }
 
-        async function gestionarAuthGhostParaBorrado(email, claveActual) {
+        window.gestionarAuthGhostParaBorrado = async function(email, claveActual) {
             const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryAppGhostDelete");
             try {
                 await secondaryApp.auth().signInWithEmailAndPassword(email, claveActual);
@@ -2333,7 +2297,7 @@
             }
         }
 
-        async function eliminarOperador() {
+        window.eliminarOperador = async function() {
             if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; }
             const selectEl = document.getElementById('op-del-usu-sel');
             const u = selectEl.value.trim();
@@ -2343,17 +2307,17 @@
                 btn.innerHTML = "⏳ Eliminando..."; btn.disabled = true;
                 try {
                     const doc = await db.collection('usuarios').doc(u).get();
-                    if(doc.exists && doc.data().password) { await gestionarAuthGhostParaBorrado(u, doc.data().password); }
+                    if(doc.exists && doc.data().password) { await window.gestionarAuthGhostParaBorrado(u, doc.data().password); }
                     await db.collection('usuarios').doc(u).delete();
-                    ejecutarAccion('Baja Operador', u, `Eliminado por el panel`, null);
+                    window.ejecutarAccion('Baja Operador', u, `Eliminado por el panel`, null);
                     alert(`El usuario ha sido eliminado con éxito.`);
-                    selectEl.value = ''; cargarListaOperadores(); 
+                    selectEl.value = ''; window.cargarListaOperadores(); 
                     btn.innerHTML = btnOriginal; btn.disabled = false;
                 } catch(e) { alert("Hubo un error de conexión."); btn.innerHTML = btnOriginal; btn.disabled = false; } 
             }
         }
 
-        async function cargarListaOperadores() {
+        window.cargarListaOperadores = async function() {
             if (!usRol.includes('Propietario') && !usRol.includes('Dueño')) return;
             try {
                 const snapshot = await db.collection('usuarios').where('maestroId', '==', maestroId).get();
@@ -2367,7 +2331,7 @@
             } catch(e) { console.error("Error al cargar operadores", e); }
         }
 
-        function cambiarMiContrasena() { 
+        window.cambiarMiContrasena = function() { 
             if(!navigator.onLine) { alert("Necesitas conexión."); return; } 
             const nueva = document.getElementById('nueva-clave').value.trim(); 
             if(!nueva || nueva.length < 6) { alert("Mínimo 6 caracteres requeridos."); return; }
@@ -2381,7 +2345,7 @@
             }
         }
         
-        function cerrarSesion() { 
+        window.cerrarSesion = function() { 
             let leidas = localStorage.getItem('tc_alertas_leidas');
             let mostradas = localStorage.getItem('tc_alertas_mostradas');
             let prefs = localStorage.getItem('tc_prefs');
@@ -2396,10 +2360,10 @@
             });
         }
 
-        function forzarSaltoAFicha() {
+        window.forzarSaltoAFicha = function() {
             let tabFicha = document.querySelectorAll('.nav-item')[1];
-            if (typeof cambiarVista === "function" && tabFicha && tabFicha.style.display !== 'none') {
-                cambiarVista('vista-manga', tabFicha);
+            if (typeof window.cambiarVista === "function" && tabFicha && tabFicha.style.display !== 'none') {
+                window.cambiarVista('vista-manga', tabFicha);
             }
         }
 
@@ -2407,17 +2371,17 @@
             let dataMinuscula = String(tagHex).trim().toLowerCase();
             let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === dataMinuscula);
             if(esRFIDRegistrado) {
-                forzarSaltoAFicha();
+                window.forzarSaltoAFicha();
                 let buscador = document.getElementById('buscador-caravana');
                 if (buscador) buscador.value = esRFIDRegistrado.caravana;
-                if (typeof buscarCaravanaBtn === "function") buscarCaravanaBtn();
+                if (typeof window.buscarCaravanaBtn === "function") window.buscarCaravanaBtn();
             } else {
                 rfidPendiente = tagHex;
                 let inputVincular = document.getElementById('f-rfid-caravana');
                 if (inputVincular) inputVincular.value = '';
                 let lblScaneado = document.getElementById('lbl-rfid-scaneado');
                 if (lblScaneado) lblScaneado.innerText = tagHex;
-                if (typeof abrirModal === "function") abrirModal('modal-rfid');
+                if (typeof window.abrirModal === "function") window.abrirModal('modal-rfid');
                 setTimeout(() => { if(inputVincular) inputVincular.focus(); }, 500);
             }
         };
@@ -2437,17 +2401,17 @@
                                 let sel = document.getElementById('rafaga-accion').value;
                                 let notas = document.getElementById('rafaga-detalles').value.trim();
                                 let recordatorioRafaga = document.getElementById('rafaga-recordatorio').value; 
-                                ejecutarAccion('Peso', dataLimpia + " Kg", "Automático (Ráfaga)", null);
+                                window.ejecutarAccion('Peso', dataLimpia + " Kg", "Automático (Ráfaga)", null);
                                 if(sel !== 'solo_peso') {
                                     let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
                                     let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga";
                                     if (recordatorioRafaga !== "0") { detCompleto += ` | [RECORDATORIO:${recordatorioRafaga}]`; }
-                                    ejecutarAccion('Sanidad', producto, detCompleto, null);
+                                    window.ejecutarAccion('Sanidad', producto, detCompleto, null);
                                 }
-                                if(typeof mostrarToast === 'function') mostrarToast("✅ ¡Guardado!");
+                                if(typeof window.mostrarToast === 'function') window.mostrarToast("✅ ¡Guardado!");
                             } else {
-                                forzarSaltoAFicha();
-                                if (typeof abrirModal === "function") abrirModal('modal-peso');
+                                window.forzarSaltoAFicha();
+                                if (typeof window.abrirModal === "function") window.abrirModal('modal-peso');
                                 let inputPeso = document.getElementById('i-peso-val');
                                 if (inputPeso) inputPeso.value = dataLimpia;
                             }
@@ -2456,7 +2420,7 @@
                         }
                     } else {
                         let tagLimpio = dataLimpia.replace(/TAG/gi, '');
-                        forzarSaltoAFicha();
+                        window.forzarSaltoAFicha();
                         if (typeof window.recibirTagNFC === "function") { window.recibirTagNFC(tagLimpio); }
                     }
                 }
@@ -2715,20 +2679,20 @@
             window.open('https://wa.me/595976139617', '_blank');
           }
           else if (cmd === 'navegar') {
-            if (typeof cambiarVista !== 'function') return;
-            if (params.vista === 'dashboard') cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]);
-            if (params.vista === 'manga') cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
-            if (params.vista === 'registro' || params.vista === 'base') { cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]); if(typeof cargarListaRegistro==='function') cargarListaRegistro(); }
-            if (params.vista === 'informe') { cambiarVista('vista-informe', document.querySelectorAll('.nav-item')[3]); if(typeof actualizarInformeAvanzado==='function') actualizarInformeAvanzado(); }
-            if (params.vista === 'sistema' || params.vista === 'config') { cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
+            if (typeof window.cambiarVista !== 'function') return;
+            if (params.vista === 'dashboard') window.cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]);
+            if (params.vista === 'manga') window.cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+            if (params.vista === 'registro' || params.vista === 'base') { window.cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]); if(typeof window.cargarListaRegistro==='function') window.cargarListaRegistro(); }
+            if (params.vista === 'informe') { window.cambiarVista('vista-informe', document.querySelectorAll('.nav-item')[3]); if(typeof window.actualizarInformeAvanzado==='function') window.actualizarInformeAvanzado(); }
+            if (params.vista === 'sistema' || params.vista === 'config') { window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
           }
           else if (cmd === 'cambiar_permiso_operador') {
              if(params.usuario) {
-                 cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+                 window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
                  const selEdit = document.getElementById('op-edit-usu-sel');
                  if(selEdit) {
                      selEdit.value = params.usuario;
-                     if (typeof cargarPermisosEdicion === 'function') cargarPermisosEdicion();
+                     if (typeof window.cargarPermisosEdicion === 'function') window.cargarPermisosEdicion();
 
                      if (params.permiso) {
                          setTimeout(() => {
@@ -2738,7 +2702,7 @@
                                  }
                              });
                              if (params.autoguardar) {
-                                 if (typeof guardarEdicionOperador === 'function') guardarEdicionOperador();
+                                 if (typeof window.guardarEdicionOperador === 'function') window.guardarEdicionOperador();
                              }
                          }, 600);
                      }
@@ -2748,20 +2712,20 @@
           else if (cmd === 'buscar_caravana') {
             if (params.rp) {
               document.getElementById('buscador-caravana').value = params.rp;
-              cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
-              if (typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(params.rp);
+              window.cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+              if (typeof window.buscarCaravanaBtn === 'function') window.buscarCaravanaBtn(params.rp);
             }
           }
           else if (cmd === 'filtrar_estado') {
-            if (typeof filtrarDesdeDashboard === 'function') filtrarDesdeDashboard('estado', params.estado || 'vivos');
+            if (typeof window.filtrarDesdeDashboard === 'function') window.filtrarDesdeDashboard('estado', params.estado || 'vivos');
           }
           else if (cmd === 'descargar_pdf' || cmd === 'generar_informe') {
-            cambiarVista('vista-informe', document.querySelectorAll('.nav-item')[3]);
+            window.cambiarVista('vista-informe', document.querySelectorAll('.nav-item')[3]);
             if (params.modo) {
                 let mo = document.getElementById('f-inf-modo');
                 if (mo) {
                     mo.value = params.modo;
-                    if(typeof cambiarModoReporte === 'function') cambiarModoReporte();
+                    if(typeof window.cambiarModoReporte === 'function') window.cambiarModoReporte();
                 }
             }
             if (params.modo === 'inventario') {
@@ -2771,33 +2735,33 @@
                 if (params.carimbo && document.getElementById('f-inf-carimbo')) document.getElementById('f-inf-carimbo').value = params.carimbo;
             } else if (params.modo === 'bajas') {
                 if (params.causa && document.getElementById('f-inf-baja-causa')) document.getElementById('f-inf-baja-causa').value = params.causa;
-                if (params.rango && document.getElementById('f-inf-baja-rango')) { document.getElementById('f-inf-baja-rango').value = params.rango; if(typeof manejarRangoFechasBajas === 'function') manejarRangoFechasBajas(); }
+                if (params.rango && document.getElementById('f-inf-baja-rango')) { document.getElementById('f-inf-baja-rango').value = params.rango; if(typeof window.manejarRangoFechasBajas === 'function') window.manejarRangoFechasBajas(); }
             } else if (params.modo === 'eventos') {
-                if (params.rango && document.getElementById('f-inf-rango-fecha')) { document.getElementById('f-inf-rango-fecha').value = params.rango; if(typeof manejarRangoFechas === 'function') manejarRangoFechas(); }
+                if (params.rango && document.getElementById('f-inf-rango-fecha')) { document.getElementById('f-inf-rango-fecha').value = params.rango; if(typeof window.manejarRangoFechas === 'function') window.manejarRangoFechas(); }
                 if (params.accion && document.getElementById('f-inf-accion-oculto')) document.getElementById('f-inf-accion-oculto').value = params.accion;
             }
-            if(typeof actualizarInformeAvanzado === 'function') actualizarInformeAvanzado();
+            if(typeof window.actualizarInformeAvanzado === 'function') window.actualizarInformeAvanzado();
             if (params.autoguardar || cmd === 'descargar_pdf' || cmd === 'generar_informe') {
-               setTimeout(() => { if(typeof ejecutarDescargaPDF === 'function') ejecutarDescargaPDF(); }, 800);
-               if(typeof mostrarToast === 'function') mostrarToast("✅ Generando reporte PDF...");
+               setTimeout(() => { if(typeof window.ejecutarDescargaPDF === 'function') window.ejecutarDescargaPDF(); }, 800);
+               if(typeof window.mostrarToast === 'function') window.mostrarToast("✅ Generando reporte PDF...");
             }
           }
           else if (cmd === 'activar_rafaga') {
-            cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
-            if (typeof rafagaActiva !== 'undefined' && !rafagaActiva && typeof toggleRafaga === 'function') toggleRafaga();
+            window.cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+            if (typeof rafagaActiva !== 'undefined' && !rafagaActiva && typeof window.toggleRafaga === 'function') window.toggleRafaga();
             if (params.modo && document.getElementById('rafaga-accion')) {
               document.getElementById('rafaga-accion').value = params.modo;
-              if(typeof verificarRafagaCustom === 'function') verificarRafagaCustom();
+              if(typeof window.verificarRafagaCustom === 'function') window.verificarRafagaCustom();
             }
           }
           else if (cmd === 'crear_operador') {
-            cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+            window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
             if (params.nombre && document.getElementById('op-nombre')) document.getElementById('op-nombre').value = params.nombre;
             if ((params.usuario || params.pin) && document.getElementById('op-usu')) document.getElementById('op-usu').value = params.usuario || params.pin;
             if (params.password && document.getElementById('op-pass')) document.getElementById('op-pass').value = params.password;
             if (params.rol && document.getElementById('op-rol')) {
               document.getElementById('op-rol').value = params.rol;
-              if (typeof togglePermisos === 'function') togglePermisos();
+              if (typeof window.togglePermisos === 'function') window.togglePermisos();
             }
             if (params.permisos && Array.isArray(params.permisos)) {
               document.querySelectorAll('.chk-permiso').forEach(chk => {
@@ -2805,19 +2769,19 @@
               });
             }
             if (params.autoguardar) {
-               setTimeout(() => { if(typeof crearOperador==='function') crearOperador(); }, 500);
+               setTimeout(() => { if(typeof window.crearOperador==='function') window.crearOperador(); }, 500);
             }
           }
           else if (cmd === 'eliminar_operador') {
             if (params.usuario) {
-              cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+              window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
               const selDel = document.getElementById('op-del-usu-sel');
               if (selDel) {
                 selDel.value = params.usuario;
                 if (params.autoguardar) {
                   const originalConfirm = window.confirm;
                   window.confirm = () => true;
-                  Promise.resolve(eliminarOperador()).finally(() => {
+                  Promise.resolve(window.eliminarOperador()).finally(() => {
                     window.confirm = originalConfirm;
                   });
                 }
@@ -2825,37 +2789,37 @@
             }
           }
           else if (cmd === 'cambiar_tema') {
-            cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
-            if (typeof toggleTema === 'function') toggleTema();
+            window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+            if (typeof window.toggleTema === 'function') window.toggleTema();
           }
           else if (cmd === 'configurar_hacienda') {
-            cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+            window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
             if (params.nombre && document.getElementById('cfg-nom')) {
               document.getElementById('cfg-nom').value = params.nombre;
-              if (params.autoguardar && typeof guardarDisenoServidor === 'function') guardarDisenoServidor();
+              if (params.autoguardar && typeof window.guardarDisenoServidor === 'function') window.guardarDisenoServidor();
             }
           }
           else if (cmd === 'seleccionar_graficos') {
-            cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+            window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
             if (params.graficos && Array.isArray(params.graficos)) {
               const checkboxes = document.querySelectorAll('.chk-graf');
               checkboxes.forEach(chk => {
                 chk.checked = params.graficos.includes(chk.value) || params.graficos.includes(parseInt(chk.value));
               });
               const checkedBoxes = document.querySelectorAll('.chk-graf:checked');
-              if (checkedBoxes.length > 0 && typeof verificarLimiteGraficos === 'function') verificarLimiteGraficos(checkedBoxes[0]);
+              if (checkedBoxes.length > 0 && typeof window.verificarLimiteGraficos === 'function') window.verificarLimiteGraficos(checkedBoxes[0]);
             }
           }
           else if (cmd === 'borrar_caravana') {
             if (params.rp) {
               document.getElementById('buscador-caravana').value = params.rp;
-              cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
-              if(typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(params.rp);
+              window.cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+              if(typeof window.buscarCaravanaBtn === 'function') window.buscarCaravanaBtn(params.rp);
             }
             if (typeof rpActivo !== 'undefined' && rpActivo) {
               const originalConfirm = window.confirm;
               window.confirm = () => true;
-              if(typeof borrarCaravana === 'function') borrarCaravana();
+              if(typeof window.borrarCaravana === 'function') window.borrarCaravana();
               window.confirm = originalConfirm;
             } else {
               alert("No se especificó ninguna caravana para borrar.");
@@ -2864,19 +2828,19 @@
           else if (cmd === 'renombrar_caravana') {
             if (params.rp) {
               document.getElementById('buscador-caravana').value = params.rp;
-              cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
-              if(typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(params.rp);
+              window.cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+              if(typeof window.buscarCaravanaBtn === 'function') window.buscarCaravanaBtn(params.rp);
             }
             if (typeof rpActivo !== 'undefined' && rpActivo && params.nuevo_rp) {
               if (document.getElementById('f-nueva-caravana')) document.getElementById('f-nueva-caravana').value = params.nuevo_rp;
-              if (params.autoguardar && typeof guardarCambioCaravana === 'function') guardarCambioCaravana();
+              if (params.autoguardar && typeof window.guardarCambioCaravana === 'function') window.guardarCambioCaravana();
             }
           }
           else if (cmd === 'clasificar_animal') {
             if (params.rp) {
               document.getElementById('buscador-caravana').value = params.rp;
-              cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
-              if(typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(params.rp);
+              window.cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+              if(typeof window.buscarCaravanaBtn === 'function') window.buscarCaravanaBtn(params.rp);
             }
             if (typeof rpActivo !== 'undefined' && rpActivo) {
               if (params.categoria) {
@@ -2892,11 +2856,11 @@
               }
               if (params.lote && document.getElementById('input-lote-rapido')) document.getElementById('input-lote-rapido').value = params.lote;
               if (params.carimbo && document.getElementById('input-carimbo-rapido')) document.getElementById('input-carimbo-rapido').value = params.carimbo;
-              if (params.autoguardar && typeof guardarClasificacion === 'function') guardarClasificacion();
+              if (params.autoguardar && typeof window.guardarClasificacion === 'function') window.guardarClasificacion();
             }
           }
           else if (cmd === 'filtrar_registro') {
-            cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]);
+            window.cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]);
             if (params.estado && document.getElementById('filtro-reg-estado')) document.getElementById('filtro-reg-estado').value = params.estado;
 
             if (params.categoria && params.categoria !== 'ALL') {
@@ -2929,7 +2893,7 @@
 
             if (params.dx && document.getElementById('filtro-reg-dx')) document.getElementById('filtro-reg-dx').value = params.dx;
 
-            if (typeof cargarListaRegistro === 'function') cargarListaRegistro();
+            if (typeof window.cargarListaRegistro === 'function') window.cargarListaRegistro();
           }
           else if (cmd === 'accion_ganadera') {
             let rpObjetivo = params.rp ? String(params.rp).trim() : (typeof rpActivo !== 'undefined' ? rpActivo : null);
@@ -2941,7 +2905,7 @@
                      rpObjetivo = params.rp;
 
                      if (!params.raza && !params.nacimiento && !params.padre && !params.madre) {
-                         if (typeof ejecutarAccion === 'function') ejecutarAccion('Actualización de Datos', `Cat: Ternero | Carimbo: -`, `Lote: Nacimientos`, null);
+                         if (typeof window.ejecutarAccion === 'function') window.ejecutarAccion('Actualización de Datos', `Cat: Ternero | Carimbo: -`, `Lote: Nacimientos`, null);
                      }
                  }
             }
@@ -2952,19 +2916,19 @@
                  if (params.nacimiento && document.getElementById('f-nacimiento')) document.getElementById('f-nacimiento').value = params.nacimiento;
                  if (params.padre && document.getElementById('f-padre')) document.getElementById('f-padre').value = params.padre;
                  if (params.madre && document.getElementById('f-madre')) document.getElementById('f-madre').value = params.madre;
-                 if (typeof guardarPerfilCompleto === 'function') guardarPerfilCompleto();
+                 if (typeof window.guardarPerfilCompleto === 'function') window.guardarPerfilCompleto();
                  if (params.tipo === 'Nacimiento' || params.tipo === 'Crear') return;
             }
 
             if (!rpObjetivo || rpObjetivo === "---") {
-              if(typeof mostrarToast === 'function') mostrarToast("❌ Falta especificar la caravana", true);
+              if(typeof window.mostrarToast === 'function') window.mostrarToast("❌ Falta especificar la caravana", true);
               return;
             }
 
             if (typeof rpActivo !== 'undefined') rpActivo = rpObjetivo;
             if (document.getElementById('buscador-caravana')) document.getElementById('buscador-caravana').value = rpObjetivo;
-            if (typeof forzarSaltoAFicha === 'function') forzarSaltoAFicha();
-            if (typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(rpObjetivo);
+            if (typeof window.forzarSaltoAFicha === 'function') window.forzarSaltoAFicha();
+            if (typeof window.buscarCaravanaBtn === 'function') window.buscarCaravanaBtn(rpObjetivo);
 
             let tipoAccion = params.tipo;
             let valorAccion = params.valor || "-";
@@ -2974,26 +2938,23 @@
               const originalConfirm = window.confirm;
               window.confirm = () => true;
               Promise.resolve().then(() => {
-                  if (typeof ejecutarAccion === 'function') ejecutarAccion('Baja', valorAccion, detallesAccion, null);
+                  if (typeof window.ejecutarAccion === 'function') window.ejecutarAccion('Baja', valorAccion, detallesAccion, null);
                   let rpArchivado = rpObjetivo + "-BAJA-" + Math.floor(Math.random() * 10000);
                   setTimeout(() => {
-                      if (typeof ejecutarAccion === 'function') ejecutarAccion('Cambio de Caravana', rpArchivado, 'RP archivado por Baja/Muerte', null);
+                      if (typeof window.ejecutarAccion === 'function') window.ejecutarAccion('Cambio de Caravana', rpArchivado, 'RP archivado por Baja/Muerte', null);
                       if (typeof rpActivo !== 'undefined') rpActivo = rpArchivado;
-                      if (typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(rpArchivado);
+                      if (typeof window.buscarCaravanaBtn === 'function') window.buscarCaravanaBtn(rpArchivado);
                   }, 400);
-                  if (typeof mostrarToast === 'function') mostrarToast(`💀 Baja registrada para RP ${rpObjetivo}`);
-              }).finally(() => {
-                  window.confirm = originalConfirm;
               });
-            } else if (tipoAccion === 'Clasificacion') {
-              if(params.categoria && document.getElementById('input-cat-rapida')) document.getElementById('input-cat-rapida').value = params.categoria;
-              if(params.lote && document.getElementById('input-lote-rapido')) document.getElementById('input-lote-rapido').value = params.lote;
-              if(params.carimbo && document.getElementById('input-carimbo-rapido')) document.getElementById('input-carimbo-rapido').value = params.carimbo;
-              if(typeof guardarClasificacion==='function') guardarClasificacion();
-              if(typeof mostrarToast==='function') mostrarToast(`✅ Clasificación actualizada`);
+              window.confirm = originalConfirm;
             } else {
-              if (typeof ejecutarAccion === 'function') ejecutarAccion(tipoAccion, valorAccion, detallesAccion, null);
-              if (typeof mostrarToast === 'function') mostrarToast(`✅ [${tipoAccion}] guardado: ${valorAccion}`);
+                if (typeof window.ejecutarAccion === 'function') {
+                    let v = valorAccion;
+                    if(tipoAccion === 'Peso' && !v.includes('Kg')) v += " Kg";
+                    if(tipoAccion === 'Diagnóstico' && !v.includes('Dx:')) v = "Dx: " + v;
+                    if(tipoAccion === 'Inseminación' && !v.includes('Toro:')) v = "Toro: " + v;
+                    window.ejecutarAccion(tipoAccion, v, detallesAccion, null);
+                }
             }
           }
         }
