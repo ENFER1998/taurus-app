@@ -355,68 +355,75 @@
 
             <!-- FICHA CLÍNICA (MANGA) -->
             <div id="vista-manga" class="vista oculto">
-                <div class="tarjeta" id="tarjeta-rafaga" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid var(--secundario);">
+                <div class="tarjeta" id="tarjeta-rafaga" style="margin-bottom: 10px; padding: 10px 14px; border-left: 4px solid var(--secundario);">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <span style="font-size:24px;">⚡</span>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:18px;">⚡</span>
                             <div>
-                                <strong style="display:block; color:var(--texto);">Modo Ráfaga</strong>
-                                <span style="font-size:11px; color:var(--muted);">Automatización con balanza/antena</span>
+                                <strong style="display:block; color:var(--texto); font-size:13px;">Modo Ráfaga</strong>
+                                <span style="font-size:10px; color:var(--muted);">Automático o manual</span>
                             </div>
                         </div>
-                        <button class="btn-mini" id="btn-toggle-rafaga" style="border-color:var(--borde); font-weight:bold;" onclick="toggleRafaga()">APAGADO</button>
-                    </div>
-                    
-                    <!-- BARRA DE INTEGRACIÓN BLUETOOTH (ESP32 / TRU-TEST / BALANZAS) -->
-                    <div style="margin-top:12px; padding:10px; background:rgba(59,130,246,0.08); border-radius:8px; border:1px solid var(--borde); display:flex; flex-direction:column; gap:8px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
-                            <div style="display:flex; align-items:center; gap:6px;">
-                                <span style="font-size:16px;">📶</span>
-                                <span id="lbl-estado-bluetooth" style="font-size:12px; font-weight:bold; color:var(--muted);">Bluetooth: Desconectado</span>
-                            </div>
-                            <button class="btn-mini" id="btn-conectar-ble" style="background:var(--secundario); color:white; border:none; padding:6px 12px;" onclick="conectarBluetoothBLE()">Conectar Balanza / Bastón</button>
-                        </div>
-                        <span style="font-size:11px; color:var(--muted); line-height:1.3;">Compatible con <strong>ESP32 Taurus (Antena RFID + Balanza ESP-NOW)</strong>, bastones <strong>Tru-Test, Allflex y genéricos</strong> (vía Bluetooth BLE o Teclado HID en iOS/Android).</span>
+                        <button class="btn-mini" id="btn-toggle-rafaga" style="border-color:var(--borde); font-weight:bold; padding:4px 10px; font-size:11px;" onclick="toggleRafaga()">APAGADO</button>
                     </div>
 
-                    <div id="opciones-rafaga" class="oculto" style="margin-top:15px; padding-top:15px; border-top:1px solid var(--borde);">
-                        <div class="form-grupo" style="margin-bottom:15px;">
-                            <label style="font-size:11px;">Modalidad de Ráfaga:</label>
-                            <select id="rafaga-modalidad" class="form-control" onchange="verificarRafagaCustom()">
-                                <option value="rfid">📡 Modo Bastón RFID / Antena NFC</option>
-                                <option value="manual">⌨️ Modo Manual Rápido (Teclado)</option>
+                    <div id="opciones-rafaga" class="oculto" style="margin-top:10px; padding-top:8px; border-top:1px solid var(--borde);">
+                        <!-- Modalidad compacta -->
+                        <div style="display:flex; gap:6px; margin-bottom:6px; align-items:center;">
+                            <span style="font-size:10px; font-weight:bold; color:var(--muted); white-space:nowrap;">Modo:</span>
+                            <select id="rafaga-modalidad" class="form-control" style="padding:4px 8px; font-size:11px; height:30px; margin:0;" onchange="verificarRafagaCustom()">
+                                <option value="rfid">📡 Antena / Balanza Automática</option>
+                                <option value="manual">⌨️ Carga Rápida (Teclado)</option>
                             </select>
                         </div>
-                        <div id="caja-rafaga-manual" class="form-grupo oculto" style="display:flex; gap:10px; margin-bottom:15px; background: rgba(59, 130, 246, 0.1); padding: 10px; border-radius: 8px;">
-                            <input type="text" id="rm-caravana" class="form-control" placeholder="Nº RP" style="flex:1;" onkeyup="if(event.key === 'Enter') document.getElementById('rm-valor').focus()">
-                            <input type="text" id="rm-valor" class="form-control" placeholder="Valor Principal (Ej: 300)" style="flex:1;" onkeyup="if(event.key === 'Enter') ejecutarRafagaManual()">
-                            <button class="btn-mini" style="background:var(--secundario); color:white; border:none;" onclick="ejecutarRafagaManual()">▶</button>
+
+                        <!-- Caja Manual Rápida (RP obligatorio, Peso Kg exclusivo y opcional si solo tratamiento/tacto) -->
+                        <div id="caja-rafaga-manual" class="oculto" style="display:none; gap:6px; margin-bottom:6px;">
+                            <input type="text" id="rm-caravana" class="form-control" placeholder="Nº RP" style="flex:1; padding:4px 8px; font-size:12px; height:30px; margin:0;" onkeyup="if(event.key === 'Enter') { if(document.getElementById('rm-valor').value.trim() !== '') ejecutarRafagaManual(); else document.getElementById('rm-valor').focus(); }">
+                            <input type="number" step="0.5" id="rm-valor" class="form-control" placeholder="Peso Kg (Opcional)" style="flex:1; padding:4px 8px; font-size:12px; height:30px; margin:0;" onkeyup="if(event.key === 'Enter') ejecutarRafagaManual()">
+                            <button type="button" class="btn-mini" style="background:var(--secundario); color:white; border:none; padding:0 12px; font-weight:bold; font-size:11px;" onclick="ejecutarRafagaManual()">▶</button>
                         </div>
-                        <div class="form-grupo" style="margin-bottom:10px;">
-                            <label style="font-size:11px;">Acción combinada principal:</label>
-                            <select id="rafaga-accion" class="form-control" onchange="verificarRafagaCustom()">
-                                <option value="solo_peso">⚖️ Solo Registrar Principal (Peso / Tacto)</option>
-                                <option value="Vacuna Aftosa">💉 Vacuna Aftosa</option>
-                                <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
-                                <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario (Ivermectina)</option>
-                                <option value="Vitamina ADE">💉 Vitamina ADE / Reconstituyente</option>
-                                <option value="OTRO">✏ Personalizado (Escribir otro)...</option>
+
+                        <!-- Selector de Acción de Ráfaga -->
+                        <div style="display:flex; gap:6px; margin-bottom:6px;">
+                            <div style="flex:1; min-width:0;">
+                                <select id="rafaga-accion" class="form-control" style="padding:4px 8px; font-size:11px; height:30px; margin:0;" onchange="verificarRafagaCustom()">
+                                    <option value="solo_peso">⚖️ Solo Peso</option>
+                                    <option value="tacto">🩺 Tacto / Diagnóstico</option>
+                                    <option value="Vacuna Aftosa">💉 Vacuna Aftosa</option>
+                                    <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
+                                    <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario</option>
+                                    <option value="Vitamina ADE">💉 Vitamina ADE</option>
+                                    <option value="OTRO">✏️ Personalizado...</option>
+                                </select>
+                                <input type="text" id="rafaga-prod-custom" class="form-control oculto" placeholder="Escribir producto..." style="margin-top:4px; padding:4px 8px; font-size:11px; height:28px;">
+                            </div>
+                            <div id="caja-rafaga-detalles" class="oculto" style="flex:1; min-width:0; display:none;">
+                                <input type="text" id="rafaga-detalles" class="form-control" placeholder="Dosis / Nota" style="padding:4px 8px; font-size:11px; height:30px; margin:0;">
+                            </div>
+                        </div>
+
+                        <!-- Opciones dinámicas para Tacto / Diagnóstico -->
+                        <div id="caja-rafaga-dx" class="oculto" style="display:none; align-items:center; gap:6px; margin-bottom:6px;">
+                            <span style="font-size:10px; font-weight:bold; color:var(--exito); white-space:nowrap;">Diagnóstico:</span>
+                            <select id="rafaga-dx-resultado" class="form-control" style="padding:4px 8px; font-size:11px; height:30px; margin:0; border-color:var(--exito); font-weight:bold;">
+                                <option value="Preñada">✅ Preñada</option>
+                                <option value="Vacía">❌ Vacía</option>
+                                <option value="Vacía (Sangre)">🩸 Vacía (Sangre)</option>
                             </select>
-                            <input type="text" id="rafaga-prod-custom" class="form-control oculto" placeholder="Escriba el producto..." style="margin-top:8px;">
                         </div>
-                        <div id="caja-rafaga-detalles" class="form-grupo oculto" style="margin-bottom:0;">
-                            <label style="font-size:11px;">Dosis y Nota / Observación:</label>
-                            <input type="text" id="rafaga-detalles" class="form-control" placeholder="Ej: 5ml - Lote 12 | Subcutánea" style="margin-bottom:10px;">
-                            
-                            <label style="font-size:11px; color:var(--alerta); font-weight:bold;">⏳ Próxima Dosis a este lote:</label>
-                            <select id="rafaga-recordatorio" class="form-control" style="border-color: var(--alerta);">
-                                <option value="0">Sin recordatorio (Única dosis)</option>
-                                <option value="15">Avisar en 15 días</option>
-                                <option value="21">Avisar en 21 días</option>
-                                <option value="30">Avisar en 1 mes</option>
-                                <option value="90">Avisar en 3 meses</option>
-                                <option value="180">Avisar en 6 meses</option>
-                                <option value="365">Avisar en 1 año</option>
+
+                        <!-- Próxima dosis compacta para Sanidad -->
+                        <div id="caja-rafaga-recordatorio" class="oculto" style="display:none; align-items:center; gap:6px;">
+                            <span style="font-size:10px; font-weight:bold; color:var(--alerta); white-space:nowrap;">Próx:</span>
+                            <select id="rafaga-recordatorio" class="form-control" style="padding:2px 6px; font-size:10px; height:26px; margin:0; border-color:var(--alerta);">
+                                <option value="0">Sin recordatorio</option>
+                                <option value="15">En 15 días</option>
+                                <option value="21">En 21 días</option>
+                                <option value="30">En 1 mes</option>
+                                <option value="90">En 3 meses</option>
+                                <option value="180">En 6 meses</option>
+                                <option value="365">En 1 año</option>
                             </select>
                         </div>
                     </div>
@@ -798,6 +805,13 @@
                         </div>
                         <button class="btn-mini" id="btn-toggle-cora-vis" onclick="toggleCoraVisibilidad()">Desactivar</button>
                     </div>
+                </div>
+
+                <div class="tarjeta">
+                    <div class="tarjeta-titulo">📶 Dispositivos y Hardware Taurus</div>
+                    <p style="font-size:12px; color:var(--muted); margin:0; line-height:1.6;">
+                        Puedes vincular tu <strong>Antena RFID y Balanza Taurus</strong>, bastones y lectores inalámbricos directamente desde los <strong>Ajustes de Bluetooth</strong> de tu teléfono o tablet. Taurus se comunica de forma 100% automática en segundo plano: una vez vinculado en tu sistema, empieza a trabajar y los datos ingresarán solos sin pasos manuales ni avisos molestos.
+                    </p>
                 </div>
 
                 <div class="tarjeta">
@@ -1302,7 +1316,8 @@
                 
                 let selAccion = document.getElementById('rafaga-accion') ? document.getElementById('rafaga-accion').value : 'solo_peso';
                 let customProd = (document.getElementById('rafaga-prod-custom') && !document.getElementById('rafaga-prod-custom').classList.contains('oculto')) ? document.getElementById('rafaga-prod-custom').value.trim() : '';
-                let prodNombre = (selAccion === 'OTRO' ? customProd : (selAccion === 'solo_peso' ? 'Solo Pesaje' : selAccion)) || 'Tratamiento General';
+                let dxVal = (document.getElementById('rafaga-dx-resultado') ? document.getElementById('rafaga-dx-resultado').value : 'Preñada');
+                let prodNombre = (selAccion === 'tacto' ? ('Tacto (Dx: ' + dxVal + ')') : (selAccion === 'OTRO' ? customProd : (selAccion === 'solo_peso' ? 'Solo Pesaje' : selAccion))) || 'Tratamiento General';
                 sesionRafaga.accion = prodNombre;
                 sesionRafaga.detalles = document.getElementById('rafaga-detalles') ? document.getElementById('rafaga-detalles').value.trim() : '';
 
@@ -1344,37 +1359,89 @@
             }
         };
 
-        window.verificarRafagaCustom = function() {
-            const sel = document.getElementById('rafaga-accion').value;
+                        window.verificarRafagaCustom = function() {
+            const sel = document.getElementById('rafaga-accion') ? document.getElementById('rafaga-accion').value : 'solo_peso';
             const modalidad = document.getElementById('rafaga-modalidad') ? document.getElementById('rafaga-modalidad').value : 'rfid';
             const customInput = document.getElementById('rafaga-prod-custom');
             const detallesBox = document.getElementById('caja-rafaga-detalles');
+            const dxBox = document.getElementById('caja-rafaga-dx');
+            const recordatorioBox = document.getElementById('caja-rafaga-recordatorio');
             const cajaManual = document.getElementById('caja-rafaga-manual');
             
-            if(modalidad === 'manual') cajaManual.classList.remove('oculto'); else cajaManual.classList.add('oculto');
+            if(cajaManual) {
+                if(modalidad === 'manual') {
+                    cajaManual.style.display = 'flex';
+                    cajaManual.classList.remove('oculto');
+                    let inputRp = document.getElementById('rm-caravana');
+                    if(inputRp) setTimeout(() => inputRp.focus(), 100);
+                } else {
+                    cajaManual.style.display = 'none';
+                    cajaManual.classList.add('oculto');
+                }
+            }
             
-            if(sel === 'solo_peso') { customInput.classList.add('oculto'); detallesBox.classList.add('oculto'); }
-            else { detallesBox.classList.remove('oculto'); if(sel === 'OTRO') { customInput.classList.remove('oculto'); customInput.focus(); } else { customInput.classList.add('oculto'); } }
+            if(sel === 'solo_peso') {
+                if(customInput) customInput.classList.add('oculto');
+                if(detallesBox) { detallesBox.style.display = 'none'; detallesBox.classList.add('oculto'); }
+                if(dxBox) { dxBox.style.display = 'none'; dxBox.classList.add('oculto'); }
+                if(recordatorioBox) { recordatorioBox.style.display = 'none'; recordatorioBox.classList.add('oculto'); }
+            } else if(sel === 'tacto') {
+                if(customInput) customInput.classList.add('oculto');
+                if(detallesBox) { detallesBox.style.display = 'none'; detallesBox.classList.add('oculto'); }
+                if(dxBox) { dxBox.style.display = 'flex'; dxBox.classList.remove('oculto'); }
+                if(recordatorioBox) { recordatorioBox.style.display = 'none'; recordatorioBox.classList.add('oculto'); }
+            } else {
+                if(dxBox) { dxBox.style.display = 'none'; dxBox.classList.add('oculto'); }
+                if(detallesBox) { detallesBox.style.display = 'block'; detallesBox.classList.remove('oculto'); }
+                if(recordatorioBox) { recordatorioBox.style.display = 'flex'; recordatorioBox.classList.remove('oculto'); }
+                if(sel === 'OTRO') {
+                    if(customInput) { customInput.classList.remove('oculto'); customInput.focus(); }
+                } else {
+                    if(customInput) customInput.classList.add('oculto');
+                }
+            }
         };
 
-        window.ejecutarRafagaManual = function() {
-            let rp = document.getElementById('rm-caravana').value.trim().toUpperCase();
-            let val = document.getElementById('rm-valor').value.trim().toUpperCase();
-            if(!rp || !val) return;
+                window.ejecutarRafagaManual = function() {
+            let inputRp = document.getElementById('rm-caravana');
+            let inputVal = document.getElementById('rm-valor');
+            let rp = inputRp ? inputRp.value.trim().toUpperCase() : '';
+            let pesoVal = inputVal ? inputVal.value.trim().replace(',', '.') : '';
+            if(!rp) return;
             rpActivo = rp;
-            let sel = document.getElementById('rafaga-accion').value; let notas = document.getElementById('rafaga-detalles').value.trim(); let recordatorio = document.getElementById('rafaga-recordatorio').value; 
             
-            if(!isNaN(val) || val.includes('.')) { window.ejecutarAccion('Peso', val + " Kg", "Automático (Ráfaga Manual)", null); } 
-            else { window.ejecutarAccion('Sanidad', val, "Automático (Ráfaga Manual)", null); }
-            
-            if(sel !== 'solo_peso') {
-                let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
-                let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga Manual";
-                if (recordatorio !== "0") detCompleto += ` | [RECORDATORIO:${recordatorio}]`;
+            let sel = document.getElementById('rafaga-accion') ? document.getElementById('rafaga-accion').value : 'solo_peso';
+            let notas = document.getElementById('rafaga-detalles') ? document.getElementById('rafaga-detalles').value.trim() : '';
+            let recordatorio = document.getElementById('rafaga-recordatorio') ? document.getElementById('rafaga-recordatorio').value : '0';
+
+            // 1. Si se cargó peso en el campo exclusivo de peso
+            if(pesoVal && !isNaN(parseFloat(pesoVal))) {
+                let numKg = parseFloat(pesoVal).toFixed(1);
+                window.ejecutarAccion('Peso', numKg + " Kg", "Ráfaga Manual", null);
+            } else if(sel === 'solo_peso') {
+                window.mostrarToast("⚠️ Ingrese los Kg para este animal", true);
+                if(inputVal) inputVal.focus();
+                return;
+            }
+
+            // 2. Si la acción seleccionada es Tacto
+            if(sel === 'tacto') {
+                let dxSel = document.getElementById('rafaga-dx-resultado') ? document.getElementById('rafaga-dx-resultado').value : 'Preñada';
+                window.ejecutarAccion('Diagnóstico', "Dx: " + dxSel, "Ráfaga Manual", null);
+            }
+            // 3. Si la acción es Tratamiento / Vacuna
+            else if(sel !== 'solo_peso') {
+                let customInput = document.getElementById('rafaga-prod-custom');
+                let producto = sel === 'OTRO' ? ((customInput && customInput.value.trim()) || 'Tratamiento General') : sel;
+                let detCompleto = (notas ? notas + " | " : "") + "Ráfaga Manual";
+                if (recordatorio !== "0" && recordatorio !== "") detCompleto += ` | [RECORDATORIO:${recordatorio}]`;
                 window.ejecutarAccion('Sanidad', producto, detCompleto, null);
             }
-            window.mostrarToast("✅ Combo asignado al RP: " + rp);
-            document.getElementById('rm-caravana').value = ""; document.getElementById('rm-valor').value = ""; document.getElementById('rm-caravana').focus();
+
+            window.emitirBeepHardware('combo');
+            window.mostrarToast("✅ Cargado RP: " + rp);
+            if(inputRp) { inputRp.value = ""; inputRp.focus(); }
+            if(inputVal) inputVal.value = "";
         };
 
         window.setEstadoRed = function(online, texto = null) {
@@ -3269,7 +3336,7 @@
         };
 
         // =========================================================================
-        // PARSEADOR UNIVERSAL DE HARDWARE (ESP32 TAURUS, TRU-TEST, ALLFLEX, BALANZAS)
+        // PARSEADOR UNIVERSAL DE HARDWARE (ANTENA RFID + BALANZA TAURUS, TRU-TEST, ALLFLEX, BALANZAS)
         // =========================================================================
         window.procesarDatoHardware = function(rawInput) {
             if (!rawInput) return;
@@ -3280,7 +3347,7 @@
             let rpExtraido = null;
             let pesoExtraido = null;
 
-            // 1. Detección de JSON (ESP32 Taurus formato JSON)
+            // 1. Detección de JSON (formato JSON Taurus)
             if (s.startsWith('{') && s.endsWith('}')) {
                 try {
                     let d = JSON.parse(s);
@@ -3331,7 +3398,7 @@
                 let notas = document.getElementById('rafaga-detalles') ? document.getElementById('rafaga-detalles').value.trim() : '';
                 let recordatorio = document.getElementById('rafaga-recordatorio') ? document.getElementById('rafaga-recordatorio').value : '0';
 
-                window.ejecutarAccion('Peso', pStr, "Automático (ESP32 Antena + Balanza)", null);
+                window.ejecutarAccion('Peso', pStr, "Automático (Antena RFID + Balanza Taurus)", null);
                 if (sel !== 'solo_peso') {
                     let customInput = document.getElementById('rafaga-prod-custom');
                     let producto = sel === 'OTRO' ? ((customInput && customInput.value.trim()) || 'Tratamiento General') : sel;
@@ -3403,44 +3470,27 @@
         let bleRxCharacteristic = null;
         let bleBuffer = "";
 
-        window.conectarBluetoothBLE = async function() {
-            const btn = document.getElementById('btn-conectar-ble');
-            const lbl = document.getElementById('lbl-estado-bluetooth');
-
-            if (!navigator.bluetooth) {
-                alert("ℹ️ Tu navegador no soporta Web Bluetooth directamente.\n\nSi usas iOS (Safari) o Android, vincula tu balanza o bastón en 'Ajustes > Bluetooth' como Teclado HID. ¡Taurus Control lo leerá automáticamente en segundo plano!");
-                return;
-            }
+                window.conectarBluetoothBLE = async function() {
+            if (!navigator.bluetooth) return;
 
             if (bleDevice && bleDevice.gatt && bleDevice.gatt.connected) {
-                bleDevice.gatt.disconnect();
-                if (btn) btn.innerText = "Conectar Balanza / Bastón";
-                if (lbl) { lbl.innerText = "Bluetooth: Desconectado"; lbl.style.color = "var(--muted)"; }
+                try { bleDevice.gatt.disconnect(); } catch(e){}
                 return;
             }
 
             try {
-                if (btn) btn.innerText = "Buscando...";
                 bleDevice = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
                     optionalServices: [
-                        '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // Nordic UART (ESP32 estándar)
-                        '0000ffe0-0000-1000-8000-00805f9b34fb', // HM-10 / CC2541 común en balanzas
-                        '000018f0-0000-1000-8000-00805f9b34fb', // Tru-Test BLE
-                        '49535343-fe7d-4ae5-8fa9-9fafd205e455'  // Microchip IS1678
+                        '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
+                        '0000ffe0-0000-1000-8000-00805f9b34fb',
+                        '000018f0-0000-1000-8000-00805f9b34fb',
+                        '49535343-fe7d-4ae5-8fa9-9fafd205e455'
                     ]
                 });
 
-                bleDevice.addEventListener('gattserverdisconnected', () => {
-                    if (btn) btn.innerText = "Conectar Balanza / Bastón";
-                    if (lbl) { lbl.innerText = "Bluetooth: Desconectado"; lbl.style.color = "var(--muted)"; }
-                    window.mostrarToast("⚠️ Dispositivo Bluetooth desconectado.");
-                });
-
-                if (btn) btn.innerText = "Conectando...";
                 bleServer = await bleDevice.gatt.connect();
 
-                // Buscar servicio UART compatible
                 let services = await bleServer.getPrimaryServices();
                 let foundChar = null;
 
@@ -3464,27 +3514,18 @@
                         let dec = new TextDecoder('utf-8');
                         let chunk = dec.decode(event.target.value);
                         bleBuffer += chunk;
-                        if (bleBuffer.includes('\n') || bleBuffer.includes('\r')) {
-                            let lineas = bleBuffer.split(/[\r\n]+/);
-                            bleBuffer = lineas.pop(); // Mantener remanente
+                        if (bleBuffer.indexOf("\n") !== -1 || bleBuffer.indexOf("\n") !== -1) {
+                            let lineas = bleBuffer.split(new RegExp("[\r\n]+"));
+                            bleBuffer = lineas.pop();
                             lineas.forEach(l => {
                                 let limpia = l.trim();
-                                if (limpia.length > 0) window.procesarDatoHardware(limpia);
+                                if (limpia.length > 0) procesarDatoHardware(limpia);
                             });
                         }
                     });
-
-                    if (btn) btn.innerText = "Desconectar";
-                    if (lbl) { lbl.innerText = `🟢 Conectado: ${bleDevice.name || 'Balanza / Bastón'}`; lbl.style.color = "var(--exito)"; }
-                    window.mostrarToast(`🟢 Conectado con éxito a ${bleDevice.name || 'Dispositivo'}`);
-                } else {
-                    if (btn) btn.innerText = "Conectado (HID)";
-                    if (lbl) { lbl.innerText = `🟢 Conectado: ${bleDevice.name || 'Dispositivo'}`; lbl.style.color = "var(--exito)"; }
                 }
             } catch(error) {
-                console.warn('[Bluetooth BLE Error]:', error);
-                if (btn) btn.innerText = "Conectar Balanza / Bastón";
-                if (lbl) { lbl.innerText = "Bluetooth: Desconectado"; lbl.style.color = "var(--muted)"; }
+                console.warn('[BLE]:', error);
             }
         };
 
