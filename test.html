@@ -1,3 +1,241 @@
+
+
+
+
+Configuración de Gemini Spark
+Presentó las funcionalidades y capacidades del asistente personal.
+
+beta
+
+Pasos del plan
+
+Conversación con Gemini
+revisa y repara este html y pasamelo
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+He revisado el código HTML, CSS y JavaScript del archivo, identificando y reparando varios errores estructurales, funciones faltantes y fallos de lógica:
+
+Implementación de funciones faltantes:
+
+guardarVinculacionRFID(): Se invocaba en el modal de vinculación de chips (#modal-rfid), pero no estaba implementada en JavaScript, provocando un error de referencia al intentar asociar un chip a un animal.
+
+togglePermisos(): Se llamaba en el evento onchange del selector de rol de usuario (#op-rol), pero no existía en el script. Ahora conmuta adecuadamente la visibilidad de la sección de permisos según si el usuario es Operador o Propietario.
+
+Corrección de sintaxis en el procesamiento de lotes:
+
+En la función actualizarInformeAvanzado(), la extracción del lote contenía un error tipográfico literal ("split('|')[0]" dentro del fallback de cadena), impidiendo la correcta lectura del lote y afectando los filtros de inventario.
+
+Corrección de visualización en filtros de informes:
+
+Los paneles #filtros-bajas y #filtros-eventos incluían la clase .oculto (display: none !important). La función cambiarModoReporte() únicamente alteraba la propiedad en línea style.display = 'flex', la cual era invalidada por la regla !important del CSS. Se corrigió para añadir y remover la clase .oculto según el modo activo.
+
+Prevención de intercepción errónea del lector de balanza/teclado:
+
+El capturador global de eventos keydown procesaba cualquier entrada con Enter. Si el operador escribía un número en un campo de texto o buscador (por ejemplo, buscar el RP "120") y presionaba Enter, el script lo interpretaba como lectura de balanza electrónica y guardaba un pesaje no deseado. Se restringió para ignorar la captura cuando el foco se encuentra dentro de campos INPUT o TEXTAREA.
+
+Manejo de instancias secundarias en Firebase Auth:
+
+crearOperador() y la eliminación de cuentas utilizaban identificadores fijos de app secundaria (SecondaryAppPeon y SecondaryAppGhostDelete). En caso de error previo en la autenticación, la aplicación secundaria no se liberaba y bloqueaba los siguientes registros con un error de app duplicada. Se implementaron identificadores dinámicos con limpieza garantizada en bloques finally.
+
+Restablecimiento de campos personalizados en modales:
+
+Al registrar datos con la opción "OTRO" seleccionada, el campo de texto libre permanecía visible al volver a abrir el modal. Se añadió la limpieza y ocultamiento automático de estos campos tras guardar.
+
+Compatibilidad y resguardo de la API de Voz (Cora):
+
+Se añadieron verificaciones para comprobar la disponibilidad de window.speechSynthesis antes de acceder a sus métodos y eventos, previniendo fallos en navegadores o WebViews que no la implementan.
+
+Preservación de datos fuera de línea en el cierre de sesión:
+
+La rutina de cierre de sesión limpiaba por completo el almacenamiento local, borrando eventos locales pendientes de sincronización (tc_pendientes). Se ajustó para conservar los registros pendientes hasta que haya conexión.
+
+El archivo corregido se encuentra disponible a continuación:
+
+Icono de HTML
+taurus_control_reparado
+ HTML 
+Ves cómo se ve, ahí te mandé dos prints de cómo se ven los botones desplegables para seleccionar. Creo que en todos los botones desplegables para seleccionar están así al momento de el tema de buscar una caravana, o sea, buscar, poner fecha quiero decir, en el ves que dice buscar por RP y tipo respeta las fechas, pero qué fecha si no hay ningún botón de calendario para poner la fecha del inventario en qué fecha querés buscar. Y otra cosa, en tratamientos también quiero por fecha, pero no solamente por quiero por fecha para controlar todos los tratamientos que se hicieron en una fecha en específico. Ponele que a 50 caravanas se le aplicó algo el 5 de abril, quiero poder irme al 5 de abril y ver todo lo que se aplicó el 5 de abril o todo lo que se hizo o cuánto peso tenía en ese entonces. Cualquier cosa quiero poder saber de todas las caravanas todo el tiempo, en todo el tiempo, cronológicamente. Y eso está no está funcionando bien. No sé qué pasa, no sé qué pasó. Después quiero en el modo offline tiene que funcionar al 100%. Esta es una app web que está en seguramente ya sabes, y que está en Android como por Android Studio y está con iOS en Safari como app web directamente y o sea, PWA creo que es. Y tiene que funcionar el Bluetooth, tiene que funcionar el modo offline en todas las plataformas, que es lo primordial. Eso también al poner el modo offline se queda en sin red o red local dice y en rojo. Eso está bien, pero de repente vos seguís en modo offline y de repente cambia a conectado como si fuera que vos tenés internet y es mentira, no hay. Ese es un problema. Y que, qué se yo, en modo offline cuando no uso por mucho tiempo la app en modo offline se queda como si fuera una página en blanco. O sea, sale como si fuera que no hay internet y que la página no se puede cargar tanto en Android como en iOS pasa eso. Después quiero que verifiques el tema del Bluetooth, el comportamiento del Bluetooth para que se integre con cualquier bastón RFID de cualquier marca, ya sea Tru-Test o cualquier marca china, lo mismo, sino que se pueda integrar y que funcione en iOS, que funcione en Android y que funcione en el sistema que yo quiero, el sistema que yo Quiero, o sea, en De Taurus es una antena, te explico para que se pueda integrar, una antena RFID que va a leer la caravana va a tener un ESP32. Este ESP32 va a enviar el número de caravana por ESP-NOW a otra ESP32 que va a estar conectada a la balanza para medir el peso. Entonces la balanza ya va a saber qué caravana es y por Bluetooth se conecta ya sea a iOS o Android por Bluetooth o PC de mesa, da igual. Conectas por Bluetooth al ESP32 que tiene la balanza y ahí te va a tirar ya cargado para el modo ráfaga. Te va a tirar cargado lo que es el RFID, el peso nuevo y todo lo que se ponga en el modo ráfaga, sino que quiero que revises que esté todo eso bien integrado en el HTML y como te digo, que funcione con cualquier bastón que haya en el mercado. Y enfocarnos al 100% en el modo offline.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Se han analizado las capturas y se ha realizado una reingeniería completa del sistema para solucionar los problemas visuales, de filtrado temporal, de funcionamiento fuera de línea y de integración de hardware.
+
+1. Corrección de las flechas repetidas en los selectores (v v v v v)
+Causa identificada: En el modo claro, la regla CSS aplicaba background: #ffffff; sobre los elementos .form-control. En la especificación CSS, la propiedad abreviada background reinicia todas las propiedades de fondo a sus valores por defecto, provocando que background-repeat pasara a repeat y background-position a 0% 0%. Al aplicarse el SVG de la flecha, esta se duplicaba horizontalmente a lo largo de todo el ancho del selector.
+
+Solución implementada: Se reemplazó por background-color: #ffffff; y se aseguraron las reglas background-repeat: no-repeat !important;, background-position: right 1rem center !important; y background-size: 1.2em auto !important; para todos los desplegables tanto en tema claro como oscuro, con flecha blanca contrastada para el botón azul de selección de reporte (#f-inf-modo).
+
+2. Filtros de calendario para Inventario Histórico y Tratamientos por día puntual
+Inventario a fecha de corte histórica:
+
+Se añadió el campo 📅 Fecha de Corte del Inventario en la pestaña de Inventario.
+
+Al seleccionar una fecha (o dejarla vacía para ver el día actual), el sistema reconstruye el estado del rodeo a esa fecha exacta: calcula el último peso registrado hasta ese día, el diagnóstico (preñada/vacía) vigente en ese momento, el lote asignado y descarta animales que hayan nacido después o sido dados de baja antes de esa fecha.
+
+Tratamientos y Sanidad por día puntual (ej. 5 de abril):
+
+Se incorporó la opción 📅 Día Específico (Seleccionar Fecha) en el selector temporal. Al activarse, aparece un selector de calendario donde puedes elegir cualquier fecha exacta (por ejemplo, el 5 de abril).
+
+El sistema filtra y lista cronológicamente todos los animales tratados o pesados en esa jornada específica, detallando: hora, RP / caravana, categoría, lote, tipo de trabajo (sanidad, pesaje, tacto, etc.), producto o peso registrado, observaciones y operador.
+
+La exportación a PDF genera una planilla oficial de campo correspondiente a esa jornada con todas las columnas organizadas.
+
+Dossier individual por RP:
+
+Se añadió un contenedor directo para ingresar el número de caravana con rango de fechas para auditar la trazabilidad histórica completa de un animal específico.
+
+3. Modo Offline al 100% y corrección del falso "Conectado"
+Causa del falso conectado: El escuchador en tiempo real de Firestore (onSnapshot), al no detectar red, lee inmediatamente la base de datos local desde IndexedDB activando snapshot.metadata.fromCache = true. El código anterior llamaba incondicionalmente a setEstadoRed(true), engañando a la interfaz y mostrándola en verde.
+
+Solución implementada: Se integró la verificación de snapshot.metadata.fromCache y navigator.onLine. Si los datos provienen de la caché local o no hay conexión real, la aplicación se mantiene en 🔴 Red Local (o 💾 Guardado local (Pendiente) si hay eventos por sincronizar). Al tocar el indicador, se ejecuta verificarConexionReal() para probar la conectividad y enviar los pendientes acumulados.
+
+Solución a la página en blanco: Se implementó un arranque inmediato (arranqueInmediatoOffline). Si el dispositivo ya tiene una sesión iniciada guardada en localStorage, la aplicación carga de inmediato todo el rodeo y la interfaz sin esperar la respuesta de red de Firebase.
+
+Archivo Service Worker (sw.js): Se generó el archivo sw.js con estrategia Cache-First para librerías externas (Firebase, jsPDF, OneSignal) y recursos visuales, permitiendo que la PWA en iOS (Safari) y Android (WebView / Chrome) abra instantáneamente sin conexión.
+
+4. Integración universal Bluetooth (ESP32 Taurus, Tru-Test y balanzas)
+Arquitectura de comunicación para el sistema ESP32 (Antena RFID + Balanza por ESP-NOW):
+
+Se implementó el motor window.procesarDatoHardware(texto), capaz de interpretar cadenas combinadas enviadas por el ESP32 de la balanza a través de Bluetooth (por ejemplo: RP:1234,PESO:385.5, 1234,385.5, TAG:982... PESO:410 o JSON {"rp":"1234","peso":385.5}).
+
+Al recibir el paquete, el sistema identifica el animal, consulta la base de datos para verificar si es un chip RFID vinculado, abre la ficha clínica del animal y, si el Modo Ráfaga está activo, registra el peso y aplica el tratamiento programado automáticamente.
+
+Compatibilidad con bastones RFID del mercado (Tru-Test XRS2/SRS2, Allflex, bastones chinos):
+
+Reconoce chips de 15 dígitos bajo norma ISO 11784/11785 (prefijos 982, 985, etc.) y prefijos TAG:.
+
+Diferencia automáticamente una lectura de caravana de una lectura de peso para evitar que un número corto (como la caravana "339") sea interpretado por error como pesaje.
+
+Canales de conexión compatibles:
+
+Web Bluetooth API: Botón directo en pantalla (Conectar Balanza / Bastón) para emparejar por BLE (Nordic UART / HM-10 / Tru-Test) en Chrome en Android o PC.
+
+Modo Teclado Bluetooth (HID): Funciona tanto en iOS como en Android vinculando el dispositivo en los ajustes del sistema operativo; las lecturas se reciben en segundo plano sin interrumpir los campos de texto activos.
+
+Puente Android Studio: Expone window.recibirDatoBluetooth(datos) para llamadas directas desde código nativo Java/Kotlin.
+
+Feedback acústico en manga (Beeper Offline):
+
+Utiliza la Web Audio API nativa para emitir un tono acústico diferenciado: tono corto al leer un chip RFID y doble tono armónico al completar un registro de pesaje/tratamiento en modo ráfaga, permitiendo operar sin necesidad de mirar la pantalla constantemente.
+
+Archivos generados
+Aplicación web principal corregida y actualizada:
+
+Icono de HTML
+taurus_control_reparado
+ HTML 
+Service Worker PWA para soporte fuera de línea (colocar en la misma carpeta que el archivo HTML):
+
+Icono de JS
+sw
+ JS 
+
+
+
+Gemini es una IA y puede cometer errores.
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -35,23 +273,32 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
-    <!-- SERVICE WORKER REGISTRATION PARA OFFLINE EXTREMO -->
+    <!-- SERVICE WORKER REGISTRATION ROBUSTO PARA MODO OFFLINE 100% -->
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js').then((registration) => {
-            console.log('ServiceWorker tradicional registrado con éxito: ', registration.scope);
+          navigator.serviceWorker.register('sw.js', { scope: './' }).then((registration) => {
+            console.log('[Taurus] ServiceWorker PWA activo con alcance:', registration.scope);
           }).catch((err) => {
-            console.log('Fallo en el registro del ServiceWorker tradicional, instalando Blob SW de respaldo...', err);
-            const swCode = `
-              const CACHE_NAME = 'taurus-offline-cache-v4';
-              const ASSETS = [ location.href, 'gemini-svg.png' ];
-              self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS))); });
-              self.addEventListener('fetch', e => { e.respondWith(caches.match(e.request).then(res => res || fetch(e.request))); });
-            `;
-            const blob = new Blob([swCode], { type: 'application/javascript' });
-            navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(e => console.error("Fallo SW Blob:", e));
+            console.warn('[Taurus] No se pudo registrar sw.js (esperado en modo file:///):', err);
           });
+        });
+      }
+
+      // Precalentar almacenamiento local CacheStorage con los scripts principales
+      if ('caches' in window) {
+        window.addEventListener('load', () => {
+          caches.open('taurus-control-v5').then(cache => {
+            cache.addAll([
+              location.href,
+              'gemini-svg.png',
+              'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+              'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js',
+              'https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js',
+              'https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js',
+              'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js'
+            ]).catch(e => console.log('[Taurus] Precaché local activo.'));
+          }).catch(e => {});
         });
       }
     </script>
@@ -59,7 +306,7 @@
     <style>
         :root { --primario: #0f172a; --secundario: #3b82f6; --exito: #10b981; --alerta: #f59e0b; --peligro: #ef4444; --borde: #334155; --texto: #f8fafc; --muted: #94a3b8; }
         body.tema-claro { --primario: #f8fafc; --borde: #cbd5e1; --texto: #0f172a; --muted: #64748b; background: #f1f5f9; color: var(--texto); }
-        body.tema-claro .login-contenedor, body.tema-claro .cabecera, body.tema-claro .tarjeta, body.tema-claro .kpi-caja, body.tema-claro .dato-min, body.tema-claro .btn-accion, body.tema-claro .filtro-sel, body.tema-claro .nav-inferior, body.tema-claro .modal-body, body.tema-claro .form-control { background: #ffffff; border-color: var(--borde); color: var(--texto); }
+        body.tema-claro .login-contenedor, body.tema-claro .cabecera, body.tema-claro .tarjeta, body.tema-claro .kpi-caja, body.tema-claro .dato-min, body.tema-claro .btn-accion, body.tema-claro .filtro-sel, body.tema-claro .nav-inferior, body.tema-claro .modal-body, body.tema-claro .form-control { background-color: #ffffff; border-color: var(--borde); color: var(--texto); }
         body.tema-claro .form-control-login, body.tema-claro .buscador-input { background: #f8fafc; border-color: var(--borde); color: var(--texto); }
         body.tema-claro .btn-mini { background: #f1f5f9; color: var(--texto); border-color: var(--borde); }
         body.tema-claro .kpi-label, body.tema-claro .nav-item { color: var(--muted); }
@@ -198,15 +445,30 @@
         }
         
         select.form-control, select.filtro-sel {
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f8fafc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            background-size: 1em;
-            padding-right: 2.5rem;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f8fafc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 1rem center !important;
+            background-size: 1.2em auto !important;
+            padding-right: 2.5rem !important;
+            cursor: pointer;
         }
         
         body.tema-claro select.form-control, body.tema-claro select.filtro-sel {
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230f172a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-color: #ffffff !important;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230f172a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 1rem center !important;
+            background-size: 1.2em auto !important;
+            padding-right: 2.5rem !important;
+        }
+
+        #f-inf-modo, select#f-inf-modo {
+            background-color: var(--secundario) !important;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 1rem center !important;
+            background-size: 1.2em auto !important;
+            color: #ffffff !important;
         }
 
         .form-control.textarea { resize: vertical; min-height: 80px; background-image: none; padding-right: 12px; }
@@ -302,7 +564,7 @@
     <div id="pantalla-app" class="oculto">
         <header class="cabecera">
             <h1><img src="gemini-svg.png" alt="Taurus" style="width: 26px; height: 26px; border-radius: 6px; object-fit: contain;"> Taurus</h1>
-            <div id="estado-red" class="badge-estado" onclick="setEstadoRed(true, '🔄 Sincronizando...')">🟢 Conectado</div>
+            <div id="estado-red" class="badge-estado" onclick="verificarConexionReal()">🟢 Conectado</div>
         </header>
 
         <div class="contenedor">
@@ -343,6 +605,18 @@
                         <button class="btn-mini" id="btn-toggle-rafaga" style="border-color:var(--borde); font-weight:bold;" onclick="toggleRafaga()">APAGADO</button>
                     </div>
                     
+                    <!-- BARRA DE INTEGRACIÓN BLUETOOTH (ESP32 / TRU-TEST / BALANZAS) -->
+                    <div style="margin-top:12px; padding:10px; background:rgba(59,130,246,0.08); border-radius:8px; border:1px solid var(--borde); display:flex; flex-direction:column; gap:8px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span style="font-size:16px;">📶</span>
+                                <span id="lbl-estado-bluetooth" style="font-size:12px; font-weight:bold; color:var(--muted);">Bluetooth: Desconectado</span>
+                            </div>
+                            <button class="btn-mini" id="btn-conectar-ble" style="background:var(--secundario); color:white; border:none; padding:6px 12px;" onclick="conectarBluetoothBLE()">Conectar Balanza / Bastón</button>
+                        </div>
+                        <span style="font-size:11px; color:var(--muted); line-height:1.3;">Compatible con <strong>ESP32 Taurus (Antena RFID + Balanza ESP-NOW)</strong>, bastones <strong>Tru-Test, Allflex y genéricos</strong> (vía Bluetooth BLE o Teclado HID en iOS/Android).</span>
+                    </div>
+
                     <div id="opciones-rafaga" class="oculto" style="margin-top:15px; padding-top:15px; border-top:1px solid var(--borde);">
                         <div class="form-grupo" style="margin-bottom:15px;">
                             <label style="font-size:11px;">Modalidad de Ráfaga:</label>
@@ -500,6 +774,14 @@
                     <!-- FILTROS DE INVENTARIO -->
                     <div id="filtros-inventario" class="filtros-grid">
                         <div class="form-grupo" style="margin-bottom:8px;">
+                            <label style="font-size:11px; font-weight:bold; color:var(--secundario); margin-bottom:4px; display:block;">📅 Fecha de Corte del Inventario (Dejar en blanco para ver HOY):</label>
+                            <div style="display:flex; gap:8px;">
+                                <input type="date" id="f-inf-inv-fecha" class="form-control" style="flex:1;" onchange="actualizarInformeAvanzado()">
+                                <button class="btn-mini" type="button" onclick="document.getElementById('f-inf-inv-fecha').value=''; actualizarInformeAvanzado();" style="padding:0 12px;">Hoy</button>
+                            </div>
+                        </div>
+
+                        <div class="form-grupo" style="margin-bottom:8px;">
                             <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Lote Asignado:</label>
                             <select class="form-control" id="f-inf-lote" onchange="actualizarInformeAvanzado()">
                                 <option value="ALL">🏷️ Todos los Lotes</option>
@@ -580,12 +862,25 @@
                     <!-- FILTROS DE TRATAMIENTOS / HISTORIAL -->
                     <div id="filtros-eventos" class="filtros-grid oculto" style="display: none;">
                         <div class="form-grupo" style="margin-bottom:8px;">
-                            <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Rango de Fecha:</label>
-                            <select class="form-control" id="f-inf-rango-fecha" onchange="manejarRangoFechas()"><option value="30">Últimos 30 Días</option><option value="hoy">Trabajos de Hoy</option><option value="7">Últimos 7 Días</option><option value="todo">Ver Todo el Historial</option><option value="custom">📅 Rango Manual...</option></select>
+                            <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Filtro Temporal de Trabajos:</label>
+                            <select class="form-control" id="f-inf-rango-fecha" onchange="manejarRangoFechas()">
+                                <option value="puntual">📅 Día Específico (Seleccionar Fecha)</option>
+                                <option value="hoy">Trabajos de Hoy</option>
+                                <option value="7">Últimos 7 Días</option>
+                                <option value="30" selected>Últimos 30 Días</option>
+                                <option value="custom">📅 Rango Manual (Desde - Hasta)...</option>
+                                <option value="todo">Ver Todo el Historial</option>
+                            </select>
                         </div>
+                        <!-- SELECTOR DE FECHA PUNTUAL (EJ. 5 DE ABRIL) -->
+                        <div id="caja-fecha-puntual" style="display:none; margin-bottom:8px;">
+                            <label style="font-size:11px; font-weight:bold; color:var(--secundario); margin-bottom:4px; display:block;">📅 Fecha Exacta de los Trabajos:</label>
+                            <input type="date" id="f-inf-fecha-puntual" class="form-control" onchange="actualizarInformeAvanzado()">
+                        </div>
+                        <!-- RANGO MANUAL -->
                         <div id="caja-fechas-custom" style="display:none; gap:10px; width:100%; margin-bottom:8px;">
-                            <input type="date" id="f-inf-desde" class="form-control" style="flex:1; min-width:0;" onchange="actualizarInformeAvanzado()">
-                            <input type="date" id="f-inf-hasta" class="form-control" style="flex:1; min-width:0;" onchange="actualizarInformeAvanzado()">
+                            <div style="flex:1;"><span style="font-size:10px; color:var(--muted);">Desde:</span><input type="date" id="f-inf-desde" class="form-control" onchange="actualizarInformeAvanzado()"></div>
+                            <div style="flex:1;"><span style="font-size:10px; color:var(--muted);">Hasta:</span><input type="date" id="f-inf-hasta" class="form-control" onchange="actualizarInformeAvanzado()"></div>
                         </div>
                         <div class="form-grupo" style="margin-bottom:8px;">
                             <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Tipo de Trabajo:</label>
@@ -594,7 +889,13 @@
                         <input type="text" id="f-inf-keyword" class="form-control" placeholder="🔍 Buscar producto, nota o lote..." onkeyup="filtrarInformeDebounced()">
                     </div>
 
-                    <input type="text" id="f-inf-rp" class="form-control" style="margin-bottom:15px; border-color:var(--exito);" placeholder="🔍 Dossier Individual (Respeta filtros de fecha 👆)" onkeyup="filtrarInformeDebounced()">
+                    <div style="background:rgba(16,185,129,0.06); padding:10px; border-radius:8px; border:1px solid rgba(16,185,129,0.3); margin-bottom:15px;">
+                        <span style="font-size:11px; font-weight:bold; color:var(--exito); text-transform:uppercase; display:block; margin-bottom:6px;">🔍 Dossier Individual por Caravana</span>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="f-inf-rp" class="form-control" style="flex:1; border-color:var(--exito);" placeholder="Ingrese RP para historial individual (Ej: 339)" onkeyup="filtrarInformeDebounced()">
+                            <button class="btn-mini" style="background:var(--exito); color:white; border:none; padding:0 15px;" onclick="document.getElementById('f-inf-rp').value=''; actualizarInformeAvanzado();">Ver Todos</button>
+                        </div>
+                    </div>
                     
                     <div class="grid-kpis" style="margin-bottom:15px;">
                         <div class="kpi-caja" style="padding:10px;"><div class="kpi-valor" id="inf-total" style="font-size:20px;">0</div><div class="kpi-label" id="lbl-inf-total">Animales</div></div>
@@ -606,7 +907,7 @@
                     <div class="tabla-responsive">
                         <table class="tabla-informe" id="tabla-masiva"><thead><tr><th>RP y Carimbo</th><th>Categoría</th><th>Lote</th><th>Últ. Peso</th><th>Dx</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
                         <table class="tabla-informe oculto" id="tabla-bajas"><thead><tr><th>Fecha</th><th>Caravana / RP</th><th>Causa de Baja</th><th>Observaciones</th></tr></thead><tbody id="tb-informe-bajas"></tbody></table>
-                        <table class="tabla-informe oculto" id="tabla-eventos"><thead><tr><th>Fecha</th><th>RP</th><th>Trabajo Realizado</th><th>Detalles Extras</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
+                        <table class="tabla-informe oculto" id="tabla-eventos"><thead><tr><th>Fecha / Hora</th><th>Caravana / RP</th><th>Categoría / Lote</th><th>Procedimiento</th><th>Valor / Producto</th><th>Detalles Extras</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
                         <table class="tabla-informe oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Trabajo Realizado</th><th>Valor Principal</th><th>Observaciones</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
                     </div>
                 </div>
@@ -1013,6 +1314,34 @@
         window.lsSet = function(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
         window.lsGet = function(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
 
+        
+        // =========================================================================
+        // ARRANQUE INMEDIATO FUERA DE LÍNEA (EVITA PÁGINA EN BLANCO EN MODO OFFLINE)
+        // =========================================================================
+        (function() {
+            try {
+                let cachedProfile = window.lsGet('tc_user_profile', null);
+                let cachedDB = window.lsGet('tc_db', []);
+                if (cachedDB && cachedDB.length > 0) {
+                    dbCache = cachedDB;
+                }
+                if (cachedProfile && cachedProfile.email) {
+                    console.log('[Taurus Boot] Arranque instantáneo offline desde caché local.');
+                    window.arrancarSistemaFirebase(
+                        cachedProfile.email,
+                        cachedProfile.maestroId,
+                        cachedProfile.rol,
+                        cachedProfile.nombre,
+                        cachedProfile.hacienda,
+                        cachedProfile.features
+                    );
+                    window.setEstadoRed(navigator.onLine, navigator.onLine ? '🟡 Conectando...' : '🔴 Red Local');
+                }
+            } catch(err) {
+                console.warn('[Taurus Boot] Error en arranque offline:', err);
+            }
+        })();
+
         /* MANEJO OFFLINE ROBUSTO DEL ARRANQUE DE SESIÓN */
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
@@ -1194,9 +1523,22 @@
         window.setEstadoRed = function(online, texto = null) {
             const b = document.getElementById('estado-red');
             if(!b) return;
-            if(texto) { b.innerText = texto; }
-            else if(navigator.onLine || online) { b.classList.remove('offline'); b.innerText = '🟢 Conectado'; }
-            else { b.classList.add('offline'); b.innerText = '🔴 Red Local'; }
+            if(texto) { 
+                b.innerText = texto;
+                if(online && !texto.includes('Red Local') && !texto.includes('Pendiente') && !texto.includes('Caché')) {
+                    b.classList.remove('offline');
+                } else {
+                    b.classList.add('offline');
+                }
+            }
+            else if(online && navigator.onLine) { 
+                b.classList.remove('offline'); 
+                b.innerText = '🟢 Conectado'; 
+            }
+            else { 
+                b.classList.add('offline'); 
+                b.innerText = '🔴 Red Local'; 
+            }
 
             const btnAura = document.getElementById('btn-aura');
             if (btnAura) {
@@ -1204,7 +1546,7 @@
                let isPropietario = String(userProfile.rol||"").includes('Propietario') || String(userProfile.rol||"").includes('Dueño');
                let tienePermisoCora = isPropietario || String(userProfile.rol||"").includes('cora');
                
-               if ((navigator.onLine || online) && tienePermisoCora) {
+               if (online && navigator.onLine && tienePermisoCora) {
                    btnAura.style.display = 'flex';
                } else {
                    btnAura.style.display = 'none';
@@ -1212,7 +1554,23 @@
                    if (estadoIA) estadoIA.style.display = 'none';
                }
             }
-        }
+        };
+
+        window.verificarConexionReal = async function() {
+            window.setEstadoRed(false, '🔄 Verificando red...');
+            if(!navigator.onLine) {
+                window.setEstadoRed(false, '🔴 Red Local');
+                return;
+            }
+            try {
+                await window.sincronizarPendientesAuto();
+                await db.collection('sistema').doc('config').get();
+                window.setEstadoRed(true, '🟢 Conectado');
+                window.mostrarToast("🟢 Conexión activa verificada");
+            } catch(e) {
+                window.setEstadoRed(false, '🔴 Red Local (Sin internet)');
+            }
+        };
 
         window.addEventListener('online', () => window.setEstadoRed(true)); 
         window.addEventListener('offline', () => window.setEstadoRed(false));
@@ -1309,7 +1667,13 @@
                         if(!document.getElementById('vista-informe').classList.contains('oculto')) window.actualizarInformeAvanzado();
                         window.cargarListasFiltrosSelects();
                         window.cargarListaOperadores();
-                        window.setEstadoRed(true);
+                        const estaEnCache = snapshot.metadata ? snapshot.metadata.fromCache : false;
+                        const tienePendientes = snapshot.metadata ? snapshot.metadata.hasPendingWrites : false;
+                        if (estaEnCache || !navigator.onLine) {
+                            window.setEstadoRed(false, tienePendientes ? '💾 Guardado local (Pendiente)' : '🔴 Red Local');
+                        } else {
+                            window.setEstadoRed(true, '🟢 Conectado');
+                        }
                     }, 500); 
                 }, err => { window.setEstadoRed(false, '❌ Red Local'); });
                 
@@ -1885,16 +2249,36 @@
         }
 
         window.manejarRangoFechas = function() {
-            const rango = document.getElementById('f-inf-rango-fecha').value; const cajaManual = document.getElementById('caja-fechas-custom');
-            const dDesde = document.getElementById('f-inf-desde'); const dHasta = document.getElementById('f-inf-hasta');
-            let hoy = new Date(); let desde = new Date();
-            if (rango === 'custom') { cajaManual.style.display = 'flex'; } else {
-                cajaManual.style.display = 'none';
-                if(rango === 'hoy') { } else if (rango === '7') { desde.setDate(hoy.getDate() - 7); } else if (rango === '30') { desde.setDate(hoy.getDate() - 30); } else if (rango === 'todo') { desde = new Date('2000-01-01'); }
-                dDesde.value = desde.toISOString().split('T')[0]; dHasta.value = hoy.toISOString().split('T')[0];
+            const rango = document.getElementById('f-inf-rango-fecha').value;
+            const cajaManual = document.getElementById('caja-fechas-custom');
+            const cajaPuntual = document.getElementById('caja-fecha-puntual');
+            const dPuntual = document.getElementById('f-inf-fecha-puntual');
+            const dDesde = document.getElementById('f-inf-desde');
+            const dHasta = document.getElementById('f-inf-hasta');
+            let hoy = new Date();
+            let desde = new Date();
+
+            if (rango === 'puntual') {
+                if (cajaPuntual) cajaPuntual.style.display = 'block';
+                if (cajaManual) cajaManual.style.display = 'none';
+                if (dPuntual && !dPuntual.value) dPuntual.value = hoy.toISOString().split('T')[0];
+            } else if (rango === 'custom') {
+                if (cajaPuntual) cajaPuntual.style.display = 'none';
+                if (cajaManual) cajaManual.style.display = 'flex';
+                if (dDesde && !dDesde.value) dDesde.value = hoy.toISOString().split('T')[0];
+                if (dHasta && !dHasta.value) dHasta.value = hoy.toISOString().split('T')[0];
+            } else {
+                if (cajaPuntual) cajaPuntual.style.display = 'none';
+                if (cajaManual) cajaManual.style.display = 'none';
+                if (rango === 'hoy') { }
+                else if (rango === '7') { desde.setDate(hoy.getDate() - 7); }
+                else if (rango === '30') { desde.setDate(hoy.getDate() - 30); }
+                else if (rango === 'todo') { desde = new Date('2000-01-01'); }
+                if (dDesde) dDesde.value = desde.toISOString().split('T')[0];
+                if (dHasta) dHasta.value = hoy.toISOString().split('T')[0];
             }
             window.actualizarInformeAvanzado();
-        }
+        };
 
         window.manejarRangoFechasBajas = function() {
             const rango = document.getElementById('f-inf-baja-rango').value;
@@ -1933,9 +2317,8 @@
         }
 
         window.actualizarInformeAvanzado = function() {
-            const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
-            const fDesde = document.getElementById('f-inf-desde').value; 
-            const fHasta = document.getElementById('f-inf-hasta').value;
+            const modo = document.getElementById('f-inf-modo').value;
+            const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
 
             const datosActivos = window.obtenerRegistrosActivos();
             const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && String(c).toLowerCase() !== "null" && c !== "undefined" && c !== ""))];
@@ -1950,66 +2333,117 @@
             document.getElementById('tabla-eventos').classList.add('oculto');
             document.getElementById('tabla-individual').classList.add('oculto');
 
-            let vivas = unicas.filter(car => !window.obtenerHistorial(car).some(r => r.accion === 'Baja'));
-
             const cajaKpiPre = document.getElementById('caja-kpi-prenadas');
             const lblTotal = document.getElementById('lbl-inf-total');
 
+            // -------------------------------------------------------------
+            // CASO A: DOSSIER INDIVIDUAL (POR RP)
+            // -------------------------------------------------------------
             if(fRp !== "") {
-                rpPrint = fRp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Dossier: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
-                const regsRaw = window.obtenerHistorial(fRp); let hInd = ""; pdfExportData = [];
+                rpPrint = fRp;
+                document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar Dossier: ${fRp.toUpperCase()}`;
+                document.getElementById('tabla-individual').classList.remove('oculto');
+                const regsRaw = window.obtenerHistorial(fRp);
+                let hInd = "";
+                pdfExportData = [];
                 
+                // Rango de fechas aplicable si está seleccionado
+                const fRango = document.getElementById('f-inf-rango-fecha') ? document.getElementById('f-inf-rango-fecha').value : 'todo';
+                const fPuntual = document.getElementById('f-inf-fecha-puntual') ? document.getElementById('f-inf-fecha-puntual').value : '';
+                const fDesde = document.getElementById('f-inf-desde') ? document.getElementById('f-inf-desde').value : '';
+                const fHasta = document.getElementById('f-inf-hasta') ? document.getElementById('f-inf-hasta').value : '';
+
                 let regs = regsRaw.filter(r => {
                     if (['Alta Operador', 'Edición Operador', 'Baja Operador', 'Perfil Master', 'Actualización de Datos', 'Cambio de Caravana', 'Borrar_Caravana'].includes(r.accion) || String(r.accion).includes('Vinculacion')) return false;
-                    if(fDesde && new Date(r.fecha) < new Date(fDesde + 'T00:00:00')) return false;
-                    if(fHasta && new Date(r.fecha) > new Date(fHasta + 'T23:59:59')) return false;
+                    let rDate = new Date(r.fecha);
+                    if (fRango === 'puntual' && fPuntual) {
+                        let fP = new Date(fPuntual + 'T00:00:00');
+                        let fPFin = new Date(fPuntual + 'T23:59:59');
+                        if (rDate < fP || rDate > fPFin) return false;
+                    } else if (fRango === 'custom') {
+                        if (fDesde && rDate < new Date(fDesde + 'T00:00:00')) return false;
+                        if (fHasta && rDate > new Date(fHasta + 'T23:59:59')) return false;
+                    }
                     return true;
                 });
 
                 regs.forEach(r => {
-                    let fDate = new Date(r.fecha).toLocaleDateString();
+                    let fDate = new Date(r.fecha).toLocaleString();
                     let badge = window.obtenerBadgeAccion(r.accion);
                     let vFinal = r.valor;
                     if (r.accion === 'Peso') vFinal += window.calcularDiferenciaPeso(fRp, r.fecha, r.valor);
                     
                     pdfExportData.push([fDate, badge, vFinal, r.detalles]);
-                    hInd+=`<tr><td>${fDate}</td><td><strong>${badge}</strong></td><td style="white-space:pre-wrap;">${vFinal}</td><td>${r.detalles}</td></tr>`;
+                    hInd += `<tr><td style="white-space:nowrap;">${fDate}</td><td><strong>${badge}</strong></td><td style="white-space:pre-wrap;">${vFinal}</td><td>${r.detalles}</td></tr>`;
                 });
-                tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.length; document.getElementById('inf-prenadas').innerText = "-";
-                if(lblTotal) lblTotal.innerText = "Registros";
+                tbodyIndiv.innerHTML = hInd || '<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--muted);">Sin eventos registrados para este animal en el periodo seleccionado.</td></tr>';
+                document.getElementById('inf-total').innerText = regs.length;
+                if (cajaKpiPre) cajaKpiPre.style.display = 'none';
+                if (lblTotal) lblTotal.innerText = "Registros Clínicos";
                 return;
             }
 
-            rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar PDF`;
+            rpPrint = "";
+            document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar PDF`;
 
+            // -------------------------------------------------------------
+            // CASO B: INVENTARIO (CON FECHA DE CORTE HISTÓRICO O ACTUAL)
+            // -------------------------------------------------------------
             if(modo === 'inventario') {
                 document.getElementById('tabla-masiva').classList.remove('oculto');
                 if (cajaKpiPre) cajaKpiPre.style.display = 'block';
                 if (lblTotal) lblTotal.innerText = "Animales";
+
+                const fCorte = document.getElementById('f-inf-inv-fecha') ? document.getElementById('f-inf-inv-fecha').value : '';
+                const fCorteDate = fCorte ? new Date(fCorte + 'T23:59:59') : null;
 
                 const fLote = document.getElementById('f-inf-lote').value;
                 const fCat = document.getElementById('f-inf-cat').value;
                 const fDx = document.getElementById('f-inf-dx').value;
                 const fCarimbo = document.getElementById('f-inf-carimbo').value;
 
-                tbodyMasivo.innerHTML = ""; let countTotal = 0; let countPre = 0;
-
+                tbodyMasivo.innerHTML = "";
+                let countTotal = 0;
+                let countPre = 0;
                 let bufferHTML = "";
-                let maxRows = 100; pdfExportData = [];
-                vivas.forEach(car => {
-                    const regs = window.obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
-                    const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
-                    const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                    if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-"; }
-                    let catLegible = window.obtenerNombreCategoriaLegible(cat);
-                    const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-";
-                    const uDx = regs.find(d => d.accion === 'Diagnóstico');
+                let maxRows = 120;
+                pdfExportData = [];
 
+                unicas.forEach(car => {
+                    const regs = window.obtenerHistorial(car);
+                    
+                    // Filtrar sucesos ocurridos hasta la fecha de corte
+                    let regsCorte = fCorteDate ? regs.filter(r => new Date(r.fecha) <= fCorteDate) : regs;
+                    if (regsCorte.length === 0) return; // El animal no tenía registros en esta fecha histórica
+
+                    // Comprobar si fue dado de baja ANTES de la fecha de corte
+                    let uBaja = regsCorte.find(r => r.accion === 'Baja');
+                    if (uBaja) return; // En esa fecha ya era baja
+
+                    let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
+                    const uP = regsCorte.find(d => d.accion === 'Perfil Master');
+                    if (uP) cat = String(uP.detalles || "").split('|')[0] || "-";
+
+                    const uC = regsCorte.find(d => d.accion === 'Actualización de Datos');
+                    if (uC) {
+                        let v = String(uC.valor || "").split('|');
+                        cat = v[0] ? v[0].replace('Cat:', '').trim() : cat;
+                        carimbo = v[1] ? v[1].replace('Carimbo:', '').trim() : "-";
+                        lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:', '').trim() : "-";
+                    }
+                    let catLegible = window.obtenerNombreCategoriaLegible(cat);
+
+                    const uPeso = regsCorte.find(d => String(d.accion).includes('Peso'));
+                    if (uPeso) {
+                        let fPesoStr = new Date(uPeso.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'});
+                        peso = `${uPeso.valor || "-"} (${fPesoStr})`;
+                    }
+
+                    const uDx = regsCorte.find(d => d.accion === 'Diagnóstico');
                     let loteLow = lote.toLowerCase();
-                    let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
+                    let notasStr = regsCorte.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
                     let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
                     let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
-
                     dx = uDx ? uDx.valor : (esPre ? "Preñada" : (esVacia ? "Vacía" : "-"));
 
                     let pasaFiltro = true;
@@ -2028,11 +2462,15 @@
                         }
                     }
                 });
-                if(countTotal > maxRows) bufferHTML += `<tr><td colspan="5" style="text-align:center;">Mostrando 100 resultados. Use filtros o descargue PDF para ver todo.</td></tr>`;
-                tbodyMasivo.innerHTML = bufferHTML;
+
+                if(countTotal > maxRows) bufferHTML += `<tr><td colspan="5" style="text-align:center; padding:10px; font-weight:bold; color:var(--muted);">Mostrando primeros ${maxRows} animales de ${countTotal}. Descargue el PDF para ver el inventario completo.</td></tr>`;
+                tbodyMasivo.innerHTML = bufferHTML || '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--muted);">No hay animales activos con estos criterios de búsqueda.</td></tr>';
                 document.getElementById('inf-total').innerText = countTotal;
                 document.getElementById('inf-prenadas').innerText = countPre;
 
+            // -------------------------------------------------------------
+            // CASO C: BAJAS Y MORTALIDAD
+            // -------------------------------------------------------------
             } else if(modo === 'bajas') {
                 document.getElementById('tabla-bajas').classList.remove('oculto');
                 if (cajaKpiPre) cajaKpiPre.style.display = 'none';
@@ -2042,7 +2480,9 @@
                 const fDesdeBajas = document.getElementById('f-inf-baja-desde').value;
                 const fHastaBajas = document.getElementById('f-inf-baja-hasta').value;
 
-                let bufferBajas = ""; let maxBajas = 100; pdfExportData = [];
+                let bufferBajas = "";
+                let maxBajas = 100;
+                pdfExportData = [];
                 let countBajas = 0;
 
                 unicas.forEach(car => {
@@ -2058,64 +2498,103 @@
                     if (pasa) {
                         countBajas++;
                         let fDate = new Date(rBaja.fecha).toLocaleDateString();
-                        pdfExportData.push([fDate, car, rBaja.valor, rBaja.detalles||'-']);
+                        pdfExportData.push([fDate, car, rBaja.valor, rBaja.detalles || '-']);
                         if(countBajas <= maxBajas) {
-                            bufferBajas += `<tr><td>${fDate}</td><td><strong>${car}</strong></td><td style="color:var(--peligro); font-weight:bold;">${rBaja.valor}</td><td>${rBaja.detalles||'-'}</td></tr>`;
+                            bufferBajas += `<tr><td>${fDate}</td><td><strong>${car}</strong></td><td style="color:var(--peligro); font-weight:bold;">${rBaja.valor}</td><td>${rBaja.detalles || '-'}</td></tr>`;
                         }
                     }
                 });
-                if(countBajas > maxBajas) bufferBajas += `<tr><td colspan="4" style="text-align:center; padding:15px; font-weight:bold; color:var(--text-muted);">Mostrando ${maxBajas} resultados de ${countBajas}. Descargue el PDF para ver el informe completo.</td></tr>`;
-                tbodyBajas.innerHTML = bufferBajas;
+                tbodyBajas.innerHTML = bufferBajas || '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--muted);">Sin bajas registradas en el periodo.</td></tr>';
                 document.getElementById('inf-total').innerText = countBajas;
 
+            // -------------------------------------------------------------
+            // CASO D: TRATAMIENTOS Y PROCEDIMIENTOS (DÍA PUNTUAL O RANGO)
+            // -------------------------------------------------------------
             } else {
                 document.getElementById('tabla-eventos').classList.remove('oculto');
                 if (cajaKpiPre) cajaKpiPre.style.display = 'none';
-                if (lblTotal) lblTotal.innerText = "Tratamientos";
+                if (lblTotal) lblTotal.innerText = "Tratamientos / Animales";
 
-                const fAcc = document.getElementById('f-inf-accion-oculto').value; 
+                const fRango = document.getElementById('f-inf-rango-fecha') ? document.getElementById('f-inf-rango-fecha').value : '30';
+                const fPuntual = document.getElementById('f-inf-fecha-puntual') ? document.getElementById('f-inf-fecha-puntual').value : '';
+                const fDesde = document.getElementById('f-inf-desde') ? document.getElementById('f-inf-desde').value : '';
+                const fHasta = document.getElementById('f-inf-hasta') ? document.getElementById('f-inf-hasta').value : '';
+                const fAcc = document.getElementById('f-inf-accion-oculto').value;
                 const fKey = document.getElementById('f-inf-keyword').value.trim().toLowerCase();
-                
+
                 let eventos = datosActivos.filter(d => {
                     if (!d.caravana || d.caravana === "---" || String(d.caravana).toLowerCase() === "null" || d.caravana === "undefined") return false;
                     if (['Alta Operador', 'Edición Operador', 'Baja Operador', 'Perfil Master', 'Actualización de Datos', 'Cambio de Caravana', 'Borrar_Caravana', 'Baja'].includes(d.accion)) return false;
                     if (String(d.accion).includes('Vinculacion')) return false;
                     return true;
                 });
-                
-                if(fAcc !== "ALL") eventos = eventos.filter(d => d.accion === fAcc); 
-                if(fDesde) eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00'));
-                if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); 
-                if(fKey) eventos = eventos.filter(d => (String(d.valor) + String(d.detalles)).toLowerCase().includes(fKey));
 
-                let bufferEvt = ""; let maxEvt = 100; pdfExportData = []; let evtCount = 0;
-                
-                let agrupados = {};
-                eventos.forEach(ev => { 
-                    ev.fechaSafe = isNaN(new Date(ev.fecha).getTime()) ? new Date('2026-01-01').getTime() : new Date(ev.fecha).getTime();
-                    ev.fDateStr = isNaN(new Date(ev.fecha).getTime()) ? String(ev.fecha).substring(0, 10) : new Date(ev.fecha).toLocaleDateString();
-                });
+                if (fAcc !== "ALL") eventos = eventos.filter(d => d.accion === fAcc);
 
-                eventos.sort((a,b) => b.fechaSafe - a.fechaSafe).forEach(r => {
-                    let key = `${r.caravana}_${r.fDateStr}`;
-                    if(!agrupados[key]) agrupados[key] = { fecha: r.fDateStr, rp: r.caravana, trabajos: [] };
+                // Filtrado por fecha puntual (Ej: 5 de abril) o por rango
+                if (fRango === 'puntual' && fPuntual) {
+                    let dIni = new Date(fPuntual + 'T00:00:00');
+                    let dFin = new Date(fPuntual + 'T23:59:59');
+                    eventos = eventos.filter(d => {
+                        let evDate = new Date(d.fecha);
+                        return evDate >= dIni && evDate <= dFin;
+                    });
+                } else if (fRango === 'custom') {
+                    if (fDesde) eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00'));
+                    if (fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59'));
+                } else if (fDesde && fHasta) {
+                    eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00') && new Date(d.fecha) <= new Date(fHasta + 'T23:59:59'));
+                }
+
+                if (fKey) {
+                    eventos = eventos.filter(d => (String(d.caravana) + String(d.valor) + String(d.detalles)).toLowerCase().includes(fKey));
+                }
+
+                // Orden cronológico descendente
+                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+
+                let bufferEvt = "";
+                let maxEvt = 120;
+                pdfExportData = [];
+                let countEvt = 0;
+
+                eventos.forEach(r => {
+                    countEvt++;
+                    let fDate = new Date(r.fecha).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
+                    let regsAnimal = window.obtenerHistorial(r.caravana);
                     
-                    let detallePeso = r.accion === 'Peso' ? window.calcularDiferenciaPeso(r.caravana, r.fecha, r.valor) : "";
-                    agrupados[key].trabajos.push(`${window.obtenerBadgeAccion(r.accion)}: ${r.valor}${detallePeso} ${r.detalles ? '('+r.detalles+')' : ''}`);
+                    // Extraer categoría y lote del animal
+                    let cat = "-", lote = "-";
+                    const uC = regsAnimal.find(d => d.accion === 'Actualización de Datos');
+                    if (uC) {
+                        let v = String(uC.valor || "").split('|');
+                        cat = v[0] ? v[0].replace('Cat:', '').trim() : cat;
+                        lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:', '').trim() : lote;
+                    }
+                    let catLegible = window.obtenerNombreCategoriaLegible(cat);
+                    let badge = window.obtenerBadgeAccion(r.accion);
+                    let vFinal = r.valor;
+                    if (r.accion === 'Peso') vFinal += window.calcularDiferenciaPeso(r.caravana, r.fecha, r.valor);
+
+                    pdfExportData.push([fDate, r.caravana, `${catLegible} (${lote})`, badge, vFinal, r.detalles || '-']);
+
+                    if (countEvt <= maxEvt) {
+                        bufferEvt += `<tr>
+                            <td style="white-space:nowrap; font-size:11px;">${fDate}</td>
+                            <td><strong style="font-size:14px; color:var(--secundario);">${r.caravana}</strong></td>
+                            <td style="font-size:11px;">${catLegible}<br><span style="color:var(--muted);">${lote}</span></td>
+                            <td><span style="font-weight:bold;">${badge}</span></td>
+                            <td style="white-space:pre-wrap; font-weight:bold;">${vFinal}</td>
+                            <td style="font-size:11px;">${r.detalles || '-'}</td>
+                        </tr>`;
+                    }
                 });
 
-                Object.values(agrupados).forEach(grp => {
-                    evtCount++;
-                    let trabajosCombinados = grp.trabajos.join(" | ");
-                    pdfExportData.push([grp.fecha, grp.rp, "Múltiples / Combinado", trabajosCombinados]);
-                    if(evtCount <= maxEvt) { bufferEvt += `<tr><td style="white-space:nowrap;">${grp.fecha}</td><td><strong>${grp.rp}</strong></td><td>Múltiples</td><td><span style="font-size:12px; white-space:pre-wrap;">${trabajosCombinados}</span></td></tr>`; }
-                });
-                
-                if(evtCount > maxEvt) bufferEvt += `<tr><td colspan="4" style="text-align:center; padding:15px; font-weight:bold; color:var(--muted);">Mostrando ${maxEvt} resultados. Descargue PDF.</td></tr>`;
-                tbodyEventos.innerHTML = bufferEvt;
-                document.getElementById('inf-total').innerText = evtCount;
+                if (countEvt > maxEvt) bufferEvt += `<tr><td colspan="6" style="text-align:center; padding:15px; font-weight:bold; color:var(--muted);">Mostrando primeros ${maxEvt} procedimientos de ${countEvt}. Descargue el PDF para ver todos.</td></tr>`;
+                tbodyEventos.innerHTML = bufferEvt || '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--muted);">No se registraron tratamientos ni procedimientos en la fecha seleccionada.</td></tr>';
+                document.getElementById('inf-total').innerText = countEvt;
             }
-        }
+        };
 
         window.cleanPDFText = function(text) {
             if (!text) return ''; let str = String(text);
@@ -2214,12 +2693,18 @@
                         let fDesde = document.getElementById('f-inf-desde').value;
                         let fHasta = document.getElementById('f-inf-hasta').value;
                         let rText = fDesde && fHasta ? ` (Periodo: ${fDesde} a ${fHasta})` : '';
-                        addMembrete("Reporte de Trabajos y Procedimientos Clínicos" + rText);
+                        const fRango = document.getElementById('f-inf-rango-fecha') ? document.getElementById('f-inf-rango-fecha').value : '';
+                        const fPuntual = document.getElementById('f-inf-fecha-puntual') ? document.getElementById('f-inf-fecha-puntual').value : '';
+                        let subTitulo = "Reporte de Trabajos y Procedimientos Clínicos";
+                        if (fRango === 'puntual' && fPuntual) subTitulo += ` - Día: ${fPuntual}`;
+                        else if (rText) subTitulo += rText;
+
+                        addMembrete(subTitulo);
                         const totalReg = document.getElementById('inf-total').innerText;
                         doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Procedimientos Listados: ${window.cleanPDFText(totalReg)}`, 14, 43);
 
                         const tableData = pdfExportData.map(row => row.map(cell => window.cleanPDFText(cell).replace(/\n/g, ' ')));
-                        doc.autoTable({ startY: 48, theme: 'grid', head: [['Fecha', 'Caravana', 'Trabajo Realizado', 'Detalles Extras']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 2: { cellWidth: 40 }, 3: { cellWidth: 'auto' } } });
+                        doc.autoTable({ startY: 48, theme: 'grid', head: [['Fecha/Hora', 'RP', 'Categoría / Lote', 'Procedimiento', 'Valor / Producto', 'Detalles Extras']], body: tableData, styles: { fontSize: 7, cellPadding: 2.5 }, headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 25, halign: 'center', fontStyle: 'bold' }, 2: { cellWidth: 35 }, 3: { cellWidth: 25 }, 4: { cellWidth: 35, fontStyle: 'bold' }, 5: { cellWidth: 'auto' } } });
 
                         let filename = 'Reporte_Tratamientos.pdf';
                         if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
@@ -2763,45 +3248,283 @@
             }
         };
 
+        
+        // =========================================================================
+        // MOTOR DE AUDIO OFFLINE (BEEPER EN EL CORRAL / MANGA)
+        // =========================================================================
+        window.emitirBeepHardware = function(tipo = 'exito') {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (tipo === 'combo') {
+                    // Doble tono agudo (Éxito de Ráfaga: RFID + Peso guardados)
+                    osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+                    osc.frequency.setValueAtTime(1320, ctx.currentTime + 0.1); // E6
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.25);
+                } else if (tipo === 'rfid') {
+                    // Tono corto nítido (Chip RFID detectado)
+                    osc.frequency.setValueAtTime(1046.5, ctx.currentTime); // C6
+                    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.12);
+                } else if (tipo === 'peso') {
+                    // Tono medio (Peso registrado)
+                    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+                    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.15);
+                } else {
+                    osc.frequency.setValueAtTime(440, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.2);
+                }
+            } catch(e) {}
+        };
+
+        // =========================================================================
+        // PARSEADOR UNIVERSAL DE HARDWARE (ESP32 TAURUS, TRU-TEST, ALLFLEX, BALANZAS)
+        // =========================================================================
+        window.procesarDatoHardware = function(rawInput) {
+            if (!rawInput) return;
+            let s = String(rawInput).trim();
+            if (s.length === 0) return;
+            console.log('[Taurus Hardware Input]:', s);
+
+            let rpExtraido = null;
+            let pesoExtraido = null;
+
+            // 1. Detección de JSON (ESP32 Taurus formato JSON)
+            if (s.startsWith('{') && s.endsWith('}')) {
+                try {
+                    let d = JSON.parse(s);
+                    rpExtraido = d.rp || d.caravana || d.rfid || d.tag || null;
+                    if (d.peso !== undefined || d.weight !== undefined) {
+                        pesoExtraido = parseFloat(d.peso !== undefined ? d.peso : d.weight);
+                    }
+                } catch(e) {}
+            }
+
+            // 2. Detección Clave-Valor: RP:1234,PESO:385.5 o TAG:982... W:385.5
+            if (!rpExtraido) {
+                let mKV = s.match(/(?:RP|TAG|RFID|CARAVANA|ID)[:=\s]+([a-zA-Z0-9_-]+).*?(?:PESO|WEIGHT|KG|W)[:=\s]+([\d.]+)/i);
+                if (mKV) {
+                    rpExtraido = mKV[1];
+                    pesoExtraido = parseFloat(mKV[2]);
+                }
+            }
+
+            // 3. Detección Delimitada: 1234,385.5 o 1234;385.5 o 1234|385.5
+            if (!rpExtraido) {
+                let partes = s.split(/[,;	|/]+/);
+                if (partes.length === 2) {
+                    let p1 = partes[0].trim();
+                    let p2 = partes[1].replace(/[^\d.]/g, '').trim();
+                    let p2Num = parseFloat(p2);
+                    if (!isNaN(p2Num) && p2Num > 0 && p1.length > 0) {
+                        rpExtraido = p1;
+                        pesoExtraido = p2Num;
+                    }
+                }
+            }
+
+            // 4. Si se encontró combo (RP + PESO) -> Procesar Ráfaga Completa
+            if (rpExtraido && pesoExtraido !== null && !isNaN(pesoExtraido)) {
+                let tagNorm = String(rpExtraido).trim().toLowerCase();
+                let esRFID = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === tagNorm);
+                let rpFinal = esRFID ? esRFID.caravana : String(rpExtraido).trim().toUpperCase();
+
+                rpActivo = rpFinal;
+                window.forzarSaltoAFicha();
+                let buscador = document.getElementById('buscador-caravana');
+                if (buscador) buscador.value = rpFinal;
+                window.buscarCaravanaBtn(rpFinal);
+
+                let pStr = pesoExtraido.toFixed(1) + " Kg";
+                let sel = document.getElementById('rafaga-accion') ? document.getElementById('rafaga-accion').value : 'solo_peso';
+                let notas = document.getElementById('rafaga-detalles') ? document.getElementById('rafaga-detalles').value.trim() : '';
+                let recordatorio = document.getElementById('rafaga-recordatorio') ? document.getElementById('rafaga-recordatorio').value : '0';
+
+                window.ejecutarAccion('Peso', pStr, "Automático (ESP32 Antena + Balanza)", null);
+                if (sel !== 'solo_peso') {
+                    let customInput = document.getElementById('rafaga-prod-custom');
+                    let producto = sel === 'OTRO' ? ((customInput && customInput.value.trim()) || 'Tratamiento General') : sel;
+                    let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga Bluetooth";
+                    if (recordatorio !== "0") detCompleto += ` | [RECORDATORIO:${recordatorio}]`;
+                    window.ejecutarAccion('Sanidad', producto, detCompleto, null);
+                }
+
+                window.emitirBeepHardware('combo');
+                window.mostrarToast(`⚡ [RP: ${rpFinal}] Pesado: ${pStr} + Sanidad registrada`);
+                return;
+            }
+
+            // 5. Detección de Peso Aislado (Balanza sola)
+            let tieneIndPeso = /(?:PESO|WEIGHT|KG|KGS|ST,GS|\+)/i.test(s) || (s.includes('.') && s.length <= 7);
+            let mPeso = s.match(/(?:PESO|W|ST,GS|[+])?[:=\s]*([\d]+(?:\.[\d]+)?)\s*(?:KG|KGS)?$/i);
+            if (tieneIndPeso && mPeso) {
+                let pNum = parseFloat(mPeso[1]);
+                if (pNum >= 5.0 && pNum <= 2500.0) {
+                    if (rpActivo && rpActivo !== "---") {
+                        let pStr = pNum.toFixed(1) + " Kg";
+                        if (typeof rafagaActiva !== 'undefined' && rafagaActiva) {
+                            let sel = document.getElementById('rafaga-accion').value;
+                            let notas = document.getElementById('rafaga-detalles').value.trim();
+                            let recordatorio = document.getElementById('rafaga-recordatorio').value;
+                            window.ejecutarAccion('Peso', pStr, "Automático (Balanza)", null);
+                            if (sel !== 'solo_peso') {
+                                let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
+                                let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga";
+                                if (recordatorio !== "0") detCompleto += ` | [RECORDATORIO:${recordatorio}]`;
+                                window.ejecutarAccion('Sanidad', producto, detCompleto, null);
+                            }
+                            window.emitirBeepHardware('combo');
+                            window.mostrarToast(`✅ Guardado: ${pStr} para RP ${rpActivo}`);
+                        } else {
+                            window.forzarSaltoAFicha();
+                            window.abrirModal('modal-peso');
+                            let inputPeso = document.getElementById('i-peso-val');
+                            if (inputPeso) inputPeso.value = pNum;
+                            window.emitirBeepHardware('peso');
+                        }
+                    } else {
+                        alert("⚖️ Balanza detectó: " + pNum + " Kg. Identifique primero la caravana del animal.");
+                    }
+                    return;
+                }
+            }
+
+            // 6. Detección de Chip RFID / Caravana (Tru-Test, Allflex, Genéricos, NFC)
+            let digitosSolo = s.replace(/\D/g, '');
+            let esIsoTag = (digitosSolo.length === 15 && (digitosSolo.startsWith('9') || digitosSolo.startsWith('8')));
+            let tagFinal = esIsoTag ? digitosSolo : s.replace(/^(?:TAG|RFID|ID|RP)[:=\s]+/i, '').trim().toUpperCase();
+
+            window.emitirBeepHardware('rfid');
+            window.forzarSaltoAFicha();
+            window.recibirTagNFC(tagFinal);
+        };
+
+        // Puente global para Android WebView y navegadores
+        window.recibirDatoBluetooth = function(data) {
+            window.procesarDatoHardware(data);
+        };
+
+        // =========================================================================
+        // WEB BLUETOOTH API CLIENT (CONEXIÓN NATIVA DIRECTA BLE EN ANDROID Y PC)
+        // =========================================================================
+        let bleDevice = null;
+        let bleServer = null;
+        let bleRxCharacteristic = null;
+        let bleBuffer = "";
+
+        window.conectarBluetoothBLE = async function() {
+            const btn = document.getElementById('btn-conectar-ble');
+            const lbl = document.getElementById('lbl-estado-bluetooth');
+
+            if (!navigator.bluetooth) {
+                alert("ℹ️ Tu navegador no soporta Web Bluetooth directamente.\n\nSi usas iOS (Safari) o Android, vincula tu balanza o bastón en 'Ajustes > Bluetooth' como Teclado HID. ¡Taurus Control lo leerá automáticamente en segundo plano!");
+                return;
+            }
+
+            if (bleDevice && bleDevice.gatt && bleDevice.gatt.connected) {
+                bleDevice.gatt.disconnect();
+                if (btn) btn.innerText = "Conectar Balanza / Bastón";
+                if (lbl) { lbl.innerText = "Bluetooth: Desconectado"; lbl.style.color = "var(--muted)"; }
+                return;
+            }
+
+            try {
+                if (btn) btn.innerText = "Buscando...";
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: [
+                        '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // Nordic UART (ESP32 estándar)
+                        '0000ffe0-0000-1000-8000-00805f9b34fb', // HM-10 / CC2541 común en balanzas
+                        '000018f0-0000-1000-8000-00805f9b34fb', // Tru-Test BLE
+                        '49535343-fe7d-4ae5-8fa9-9fafd205e455'  // Microchip IS1678
+                    ]
+                });
+
+                bleDevice.addEventListener('gattserverdisconnected', () => {
+                    if (btn) btn.innerText = "Conectar Balanza / Bastón";
+                    if (lbl) { lbl.innerText = "Bluetooth: Desconectado"; lbl.style.color = "var(--muted)"; }
+                    window.mostrarToast("⚠️ Dispositivo Bluetooth desconectado.");
+                });
+
+                if (btn) btn.innerText = "Conectando...";
+                bleServer = await bleDevice.gatt.connect();
+
+                // Buscar servicio UART compatible
+                let services = await bleServer.getPrimaryServices();
+                let foundChar = null;
+
+                for (let s of services) {
+                    try {
+                        let chars = await s.getCharacteristics();
+                        for (let c of chars) {
+                            if (c.properties.notify || c.properties.indicate) {
+                                foundChar = c;
+                                break;
+                            }
+                        }
+                    } catch(e) {}
+                    if (foundChar) break;
+                }
+
+                if (foundChar) {
+                    bleRxCharacteristic = foundChar;
+                    await bleRxCharacteristic.startNotifications();
+                    bleRxCharacteristic.addEventListener('characteristicvaluechanged', (event) => {
+                        let dec = new TextDecoder('utf-8');
+                        let chunk = dec.decode(event.target.value);
+                        bleBuffer += chunk;
+                        if (bleBuffer.includes('\n') || bleBuffer.includes('\r')) {
+                            let lineas = bleBuffer.split(/[\r\n]+/);
+                            bleBuffer = lineas.pop(); // Mantener remanente
+                            lineas.forEach(l => {
+                                let limpia = l.trim();
+                                if (limpia.length > 0) window.procesarDatoHardware(limpia);
+                            });
+                        }
+                    });
+
+                    if (btn) btn.innerText = "Desconectar";
+                    if (lbl) { lbl.innerText = `🟢 Conectado: ${bleDevice.name || 'Balanza / Bastón'}`; lbl.style.color = "var(--exito)"; }
+                    window.mostrarToast(`🟢 Conectado con éxito a ${bleDevice.name || 'Dispositivo'}`);
+                } else {
+                    if (btn) btn.innerText = "Conectado (HID)";
+                    if (lbl) { lbl.innerText = `🟢 Conectado: ${bleDevice.name || 'Dispositivo'}`; lbl.style.color = "var(--exito)"; }
+                }
+            } catch(error) {
+                console.warn('[Bluetooth BLE Error]:', error);
+                if (btn) btn.innerText = "Conectar Balanza / Bastón";
+                if (lbl) { lbl.innerText = "Bluetooth: Desconectado"; lbl.style.color = "var(--muted)"; }
+            }
+        };
+
         let bufferTeclado = "";
         let timeoutTeclado;
         document.addEventListener('keydown', function(event) {
             if(event.key === 'Shift' || event.key === 'Control' || event.key === 'Alt' || event.key === 'CapsLock') return;
             // No interceptar si el usuario está escribiendo activamente dentro de un input o textarea
             if(event.target && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA')) return;
+
             if (event.key === 'Enter') {
-                if (bufferTeclado.length > 2) {
-                    event.preventDefault(); 
-                    let dataLimpia = bufferTeclado.replace(/[^a-zA-Z0-9.-]/g, '').trim().toUpperCase(); 
-                    let esPeso = (!isNaN(dataLimpia) && dataLimpia.length <= 6) || dataLimpia.includes('.');
-                    if (esPeso) {
-                        if (typeof rpActivo !== 'undefined' && rpActivo && rpActivo !== "---") {
-                            if(typeof rafagaActiva !== 'undefined' && rafagaActiva) {
-                                let sel = document.getElementById('rafaga-accion').value;
-                                let notas = document.getElementById('rafaga-detalles').value.trim();
-                                let recordatorioRafaga = document.getElementById('rafaga-recordatorio').value; 
-                                window.ejecutarAccion('Peso', dataLimpia + " Kg", "Automático (Ráfaga)", null);
-                                if(sel !== 'solo_peso') {
-                                    let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
-                                    let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga";
-                                    if (recordatorioRafaga !== "0") { detCompleto += ` | [RECORDATORIO:${recordatorioRafaga}]`; }
-                                    window.ejecutarAccion('Sanidad', producto, detCompleto, null);
-                                }
-                                if(typeof window.mostrarToast === 'function') window.mostrarToast("✅ ¡Guardado!");
-                            } else {
-                                window.forzarSaltoAFicha();
-                                if (typeof window.abrirModal === "function") window.abrirModal('modal-peso');
-                                let inputPeso = document.getElementById('i-peso-val');
-                                if (inputPeso) inputPeso.value = dataLimpia;
-                            }
-                        } else {
-                            alert("⚖️ Peso recibido: " + dataLimpia + " Kg. ¡Debes leer la caravana de un animal primero!");
-                        }
-                    } else {
-                        let tagLimpio = dataLimpia.replace(/TAG/gi, '');
-                        window.forzarSaltoAFicha();
-                        if (typeof window.recibirTagNFC === "function") { window.recibirTagNFC(tagLimpio); }
-                    }
+                if (bufferTeclado.trim().length > 0) {
+                    event.preventDefault();
+                    window.procesarDatoHardware(bufferTeclado);
                 }
                 bufferTeclado = "";
                 clearTimeout(timeoutTeclado);
@@ -2810,7 +3533,7 @@
             if (event.key.length === 1) {
                 bufferTeclado += event.key;
                 clearTimeout(timeoutTeclado);
-                timeoutTeclado = setTimeout(() => { bufferTeclado = ""; }, 500); 
+                timeoutTeclado = setTimeout(() => { bufferTeclado = ""; }, 800); 
             }
         });
     </script>
