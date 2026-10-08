@@ -157,8 +157,8 @@
         .punto { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px;}
 
         /* ADAPTABILIDAD DINÁMICA DE FILTROS Y TABLAS EN MODO CLARO */
-        .caja-filtros-rapidos { background: var(--bg-card); padding: 15px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px; }
-        body.tema-claro .caja-filtros-rapidos { background: #ffffff !important; border-color: var(--border) !important; }
+        .caja-filtros-rapidos { background: var(--bg-card); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px; }
+        body.tema-claro .caja-filtros-rapidos { background: var(--bg-card); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px; }
 
         .contenedor-permisos { display: flex; flex-direction: column; gap: 8px; background: var(--bg-base); padding: 12px; border: 1px solid var(--border); border-radius: 4px; }
         body.tema-claro .contenedor-permisos { background: #ffffff !important; border-color: var(--border) !important; }
@@ -353,17 +353,30 @@
                     <button type="button" id="btn-toggle-rafaga" class="btn-outline" style="font-weight:bold; padding: 6px 12px; font-size:12px;" onclick="toggleRafaga()">APAGADO</button>
                 </div>
                 <div id="opciones-rafaga" class="oculto" style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border);">
+                    <div id="caja-rafaga-manual" style="display:flex; gap:8px; margin-bottom:12px; background: rgba(59, 130, 246, 0.08); padding: 8px 12px; border-radius: 6px; border:1px solid rgba(59, 130, 246, 0.2);">
+                        <input type="text" id="rm-caravana" class="form-control" placeholder="Nº RP" style="flex:1; margin:0;" onkeyup="if(event.key === 'Enter') document.getElementById('rm-valor').focus()">
+                        <input type="text" id="rm-valor" class="form-control" placeholder="Peso Kg (Opcional)" style="flex:1; margin:0;" onkeyup="if(event.key === 'Enter') ejecutarRafagaManual()">
+                        <button type="button" class="btn-primary" style="width: auto; padding:6px 16px; margin:0;" onclick="ejecutarRafagaManual()">▶ Guardar</button>
+                    </div>
                     <div class="grid-2">
                         <div class="form-grupo">
                             <label style="font-size:11px; color:var(--text-muted); font-weight:bold; display:block; margin-bottom:5px;">Acción combinada con el peso:</label>
                             <select id="rafaga-accion" class="form-control" style="padding:8px; font-size:13px; font-weight:bold;" onchange="verificarRafagaCustom()">
                                 <option value="solo_peso">⚖️ Solo Registrar Peso</option>
+                                <option value="tacto">🩺 Tacto / Diagnóstico</option>
                                 <option value="Vacuna Aftosa">💉 Vacuna Aftosa</option>
                                 <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
                                 <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario (Ivermectina)</option>
                                 <option value="Vitamina ADE">💉 Vitamina ADE / Reconstituyente</option>
                                 <option value="OTRO">✏️ Personalizado (Escribir otro)...</option>
                             </select>
+                            <div id="caja-rafaga-dx" class="oculto" style="margin-top:6px;">
+                                <select id="rafaga-dx-val" class="form-control" style="padding:6px 8px; font-size:12px; font-weight:bold;">
+                                    <option value="Preñada">✅ Preñada</option>
+                                    <option value="Vacía">❌ Vacía</option>
+                                    <option value="Vacía (Sangre)">🩸 Vacía (Sangre)</option>
+                                </select>
+                            </div>
                             <input type="text" id="rafaga-prod-custom" class="form-control oculto" placeholder="Escriba el producto o tratamiento..." style="margin-top:8px; padding:8px; font-size:13px;">
                         </div>
                         <div id="caja-rafaga-detalles" class="form-grupo oculto">
@@ -385,7 +398,7 @@
                 </div>
             </div>
 
-            <div class="search-bar">
+            <div class="search-bar" style="margin-bottom:8px; gap:8px;">
                 <input type="text" id="buscador-caravana" class="form-control" style="margin:0; flex:1;" placeholder="Ingrese el Nº de RP a buscar..." autocomplete="off" onkeyup="if(event.key === 'Enter') buscarCaravanaBtn()">
                 <button type="button" class="btn-primary" style="width:150px; margin:0;" onclick="buscarCaravanaBtn()">Buscar RP</button>
             </div>
@@ -475,17 +488,18 @@
                     </select>
                     
                     <select id="filtro-reg-cat" class="form-control" style="flex:1; margin-bottom:0;" onchange="cargarListaRegistro()">
-                        <option value="ALL">🐄 Categoría (Todas)</option>
+                    <option value="ALL">🐄 Categoría (Todas)</option>
+                    <option value="Sin Categoría">🐄 Sin Categoría</option>
                     </select>
                 </div>
             </div>
 
-            <div class="search-bar">
+            <div class="search-bar" style="margin-bottom:8px; gap:8px;">
                 <input type="text" id="buscador-lista" class="form-control" style="margin:0;" placeholder="Buscar por RP, categoría, lote, observaciones..." onkeyup="filtrarListaRegistroDebounced()">
                 <button type="button" class="btn-primary" style="width: 150px; margin:0;" onclick="cargarListaRegistro()">Filtrar</button>
             </div>
             
-            <div class="tarjeta" style="padding:0; overflow-y:auto; max-height: 55vh;">
+            <div class="tarjeta" style="padding:0; overflow-y:auto; max-height: calc(100vh - 200px);">
                 <table class="tabla-datos">
                     <thead><tr><th>Caravana</th><th>Categoría Oficial</th><th>Ubicación / Lote</th><th>Diagnóstico</th><th>Acción</th></tr></thead>
                     <tbody id="tb-registro"></tbody>
@@ -497,17 +511,11 @@
         <div id="v-reporte" class="vista oculto">
             <h2 class="titulo-seccion">Centro de Reportes y Documentos PDF</h2>
             
-            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid var(--border);">
-                <img id="preview-logo-reporte" src="gemini-svg.png" style="width:50px; height:50px; object-fit:contain; border-radius:8px; background:white; padding:2px;">
-                <div>
-                    <span style="font-size:11px; color:var(--text-muted); font-weight:bold; text-transform:uppercase;">Membrete de Documentos PDF</span>
-                    <strong id="preview-nombre-reporte" style="display:block; font-size:16px; color:var(--text-main);">Hacienda</strong>
-                </div>
-            </div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--border);"><img id="preview-logo-reporte" src="gemini-svg.png" style="width:34px; height:34px; object-fit:contain; border-radius:6px; background:white; padding:2px;"><div><span style="font-size:10px; color:var(--text-muted); font-weight:bold; text-transform:uppercase;">Membrete PDF</span><strong id="preview-nombre-reporte" style="display:block; font-size:14px; color:var(--text-main); line-height:1.1;">Hacienda</strong></div></div>
 
             <div class="tarjeta">
                 <label style="font-size:11px; font-weight:bold; color:var(--text-muted); margin-bottom:6px; display:block;">SELECCIONA EL FORMATO DEL REPORTE:</label>
-                <select class="form-control" id="f-inf-modo" onchange="cambiarModoReporte()" style="margin-bottom:15px; font-weight:bold; background:var(--primary); color:white;">
+                <select class="form-control" id="f-inf-modo" onchange="cambiarModoReporte()" style="margin-bottom:8px; padding:6px 10px; font-size:13px; font-weight:bold; background:var(--primary); color:white;">
                     <option value="inventario">📊 INVENTARIO (Por Lote y Categorías de Hacienda)</option>
                     <option value="bajas">💀 REPORTE DE BAJAS Y MORTALIDAD</option>
                     <option value="eventos">📋 HISTORIAL DE TRATAMIENTOS Y PROCEDIMIENTOS</option>
@@ -591,15 +599,15 @@
 
                 <input type="text" id="f-inf-rp" class="form-control" style="border-color:var(--success);" placeholder="🔍 Ingrese Nº RP para Dossier Clínico Individual..." onkeyup="filtrarInformeDebounced()">
 
-                <div style="display:flex; justify-content:space-between; align-items:center; margin:15px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:15px 0;">
-                    <div style="display:flex; gap:30px; align-items:center;">
-                        <div><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;" id="lbl-inf-total">CABEZAS LISTADAS</span><strong style="font-size:22px;" id="inf-total">0</strong></div>
-                        <div id="caja-kpi-prenadas"><span style="font-size:10px; color:var(--text-muted); display:block; font-weight:bold;">PREÑADAS CONF.</span><strong style="font-size:22px; color:var(--success);" id="inf-prenadas">0</strong></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin:8px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:8px 0; flex-wrap:wrap; gap:10px;">
+                    <div style="font-size:13px; font-weight:600; color:var(--text-muted); display:flex; align-items:center; gap:12px;">
+                        <span><span id="lbl-inf-total">Listados</span>: <strong id="inf-total" style="color:var(--text-main); font-size:16px;">0</strong></span>
+                        <span id="caja-kpi-prenadas">| Preñadas: <strong id="inf-prenadas" style="color:var(--success); font-size:16px;">0</strong></span>
                     </div>
-                    <button type="button" id="btn-print-magico" class="btn-primary" style="width:auto; padding:10px 25px; background:var(--primary);" onclick="ejecutarDescargaPDF()">🖨️ Descargar Informe PDF</button>
+                    <button type="button" id="btn-print-magico" class="btn-primary" style="width:auto; padding:8px 20px; font-size:14px; margin:0;" onclick="ejecutarDescargaPDF()">🖨️ Descargar Informe PDF</button>
                 </div>
                 
-                <div style="overflow-y:auto; max-height: 50vh;">
+                <div style="overflow-y:auto; max-height: 65vh;">
                     <table class="tabla-informe" id="tabla-masiva"><thead><tr><th>RP y Carimbo</th><th>Categoría Oficial</th><th>Lote / Ubicación</th><th>Últ. Peso</th><th>Dx Actual</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
                     <table class="tabla-informe oculto" id="tabla-bajas"><thead><tr><th>Fecha de Baja</th><th>Caravana / RP</th><th>Causa Registrada</th><th>Observaciones</th></tr></thead><tbody id="tb-informe-bajas"></tbody></table>
                     <table class="tabla-informe oculto" id="tabla-eventos"><thead><tr><th>Fecha</th><th>RP</th><th>Trabajo Realizado</th><th>Detalles Extras</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
@@ -617,7 +625,7 @@
                         <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">👤 Mi Perfil</h3>
                         <div class="dato-box">
                             <span>Usuario Activo</span>
-                            <strong id="lbl-perfil-usu">-</strong><input type="hidden" id="usuario-activo-lbl">
+                            <strong id="lbl-perfil-usu">-</strong>
                         </div>
                         <div class="dato-box" id="panel-licencia" style="margin-top:10px;">
                             <span>Vencimiento de Licencia</span>
@@ -628,6 +636,12 @@
                             <input type="password" id="nueva-clave" class="form-control" autocomplete="new-password">
                         </div>
                         <button type="button" class="btn-primary" style="background:var(--success);" onclick="cambiarMiContrasena()">Actualizar Contraseña</button>
+                    </div>
+                    <div class="tarjeta">
+                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">📡 Conectividad de Básculas y Lectores</h3>
+                        <p style="font-size:13px; color:var(--text-muted); line-height:1.5; margin:0;">
+                            Las básculas electrónicas y bastones RFID se vinculan de manera transparente en segundo plano a través de la configuración Bluetooth o puerto USB de su equipo. El sistema detecta y procesa las lecturas de peso y caravana automáticamente sin necesidad de sincronización manual.
+                        </p>
                     </div>
 
                     <div class="tarjeta" id="panel-membrete">
@@ -826,6 +840,14 @@
 
         function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
+
+        function esCaravanaValida(c) {
+            if (c === null || c === undefined) return false;
+            let s = String(c).trim();
+            if (!s || s === "---" || s === "-" || s.toLowerCase() === "null" || s.toLowerCase() === "undefined" || s.toLowerCase() === "nan") return false;
+            return true;
+        }
+        window.esCaravanaValida = esCaravanaValida;
 
         let dbCache = []; let historiaCache = null; let activosCache = null; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = ""; let pdfExportData = [];
         let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
@@ -1318,7 +1340,7 @@
 
         function cargarListasFiltrosSelects() {
             let datosActivos = obtenerRegistrosActivos();
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
+            let unicas = [...new Set(datosActivos.map(d => d.caravana).filter(esCaravanaValida).map(c => String(c).trim()))];
             let lotesSet = new Set();
             let catsSet = new Set();
 
@@ -1366,215 +1388,227 @@
 
         function buscarCaravanaBtn(rpForzado = null) {
             try {
-                let rp = rpForzado ? rpForzado : document.getElementById('buscador-caravana').value.trim(); 
+                let rp = rpForzado ? String(rpForzado).trim() : (document.getElementById('buscador-caravana') ? document.getElementById('buscador-caravana').value.trim() : ""); 
                 if(!esCaravanaValida(rp)) return; 
                 let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === rp.toLowerCase());
-                if(esRFIDRegistrado) rp = esRFIDRegistrado.caravana;
+                if(esRFIDRegistrado && esCaravanaValida(esRFIDRegistrado.caravana)) rp = String(esRFIDRegistrado.caravana).trim();
 
-                rpActivo = rp; 
-                document.getElementById('ficha-animal').classList.remove('oculto'); 
-                const elCaravanaTop = document.getElementById('val-caravana'); 
+                rpActivo = rp;
+                const elFicha = document.getElementById('ficha-animal');
+                if(elFicha) {
+                    elFicha.classList.remove('oculto');
+                    elFicha.style.display = 'block';
+                }
+                const elCaravanaTop = document.getElementById('val-caravana');
                 if(elCaravanaTop) elCaravanaTop.innerText = rp;
                 
                 const regs = obtenerHistorial(rp); 
                 const uBaja = regs.find(d => d.accion === 'Baja');
                 const badgeBaja = document.getElementById('badge-estado-animal');
-                if(uBaja) { 
-                    badgeBaja.style.display = 'inline-block'; 
-                    badgeBaja.innerText = "BAJA: " + uBaja.valor.toUpperCase(); 
-                } else { 
-                    badgeBaja.style.display = 'none'; 
+                if(badgeBaja) {
+                    if(uBaja) {
+                        badgeBaja.style.display = 'inline-block';
+                        badgeBaja.innerText = "BAJA: " + String(uBaja.valor).toUpperCase();
+                    } else {
+                        badgeBaja.style.display = 'none';
+                    }
                 }
 
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", nutricion="-", sanidad="-", inseminacion="-", htmlNotas=""; 
                 let gdpHtml = "";
-
-                // 1. Detección y Cálculo de Pesaje
                 let todosLosPesos = regs.filter(d => String(d.accion).includes('Peso'));
                 if(todosLosPesos.length >= 1) {
                     let pesoActual = todosLosPesos[0];
-                    let p1 = parseFloat(String(pesoActual.valor).replace(/[^\d.-]/g, '')); 
-                    let d1 = new Date(pesoActual.fecha); 
-                    let f1_str = (pesoActual.fecha && pesoActual.fecha.includes('T')) ? pesoActual.fecha.split('T')[0] : ""; 
+                    let p1 = parseFloat(String(pesoActual.valor).replace(/[^\d.-]/g, ''));
+                    let d1 = new Date(pesoActual.fecha);
+                    let f1_str = pesoActual.fecha.split('T')[0] || ""; 
                     let pesoAnterior = null;
-
-                    for(let i = 1; i < todosLosPesos.length; i++) { 
-                        let fTemp_str = (todosLosPesos[i].fecha && todosLosPesos[i].fecha.includes('T')) ? todosLosPesos[i].fecha.split('T')[0] : ""; 
-                        let pTest = parseFloat(String(todosLosPesos[i].valor).replace(/[^\d.-]/g, ''));
-                        if(f1_str !== fTemp_str && fTemp_str !== "" && pTest !== p1) { 
-                            pesoAnterior = todosLosPesos[i]; 
-                            break; 
-                        } 
+                    for(let i = 1; i < todosLosPesos.length; i++) {
+                        let fTemp_str = todosLosPesos[i].fecha.split('T')[0] || "";
+                        if(f1_str !== fTemp_str && fTemp_str !== "") { pesoAnterior = todosLosPesos[i]; break; }
                     }
-
                     if(pesoAnterior) {
-                        let p2 = parseFloat(String(pesoAnterior.valor).replace(/[^\d.-]/g, '')); 
+                        let p2 = parseFloat(String(pesoAnterior.valor).replace(/[^\d.-]/g, ''));
                         let d2 = new Date(pesoAnterior.fecha);
-                        let diffTime = Math.abs(d1 - d2); 
+                        let diffTime = Math.abs(d1 - d2);
                         let dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                        if(dias >= 1 && !isNaN(p1) && !isNaN(p2)) { 
-                            let gdp = ((p1 - p2) / dias).toFixed(3); 
-                            if(gdp > 0) gdpHtml = `<span style="color:var(--success); font-weight:bold; font-size:11px;">🚀 +${gdp} Kg/día</span>`; 
-                            else if(gdp < 0) gdpHtml = `<span style="color:var(--danger); font-weight:bold; font-size:11px;">⚠️ ${gdp} Kg/día</span>`; 
-                            else gdpHtml = `<span style="color:var(--text-muted); font-weight:bold; font-size:11px;">⚖️ Mantuvo su peso</span>`; 
+                        if(dias >= 1) {
+                            let gdp = ((p1 - p2) / dias).toFixed(3);
+                            if(gdp > 0) gdpHtml = `<span style="color:var(--success, #10b981); font-weight:bold; font-size:11px;">🚀 +${gdp} Kg/día</span>`;
+                            else if(gdp < 0) gdpHtml = `<span style="color:var(--danger, #ef4444); font-weight:bold; font-size:11px;">⚠️ ${gdp} Kg/día</span>`;
+                            else gdpHtml = `<span style="color:var(--text-muted, #94a3b8); font-weight:bold; font-size:11px;">⚖️ Mantuvo su peso</span>`;
                         }
                     } else {
-                        if(todosLosPesos.length > 1) { 
-                            gdpHtml = `<span style="color:var(--text-muted); font-size:10px; font-style:italic;">(Pesajes del mismo día)</span>`; 
-                        } else { 
-                            gdpHtml = `<span style="color:var(--text-muted); font-size:10px; font-style:italic;">(Falta peso histórico)</span>`; 
-                        }
+                        if(todosLosPesos.length > 1) { gdpHtml = `<span style="color:var(--text-muted, #94a3b8); font-size:10px; font-style:italic;">(Pesos del mismo día)</span>`; }
+                        else { gdpHtml = `<span style="color:var(--text-muted, #94a3b8); font-size:10px; font-style:italic;">(Falta peso histórico)</span>`; }
                     }
                 }
-                const elGdp = document.getElementById('val-gdp'); 
-                if (elGdp) elGdp.innerHTML = gdpHtml;
+                const elGdp = document.getElementById('val-gdp'); if (elGdp) elGdp.innerHTML = gdpHtml;
 
                 if(regs.length > 0) {
-                    // Perfil Master (Genética)
                     const uP = regs.find(d => d.accion === 'Perfil Master'); 
-                    if(uP) { 
-                        let p = String(uP.valor || "").split('|'); 
-                        raza = p[0] || "-"; 
-                        edad = p[1] || "-"; 
-                        padre = p[2] || "-"; 
-                        madre = p[3] || "-"; 
-                        cat = String(uP.detalles || "").split('|')[0] || "-"; 
+                    if(uP) {
+                        let p = String(uP.valor || "").split('|');
+                        raza = p[0] || "-"; edad = p[1] || "-"; padre = p[2] || "-"; madre = p[3] || "-";
+                        cat = String(uP.detalles || "").split('|')[0] || "-";
                     } 
-
-                    // Actualización de Datos (Lote y Categoría)
                     const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
-                    if(uC) { 
-                        let v = String(uC.valor || "").split('|'); 
-                        cat = v[0] ? v[0].replace('Cat:','').trim() : cat; 
-                        carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; 
-                        lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-"; 
+                    if(uC) {
+                        let v = String(uC.valor || "").split('|');
+                        cat = v[0] ? v[0].replace('Cat:','').trim() : cat;
+                        carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-";
+                        lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-";
                     } 
-
-                    // Último Peso
-                    const uPeso = regs.find(d => String(d.accion).includes('Peso')); 
+                    const uPeso = regs.find(d => String(d.accion).includes('Peso'));
                     if(uPeso) {
-                        let fPesoStr = uPeso.fecha ? new Date(uPeso.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'}) : '';
-                        peso = `${uPeso.valor || "-"} <span style="font-size:11px; color:var(--text-muted); display:block; margin-top:2px;">(Pesado: ${fPesoStr})</span>`; 
-                    }
-
-                    // Diagnóstico Tacto
+                        let fPesoStr = "";
+                        if(uPeso.fecha) {
+                            try {
+                                let dt = new Date(uPeso.fecha);
+                                if(!isNaN(dt.getTime())) fPesoStr = ` <span style="font-size:11px; color:var(--text-muted, #94a3b8); display:block; margin-top:2px;">(Pesado: ${dt.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'})})</span>`;
+                            } catch(e) {}
+                        }
+                        peso = `${uPeso.valor || "-"} Kg${fPesoStr}`;
+                    } 
                     const uDx = regs.find(d => d.accion === 'Diagnóstico'); 
+                    
                     let loteLow = lote.toLowerCase();
                     let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
                     let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
                     let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
-                    dx = uDx ? uDx.valor : (esPre ? "Preñada (Lote/Notas)" : (esVacia ? "Vacía" : "-"));
+                    dx = uDx ? uDx.valor : (esPre ? "Preñada" : (esVacia ? "Vacía" : "-"));
 
-                    // ÚLTIMA SANIDAD (Búsqueda robusta por nombre o tipo)
-                    const uSan = regs.find(d => {
-                        let acc = String(d.accion || "").trim().toLowerCase();
-                        return acc === 'sanidad' || acc.includes('sanid') || acc.includes('vacun') || acc.includes('tratamient') || acc.includes('antiparasit');
-                    });
-                    if(uSan) {
-                        let valSan = (uSan.valor && uSan.valor !== '-') ? uSan.valor : 'Tratamiento General';
-                        let detSan = uSan.detalles ? uSan.detalles.split('| Op:')[0].trim() : '';
-                        let fSanStr = uSan.fecha ? new Date(uSan.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'}) : '';
-                        sanidad = `${valSan}`;
-                        if(detSan && detSan !== '-' && detSan !== 'Sin observaciones adicionales' && detSan !== 'Sin notas') {
-                            sanidad += ` <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">(${detSan})</span>`;
-                        }
-                        if(fSanStr) {
-                            sanidad += `<span style="font-size:11px; color:var(--text-muted); display:block; margin-top:2px;">(Aplicado: ${fSanStr})</span>`;
-                        }
-                    }
-
-                    // ÚLTIMA INSEMINACIÓN
-                    const uIns = regs.find(d => {
-                        let acc = String(d.accion || "").trim().toLowerCase();
-                        return acc === 'inseminación' || acc === 'inseminacion' || acc.includes('insemin') || acc.includes('monta') || acc.includes('reproducc');
-                    });
-                    if(uIns) {
-                        let fInsStr = uIns.fecha ? new Date(uIns.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'}) : '';
-                        inseminacion = `${uIns.valor || "-"}`;
-                        if(uIns.detalles && uIns.detalles !== '-') {
-                            let detIns = uIns.detalles.split('| Op:')[0].trim();
-                            if(detIns) inseminacion += ` <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">(${detIns})</span>`;
-                        }
-                        if(fInsStr) {
-                            inseminacion += `<span style="font-size:11px; color:var(--text-muted); display:block; margin-top:2px;">(Fecha: ${fInsStr})</span>`;
-                        }
-                    }
-
-                    // RÉGIMEN NUTRICIONAL
                     const uNut = regs.find(d => {
-                        let acc = String(d.accion || "").trim().toLowerCase();
-                        return acc === 'nutrición' || acc === 'nutricion' || acc.includes('nutri') || acc.includes('aliment');
+                        let a = String(d.accion || "").trim().toLowerCase();
+                        return a.includes('nutrici') || a.includes('suplement');
                     });
                     if(uNut) {
-                        let fNutStr = uNut.fecha ? new Date(uNut.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'}) : '';
-                        nutricion = `${uNut.valor || "-"}`;
-                        if(uNut.detalles && uNut.detalles !== '-') {
-                            let detNut = uNut.detalles.split('| Op:')[0].trim();
-                            if(detNut) nutricion += ` <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">(${detNut})</span>`;
+                        let fNutStr = "";
+                        if(uNut.fecha) {
+                            try {
+                                let dt = new Date(uNut.fecha);
+                                if(!isNaN(dt.getTime())) fNutStr = ` (Registrado: ${dt.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'})})`;
+                            } catch(e) {}
                         }
-                        if(fNutStr) {
-                            nutricion += `<span style="font-size:11px; color:var(--text-muted); display:block; margin-top:2px;">(Registrado: ${fNutStr})</span>`;
+                        let valNut = uNut.valor || "";
+                        let detNut = uNut.detalles ? String(uNut.detalles).replace(/\|\s*Op:[^|]*/g, '').trim() : "";
+                        let textoNut = valNut;
+                        if(detNut && detNut !== "-" && detNut !== valNut) textoNut += (textoNut ? " | " : "") + detNut;
+                        nutricion = (textoNut || "-") + fNutStr;
+                    }
+
+                    const uSan = regs.find(d => {
+                        let a = String(d.accion || "").trim().toLowerCase();
+                        return a.includes('sanidad') || a.includes('vacuna') || a.includes('tratamiento') || a.includes('antiparasitario');
+                    });
+                    if(uSan) {
+                        let fSanStr = "";
+                        if(uSan.fecha) {
+                            try {
+                                let dt = new Date(uSan.fecha);
+                                if(!isNaN(dt.getTime())) fSanStr = ` (Aplicado: ${dt.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'})})`;
+                            } catch(e) {}
                         }
+                        let valSan = uSan.valor || "";
+                        let detSan = uSan.detalles ? String(uSan.detalles).replace(/\|\s*Op:[^|]*/g, '').trim() : "";
+                        let textoSan = valSan;
+                        if(detSan && detSan !== "-" && detSan !== valSan) textoSan += (textoSan ? " | " : "") + detSan;
+                        sanidad = (textoSan || "-") + fSanStr;
+                    }
+
+                    const uIns = regs.find(d => {
+                        let a = String(d.accion || "").trim().toLowerCase();
+                        return a.includes('insemin') || a.includes('servicio') || a.includes('monta');
+                    });
+                    if(uIns) {
+                        let fInsStr = "";
+                        if(uIns.fecha) {
+                            try {
+                                let dt = new Date(uIns.fecha);
+                                if(!isNaN(dt.getTime())) fInsStr = ` (Inseminado: ${dt.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'})})`;
+                            } catch(e) {}
+                        }
+                        let valIns = uIns.valor || "";
+                        let detIns = uIns.detalles ? String(uIns.detalles).replace(/\|\s*Op:[^|]*/g, '').trim() : "";
+                        let textoIns = valIns;
+                        if(detIns && detIns !== "-" && detIns !== valIns) textoIns += (textoIns ? " | " : "") + detIns;
+                        inseminacion = (textoIns || "-") + fInsStr;
                     }
                     
-                    // Historial de Observaciones
+                    let ultComentario = "Sin comentarios.";
                     regs.forEach(r => {
                         try {
-                            let acc = String(r.accion).trim(); 
-                            let det = String(r.detalles || ""); 
-                            let notaTexto = "";
-                            if (acc === 'Comentario') { 
-                                notaTexto = det.split('|')[0] || ""; 
-                            } else if (det.includes('Notas:')) { 
-                                let parts = det.split('Notas:'); 
-                                if (parts.length > 1) { 
-                                    let n = parts[1].split('|')[0].trim(); 
-                                    if(n && n !== "-" && n !== "") notaTexto = `[${acc}] ${n}`; 
-                                } 
-                            }
-                            if (notaTexto && notaTexto !== "-" && notaTexto.toLowerCase() !== "sin comentarios.") { 
-                                htmlNotas += `<div class="nota-item"><span class="f">${new Date(r.fecha).toLocaleDateString()}</span><span class="t">${notaTexto}</span></div>`; 
-                            }
+                            let acc = String(r.accion).trim(); let det = String(r.detalles || ""); let notaTexto = "";
+                            if (acc === 'Comentario') { notaTexto = det.split('|')[0] || ""; if(ultComentario === "Sin comentarios.") ultComentario = notaTexto; } 
+                            else if (det.includes('Notas:')) { let parts = det.split('Notas:'); if (parts.length > 1) { let n = parts[1].split('|')[0].trim(); if(n && n !== "-" && n !== "") notaTexto = `[${acc}] ${n}`; } }
+                            if (notaTexto && notaTexto !== "-" && notaTexto.toLowerCase() !== "sin comentarios.") { htmlNotas += `<div class="nota-item"><span class="f">${new Date(r.fecha).toLocaleDateString()}</span><span class="t">${notaTexto}</span></div>`; }
                         } catch(e) {}
                     });
+                    const elComentario = document.getElementById('val-comentario');
+                    if(elComentario) elComentario.innerText = ultComentario;
+                } else {
+                    const elComentario = document.getElementById('val-comentario');
+                    if(elComentario) elComentario.innerText = "Sin comentarios.";
                 }
-                if(htmlNotas === "") htmlNotas = "<span style='font-size:13px; color:var(--text-muted); font-style:italic;'>Sin anotaciones extra.</span>";
+                if(htmlNotas === "") htmlNotas = "<span style='font-size:13px; color:var(--text-muted, #94a3b8); font-style:italic;'>Sin anotaciones extra.</span>";
                 
-                // Asignación DOM
                 const elCat = document.getElementById('val-categoria'); if(elCat) elCat.innerText = obtenerNombreCategoriaLegible(cat);
                 const elPeso = document.getElementById('val-peso'); if(elPeso) elPeso.innerHTML = peso;
                 const elDx = document.getElementById('val-dx'); if(elDx) elDx.innerText = dx;
                 const elLote = document.getElementById('val-lote'); if(elLote) elLote.innerText = lote;
                 const elCarimbo = document.getElementById('val-carimbo'); if(elCarimbo) elCarimbo.innerText = carimbo;
                 const elGenealogia = document.getElementById('val-genealogia'); if(elGenealogia) elGenealogia.innerText = padre + " / " + madre;
-                const elNutricion = document.getElementById('val-nutricion'); if(elNutricion) elNutricion.innerHTML = nutricion;
-                const elSanidad = document.getElementById('val-sanidad'); if(elSanidad) elSanidad.innerHTML = sanidad;
-                const elInseminacion = document.getElementById('val-inseminacion'); if(elInseminacion) elInseminacion.innerHTML = inseminacion;
+                const elNutricion = document.getElementById('val-nutricion'); if(elNutricion) elNutricion.innerText = nutricion;
+                const elSanidad = document.getElementById('val-sanidad'); if(elSanidad) elSanidad.innerText = sanidad;
+                const elInseminacion = document.getElementById('val-inseminacion'); if(elInseminacion) elInseminacion.innerText = inseminacion;
                 const elNotas = document.getElementById('val-notas'); if(elNotas) elNotas.innerHTML = htmlNotas;
                 const elRaza = document.getElementById('val-raza'); if(elRaza) elRaza.innerText = raza;
+                
                 const elEdad = document.getElementById('val-edad'); if(elEdad) elEdad.innerText = edad;
-
-                // Pre-rellenado de campos en modales para edición directa
                 const fRaza = document.getElementById('f-raza'); if(fRaza) fRaza.value = raza !== "-" ? raza : ""; 
                 const fNacimiento = document.getElementById('f-nacimiento'); 
-                if(fNacimiento) { fNacimiento.value = edad !== "-" ? edad : ""; mostrarCarimboCalculado(); } 
+                if(fNacimiento) {
+                    fNacimiento.value = edad !== "-" ? edad : "";
+                    if(typeof mostrarCarimboCalculado === 'function') mostrarCarimboCalculado();
+                    else if(typeof window.mostrarCarimboCalculado === 'function') window.mostrarCarimboCalculado();
+                } 
                 const fPadre = document.getElementById('f-padre'); if(fPadre) fPadre.value = padre !== "-" ? padre : ""; 
                 const fMadre = document.getElementById('f-madre'); if(fMadre) fMadre.value = madre !== "-" ? madre : ""; 
                 const inputCarimbo = document.getElementById('input-carimbo-rapido'); if(inputCarimbo) inputCarimbo.value = carimbo !== "-" ? carimbo : ""; 
-                const inputLote = document.getElementById('input-lote-rapido'); if(inputLote) inputLote.value = lote !== "-" ? lote : ""; 
+                const inputLote = document.getElementById('input-lote-rapido');
+                if(inputLote) {
+                    if(inputLote.tagName === 'SELECT') {
+                        let encontrado = false;
+                        for(let i=0; i<inputLote.options.length; i++) {
+                            if(inputLote.options[i].value === lote || inputLote.options[i].text === lote) {
+                                inputLote.selectedIndex = i; encontrado = true; break;
+                            }
+                        }
+                        if(!encontrado && lote !== "-") {
+                            inputLote.value = 'OTRO';
+                            if(typeof verificarSelectOtro === 'function') verificarSelectOtro(inputLote, 'lote-otro');
+                            else if(typeof window.verificarSelectOtro === 'function') window.verificarSelectOtro(inputLote, 'lote-otro');
+                            const lOtro = document.getElementById('lote-otro');
+                            if(lOtro) lOtro.value = lote;
+                        } else {
+                            if(typeof verificarSelectOtro === 'function') verificarSelectOtro(inputLote, 'lote-otro');
+                            else if(typeof window.verificarSelectOtro === 'function') window.verificarSelectOtro(inputLote, 'lote-otro');
+                        }
+                    } else {
+                        inputLote.value = lote !== "-" ? lote : "";
+                    }
+                } 
                 const fComentario = document.getElementById('f-comentario-txt'); if(fComentario) fComentario.value = ""; 
                 
                 const catSelect = document.getElementById('input-cat-rapida'); 
-                if(catSelect) { 
-                    for(let i=0; i<catSelect.options.length; i++) { 
-                        if(catSelect.options[i].value.includes(cat) || catSelect.options[i].text.includes(cat)) {
-                            catSelect.selectedIndex = i; 
-                            break;
-                        }
-                    } 
+                if(catSelect) {
+                    for(let i=0; i<catSelect.options.length; i++) {
+                        if(catSelect.options[i].value === cat || catSelect.options[i].value.includes(cat)) catSelect.selectedIndex = i;
+                    }
                 }
             } catch(e) { console.error("Error al visualizar ficha", e); }
         }
+        window.buscarCaravanaBtn = buscarCaravanaBtn;
 
         function ejecutarAccion(tipo, val, det, modalId) {
             const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: rpActivo, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
@@ -1591,53 +1625,14 @@
         }
 
         function prepararGuardado(mId, t) { 
-            if(!rpActivo) return;
-            let v = "-", d = ""; 
-            let val = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : "";
-            let valOtro = (selId, otroId) => { 
-                let s = val(selId); 
-                return s === 'OTRO' ? val(otroId) : s; 
-            };
-
-            if(t === 'Comentario') { 
-                d = val('f-comentario-txt') || "Anotación general"; 
-            } 
-            else if(t === 'Peso') { 
-                let pVal = val('i-peso-val');
-                if(!pVal) { alert("Por favor ingrese el peso en Kg."); return; }
-                v = pVal + " Kg"; 
-                d = `Cond: ${valOtro('i-peso-cond', 'peso-otro') || 'Óptima'}. Notas: ${val('i-peso-txt') || '-'}`; 
-            } 
-            else if(t === 'Sanidad') { 
-                v = valOtro('i-sani-sel', 'sani-otro');
-                if(!v) v = val('i-sani-sel') || "Tratamiento General";
-                let loteProd = val('i-sani-lote');
-                let notasSan = val('i-sani-txt');
-                let recordatorio = val('i-sani-recordatorio');
-                d = (loteProd ? `Lote: ${loteProd}. ` : '') + (notasSan ? `Notas: ${notasSan}` : 'Sin notas');
-                if (recordatorio && recordatorio !== "0") { 
-                    d += ` | [RECORDATORIO:${recordatorio}]`; 
-                } 
-            } 
-            else if(t === 'Diagnóstico') { 
-                let dxVal = valOtro('i-dx-sel', 'dx-otro');
-                if(!dxVal) dxVal = "Preñada";
-                v = "Dx: " + dxVal; 
-                d = val('i-dx-txt') || "Tacto veterinario"; 
-            } 
-            else if(t === 'Inseminación') { 
-                let toroVal = val('i-ins-toro') || "Toro no especificado";
-                v = "Toro: " + toroVal; 
-                d = `Método: ${valOtro('i-ins-quien', 'ins-otro') || 'IATF'}. Notas: ${val('i-ins-txt') || '-'}`; 
-            } 
-            else if(t === 'Nutrición') { 
-                v = valOtro('i-nut-prod', 'nut-otro') || "Sal Mineral"; 
-                d = `Ración: ${val('i-nut-rac') || 'A voluntad'}. Notas: ${val('i-nut-txt') || '-'}`; 
-            } 
-            else if(t === 'Baja') { 
-                v = valOtro('i-baja-causa', 'baja-otro') || "Natural / Desconocida"; 
-                d = val('i-baja-txt') || "Sin observaciones"; 
-            }
+            if(!rpActivo) return; let v = "-", d = ""; const i = document.getElementById(mId).querySelectorAll('.form-control, .textarea'); 
+            if(t === 'Comentario') { d = i[0].value; } 
+            else if(t === 'Peso') { v = i[0].value + " Kg"; d = `Cond: ${i[1].value}. Notas: ${i[2].value}`; } 
+            else if(t === 'Sanidad') { let recordatorio = document.getElementById('i-sani-recordatorio').value; v = i[0].value; d = `Lote: ${i[1].value}. Notas: ${i[2].value}`; if (recordatorio !== "0") { d += ` | [RECORDATORIO:${recordatorio}]`; } } 
+            else if(t === 'Diagnóstico') { v = "Dx: " + i[0].value; d = i[1].value || "-"; } 
+            else if(t === 'Inseminación') { v = "Toro: " + i[1].value; d = `Ins: ${i[0].value}. Notas: ${i[2].value}`; } 
+            else if(t === 'Nutrición') { v = i[0].value; d = `Ración: ${i[1].value}. Notas: ${i[2].value}`; } 
+            else if(t === 'Baja') { v = i[0].value; d = i[1].value || "Sin observaciones"; }
             
             if(t === 'Baja') {
                 ejecutarAccion(t, v, d, mId); 
@@ -1645,26 +1640,10 @@
                 setTimeout(() => {
                     ejecutarAccion('Cambio de Caravana', rpArchivado, 'RP archivado por Baja/Muerte', null);
                     alert(`Baja registrada exitosamente. La caravana original (${rpActivo}) ha quedado libre y vacía de datos.`);
-                    rpActivo = rpArchivado; 
-                    buscarCaravanaBtn(rpArchivado);
+                    rpActivo = rpArchivado; buscarCaravanaBtn(rpArchivado);
                 }, 400);
-            } else { 
-                ejecutarAccion(t, v, d, mId); 
-            }
-
-            // Limpiar campos visuales de forma segura
-            let modalEl = document.getElementById(mId);
-            if(modalEl) {
-                modalEl.querySelectorAll('input, textarea').forEach(el => {
-                    if(el.type !== 'hidden') el.value = '';
-                });
-                modalEl.querySelectorAll('input[id$="-otro"]').forEach(el => el.classList.add('oculto'));
-                modalEl.querySelectorAll('select').forEach(el => {
-                    if(el.id !== 'rafaga-modalidad' && el.id !== 'rafaga-accion' && el.id !== 'rafaga-recordatorio') {
-                        el.selectedIndex = 0;
-                    }
-                });
-            }
+            } else { ejecutarAccion(t, v, d, mId); }
+            i.forEach(el => el.value = ''); 
         }
 
         function mostrarCarimboCalculado() {
@@ -1747,7 +1726,7 @@
         function actualizarInformeAvanzado() {
             const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
             const datosActivos = obtenerRegistrosActivos(); 
-            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; 
+            const unicas = [...new Set(datosActivos.map(d => d.caravana).filter(esCaravanaValida).map(c => String(c).trim()))]; 
             
             const tbodyMasivo = document.getElementById('tb-informe-masivo');
             const tbodyBajas = document.getElementById('tb-informe-bajas');
@@ -2038,7 +2017,7 @@
 
         function procesarDatosDashboard() {
             const datosActivos = obtenerRegistrosActivos(); 
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
+            let unicas = [...new Set(datosActivos.map(d => d.caravana).filter(esCaravanaValida).map(c => String(c).trim()))];
             let vivas = []; let cantBajas = datosActivos.filter(r => r.accion === 'Baja').length;
             unicas.forEach(car => { if(!obtenerHistorial(car).some(x => x.accion === 'Baja')) { vivas.push(car); } }); unicas = vivas; 
             
@@ -2213,7 +2192,7 @@
 
         function cargarListaRegistro() {
             const datosActivos = obtenerRegistrosActivos();
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
+            let unicas = [...new Set(datosActivos.map(d => d.caravana).filter(esCaravanaValida).map(c => String(c).trim()))];
             
             let estadoFiltro = document.getElementById('filtro-reg-estado').value;
             let loteFiltro = document.getElementById('filtro-reg-lote').value;
@@ -2250,7 +2229,11 @@
                 let catLegible = obtenerNombreCategoriaLegible(cat);
 
                 if (loteFiltro !== "ALL" && !lote.includes(loteFiltro)) return;
-                if (catFiltro !== "ALL" && !catLegible.includes(catFiltro)) return;
+                if (catFiltro === "Sin Categoría") {
+                    if (catLegible !== "Sin Categoría") return;
+                } else if (catFiltro !== "ALL" && !catLegible.includes(catFiltro)) {
+                    return;
+                }
                 
                 if (dxFiltro === "Preñada") {
                     if (!esPre) return;
@@ -2271,33 +2254,62 @@
                 listaFiltrada.push({ car, catLegible, lote, dx, esBaja });
             });
 
-            const ul = document.getElementById('tb-registro'); ul.innerHTML = "";
+            const ul = document.getElementById('tb-registro');
+            if(!ul) return;
+            ul.innerHTML = "";
+            let esTabla = ul.tagName === 'TBODY' || ul.tagName === 'TABLE';
             if(listaFiltrada.length === 0) {
-                ul.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:20px;">No se encontraron registros con estos filtros.</td></tr>';
+                ul.innerHTML = esTabla ? '<tr><td colspan="5" style="text-align:center; color:var(--text-muted, #94a3b8); padding:20px;">No se encontraron registros con estos filtros.</td></tr>' : '<li style="text-align:center; color:var(--muted, #94a3b8); padding:20px;">No se encontraron registros con estos filtros.</li>';
                 return;
             }
 
             let htmlHTML = "";
             let limiteRender = 100;
-            listaFiltrada.slice(0, limiteRender).forEach(item => {
-                let badgeBaja = item.esBaja ? `<span style="background:var(--danger); color:white; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px;">BAJA</span>` : '';
-                htmlHTML += `<tr onclick="navegarDesdeLista('${item.car}')">
-                    <td style="color:var(--text-main);"><strong>${item.car}</strong>${badgeBaja}</td>
-                    <td style="color:var(--text-main);">${item.catLegible}</td>
-                    <td style="color:var(--text-main);">${item.lote}</td>
-                    <td style="color:var(--text-main);">${item.dx}</td>
-                    <td><button class="btn-outline">Abrir Ficha</button></td>
-                </tr>`;
-            });
-            if(listaFiltrada.length > limiteRender) {
-                htmlHTML += `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:20px;">Mostrando ${limiteRender} de ${listaFiltrada.length} resultados. Utilice el buscador.</td></tr>`;
+            if(esTabla) {
+                listaFiltrada.slice(0, limiteRender).forEach(item => {
+                    let badgeBaja = item.esBaja ? `<span style="background:var(--danger, #ef4444); color:white; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px;">BAJA</span>` : '';
+                    htmlHTML += `<tr onclick="navegarDesdeLista('${item.car}')" style="cursor:pointer;">
+                        <td style="color:var(--text-main);"><strong>${item.car}</strong>${badgeBaja}</td>
+                        <td style="color:var(--text-main);">${item.catLegible}</td>
+                        <td style="color:var(--text-main);">${item.lote}</td>
+                        <td style="color:var(--text-main);">${item.dx}</td>
+                        <td><button class="btn-outline" style="padding:4px 10px; font-size:12px;">Abrir Ficha</button></td>
+                    </tr>`;
+                });
+                if(listaFiltrada.length > limiteRender) {
+                    htmlHTML += `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:15px;">Mostrando ${limiteRender} de ${listaFiltrada.length} resultados. Utilice el buscador.</td></tr>`;
+                }
+            } else {
+                listaFiltrada.slice(0, limiteRender).forEach(item => {
+                    let badgeBaja = item.esBaja ? `<span style="background:var(--peligro, #ef4444); color:white; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px;">BAJA</span>` : '';
+                    htmlHTML += `<li onclick="window.navegarDesdeLista('${item.car}')" style="padding:10px 12px; cursor:pointer;">
+                        <div style="display:flex; flex-direction:column; gap:3px;">
+                            <div style="display:flex; align-items:center;">
+                                <strong style="font-size:17px; color:var(--texto);">${item.car}</strong>${badgeBaja}
+                            </div>
+                            <span style="font-size:12px; color:var(--muted);">${item.catLegible} | Lote: ${item.lote} | Dx: ${item.dx}</span>
+                        </div>
+                        <span style="font-size:18px; color:var(--texto);">›</span>
+                    </li>`;
+                });
+                if(listaFiltrada.length > limiteRender) {
+                    htmlHTML += `<li style="text-align:center; color:var(--muted); padding:15px;">Mostrando los primeros ${limiteRender} resultados. Usa el buscador.</li>`;
+                }
             }
             ul.innerHTML = htmlHTML;
         }
+        window.cargarListaRegistro = cargarListaRegistro;
 
-        function filtrarLista(t) { cargarListaRegistro(); }
-        function navegarDesdeLista(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.sidebar-nav li')[1].click(); buscarCaravanaBtn(); }
-        
+        function navegarDesdeLista(car) {
+            if(!esCaravanaValida(car)) return;
+            const buscador = document.getElementById('buscador-caravana');
+            if(buscador) buscador.value = car;
+            const navBtn = document.querySelector('.sidebar-nav li[onclick*="v-ficha"]') || document.querySelectorAll('.sidebar-nav li')[1];
+            cambiarVista('v-ficha', navBtn);
+            buscarCaravanaBtn(car);
+        }
+        window.navegarDesdeLista = navegarDesdeLista;
+
         function guardarDisenoServidor() { 
             const n = document.getElementById('cfg-nom').value.trim(); 
             const f = document.getElementById('cfg-logo'); 
