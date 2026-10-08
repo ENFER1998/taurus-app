@@ -818,6 +818,7 @@
         let unsubscribeEventos = null;
         let unsubscribeConfig = null;
 
+        /* MANEJO OFFLINE ROBUSTO DEL ARRANQUE DE SESIÓN */
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
                 let cachedProfile = lsGet('tc_user_profile', null);
@@ -829,7 +830,7 @@
                     bootConCache = true;
                 }
 
-                // INTENTAR OBTENER DATOS FRESCOS SI HAY RED
+                // INTENTAR OBTENER DATOS FRESCOS (SI HAY RED ACTUALIZA)
                 if (navigator.onLine) {
                     db.collection('usuarios').doc(user.email).get().then(doc => {
                         if (doc.exists) {
@@ -869,6 +870,175 @@
             setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() => t.remove(), 500); }, 3000);
         }
 
+        function solicitarPermisoNotificaciones() {
+            if (!("Notification" in window)) return;
+            if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
+        }
+
+        function lanzarNotificacionEscritorio(titulo, mensaje) {
+            if (!("Notification" in window)) return;
+            if (Notification.permission === "granted") {
+                new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' });
+            } else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' });
+                    }
+                });
+            }
+        }
+
+        function procesarAlertaServidor(msg, id) {
+            const banner = document.getElementById('banner-alerta-global');
+            if (!msg || !id) { banner.classList.add('oculto'); return; }
+            let leidas = lsGet('tc_alertas_leidas', []); let mostradas = lsGet('tc_alertas_mostradas', []);
+            if (!leidas.includes(id)) {
+                alertaGlobalIdActual = id;
+                document.getElementById('txt-alerta-global').innerText = msg;
+                document.getElementById('txt-banner-alerta').innerText = msg;
+                if (!mostradas.includes(id)) { document.getElementById('modal-alerta-global').style.display = 'flex'; }
+                banner.classList.remove('oculto');
+            } else { banner.classList.add('oculto'); }
+        }
+
+        function cerrarPopUpAlerta() {
+            if (alertaGlobalIdActual) {
+                let mostradas = lsGet('tc_alertas_mostradas', []);
+                if (!mostradas.includes(alertaGlobalIdActual)) { mostradas.push(alertaGlobalIdActual); lsSet('tc_alertas_mostradas', mostradas); }
+                let leidas = lsGet('tc_alertas_leidas', []);
+                if (!leidas.includes(alertaGlobalIdActual)) {
+                    leidas.push(alertaGlobalIdActual);
+                    lsSet('tc_alertas_leidas', leidas);
+                    if(navigator.onLine && usActivo) {
+                        try {
+                            db.collection('usuarios').doc(usActivo).update({
+                                alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
+                            });
+                        } catch(e) {}
+                    }
+                }
+            }
+            document.getElementById('modal-alerta-global').style.display = 'none';
+            document.getElementById('banner-alerta-global').classList.add('oculto');
+        }
+
+        window.marcarAlertaLeida = function() {
+            if (alertaGlobalIdActual) {
+                let leidas = lsGet('tc_alertas_leidas', []);
+                if(!leidas.includes(alertaGlobalIdActual)) {
+                    leidas.push(alertaGlobalIdActual);
+                    lsSet('tc_alertas_leidas', leidas);
+                    if(navigator.onLine && usActivo) {
+                        try {
+                            db.collection('usuarios').doc(usActivo).update({
+                                alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
+                            });
+                        } catch(e) {}
+                    }
+                }
+            }
+            document.getElementById('modal-alerta-global').style.display = 'none';
+            document.getElementById('banner-alerta-global').classList.add('oculto');
+        }
+
+        let rafagaActiva = false;
+        window.toggleRafaga = function() {
+            rafagaActiva = !rafagaActiva;
+            const btn = document.getElementById('btn-toggle-rafaga');
+            const opciones = document.getElementById('opciones-rafaga');
+            if(rafagaActiva) {
+                btn.innerText = "ENCENDIDO"; btn.style.background = "var(--secundario)"; btn.style.color = "white";
+                opciones.classList.remove('oculto'); verificarRafagaCustom();
+            } else {
+                btn.innerText = "APAGADO"; btn.style.background = "transparent"; btn.style.color = "var(--texto)";
+                opciones.classList.add('oculto');
+            }
+        };
+
+        window.verificarRafagaCustom = function() {
+            const sel = document.getElementById('rafaga-accion').value;
+            const modalidad = document.getElementById('rafaga-modalidad') ? document.getElementById('rafaga-modalidad').value : 'rfid';
+            const customInput = document.getElementById('rafaga-prod-custom');
+            const detallesBox = document.getElementById('caja-rafaga-detalles');
+            const cajaManual = document.getElementById('caja-rafaga-manual');
+            
+            if(modalidad === 'manual') cajaManual.classList.remove('oculto'); else cajaManual.classList.add('oculto');
+            
+            if(sel === 'solo_peso') { customInput.classList.add('oculto'); detallesBox.classList.add('oculto'); }
+            else { detallesBox.classList.remove('oculto'); if(sel === 'OTRO') { customInput.classList.remove('oculto'); customInput.focus(); } else { customInput.classList.add('oculto'); } }
+        };
+
+        window.ejecutarRafagaManual = function() {
+            let rp = document.getElementById('rm-caravana').value.trim().toUpperCase();
+            let val = document.getElementById('rm-valor').value.trim().toUpperCase();
+            if(!rp || !val) return;
+            rpActivo = rp;
+            let sel = document.getElementById('rafaga-accion').value; let notas = document.getElementById('rafaga-detalles').value.trim(); let recordatorio = document.getElementById('rafaga-recordatorio').value; 
+            
+            if(!isNaN(val) || val.includes('.')) { ejecutarAccion('Peso', val + " Kg", "Automático (Ráfaga Manual)", null); } 
+            else { ejecutarAccion('Sanidad', val, "Automático (Ráfaga Manual)", null); }
+            
+            if(sel !== 'solo_peso') {
+                let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
+                let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga Manual";
+                if (recordatorio !== "0") detCompleto += ` | [RECORDATORIO:${recordatorio}]`;
+                ejecutarAccion('Sanidad', producto, detCompleto, null);
+            }
+            mostrarToast("✅ Combo asignado al RP: " + rp);
+            document.getElementById('rm-caravana').value = ""; document.getElementById('rm-valor').value = ""; document.getElementById('rm-caravana').focus();
+        };
+
+        function setEstadoRed(online, texto = null) {
+            const b = document.getElementById('estado-red');
+            if(!b) return;
+            if(texto) { b.innerText = texto; }
+            else if(navigator.onLine || online) { b.classList.remove('offline'); b.innerText = '🟢 Conectado'; }
+            else { b.classList.add('offline'); b.innerText = '🔴 Red Local'; }
+
+            const btnAura = document.getElementById('btn-aura');
+            if (btnAura) {
+               let userProfile = lsGet('tc_user_profile', {});
+               let isPropietario = String(userProfile.rol||"").includes('Propietario') || String(userProfile.rol||"").includes('Dueño');
+               let tienePermisoCora = isPropietario || String(userProfile.rol||"").includes('cora');
+               
+               if ((navigator.onLine || online) && tienePermisoCora) {
+                   btnAura.style.display = 'flex';
+               } else {
+                   btnAura.style.display = 'none';
+                   const estadoIA = document.getElementById('estado-ia');
+                   if (estadoIA) estadoIA.style.display = 'none';
+               }
+            }
+        }
+
+        window.addEventListener('online', () => setEstadoRed(true)); window.addEventListener('offline', () => setEstadoRed(false));
+
+        async function procesarIngreso() {
+            let u = document.getElementById('usuario').value.trim();
+            const p = document.getElementById('password').value.trim();
+            const btn = document.getElementById('btn-ingreso');
+            const err = document.getElementById('error-login');
+            if(!u || !p) return;
+            btn.disabled = true; btn.innerText = "Verificando..."; err.style.display = 'none';
+            let email = u.includes('@') ? u.toLowerCase() : u.toLowerCase() + '@taurus.com';
+            try {
+                await firebase.auth().signInWithEmailAndPassword(email, p);
+            } catch(error) {
+                err.innerText = "Usuario no registrado en Firebase o clave incorrecta.";
+                err.style.display = 'block';
+                btn.disabled = false; btn.innerText = "Iniciar Sesión";
+            }
+        }
+
+        function notificarPropietario(mensaje) {
+            if(!navigator.onLine) return;
+            let isDueno = usRol.includes('Propietario') || usRol.includes('Dueño');
+            const fd = new URLSearchParams(); fd.append('accion', 'notificar_accion'); fd.append('maestro', maestroId); fd.append('mensaje', mensaje); fd.append('remitente_es_dueno', isDueno);
+            fetch("https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec", { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
+        }
+
         function arrancarSistemaFirebase(u, m, r, nombreCompleto, hacienda, featuresStr) {
             try {
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
@@ -899,7 +1069,7 @@
                 if(unsubscribeEventos) unsubscribeEventos();
 
                 let renderTimeout;
-                // OFFLINE FIX: includeMetadataChanges permite que Firestore dispare eventos usando solo el caché instantáneamente
+                // OFFLINE FIX: includeMetadataChanges permite usar caché al instante
                 unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot({ includeMetadataChanges: true }, snapshot => {
                     let nuevosDatos = [];
                     snapshot.forEach(doc => { let d = doc.data(); d.id = doc.id; nuevosDatos.push(d); });
@@ -944,6 +1114,13 @@
                             if (isPropietario) {
                                 await OneSignal.Slidedown.promptPush();
                                 OneSignal.User.PushSubscription.optIn();
+
+                                OneSignal.Notifications.addEventListener('foregroundWillDisplay', function(event) {
+                                    const notif = event.notification;
+                                    if(notif.body && notif.body.includes(usNombre)) {
+                                        event.preventDefault();
+                                    }
+                                });
                             } else {
                                 OneSignal.User.PushSubscription.optOut();
                             }
@@ -1217,7 +1394,6 @@
                         let p2 = parseFloat(String(pesoAnterior.valor).replace(/[^\d.-]/g, '')); let d2 = new Date(pesoAnterior.fecha);
                         let diffTime = Math.abs(d1 - d2); let dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                         if(dias >= 1) { 
-                            // FIX: parseFloat elimina los ceros innecesarios (ej. 39.000 se vuelve 39)
                             let gdp = parseFloat(((p1 - p2) / dias).toFixed(3)); 
                             if(gdp > 0) gdpHtml = `<span style="color:var(--exito); font-weight:bold; font-size:12px;">🚀 +${gdp} Kg/día</span>`; 
                             else if(gdp < 0) gdpHtml = `<span style="color:var(--peligro); font-weight:bold; font-size:12px;">⚠️ ${gdp} Kg/día</span>`; 
@@ -1403,7 +1579,6 @@
             document.getElementById('edit-reg-valor').value = reg.valor || ""; 
             document.getElementById('edit-reg-detalles').value = reg.detalles || "";
             
-            // FIX: Cargar la fecha original al editar
             if(reg.fecha) {
                 let fechaLocal = new Date(reg.fecha);
                 fechaLocal.setMinutes(fechaLocal.getMinutes() - fechaLocal.getTimezoneOffset());
@@ -1421,7 +1596,6 @@
             
             if(!navigator.onLine) { alert("Necesitas conexión a internet para editar."); return; }
             try {
-                // FIX: Guardar también la nueva fecha modificada
                 let isoFecha = new Date(nFecha).toISOString();
                 await db.collection('estancias').doc(maestroId).collection('eventos').doc(id).update({ valor: nValor, detalles: nDetalles, fecha: isoFecha });
                 
