@@ -1294,13 +1294,12 @@
 
         function ejecutarAccion(tipo, val, det, modalId) {
             let car = rpActivo;
-            // FIX: Operaciones administrativas NO deben tener caravana asignada para evitar crear animales "null"
             if (tipo.includes('Operador') || tipo === 'Alta Operador' || tipo === 'Edición Operador' || tipo === 'Baja Operador') {
                 car = "---";
             } else if (!car || car === "null" || car === "undefined") {
                 car = "---";
             }
-            
+
             const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: car, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
             dbCache.unshift(obj); historiaCache = null; activosCache = null; buscarCaravanaBtn(rpActivo); procesarDatosDashboard();
             if(modalId) cerrarModal(modalId);
