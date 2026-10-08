@@ -790,6 +790,17 @@
                 </div>
 
                 <div class="tarjeta">
+                    <div class="tarjeta-titulo">🤖 Asistente Virtual Cora</div>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <span style="font-weight: bold; color: var(--texto); display:block;">Botón Flotante de Cora</span>
+                            <span style="font-size:11px; color:var(--muted);">Desactivar si trabajas en campo o APK para evitar bloqueos</span>
+                        </div>
+                        <button class="btn-mini" id="btn-toggle-cora-vis" onclick="toggleCoraVisibilidad()">Desactivar</button>
+                    </div>
+                </div>
+
+                <div class="tarjeta">
                     <div class="tarjeta-titulo">🎨 Apariencia de la App</div>
                     <div style="display: flex; align-items: center; justify-content: space-between;">
                         <span style="font-weight: bold; color: var(--texto);">Tema Claro / Oscuro</span>
@@ -1186,15 +1197,27 @@
 
         window.procesarAlertaServidor = function(msg, id) {
             const banner = document.getElementById('banner-alerta-global');
-            if (!msg || !id) { banner.classList.add('oculto'); return; }
-            let leidas = window.lsGet('tc_alertas_leidas', []); let mostradas = window.lsGet('tc_alertas_mostradas', []);
-            if (!leidas.includes(id)) {
+            const modal = document.getElementById('modal-alerta-global');
+            if (!msg || !id) {
+                if (banner) banner.classList.add('oculto');
+                if (modal) modal.style.display = 'none';
+                return;
+            }
+            let leidas = window.lsGet('tc_alertas_leidas', []);
+            let mostradas = window.lsGet('tc_alertas_mostradas', []);
+            let profile = window.lsGet('tc_user_profile', {});
+            let leidasProfile = profile.alertas_leidas || [];
+
+            if (!leidas.includes(id) && !leidasProfile.includes(id)) {
                 alertaGlobalIdActual = id;
                 document.getElementById('txt-alerta-global').innerText = msg;
                 document.getElementById('txt-banner-alerta').innerText = msg;
-                if (!mostradas.includes(id)) { document.getElementById('modal-alerta-global').style.display = 'flex'; }
+                if (!mostradas.includes(id)) { modal.style.display = 'flex'; }
                 banner.classList.remove('oculto');
-            } else { banner.classList.add('oculto'); }
+            } else {
+                banner.classList.add('oculto');
+                modal.style.display = 'none';
+            }
         }
 
         window.cerrarPopUpAlerta = function() {
@@ -1205,13 +1228,13 @@
                 if (!leidas.includes(alertaGlobalIdActual)) {
                     leidas.push(alertaGlobalIdActual);
                     window.lsSet('tc_alertas_leidas', leidas);
-                    if(navigator.onLine && usActivo) {
-                        try {
-                            db.collection('usuarios').doc(usActivo).update({
-                                alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
-                            });
-                        } catch(e) {}
-                    }
+                }
+                if(navigator.onLine && usActivo) {
+                    try {
+                        db.collection('usuarios').doc(usActivo).update({
+                            alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
+                        });
+                    } catch(e) {}
                 }
             }
             document.getElementById('modal-alerta-global').style.display = 'none';
@@ -1224,13 +1247,13 @@
                 if(!leidas.includes(alertaGlobalIdActual)) {
                     leidas.push(alertaGlobalIdActual);
                     window.lsSet('tc_alertas_leidas', leidas);
-                    if(navigator.onLine && usActivo) {
-                        try {
-                            db.collection('usuarios').doc(usActivo).update({
-                                alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
-                            });
-                        } catch(e) {}
-                    }
+                }
+                if(navigator.onLine && usActivo) {
+                    try {
+                        db.collection('usuarios').doc(usActivo).update({
+                            alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
+                        });
+                    } catch(e) {}
                 }
             }
             document.getElementById('modal-alerta-global').style.display = 'none';
@@ -1238,15 +1261,85 @@
         }
 
         let rafagaActiva = false;
+        let sesionRafaga = {
+            activa: false,
+            inicio: null,
+            accion: '',
+            detalles: '',
+            animales: new Set()
+        };
+
+        window.registrarEventoEspecial = function(accion, valor, detalles) {
+            if(!maestroId) return;
+            const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
+            const docRef = colRef.doc();
+            const obj = {
+                id: docRef.id,
+                fecha: new Date().toISOString(),
+                accion: accion,
+                caravana: "---",
+                valor: valor,
+                detalles: detalles + ` | Op: ${usNombre}`,
+                maestro: maestroId,
+                autor_email: usActivo,
+                autor_nombre: usNombre,
+                autor_rol: usRol
+            };
+            if (navigator.onLine) {
+                docRef.set(obj).catch(()=>{});
+            }
+        };
+
         window.toggleRafaga = function() {
             rafagaActiva = !rafagaActiva;
             const btn = document.getElementById('btn-toggle-rafaga');
             const opciones = document.getElementById('opciones-rafaga');
+            
             if(rafagaActiva) {
-                btn.innerText = "ENCENDIDO"; btn.style.background = "var(--secundario)"; btn.style.color = "white";
-                opciones.classList.remove('oculto'); window.verificarRafagaCustom();
+                sesionRafaga.activa = true;
+                sesionRafaga.inicio = new Date();
+                sesionRafaga.animales = new Set();
+                
+                let selAccion = document.getElementById('rafaga-accion') ? document.getElementById('rafaga-accion').value : 'solo_peso';
+                let customProd = (document.getElementById('rafaga-prod-custom') && !document.getElementById('rafaga-prod-custom').classList.contains('oculto')) ? document.getElementById('rafaga-prod-custom').value.trim() : '';
+                let prodNombre = (selAccion === 'OTRO' ? customProd : (selAccion === 'solo_peso' ? 'Solo Pesaje' : selAccion)) || 'Tratamiento General';
+                sesionRafaga.accion = prodNombre;
+                sesionRafaga.detalles = document.getElementById('rafaga-detalles') ? document.getElementById('rafaga-detalles').value.trim() : '';
+
+                btn.innerText = "ENCENDIDO (0)";
+                btn.style.background = "var(--secundario)";
+                btn.style.color = "white";
+                opciones.classList.remove('oculto');
+                window.verificarRafagaCustom();
+
+                // Notificación inicial al arrancar el modo ráfaga
+                let isDueno = usRol.includes('Propietario') || usRol.includes('Dueño');
+                let rolEtiqueta = isDueno ? 'Propietario' : 'Operador';
+                let msgInicio = `⚡ ${usNombre} (${rolEtiqueta}) inició Modo Ráfaga en ${usHacienda} [Configurado: ${prodNombre}]`;
+                window.notificarPropietario(msgInicio);
+                window.mostrarToast(`⚡ Modo Ráfaga Iniciado: ${prodNombre}`);
+                window.registrarEventoEspecial('Ráfaga_Inicio', prodNombre, `Iniciado por ${usNombre} (${rolEtiqueta})`);
             } else {
-                btn.innerText = "APAGADO"; btn.style.background = "transparent"; btn.style.color = "var(--texto)";
+                let total = sesionRafaga.animales.size;
+                let accionRealizada = sesionRafaga.accion || 'Tratamiento / Pesaje';
+                
+                // Notificación final al concluir el modo ráfaga con conteo y tratamiento
+                if (total > 0) {
+                    let isDueno = usRol.includes('Propietario') || usRol.includes('Dueño');
+                    let rolEtiqueta = isDueno ? 'Propietario' : 'Operador';
+                    let msgFin = `🏁 ${usNombre} (${rolEtiqueta}) finalizó Modo Ráfaga en ${usHacienda}: Se cargaron ${total} animales [Tratamiento: ${accionRealizada}]`;
+                    window.notificarPropietario(msgFin);
+                    window.mostrarToast(`🏁 Ráfaga finalizada: ${total} animales procesados`);
+                    window.registrarEventoEspecial('Ráfaga_Fin', `${total} animales`, `Finalizado por ${usNombre} | Acción: ${accionRealizada}`);
+                } else {
+                    window.mostrarToast("Modo Ráfaga desactivado (sin registros)");
+                }
+
+                sesionRafaga.activa = false;
+                sesionRafaga.animales.clear();
+                btn.innerText = "APAGADO";
+                btn.style.background = "transparent";
+                btn.style.color = "var(--texto)";
                 opciones.classList.add('oculto');
             }
         };
@@ -1367,7 +1460,13 @@
         window.notificarPropietario = function(mensaje) {
             if(!navigator.onLine) return;
             let isDueno = usRol.includes('Propietario') || usRol.includes('Dueño');
-            const fd = new URLSearchParams(); fd.append('accion', 'notificar_accion'); fd.append('maestro', maestroId); fd.append('mensaje', mensaje); fd.append('remitente_es_dueno', isDueno);
+            const fd = new URLSearchParams();
+            fd.append('accion', 'notificar_accion');
+            fd.append('maestro', maestroId);
+            fd.append('mensaje', mensaje);
+            fd.append('remitente_es_dueno', isDueno);
+            fd.append('remitente_nombre', usNombre);
+            fd.append('remitente_usuario', usActivo);
             fetch("https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec", { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
         }
 
@@ -1389,8 +1488,23 @@
                 if(unsubscribeConfig) unsubscribeConfig();
                 unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot(doc => {
                     if(doc.exists) {
-                        const conf = doc.data();
-                        window.procesarAlertaServidor(conf.alerta_global, "alerta_fb");
+                        const conf = doc.data() || {};
+                        let msg = (conf.alerta_global || "").trim();
+                        let alertaId = conf.alerta_id || (msg ? "alerta_id_" + encodeURIComponent(msg).slice(0, 20) : "");
+                        let expira = conf.alerta_expira || 0;
+                        
+                        // SANITIZACIÓN ROBUSTA: Si es el viejo texto 'hola' o está vacía o ya expiró, NO se muestra nunca
+                        let esAntiguoHola = msg.toLowerCase() === 'hola' ||
+                                            msg.toLowerCase() === '⏳ aviso: hola' ||
+                                            msg.toLowerCase().includes('aviso importante hola') ||
+                                            msg.toLowerCase() === 'aviso importante: hola';
+
+                        if (!msg || esAntiguoHola || (expira > 0 && Date.now() > expira)) {
+                            window.procesarAlertaServidor("", "");
+                        } else {
+                            window.procesarAlertaServidor(msg, alertaId);
+                        }
+
                         const pantMant = document.getElementById('pantalla-mantenimiento');
                         if(conf.mantenimiento) { if(pantMant) pantMant.classList.remove('oculto'); }
                         else { if(pantMant) pantMant.classList.add('oculto'); }
@@ -1411,13 +1525,23 @@
                     window.fusionarDatos(nuevosDatos);
 
                     if (notificar.length > 0 && mapAnterior.size > 0) {
-                        if (notificar.length <= 3) {
+                        let isDuenoActual = usRol.includes('Propietario') || usRol.includes('Dueño');
+                        // REGLA FUNDAMENTAL: Los operadores NUNCA reciben notificaciones
+                        if (isDuenoActual && notificar.length <= 5) {
                             notificar.forEach(n => {
-                                let op = n.usuario || "Un operador";
-                                if (n.detalles && n.detalles.includes("Op: ")) { op = n.detalles.split("Op: ")[1].trim(); }
-                                let isDuenoActual = usRol.includes('Propietario') || usRol.includes('Dueño');
-                                if(isDuenoActual && n.maestro === maestroId && op.toLowerCase() !== usNombre.toLowerCase() && n.caravana !== '---' && n.caravana !== 'null' && String(n.caravana).toLowerCase() !== 'null') {
-                                    window.lanzarNotificacionEscritorio("Alerta Taurus", `${op} registró [${n.accion}] al RP ${n.caravana}`);
+                                let opNombre = n.autor_nombre || (n.detalles && n.detalles.includes("Op: ") ? n.detalles.split("Op: ")[1].trim() : (n.usuario || "Un operador"));
+                                let opEmail = n.autor_email || n.usuario || "";
+                                
+                                // REGLA FUNDAMENTAL: NUNCA notificarse a sí mismo
+                                let esAutorMismo = (opEmail && usActivo && opEmail.toLowerCase() === usActivo.toLowerCase()) ||
+                                                   (opNombre && usNombre && opNombre.toLowerCase() === usNombre.toLowerCase());
+
+                                if (!esAutorMismo && n.maestro === maestroId) {
+                                    if (n.accion === 'Ráfaga_Inicio' || n.accion === 'Ráfaga_Fin') {
+                                        window.lanzarNotificacionEscritorio("⚡ Modo Ráfaga Taurus", `${opNombre}: ${n.valor}`);
+                                    } else if (n.caravana !== '---' && n.caravana !== 'null' && String(n.caravana).toLowerCase() !== 'null') {
+                                        window.lanzarNotificacionEscritorio("Alerta Taurus", `${opNombre} registró [${n.accion}] al RP ${n.caravana}`);
+                                    }
                                 }
                             });
                         }
@@ -1535,7 +1659,7 @@
                 document.getElementById('pantalla-app').classList.remove('oculto');
                 document.getElementById('pantalla-mantenimiento').classList.add('oculto');
                 if(tabSeleccionado) { window.cambiarVista(vistaInicial, tabSeleccionado); } else { window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
-                window.sincronizarPendientesAuto(); window.cargarListasFiltrosSelects(); window.cargarListaOperadores();
+                window.sincronizarPendientesAuto(); window.cargarListasFiltrosSelects(); window.cargarListaOperadores(); window.aplicarVisibilidadCora();
                 
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
@@ -1806,18 +1930,42 @@
 
         window.ejecutarAccion = function(tipo, val, det, modalId) {
             let car = rpActivo;
-            if (tipo.includes('Operador') || tipo === 'Alta Operador' || tipo === 'Edición Operador' || tipo === 'Baja Operador') {
+            if (tipo.includes('Operador') || tipo === 'Alta Operador' || tipo === 'Edición Operador' || tipo === 'Baja Operador' || tipo.startsWith('Ráfaga_')) {
                 car = "---";
             } else if (!car || String(car).toLowerCase() === "null" || car === "undefined") {
                 car = "---";
             }
 
+            // Conteo de animales únicos en sesión ráfaga
+            if (rafagaActiva && car !== "---") {
+                sesionRafaga.animales.add(String(car));
+                const btnR = document.getElementById('btn-toggle-rafaga');
+                if (btnR) btnR.innerText = `ENCENDIDO (${sesionRafaga.animales.size})`;
+            }
+
             const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
             const docRef = colRef.doc();
-            const obj = { id: docRef.id, fecha: new Date().toISOString(), accion: tipo, caravana: car, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
-            dbCache.unshift(obj); historiaCache = null; activosCache = null; window.buscarCaravanaBtn(rpActivo); window.procesarDatosDashboard();
+            const obj = {
+                id: docRef.id,
+                fecha: new Date().toISOString(),
+                accion: tipo,
+                caravana: car,
+                valor: val,
+                detalles: det + ` | Op: ${usNombre}`,
+                maestro: maestroId,
+                autor_email: usActivo,
+                autor_nombre: usNombre,
+                autor_rol: usRol
+            };
+            dbCache.unshift(obj);
+            historiaCache = null;
+            activosCache = null;
+            window.buscarCaravanaBtn(rpActivo);
+            window.procesarDatosDashboard();
             if(modalId) window.cerrarModal(modalId);
-            if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador' && tipo !== 'Alta Operador' && tipo !== 'Baja Operador') {
+            
+            // Si NO está en ráfaga y no es gestión interna: notificar a los dueños
+            if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador' && tipo !== 'Alta Operador' && tipo !== 'Baja Operador' && !tipo.startsWith('Ráfaga_')) {
                 window.notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
             }
             if(navigator.onLine) {
@@ -3411,14 +3559,49 @@
 
       let isDraggingAura = false;
       let auraStartX, auraStartY, initialAuraLeft, initialAuraTop;
-      let hasDraggedAura = false; 
+      let hasDraggedAura = false;
+      let auraTouchStartTime = 0;
+
+      window.toggleCoraVisibilidad = function() {
+          let activo = localStorage.getItem('tc_cora_activo') !== 'no';
+          let nuevo = activo ? 'no' : 'si';
+          localStorage.setItem('tc_cora_activo', nuevo);
+          window.aplicarVisibilidadCora();
+      };
+
+      window.aplicarVisibilidadCora = function() {
+          let activo = localStorage.getItem('tc_cora_activo') !== 'no';
+          const btnA = document.getElementById('btn-aura');
+          const btnToggle = document.getElementById('btn-toggle-cora-vis');
+          if (btnToggle) {
+              btnToggle.innerText = activo ? 'Ocultar' : 'Activar';
+              btnToggle.style.background = activo ? 'var(--peligro)' : 'var(--secundario)';
+              btnToggle.style.color = 'white';
+          }
+          if (btnA) {
+              if (!activo) {
+                  btnA.style.display = 'none';
+                  const est = document.getElementById('estado-ia');
+                  if(est) est.style.display = 'none';
+              } else {
+                  let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
+                  let tienePermisoCora = isPropietario || usRol.includes('cora');
+                  if (navigator.onLine && tienePermisoCora) {
+                      btnA.style.display = 'flex';
+                  } else {
+                      btnA.style.display = 'none';
+                  }
+              }
+          }
+      };
 
       if (btnAura) {
-          btnAura.addEventListener('touchstart', dragStartAura, {passive: false});
+          btnAura.addEventListener('touchstart', dragStartAura, {passive: true});
           btnAura.addEventListener('mousedown', dragStartAura);
       }
 
       function dragStartAura(e) {
+          auraTouchStartTime = Date.now();
           if (e.type === 'touchstart') {
               auraStartX = e.touches[0].clientX;
               auraStartY = e.touches[0].clientY;
@@ -3432,7 +3615,7 @@
           isDraggingAura = true;
           hasDraggedAura = false;
 
-          document.addEventListener('touchmove', dragAura, {passive: false});
+          document.addEventListener('touchmove', dragAura, {passive: true});
           document.addEventListener('mousemove', dragAura);
           document.addEventListener('touchend', dragEndAura);
           document.addEventListener('mouseup', dragEndAura);
@@ -3440,21 +3623,15 @@
 
       function dragAura(e) {
           if (!isDraggingAura) return;
-          let currentX, currentY;
-          if (e.type === 'touchmove') {
-              currentX = e.touches[0].clientX;
-              currentY = e.touches[0].clientY;
-          } else {
-              currentX = e.clientX;
-              currentY = e.clientY;
-          }
+          let currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+          let currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
 
           let deltaX = currentX - auraStartX;
           let deltaY = currentY - auraStartY;
 
-          if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+          // Umbral de 15px para no confundir toques rápidos con arrastre
+          if (Math.abs(deltaX) > 15 || Math.abs(deltaY) > 15) {
               hasDraggedAura = true;
-              if (e.cancelable) e.preventDefault();
 
               let newLeft = initialAuraLeft + deltaX;
               let newTop = initialAuraTop + deltaY;
@@ -3484,7 +3661,10 @@
           document.removeEventListener('mousemove', dragAura);
           document.removeEventListener('touchend', dragEndAura);
           document.removeEventListener('mouseup', dragEndAura);
-          setTimeout(() => { hasDraggedAura = false; }, 50);
+          
+          if (Date.now() - auraTouchStartTime < 250) {
+              hasDraggedAura = false;
+          }
       }
 
       if (btnAura) {
@@ -3495,28 +3675,30 @@
                return; 
             }
 
-            if (window.speechSynthesis.speaking) {
-                  interrupcionManual = true; 
-                  window.speechSynthesis.cancel();
-            }
+            try {
+                if (window.speechSynthesis && window.speechSynthesis.speaking) {
+                      interrupcionManual = true; 
+                      window.speechSynthesis.cancel();
+                }
 
-            if (!audioDesbloqueado) {
-                let silencio = new SpeechSynthesisUtterance('');
-                silencio.volume = 0;
-                window.speechSynthesis.speak(silencio);
-                audioDesbloqueado = true;
-            }
+                if (!audioDesbloqueado && window.speechSynthesis) {
+                    let silencio = new SpeechSynthesisUtterance('');
+                    silencio.volume = 0;
+                    window.speechSynthesis.speak(silencio);
+                    audioDesbloqueado = true;
+                }
+            } catch(err) {}
 
             if (!reconocimiento) {
-              alert("Tu navegador no soporta control por voz.");
+              alert("ℹ️ El control por voz (Web Speech API) no está disponible en este WebView/APK de Android.\n\nPuedes usar todas las funciones del sistema normalmente.");
               return;
             }
             if (btnAura.classList.contains('escuchando')) {
               btnAura.classList.remove('escuchando');
-              reconocimiento.stop();
+              try { reconocimiento.stop(); } catch(e){}
               if(estadoIA) estadoIA.style.display = 'none';
             } else {
-              reconocimiento.start();
+              try { reconocimiento.start(); } catch(e){ reconocimiento.stop(); }
             }
           });
       }
