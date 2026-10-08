@@ -497,6 +497,18 @@
                         </select>
                     </div>
 
+                    <!-- FILTRO UNIVERSAL DE FECHAS (Visible para Reportes de Sanidad y Bajas) -->
+                    <div id="caja-fechas-global" class="form-grupo oculto" style="display:none; gap:10px; margin-bottom:15px; background: rgba(59, 130, 246, 0.1); padding: 10px; border-radius: 8px; border: 1px solid var(--secundario);">
+                        <div style="flex:1;">
+                            <label style="font-size:11px; font-weight:bold; color:var(--secundario); display:block; margin-bottom:4px;">📅 Fecha Desde:</label>
+                            <input type="date" id="f-inf-desde" class="form-control" onchange="actualizarInformeAvanzado()" style="background:#ffffff; color:#000;">
+                        </div>
+                        <div style="flex:1;">
+                            <label style="font-size:11px; font-weight:bold; color:var(--secundario); display:block; margin-bottom:4px;">📅 Fecha Hasta:</label>
+                            <input type="date" id="f-inf-hasta" class="form-control" onchange="actualizarInformeAvanzado()" style="background:#ffffff; color:#000;">
+                        </div>
+                    </div>
+
                     <!-- FILTROS DE INVENTARIO -->
                     <div id="filtros-inventario" class="filtros-grid">
                         <div class="form-grupo" style="margin-bottom:8px;">
@@ -561,40 +573,18 @@
                                 <option value="Venta">Venta / Faena</option>
                             </select>
                         </div>
-                        <div class="form-grupo" style="margin-bottom:8px;">
-                            <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Periodo Histórico:</label>
-                            <select class="form-control" id="f-inf-baja-rango" onchange="manejarRangoFechasBajas()">
-                                <option value="todo">Ver Todo el Historial</option>
-                                <option value="30">Últimos 30 Días</option>
-                                <option value="90">Últimos 3 Meses</option>
-                                <option value="365">Último Año</option>
-                                <option value="custom">📅 Rango Manual...</option>
-                            </select>
-                        </div>
-                        <div id="caja-fechas-bajas" style="display:none; gap:10px; width:100%;">
-                            <input type="date" id="f-inf-baja-desde" class="form-control" style="flex:1; min-width:0;" onchange="actualizarInformeAvanzado()">
-                            <input type="date" id="f-inf-baja-hasta" class="form-control" style="flex:1; min-width:0;" onchange="actualizarInformeAvanzado()">
-                        </div>
                     </div>
 
                     <!-- FILTROS DE TRATAMIENTOS / HISTORIAL -->
                     <div id="filtros-eventos" class="filtros-grid oculto" style="display: none;">
                         <div class="form-grupo" style="margin-bottom:8px;">
-                            <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Rango de Fecha:</label>
-                            <select class="form-control" id="f-inf-rango-fecha" onchange="manejarRangoFechas()"><option value="30">Últimos 30 Días</option><option value="hoy">Trabajos de Hoy</option><option value="7">Últimos 7 Días</option><option value="todo">Ver Todo el Historial</option><option value="custom">📅 Rango Manual...</option></select>
+                            <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Tipo de Trabajo a Filtrar:</label>
+                            <select class="form-control" id="f-inf-accion-oculto" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Trabajos</option><option value="Sanidad">💉 Sanidad / Tratamientos</option><option value="Peso">⚖️ Pesos</option><option value="Diagnóstico">🩺 Tactos</option><option value="Inseminación">🧬 Reproducción</option><option value="Nutrición">🌾 Nutrición</option></select>
                         </div>
-                        <div id="caja-fechas-custom" style="display:none; gap:10px; width:100%; margin-bottom:8px;">
-                            <input type="date" id="f-inf-desde" class="form-control" style="flex:1; min-width:0;" onchange="actualizarInformeAvanzado()">
-                            <input type="date" id="f-inf-hasta" class="form-control" style="flex:1; min-width:0;" onchange="actualizarInformeAvanzado()">
-                        </div>
-                        <div class="form-grupo" style="margin-bottom:8px;">
-                            <label style="font-size:11px; font-weight:bold; color:var(--muted); margin-bottom:4px; display:block;">Tipo de Trabajo:</label>
-                            <select class="form-control" id="f-inf-accion-oculto" onchange="actualizarInformeAvanzado()"><option value="ALL">Todos los Trabajos</option><option value="Sanidad">💉 Sanidad</option><option value="Peso">⚖️ Pesos</option><option value="Diagnóstico">🩺 Tactos</option><option value="Inseminación">🧬 Reproducción</option><option value="Nutrición">🌾 Nutrición</option></select>
-                        </div>
-                        <input type="text" id="f-inf-keyword" class="form-control" placeholder="🔍 Buscar producto, nota o lote..." onkeyup="filtrarInformeDebounced()">
+                        <input type="text" id="f-inf-keyword" class="form-control" placeholder="🔍 Buscar producto, vacuna, nota o lote..." onkeyup="filtrarInformeDebounced()">
                     </div>
 
-                    <input type="text" id="f-inf-rp" class="form-control" style="margin-bottom:15px; border-color:var(--exito);" placeholder="🔍 Dossier Individual (Respeta filtros de fecha 👆)" onkeyup="filtrarInformeDebounced()">
+                    <input type="text" id="f-inf-rp" class="form-control" style="margin-bottom:15px; border-color:var(--exito);" placeholder="🔍 Buscar Dossier RP (Respeta fechas 👆)" onkeyup="filtrarInformeDebounced()">
                     
                     <div class="grid-kpis" style="margin-bottom:15px;">
                         <div class="kpi-caja" style="padding:10px;"><div class="kpi-valor" id="inf-total" style="font-size:20px;">0</div><div class="kpi-label" id="lbl-inf-total">Animales</div></div>
@@ -1402,12 +1392,19 @@
                     }
                 });
 
-                document.getElementById('f-inf-rango-fecha').value = "30"; window.manejarRangoFechas();
+                // Inicializar fechas globales a los últimos 30 días
+                let hoyInit = new Date();
+                let hace30Init = new Date(); hace30Init.setDate(hoyInit.getDate() - 30);
+                document.getElementById('f-inf-desde').value = hace30Init.toISOString().split('T')[0];
+                document.getElementById('f-inf-hasta').value = hoyInit.toISOString().split('T')[0];
+
                 document.getElementById('pantalla-login').classList.add('oculto');
                 document.getElementById('pantalla-app').classList.remove('oculto');
                 document.getElementById('pantalla-mantenimiento').classList.add('oculto');
+                
                 if(tabSeleccionado) { window.cambiarVista(vistaInicial, tabSeleccionado); } else { window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
                 window.sincronizarPendientesAuto(); window.cargarListasFiltrosSelects(); window.cargarListaOperadores();
+                window.cambiarModoReporte(); // Aplica visibilidad de las fechas inicialmente
                 
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
@@ -1523,7 +1520,8 @@
                 if(uC) {
                     let v = String(uC.valor||"").split('|');
                     if(v[0]) catsSet.add(window.obtenerNombreCategoriaLegible(v[0].replace('Cat:','').trim()));
-                    let l = String(uC.detalles||"").split('|')[0];
+                    let detStr = String(uC.detalles||"");
+                    let l = detStr.split('|')[0];
                     if(l) lotesSet.add(l.replace('Lote:','').trim());
                 } else {
                     const uP = regs.find(d => d.accion === 'Perfil Master');
@@ -1605,7 +1603,13 @@
                     const uP = regs.find(d => d.accion === 'Perfil Master');
                     if(uP) { let p = String(uP.valor || "").split('|'); raza = p[0] || "-"; edad = p[1] || "-"; padre = p[2] || "-"; madre = p[3] || "-"; cat = String(uP.detalles || "").split('|')[0] || "-"; }
                     const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                    if(uC) { let v = String(uC.valor || "").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-"; }
+                    if(uC) { 
+                        let v = String(uC.valor || "").split('|'); 
+                        cat = v[0] ? v[0].replace('Cat:','').trim() : cat; 
+                        carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; 
+                        let detStr = String(uC.detalles || "");
+                        lote = detStr.split('|')[0] ? detStr.split('|')[0].replace('Lote:','').trim() : "-"; 
+                    }
                     
                     const uPeso = regs.find(d => String(d.accion).includes('Peso')); 
                     if(uPeso) {
@@ -1856,40 +1860,22 @@
             const fInv = document.getElementById('filtros-inventario');
             const fBajas = document.getElementById('filtros-bajas');
             const fEvt = document.getElementById('filtros-eventos');
+            const fFechas = document.getElementById('caja-fechas-global');
+            const fRp = document.getElementById('f-inf-rp').value.trim();
             
             if (fInv) fInv.style.display = (modo === 'inventario') ? 'flex' : 'none';
             if (fBajas) fBajas.style.display = (modo === 'bajas') ? 'flex' : 'none';
             if (fEvt) fEvt.style.display = (modo === 'eventos') ? 'flex' : 'none';
             
-            window.actualizarInformeAvanzado();
-        }
-
-        window.manejarRangoFechas = function() {
-            const rango = document.getElementById('f-inf-rango-fecha').value; const cajaManual = document.getElementById('caja-fechas-custom');
-            const dDesde = document.getElementById('f-inf-desde'); const dHasta = document.getElementById('f-inf-hasta');
-            let hoy = new Date(); let desde = new Date();
-            if (rango === 'custom') { cajaManual.style.display = 'flex'; } else {
-                cajaManual.style.display = 'none';
-                if(rango === 'hoy') { } else if (rango === '7') { desde.setDate(hoy.getDate() - 7); } else if (rango === '30') { desde.setDate(hoy.getDate() - 30); } else if (rango === 'todo') { desde = new Date('2000-01-01'); }
-                dDesde.value = desde.toISOString().split('T')[0]; dHasta.value = hoy.toISOString().split('T')[0];
+            // Las fechas aplican para Historial (Eventos), Bajas y Dossier Individual
+            if (fFechas) {
+                if (modo === 'eventos' || modo === 'bajas' || fRp !== "") {
+                    fFechas.style.display = 'flex';
+                } else {
+                    fFechas.style.display = 'none';
+                }
             }
-            window.actualizarInformeAvanzado();
-        }
 
-        window.manejarRangoFechasBajas = function() {
-            const rango = document.getElementById('f-inf-baja-rango').value;
-            const cajaManual = document.getElementById('caja-fechas-bajas');
-            const dDesde = document.getElementById('f-inf-baja-desde');
-            const dHasta = document.getElementById('f-inf-baja-hasta');
-            let hoy = new Date(); let desde = new Date();
-            if (rango === 'custom') { cajaManual.style.display = 'flex'; } else {
-                cajaManual.style.display = 'none';
-                if(rango === '30') { desde.setDate(hoy.getDate() - 30); }
-                else if (rango === '90') { desde.setDate(hoy.getDate() - 90); }
-                else if (rango === '365') { desde.setDate(hoy.getDate() - 365); }
-                else if (rango === 'todo') { desde = new Date('2000-01-01'); }
-                dDesde.value = desde.toISOString().split('T')[0]; dHasta.value = hoy.toISOString().split('T')[0];
-            }
             window.actualizarInformeAvanzado();
         }
 
@@ -1916,6 +1902,7 @@
             const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
             const fDesde = document.getElementById('f-inf-desde').value; 
             const fHasta = document.getElementById('f-inf-hasta').value;
+            const fFechas = document.getElementById('caja-fechas-global');
 
             const datosActivos = window.obtenerRegistrosActivos();
             const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && String(c).toLowerCase() !== "null" && c !== "undefined" && c !== ""))];
@@ -1936,6 +1923,7 @@
             const lblTotal = document.getElementById('lbl-inf-total');
 
             if(fRp !== "") {
+                if(fFechas) fFechas.style.display = 'flex'; // Forzamos mostrar fechas en búsqueda por Dossier
                 rpPrint = fRp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Dossier: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
                 const regsRaw = window.obtenerHistorial(fRp); let hInd = ""; pdfExportData = [];
                 
@@ -1958,6 +1946,8 @@
                 tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.length; document.getElementById('inf-prenadas').innerText = "-";
                 if(lblTotal) lblTotal.innerText = "Registros";
                 return;
+            } else {
+                if(fFechas) fFechas.style.display = (modo === 'eventos' || modo === 'bajas') ? 'flex' : 'none';
             }
 
             rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar PDF`;
@@ -1980,7 +1970,13 @@
                     const regs = window.obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
                     const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                    if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles||"split('|')[0]") ? String(uC.detalles||"split('|')[0]").replace('Lote:','').trim() : "-"; }
+                    if(uC) { 
+                        let v = String(uC.valor||"").split('|'); 
+                        cat = v[0] ? v[0].replace('Cat:','').trim() : cat; 
+                        carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; 
+                        let detStr = String(uC.detalles||"");
+                        lote = detStr.split('|')[0] ? detStr.split('|')[0].replace('Lote:','').trim() : "-"; 
+                    }
                     let catLegible = window.obtenerNombreCategoriaLegible(cat);
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-";
                     const uDx = regs.find(d => d.accion === 'Diagnóstico');
@@ -2019,8 +2015,6 @@
                 if (lblTotal) lblTotal.innerText = "Bajas / Muertes";
 
                 const fCausa = document.getElementById('f-inf-baja-causa').value;
-                const fDesdeBajas = document.getElementById('f-inf-baja-desde').value;
-                const fHastaBajas = document.getElementById('f-inf-baja-hasta').value;
 
                 let bufferBajas = ""; let maxBajas = 100; pdfExportData = [];
                 let countBajas = 0;
@@ -2032,8 +2026,8 @@
 
                     let pasa = true;
                     if (fCausa !== "ALL" && !String(rBaja.valor).toLowerCase().includes(fCausa.toLowerCase())) pasa = false;
-                    if (fDesdeBajas && new Date(rBaja.fecha) < new Date(fDesdeBajas + 'T00:00:00')) pasa = false;
-                    if (fHastaBajas && new Date(rBaja.fecha) > new Date(fHastaBajas + 'T23:59:59')) pasa = false;
+                    if (fDesde && new Date(rBaja.fecha) < new Date(fDesde + 'T00:00:00')) pasa = false;
+                    if (fHasta && new Date(rBaja.fecha) > new Date(fHasta + 'T23:59:59')) pasa = false;
 
                     if (pasa) {
                         countBajas++;
@@ -2125,7 +2119,7 @@
                         if (regs.length === 0) { alert("Sin registros para este RP."); btn.innerText = textoOriginal; return; }
                         let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
                         const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor||"").split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=String(uP.detalles||"").split('|')[0]||"-"; }
-                        const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; lote=String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; }
+                        const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; let detS = String(uC.detalles||""); lote=detS.split('|')[0]?detS.split('|')[0].replace('Lote:','').trim():"-"; }
                         let catLegible = window.obtenerNombreCategoriaLegible(cat);
                         const uPeso = regs.find(d => String(d.accion).includes('Peso')); if(uPeso) peso = uPeso.valor || "-";
                         const uDx = regs.find(d => d.accion === 'Diagnóstico');
@@ -2157,8 +2151,8 @@
 
                     } else if (modo === 'bajas') {
                         let fCausa = document.getElementById('f-inf-baja-causa').value;
-                        let fDesdeBajas = document.getElementById('f-inf-baja-desde').value;
-                        let fHastaBajas = document.getElementById('f-inf-baja-hasta').value;
+                        let fDesdeBajas = document.getElementById('f-inf-desde').value;
+                        let fHastaBajas = document.getElementById('f-inf-hasta').value;
                         let rText = fDesdeBajas && fHastaBajas ? `(Periodo: ${fDesdeBajas} a ${fHastaBajas})` : '';
                         let titulo = (fCausa !== "ALL") ? `Reporte de Bajas - Causa: ${fCausa} ${rText}` : `Reporte Oficial de Bajas y Mortalidad ${rText}`;
                         addMembrete(titulo);
@@ -2255,7 +2249,12 @@
             
             unicas.forEach(car => {
                 const regs = window.obtenerHistorial(car); let catRaw = "Sin Categoría", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                if(uC) { let v=String(uC.valor||"").split('|'); catRaw = v[0] ? v[0].replace('Cat:','').trim() : "Sin Categoría"; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; }
+                if(uC) { 
+                    let v=String(uC.valor||"").split('|'); 
+                    catRaw = v[0] ? v[0].replace('Cat:','').trim() : "Sin Categoría"; 
+                    let detS = String(uC.detalles||"");
+                    lote = detS.split('|')[0] ? detS.split('|')[0].replace('Lote:','').trim() : "-"; 
+                }
                 else {
                     const uP = regs.find(d => d.accion === 'Perfil Master');
                     if(uP && uP.detalles) { catRaw = String(uP.detalles).split('|')[0] || "Sin Categoría"; }
@@ -2437,7 +2436,8 @@
                 if(uC) {
                     let v = String(uC.valor||"").split('|');
                     cat = v[0] ? v[0].replace('Cat:','').trim() : cat;
-                    lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-";
+                    let detS = String(uC.detalles||"");
+                    lote = detS.split('|')[0] ? detS.split('|')[0].replace('Lote:','').trim() : "-";
                 }
                 const uDx = regs.find(d => d.accion === 'Diagnóstico');
 
