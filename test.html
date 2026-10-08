@@ -669,7 +669,7 @@
                     <div class="tabla-responsive">
                         <table class="tabla-informe" id="tabla-masiva"><thead><tr><th>RP y Carimbo</th><th>Categoría</th><th>Lote</th><th>Últ. Peso</th><th>Dx</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
                         <table class="tabla-informe oculto" id="tabla-bajas"><thead><tr><th>Fecha</th><th>Caravana / RP</th><th>Causa de Baja</th><th>Observaciones</th></tr></thead><tbody id="tb-informe-bajas"></tbody></table>
-                        <table class="tabla-informe oculto" id="tabla-eventos"><thead><tr><th>Fecha / Hora</th><th>Caravana / RP</th><th>Categoría / Lote</th><th>Procedimiento</th><th>Valor / Producto</th><th>Detalles Extras</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
+                        <table class="tabla-informe oculto" id="tabla-eventos"><thead><tr><th>Fecha</th><th>Caravana / RP</th><th>Categoría / Lote</th><th>Procedimientos Realizados</th><th>Sanidad / Tratamientos / Pesaje</th><th>Observaciones / Detalles</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
                         <table class="tabla-informe oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Trabajo Realizado</th><th>Valor Principal</th><th>Observaciones</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
                     </div>
                 </div>
@@ -2318,45 +2318,92 @@
                 eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
 
                 let bufferEvt = "";
-                let maxEvt = 120;
+                let maxEvt = 150;
                 pdfExportData = [];
-                let countEvt = 0;
+
+                // AGRUPACIÓN UNIFICADA POR CARAVANA + DÍA
+                // Cada animal aparece EXACTAMENTE UNA SOLA VEZ con todos sus procedimientos y valores combinados
+                let agrupadosPorAnimal = {};
 
                 eventos.forEach(r => {
-                    countEvt++;
-                    let fDate = new Date(r.fecha).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
-                    let regsAnimal = window.obtenerHistorial(r.caravana);
+                    let fDateObj = new Date(r.fecha);
+                    let fDateStr = isNaN(fDateObj.getTime()) ? String(r.fecha).substring(0, 10) : fDateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
                     
-                    // Extraer categoría y lote del animal
-                    let cat = "-", lote = "-";
-                    const uC = regsAnimal.find(d => d.accion === 'Actualización de Datos');
-                    if (uC) {
-                        let v = String(uC.valor || "").split('|');
-                        cat = v[0] ? v[0].replace('Cat:', '').trim() : cat;
-                        lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:', '').trim() : lote;
+                    let key = `${r.caravana}_${fDateStr}`;
+                    if (!agrupadosPorAnimal[key]) {
+                        let regsAnimal = window.obtenerHistorial(r.caravana);
+                        let cat = "-", lote = "-";
+                        const uC = regsAnimal.find(d => d.accion === 'Actualización de Datos');
+                        if (uC) {
+                            let v = String(uC.valor || "").split('|');
+                            cat = v[0] ? v[0].replace('Cat:', '').trim() : cat;
+                            lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:', '').trim() : lote;
+                        }
+                        let catLegible = window.obtenerNombreCategoriaLegible(cat);
+
+                        agrupadosPorAnimal[key] = {
+                            fecha: fDateStr,
+                            rp: r.caravana,
+                            catLegible: catLegible,
+                            lote: lote,
+                            procs: [],
+                            valores: [],
+                            detalles: []
+                        };
                     }
-                    let catLegible = window.obtenerNombreCategoriaLegible(cat);
+
                     let badge = window.obtenerBadgeAccion(r.accion);
+                    if (!agrupadosPorAnimal[key].procs.includes(badge)) {
+                        agrupadosPorAnimal[key].procs.push(badge);
+                    }
+
                     let vFinal = r.valor;
-                    if (r.accion === 'Peso') vFinal += window.calcularDiferenciaPeso(r.caravana, r.fecha, r.valor);
+                    if (r.accion === 'Peso') {
+                        vFinal += window.calcularDiferenciaPeso(r.caravana, r.fecha, r.valor);
+                    }
+                    agrupadosPorAnimal[key].valores.push(`${badge}: ${vFinal}`);
 
-                    pdfExportData.push([fDate, r.caravana, `${catLegible} (${lote})`, badge, vFinal, r.detalles || '-']);
+                    if (r.detalles && r.detalles !== '-' && r.detalles.trim() !== '') {
+                        let detLimpio = r.detalles.trim();
+                        if (!agrupadosPorAnimal[key].detalles.includes(detLimpio)) {
+                            agrupadosPorAnimal[key].detalles.push(detLimpio);
+                        }
+                    }
+                });
 
-                    if (countEvt <= maxEvt) {
+                let gruposArray = Object.values(agrupadosPorAnimal);
+                let countAnimales = gruposArray.length;
+
+                gruposArray.forEach((grp, idx) => {
+                    let procsTexto = grp.procs.join(", ");
+                    let valoresTexto = grp.valores.join(" | ");
+                    let detallesTexto = grp.detalles.length > 0 ? grp.detalles.join(" | ") : "-";
+
+                    pdfExportData.push([
+                        grp.fecha,
+                        grp.rp,
+                        `${grp.catLegible} (${grp.lote})`,
+                        procsTexto,
+                        valoresTexto,
+                        detallesTexto
+                    ]);
+
+                    if (idx < maxEvt) {
                         bufferEvt += `<tr>
-                            <td style="white-space:nowrap; font-size:11px;">${fDate}</td>
-                            <td><strong style="font-size:14px; color:var(--secundario);">${r.caravana}</strong></td>
-                            <td style="font-size:11px;">${catLegible}<br><span style="color:var(--muted);">${lote}</span></td>
-                            <td><span style="font-weight:bold;">${badge}</span></td>
-                            <td style="white-space:pre-wrap; font-weight:bold;">${vFinal}</td>
-                            <td style="font-size:11px;">${r.detalles || '-'}</td>
+                            <td style="white-space:nowrap; font-size:12px;"><strong>${grp.fecha}</strong></td>
+                            <td><strong style="font-size:15px; color:var(--secundario);">${grp.rp}</strong></td>
+                            <td style="font-size:11px;">${grp.catLegible}<br><span style="color:var(--muted);">${grp.lote}</span></td>
+                            <td style="font-size:12px; font-weight:bold; color:var(--texto);">${procsTexto}</td>
+                            <td style="font-size:12px; white-space:pre-wrap; line-height:1.4;">${valoresTexto}</td>
+                            <td style="font-size:11px; color:var(--muted);">${detallesTexto}</td>
                         </tr>`;
                     }
                 });
 
-                if (countEvt > maxEvt) bufferEvt += `<tr><td colspan="6" style="text-align:center; padding:15px; font-weight:bold; color:var(--muted);">Mostrando primeros ${maxEvt} procedimientos de ${countEvt}. Descargue el PDF para ver todos.</td></tr>`;
+                if (countAnimales > maxEvt) bufferEvt += `<tr><td colspan="6" style="text-align:center; padding:15px; font-weight:bold; color:var(--muted);">Mostrando primeros ${maxEvt} animales de ${countAnimales}. Descargue el PDF para ver todos.</td></tr>`;
                 tbodyEventos.innerHTML = bufferEvt || '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--muted);">No se registraron tratamientos ni procedimientos en la fecha seleccionada.</td></tr>';
-                document.getElementById('inf-total').innerText = countEvt;
+                document.getElementById('inf-total').innerText = countAnimales;
+                if (lblTotal) lblTotal.innerText = "Animales Tratados";
             }
         };
 
@@ -2465,10 +2512,25 @@
 
                         addMembrete(subTitulo);
                         const totalReg = document.getElementById('inf-total').innerText;
-                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Procedimientos Listados: ${window.cleanPDFText(totalReg)}`, 14, 43);
+                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Animales / Cabezas Procesadas: ${window.cleanPDFText(totalReg)}`, 14, 43);
 
                         const tableData = pdfExportData.map(row => row.map(cell => window.cleanPDFText(cell).replace(/\n/g, ' ')));
-                        doc.autoTable({ startY: 48, theme: 'grid', head: [['Fecha/Hora', 'RP', 'Categoría / Lote', 'Procedimiento', 'Valor / Producto', 'Detalles Extras']], body: tableData, styles: { fontSize: 7, cellPadding: 2.5 }, headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 25, halign: 'center', fontStyle: 'bold' }, 2: { cellWidth: 35 }, 3: { cellWidth: 25 }, 4: { cellWidth: 35, fontStyle: 'bold' }, 5: { cellWidth: 'auto' } } });
+                        doc.autoTable({
+                            startY: 48,
+                            theme: 'grid',
+                            head: [['Fecha', 'Caravana / RP', 'Categoría / Lote', 'Procedimientos Realizados', 'Sanidad / Tratamientos / Pesaje', 'Observaciones / Detalles']],
+                            body: tableData,
+                            styles: { fontSize: 7, cellPadding: 2.5, overflow: 'linebreak' },
+                            headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', halign: 'center' },
+                            columnStyles: {
+                                0: { cellWidth: 20, halign: 'center' },
+                                1: { cellWidth: 24, halign: 'center', fontStyle: 'bold' },
+                                2: { cellWidth: 32 },
+                                3: { cellWidth: 30, fontStyle: 'bold' },
+                                4: { cellWidth: 50 },
+                                5: { cellWidth: 'auto' }
+                            }
+                        });
 
                         let filename = 'Reporte_Tratamientos.pdf';
                         if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
