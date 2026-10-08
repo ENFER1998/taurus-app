@@ -18,11 +18,15 @@
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({
-          appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60",
-          serviceWorkerParam: { scope: "/taurus-app/" },
-          serviceWorkerPath: "/taurus-app/OneSignalSDKWorker.js"
-        });
+        try {
+          await OneSignal.init({
+            appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60",
+            serviceWorkerParam: { scope: "/taurus-app/" },
+            serviceWorkerPath: "/taurus-app/OneSignalSDKWorker.js"
+          });
+        } catch (error) {
+          console.warn("OneSignal bloqueado en entorno de pruebas (esperado):", error);
+        }
       });
     </script>
 
@@ -764,7 +768,26 @@
     
     <div id="modal-historial" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-historial')">&times;</span><h3>📋 Historial Clínico</h3><div id="contenido-historial"></div></div></div>
     
-    <div id="modal-editar-registro" class="modal"><div class="modal-body"><span class="cerrar" onclick="cerrarModal('modal-editar-registro')">&times;</span><h3>✏️ Editar Registro</h3><input type="hidden" id="edit-reg-id"><div class="form-grupo"><label>Valor Principal</label><input type="text" class="form-control" id="edit-reg-valor"></div><div class="form-grupo"><label>Observaciones / Detalles</label><textarea class="form-control textarea" id="edit-reg-detalles"></textarea></div><button class="btn-guardar" onclick="guardarEdicionRegistro()">Guardar Cambios</button></div></div>
+    <div id="modal-editar-registro" class="modal">
+        <div class="modal-body">
+            <span class="cerrar" onclick="cerrarModal('modal-editar-registro')">&times;</span>
+            <h3>✏️ Editar Registro</h3>
+            <input type="hidden" id="edit-reg-id">
+            <div class="form-grupo">
+                <label>Fecha y Hora</label>
+                <input type="datetime-local" class="form-control" id="edit-reg-fecha">
+            </div>
+            <div class="form-grupo">
+                <label>Valor Principal</label>
+                <input type="text" class="form-control" id="edit-reg-valor">
+            </div>
+            <div class="form-grupo">
+                <label>Observaciones / Detalles</label>
+                <textarea class="form-control textarea" id="edit-reg-detalles"></textarea>
+            </div>
+            <button class="btn-guardar" onclick="guardarEdicionRegistro()">Guardar Cambios</button>
+        </div>
+    </div>
 
     <script>
         const firebaseConfig = {
@@ -1322,44 +1345,24 @@
                 let todosLosPesos = regs.filter(d => String(d.accion).includes('Peso'));
                 if(todosLosPesos.length >= 1) {
                     let pesoActual = todosLosPesos[0];
-                    let p1 = parseFloat(String(pesoActual.valor).replace(/[^\d.-]/g, '')); 
-                    let d1 = new Date(pesoActual.fecha); 
+                    let p1 = parseFloat(String(pesoActual.valor).replace(/[^\d.-]/g, '')); let d1 = new Date(pesoActual.fecha); 
                     let pesoAnterior = null;
-                    
                     for(let i = 1; i < todosLosPesos.length; i++) { 
                         let pTest = parseFloat(String(todosLosPesos[i].valor).replace(/[^\d.-]/g, ''));
-                        let dTest = new Date(todosLosPesos[i].fecha);
-                        let diffT = d1.getTime() - dTest.getTime();
-                        // Obligamos al sistema a buscar un registro que tenga MÁS de 24 horas de antigüedad 
-                        // para evitar comparar pesos subidos el mismo día en cargas masivas.
-                        if(diffT > 86400000) { 
-                            pesoAnterior = todosLosPesos[i]; 
-                            break; 
-                        } 
+                        let diffT = Math.abs(d1 - new Date(todosLosPesos[i].fecha));
+                        if(pTest !== p1 || diffT > 86400000) { pesoAnterior = todosLosPesos[i]; break; } 
                     }
-                    
                     if(pesoAnterior) {
-                        let p2 = parseFloat(String(pesoAnterior.valor).replace(/[^\d.-]/g, '')); 
-                        let d2 = new Date(pesoAnterior.fecha);
-                        let diffTime = d1.getTime() - d2.getTime(); 
-                        let dias = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24))); // Mínimo 1 día para dividir
-                        
-                        let diferenciaTotal = p1 - p2;
-                        let gdp = (diferenciaTotal / dias).toFixed(2).replace('.', ','); // Formato español exacto (Ej: 1,50)
-
-                        if(diferenciaTotal > 0) {
-                            gdpHtml = `<span style="color:var(--exito); font-weight:bold; font-size:12px;">🚀 Ganancia: +${diferenciaTotal} Kg<br>Promedio: +${gdp} Kg/día</span>`; 
-                        } else if(diferenciaTotal < 0) {
-                            gdpHtml = `<span style="color:var(--peligro); font-weight:bold; font-size:12px;">⚠️ Pérdida: ${diferenciaTotal} Kg<br>Promedio: ${gdp} Kg/día</span>`; 
-                        } else {
-                            gdpHtml = `<span style="color:var(--muted); font-weight:bold; font-size:12px;">⚖️ Mantuvo su peso exacto</span>`; 
+                        let p2 = parseFloat(String(pesoAnterior.valor).replace(/[^\d.-]/g, '')); let d2 = new Date(pesoAnterior.fecha);
+                        let diffTime = Math.abs(d1 - d2); let dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        if(dias >= 1) { 
+                            let gdp = parseFloat(((p1 - p2) / dias).toFixed(3)); 
+                            if(gdp > 0) gdpHtml = `<span style="color:var(--exito); font-weight:bold; font-size:12px;">🚀 +${gdp} Kg/día</span>`; 
+                            else if(gdp < 0) gdpHtml = `<span style="color:var(--peligro); font-weight:bold; font-size:12px;">⚠️ ${gdp} Kg/día</span>`; 
+                            else gdpHtml = `<span style="color:var(--muted); font-weight:bold; font-size:12px;">⚖️ Mantuvo su peso</span>`; 
                         }
                     } else {
-                        if(todosLosPesos.length > 1) { 
-                            gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Pesos registrados en la misma fecha)</span>`; 
-                        } else { 
-                            gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Falta peso histórico)</span>`; 
-                        }
+                        if(todosLosPesos.length > 1) { gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Múltiples pesos idénticos/mismo día)</span>`; } else { gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Falta peso histórico)</span>`; }
                     }
                 }
                 const elGdp = document.getElementById('val-gdp'); if (elGdp) elGdp.innerHTML = gdpHtml;
@@ -1493,38 +1496,18 @@
         
         async function borrarCaravana() { 
             if(!rpActivo) return; 
-            if(confirm(`⚠️ ¿ELIMINAR TOTALMENTE el RP ${rpActivo}? Esto borrará el animal de todos los registros de inmediato y sin retorno.`)) { 
-                let rpParaBorrar = rpActivo;
-                
-                // 1. Ocultar inmediatamente de la pantalla y la memoria caché local
-                dbCache = dbCache.filter(d => d.caravana !== rpParaBorrar);
-                historiaCache = null; activosCache = null;
-                
-                // 2. Enviar evento de "Borrado" para que las pantallas de los demás usuarios también oculten este RP
-                ejecutarAccion('Borrar_Caravana', 'Eliminado', 'RP Destruido', null);
-                
-                cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); 
-                mostrarToast(`🗑️ Eliminando RP ${rpParaBorrar} del sistema...`);
-                
+            if(confirm(`⚠️ ¿ELIMINAR TODO EL HISTORIAL de la caravana ${rpActivo} permanentemente? Esto purgará la base de datos.`)) { 
                 try {
-                    // 3. Destruir físicamente los documentos en la base de datos de Firebase
-                    const snapshot = await db.collection('estancias').doc(maestroId).collection('eventos').where('caravana', '==', rpParaBorrar).get();
-                    let batch = db.batch();
-                    let count = 0;
-                    snapshot.forEach(doc => { 
-                        batch.delete(doc.ref); 
-                        count++;
-                        // Firebase tiene un límite de 500 por lote, esto evita que colapse si el animal tiene mucho historial
-                        if(count === 490) { batch.commit(); batch = db.batch(); count = 0; } 
-                    });
-                    if(count > 0) { await batch.commit(); }
+                    const snapshot = await db.collection('estancias').doc(maestroId).collection('eventos').where('caravana', '==', rpActivo).get();
+                    const batch = db.batch();
+                    snapshot.forEach(doc => { batch.delete(doc.ref); });
+                    await batch.commit();
                     
-                    // Refrescar las listas en segundo plano
-                    if(typeof cargarListaRegistro === 'function') cargarListaRegistro();
-                    if(typeof procesarDatosDashboard === 'function') procesarDatosDashboard();
-                } catch(e) { 
-                    console.error("Error purgando la nube:", e); 
-                }
+                    dbCache = dbCache.filter(d => d.caravana !== rpActivo);
+                    historiaCache = null; activosCache = null;
+                    alert("Historial purgado completamente. El RP quedó libre."); 
+                    cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); 
+                } catch(e) { alert("Error de red al intentar purgar el historial."); }
             } 
         }
 
@@ -1547,18 +1530,16 @@
             if(!id || id === 'undefined') { alert("Este registro aún no se sincronizó con la nube. Espere un momento."); return; }
             let reg = dbCache.find(r => r.id === id);
             if(!reg) return;
-            
             document.getElementById('edit-reg-id').value = id; 
             document.getElementById('edit-reg-valor').value = reg.valor || ""; 
             document.getElementById('edit-reg-detalles').value = reg.detalles || "";
             
-            // Convertir la fecha al formato que entiende el input datetime-local
             if(reg.fecha) {
-                let d = new Date(reg.fecha);
-                d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-                document.getElementById('edit-reg-fecha').value = d.toISOString().slice(0,16);
+                let fechaLocal = new Date(reg.fecha);
+                fechaLocal.setMinutes(fechaLocal.getMinutes() - fechaLocal.getTimezoneOffset());
+                document.getElementById('edit-reg-fecha').value = fechaLocal.toISOString().slice(0,16);
             }
-            
+
             cerrarModal('modal-historial'); abrirModal('modal-editar-registro');
         };
 
@@ -1566,36 +1547,25 @@
             let id = document.getElementById('edit-reg-id').value; 
             let nValor = document.getElementById('edit-reg-valor').value; 
             let nDetalles = document.getElementById('edit-reg-detalles').value;
-            let nFecha = document.getElementById('edit-reg-fecha').value;
+            let nFecha = document.getElementById('edit-reg-fecha').value; 
             
             if(!navigator.onLine) { alert("Necesitas conexión a internet para editar."); return; }
-            
             try {
-                // Volver a convertir la fecha al estándar ISO para Firebase
-                let fechaFormateada = new Date(nFecha).toISOString();
-                
-                await db.collection('estancias').doc(maestroId).collection('eventos').doc(id).update({ 
-                    valor: nValor, 
-                    detalles: nDetalles,
-                    fecha: fechaFormateada
-                });
+                let isoFecha = new Date(nFecha).toISOString(); 
+                await db.collection('estancias').doc(maestroId).collection('eventos').doc(id).update({ valor: nValor, detalles: nDetalles, fecha: isoFecha });
                 
                 let i = dbCache.findIndex(r => r.id === id);
                 if(i !== -1) { 
                     dbCache[i].valor = nValor; 
                     dbCache[i].detalles = nDetalles; 
-                    dbCache[i].fecha = fechaFormateada;
-                    
-                    // Reordenar el caché ya que la fecha cambió
-                    dbCache.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-                    
+                    dbCache[i].fecha = isoFecha; 
                     historiaCache = null; activosCache = null; 
                     buscarCaravanaBtn(rpActivo); 
                 }
                 cerrarModal('modal-editar-registro'); 
-                mostrarToast("✅ Registro y fecha modificados exitosamente."); 
+                mostrarToast("✅ Modificado exitosamente."); 
                 verHistorial();
-            } catch(e) { alert("Error al modificar el registro."); }
+            } catch(e) { alert("Error al modificar."); }
         };
 
         function cambiarModoReporte() {
