@@ -1739,18 +1739,27 @@
             }
         }
 
+                function esCaravanaValida(c) {
+            if (!c && c !== 0) return false;
+            let s = String(c).trim();
+            if (!s || s === "---" || s === "-" || s === "undefined" || s === "None" || s.toLowerCase() === "null") return false;
+            return true;
+        }
+
+        window.esCaravanaValida = esCaravanaValida;
+
         function procesarEventos() {
             if (historiaCache) return historiaCache;
             let dbAsc = [...dbCache].sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
             let historiaPorRP = {};
             dbAsc.forEach(evt => {
-                let rp = String(evt.caravana);
-                if(rp === "---" || !rp) return;
+                let rp = String(evt.caravana || "").trim();
+                if(!esCaravanaValida(rp)) return;
                 if(!historiaPorRP[rp]) historiaPorRP[rp] = [];
                 if(evt.accion === 'Borrar_Caravana') {
                     historiaPorRP[rp] = []; 
                 } else if(evt.accion === 'Cambio de Caravana') {
-                    let nuevoRP = String(evt.valor);
+                    let nuevoRP = String(evt.valor || "").trim();
                     if(!historiaPorRP[nuevoRP]) historiaPorRP[nuevoRP] = [];
                     let eventosTraspasados = historiaPorRP[rp].map(e => ({...e, caravana: nuevoRP}));
                     historiaPorRP[nuevoRP] = historiaPorRP[nuevoRP].concat(eventosTraspasados);
@@ -1771,15 +1780,20 @@
             if (activosCache) return activosCache;
             let historia = procesarEventos();
             let validos = [];
-            for(let rp in historia) { validos.push(...historia[rp]); }
-            const globalEvents = dbCache.filter(d => d.caravana === "---" || !d.caravana);
+            for(let rp in historia) {
+                if (esCaravanaValida(rp)) {
+                    validos.push(...historia[rp]);
+                }
+            }
+            const globalEvents = dbCache.filter(d => !esCaravanaValida(d.caravana));
             activosCache = [...validos, ...globalEvents].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
             return activosCache;
         }
 
         function obtenerHistorial(caravana) {
+            if (!esCaravanaValida(caravana)) return [];
             let historia = procesarEventos();
-            return historia[String(caravana)] || [];
+            return historia[String(caravana).trim()] || [];
         }
 
         function obtenerNombreCategoriaLegible(sigla) {
@@ -1800,7 +1814,7 @@
 
         function cargarListasFiltrosSelects() {
             let datosActivos = obtenerRegistrosActivos();
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => esCaravanaValida(c)))];
             let lotesSet = new Set();
             let catsSet = new Set();
 
@@ -1850,7 +1864,7 @@
         function buscarCaravanaBtn(rpForzado = null) {
             try {
                 let rp = rpForzado ? rpForzado : document.getElementById('buscador-caravana').value.trim(); 
-                if(!rp) return; 
+                if(!esCaravanaValida(rp)) return; 
                 let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === rp.toLowerCase());
                 if(esRFIDRegistrado) rp = esRFIDRegistrado.caravana;
 
@@ -2078,7 +2092,7 @@
         function actualizarInformeAvanzado() {
             const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
             const datosActivos = obtenerRegistrosActivos(); 
-            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; 
+            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => esCaravanaValida(c)))]; 
             
             const tbodyMasivo = document.getElementById('tb-informe-masivo');
             const tbodyBajas = document.getElementById('tb-informe-bajas');
@@ -2437,8 +2451,8 @@
 
         function procesarDatosDashboard() {
             const datosActivos = obtenerRegistrosActivos(); 
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
-            let vivas = []; let cantBajas = datosActivos.filter(r => r.accion === 'Baja').length;
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => esCaravanaValida(c)))];
+            let vivas = []; let cantBajas = datosActivos.filter(r => r.accion === 'Baja' && esCaravanaValida(r.caravana)).length;
             unicas.forEach(car => { if(!obtenerHistorial(car).some(x => x.accion === 'Baja')) { vivas.push(car); } }); unicas = vivas; 
             
             document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
@@ -2612,7 +2626,7 @@
 
         function cargarListaRegistro() {
             const datosActivos = obtenerRegistrosActivos();
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => esCaravanaValida(c)))];
             
             let estadoFiltro = document.getElementById('filtro-reg-estado').value;
             let loteFiltro = document.getElementById('filtro-reg-lote').value;
