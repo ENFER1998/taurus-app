@@ -345,9 +345,9 @@
                 </div>
 
                 <div class="grid-kpis">
-                    <div class="kpi-caja" onclick="window.filtrarDesdeDashboard('estado', 'vivos')" title="Ver todos los animales activos"><div class="kpi-valor" id="dash-cabezas">0</div><div class="kpi-label">Cabezas Vivas</div></div>
-                    <div class="kpi-caja" style="border-color: var(--peligro);" onclick="window.filtrarDesdeDashboard('estado', 'bajas')" title="Ver todas las bajas / mortalidad"><div class="kpi-valor" id="dash-bajas" style="color: var(--peligro);">0</div><div class="kpi-label" style="color: var(--peligro);">Mortalidad / Bajas</div></div>
-                    <div class="kpi-caja" onclick="window.cambiarVista('vista-informe', document.querySelectorAll('.nav-item')[3]); document.getElementById('f-inf-modo').value='eventos'; window.cambiarModoReporte();" title="Ver todos los registros históricos procesados"><div class="kpi-valor" id="dash-acciones">0</div><div class="kpi-label">Historial Procesado</div></div>
+                    <div class="kpi-caja" onclick="filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" id="dash-cabezas">0</div><div class="kpi-label">Cabezas Únicas</div></div>
+                    <div class="kpi-caja" style="border-color: var(--peligro);" onclick="filtrarDesdeDashboard('estado', 'bajas')"><div class="kpi-valor" id="dash-bajas" style="color: var(--peligro);">0</div><div class="kpi-label" style="color: var(--peligro);">Mortalidad / Bajas</div></div>
+                    <div class="kpi-caja"><div class="kpi-valor" id="dash-acciones">0</div><div class="kpi-label">Registros Procesados</div></div>
                 </div>
                 <div class="tarjeta" id="contenedor-alertas" style="display:none;"><div class="tarjeta-titulo" style="color:var(--alerta);">⚠ Alertas (Deslizar)</div><div id="lista-alertas"></div></div>
                 <div id="contenedor-graficos-dinamicos"></div>
@@ -355,75 +355,68 @@
 
             <!-- FICHA CLÍNICA (MANGA) -->
             <div id="vista-manga" class="vista oculto">
-                <div class="tarjeta" id="tarjeta-rafaga" style="margin-bottom: 10px; padding: 10px 14px; border-left: 4px solid var(--secundario);">
+                <div class="tarjeta" id="tarjeta-rafaga" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid var(--secundario);">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="font-size:18px;">⚡</span>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span style="font-size:24px;">⚡</span>
                             <div>
-                                <strong style="display:block; color:var(--texto); font-size:13px;">Modo Ráfaga</strong>
-                                <span style="font-size:10px; color:var(--muted);">Automático o manual</span>
+                                <strong style="display:block; color:var(--texto);">Modo Ráfaga</strong>
+                                <span style="font-size:11px; color:var(--muted);">Automatización con balanza/antena</span>
                             </div>
                         </div>
-                        <button class="btn-mini" id="btn-toggle-rafaga" style="border-color:var(--borde); font-weight:bold; padding:4px 10px; font-size:11px;" onclick="toggleRafaga()">APAGADO</button>
+                        <button class="btn-mini" id="btn-toggle-rafaga" style="border-color:var(--borde); font-weight:bold;" onclick="toggleRafaga()">APAGADO</button>
+                    </div>
+                    
+                    <!-- BARRA DE INTEGRACIÓN BLUETOOTH (ESP32 / TRU-TEST / BALANZAS) -->
+                    <div style="margin-top:12px; padding:10px; background:rgba(59,130,246,0.08); border-radius:8px; border:1px solid var(--borde); display:flex; flex-direction:column; gap:8px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span style="font-size:16px;">📶</span>
+                                <span id="lbl-estado-bluetooth" style="font-size:12px; font-weight:bold; color:var(--muted);">Bluetooth: Desconectado</span>
+                            </div>
+                            <button class="btn-mini" id="btn-conectar-ble" style="background:var(--secundario); color:white; border:none; padding:6px 12px;" onclick="conectarBluetoothBLE()">Conectar Balanza / Bastón</button>
+                        </div>
+                        <span style="font-size:11px; color:var(--muted); line-height:1.3;">Compatible con <strong>ESP32 Taurus (Antena RFID + Balanza ESP-NOW)</strong>, bastones <strong>Tru-Test, Allflex y genéricos</strong> (vía Bluetooth BLE o Teclado HID en iOS/Android).</span>
                     </div>
 
-                    <div id="opciones-rafaga" class="oculto" style="margin-top:10px; padding-top:8px; border-top:1px solid var(--borde);">
-                        <!-- Modalidad compacta -->
-                        <div style="display:flex; gap:6px; margin-bottom:6px; align-items:center;">
-                            <span style="font-size:10px; font-weight:bold; color:var(--muted); white-space:nowrap;">Modo:</span>
-                            <select id="rafaga-modalidad" class="form-control" style="padding:4px 8px; font-size:11px; height:30px; margin:0;" onchange="verificarRafagaCustom()">
-                                <option value="rfid">📡 Antena / Balanza Automática</option>
-                                <option value="manual">⌨️ Carga Rápida (Teclado)</option>
+                    <div id="opciones-rafaga" class="oculto" style="margin-top:15px; padding-top:15px; border-top:1px solid var(--borde);">
+                        <div class="form-grupo" style="margin-bottom:15px;">
+                            <label style="font-size:11px;">Modalidad de Ráfaga:</label>
+                            <select id="rafaga-modalidad" class="form-control" onchange="verificarRafagaCustom()">
+                                <option value="rfid">📡 Modo Bastón RFID / Antena NFC</option>
+                                <option value="manual">⌨️ Modo Manual Rápido (Teclado)</option>
                             </select>
                         </div>
-
-                        <!-- Caja Manual Rápida (RP obligatorio, Peso Kg exclusivo y opcional si solo tratamiento/tacto) -->
-                        <div id="caja-rafaga-manual" class="oculto" style="display:none; gap:6px; margin-bottom:6px;">
-                            <input type="text" id="rm-caravana" class="form-control" placeholder="Nº RP" style="flex:1; padding:4px 8px; font-size:12px; height:30px; margin:0;" onkeyup="if(event.key === 'Enter') { if(document.getElementById('rm-valor').value.trim() !== '') ejecutarRafagaManual(); else document.getElementById('rm-valor').focus(); }">
-                            <input type="number" step="0.5" id="rm-valor" class="form-control" placeholder="Peso Kg (Opcional)" style="flex:1; padding:4px 8px; font-size:12px; height:30px; margin:0;" onkeyup="if(event.key === 'Enter') ejecutarRafagaManual()">
-                            <button type="button" class="btn-mini" style="background:var(--secundario); color:white; border:none; padding:0 12px; font-weight:bold; font-size:11px;" onclick="ejecutarRafagaManual()">▶</button>
+                        <div id="caja-rafaga-manual" class="form-grupo oculto" style="display:flex; gap:10px; margin-bottom:15px; background: rgba(59, 130, 246, 0.1); padding: 10px; border-radius: 8px;">
+                            <input type="text" id="rm-caravana" class="form-control" placeholder="Nº RP" style="flex:1;" onkeyup="if(event.key === 'Enter') document.getElementById('rm-valor').focus()">
+                            <input type="text" id="rm-valor" class="form-control" placeholder="Valor Principal (Ej: 300)" style="flex:1;" onkeyup="if(event.key === 'Enter') ejecutarRafagaManual()">
+                            <button class="btn-mini" style="background:var(--secundario); color:white; border:none;" onclick="ejecutarRafagaManual()">▶</button>
                         </div>
-
-                        <!-- Selector de Acción de Ráfaga -->
-                        <div style="display:flex; gap:6px; margin-bottom:6px;">
-                            <div style="flex:1; min-width:0;">
-                                <select id="rafaga-accion" class="form-control" style="padding:4px 8px; font-size:11px; height:30px; margin:0;" onchange="verificarRafagaCustom()">
-                                    <option value="solo_peso">⚖️ Solo Peso</option>
-                                    <option value="tacto">🩺 Tacto / Diagnóstico</option>
-                                    <option value="Vacuna Aftosa">💉 Vacuna Aftosa</option>
-                                    <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
-                                    <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario</option>
-                                    <option value="Vitamina ADE">💉 Vitamina ADE</option>
-                                    <option value="OTRO">✏️ Personalizado...</option>
-                                </select>
-                                <input type="text" id="rafaga-prod-custom" class="form-control oculto" placeholder="Escribir producto..." style="margin-top:4px; padding:4px 8px; font-size:11px; height:28px;">
-                            </div>
-                            <div id="caja-rafaga-detalles" class="oculto" style="flex:1; min-width:0; display:none;">
-                                <input type="text" id="rafaga-detalles" class="form-control" placeholder="Dosis / Nota" style="padding:4px 8px; font-size:11px; height:30px; margin:0;">
-                            </div>
-                        </div>
-
-                        <!-- Opciones dinámicas para Tacto / Diagnóstico -->
-                        <div id="caja-rafaga-dx" class="oculto" style="display:none; align-items:center; gap:6px; margin-bottom:6px;">
-                            <span style="font-size:10px; font-weight:bold; color:var(--exito); white-space:nowrap;">Diagnóstico:</span>
-                            <select id="rafaga-dx-resultado" class="form-control" style="padding:4px 8px; font-size:11px; height:30px; margin:0; border-color:var(--exito); font-weight:bold;">
-                                <option value="Preñada">✅ Preñada</option>
-                                <option value="Vacía">❌ Vacía</option>
-                                <option value="Vacía (Sangre)">🩸 Vacía (Sangre)</option>
+                        <div class="form-grupo" style="margin-bottom:10px;">
+                            <label style="font-size:11px;">Acción combinada principal:</label>
+                            <select id="rafaga-accion" class="form-control" onchange="verificarRafagaCustom()">
+                                <option value="solo_peso">⚖️ Solo Registrar Principal (Peso / Tacto)</option>
+                                <option value="Vacuna Aftosa">💉 Vacuna Aftosa</option>
+                                <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
+                                <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario (Ivermectina)</option>
+                                <option value="Vitamina ADE">💉 Vitamina ADE / Reconstituyente</option>
+                                <option value="OTRO">✏ Personalizado (Escribir otro)...</option>
                             </select>
+                            <input type="text" id="rafaga-prod-custom" class="form-control oculto" placeholder="Escriba el producto..." style="margin-top:8px;">
                         </div>
-
-                        <!-- Próxima dosis compacta para Sanidad -->
-                        <div id="caja-rafaga-recordatorio" class="oculto" style="display:none; align-items:center; gap:6px;">
-                            <span style="font-size:10px; font-weight:bold; color:var(--alerta); white-space:nowrap;">Próx:</span>
-                            <select id="rafaga-recordatorio" class="form-control" style="padding:2px 6px; font-size:10px; height:26px; margin:0; border-color:var(--alerta);">
-                                <option value="0">Sin recordatorio</option>
-                                <option value="15">En 15 días</option>
-                                <option value="21">En 21 días</option>
-                                <option value="30">En 1 mes</option>
-                                <option value="90">En 3 meses</option>
-                                <option value="180">En 6 meses</option>
-                                <option value="365">En 1 año</option>
+                        <div id="caja-rafaga-detalles" class="form-grupo oculto" style="margin-bottom:0;">
+                            <label style="font-size:11px;">Dosis y Nota / Observación:</label>
+                            <input type="text" id="rafaga-detalles" class="form-control" placeholder="Ej: 5ml - Lote 12 | Subcutánea" style="margin-bottom:10px;">
+                            
+                            <label style="font-size:11px; color:var(--alerta); font-weight:bold;">⏳ Próxima Dosis a este lote:</label>
+                            <select id="rafaga-recordatorio" class="form-control" style="border-color: var(--alerta);">
+                                <option value="0">Sin recordatorio (Única dosis)</option>
+                                <option value="15">Avisar en 15 días</option>
+                                <option value="21">Avisar en 21 días</option>
+                                <option value="30">Avisar en 1 mes</option>
+                                <option value="90">Avisar en 3 meses</option>
+                                <option value="180">Avisar en 6 meses</option>
+                                <option value="365">Avisar en 1 año</option>
                             </select>
                         </div>
                     </div>
@@ -780,12 +773,7 @@
                 </div>
 
                 <div class="tarjeta" id="panel-analiticas">
-                    <div class="tarjeta-titulo">📊 Analíticas Visibles en Dashboard</div>
-                    <p style="font-size:11px; color:var(--muted); margin:0 0 10px 0;">Selecciona cuántas analíticas deseas ver en tu pantalla principal (puedes activar desde 1 hasta las 11 completas):</p>
-                    <div style="display:flex; gap:8px; margin-bottom:12px;">
-                        <button type="button" class="btn-mini" style="background:var(--secundario); color:white; border:none; padding:6px 12px; font-weight:bold;" onclick="seleccionarTodosGraficos(true)">✅ Activar Todas (11)</button>
-                        <button type="button" class="btn-mini" style="padding:6px 12px; font-weight:bold;" onclick="seleccionarTodosGraficos(false)">Deseleccionar</button>
-                    </div>
+                    <div class="tarjeta-titulo">📊 Analíticas en Dashboard (Máx 3)</div>
                     <div style="display:flex; flex-direction:column; gap:8px;">
                         <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="1" onchange="verificarLimiteGraficos(this)"> <span>1. Tasa de Preñez Dinámica</span></label>
                         <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="2" onchange="verificarLimiteGraficos(this)"> <span>2. Composición de Hacienda</span></label>
@@ -799,24 +787,6 @@
                         <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="10" onchange="verificarLimiteGraficos(this)"> <span>10. Volumen</span></label>
                         <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="11" onchange="verificarLimiteGraficos(this)"> <span>11. Causas de Baja / Mortalidad</span></label>
                     </div>
-                </div>
-
-                <div class="tarjeta">
-                    <div class="tarjeta-titulo">🤖 Asistente Virtual Cora</div>
-                    <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <div>
-                            <span style="font-weight: bold; color: var(--texto); display:block;">Botón Flotante de Cora</span>
-                            <span style="font-size:11px; color:var(--muted);">Desactivar si trabajas en campo o APK para evitar bloqueos</span>
-                        </div>
-                        <button class="btn-mini" id="btn-toggle-cora-vis" onclick="toggleCoraVisibilidad()">Desactivar</button>
-                    </div>
-                </div>
-
-                <div class="tarjeta">
-                    <div class="tarjeta-titulo">📶 Dispositivos y Hardware Taurus</div>
-                    <p style="font-size:12px; color:var(--muted); margin:0; line-height:1.6;">
-                        Puedes vincular tu <strong>Antena RFID y Balanza Taurus</strong>, bastones y lectores inalámbricos directamente desde los <strong>Ajustes de Bluetooth</strong> de tu teléfono o tablet. Taurus se comunica de forma 100% automática en segundo plano: una vez vinculado en tu sistema, empieza a trabajar y los datos ingresarán solos sin pasos manuales ni avisos molestos.
-                    </p>
                 </div>
 
                 <div class="tarjeta">
@@ -1216,27 +1186,15 @@
 
         window.procesarAlertaServidor = function(msg, id) {
             const banner = document.getElementById('banner-alerta-global');
-            const modal = document.getElementById('modal-alerta-global');
-            if (!msg || !id) {
-                if (banner) banner.classList.add('oculto');
-                if (modal) modal.style.display = 'none';
-                return;
-            }
-            let leidas = window.lsGet('tc_alertas_leidas', []);
-            let mostradas = window.lsGet('tc_alertas_mostradas', []);
-            let profile = window.lsGet('tc_user_profile', {});
-            let leidasProfile = profile.alertas_leidas || [];
-
-            if (!leidas.includes(id) && !leidasProfile.includes(id)) {
+            if (!msg || !id) { banner.classList.add('oculto'); return; }
+            let leidas = window.lsGet('tc_alertas_leidas', []); let mostradas = window.lsGet('tc_alertas_mostradas', []);
+            if (!leidas.includes(id)) {
                 alertaGlobalIdActual = id;
                 document.getElementById('txt-alerta-global').innerText = msg;
                 document.getElementById('txt-banner-alerta').innerText = msg;
-                if (!mostradas.includes(id)) { modal.style.display = 'flex'; }
+                if (!mostradas.includes(id)) { document.getElementById('modal-alerta-global').style.display = 'flex'; }
                 banner.classList.remove('oculto');
-            } else {
-                banner.classList.add('oculto');
-                modal.style.display = 'none';
-            }
+            } else { banner.classList.add('oculto'); }
         }
 
         window.cerrarPopUpAlerta = function() {
@@ -1247,13 +1205,13 @@
                 if (!leidas.includes(alertaGlobalIdActual)) {
                     leidas.push(alertaGlobalIdActual);
                     window.lsSet('tc_alertas_leidas', leidas);
-                }
-                if(navigator.onLine && usActivo) {
-                    try {
-                        db.collection('usuarios').doc(usActivo).update({
-                            alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
-                        });
-                    } catch(e) {}
+                    if(navigator.onLine && usActivo) {
+                        try {
+                            db.collection('usuarios').doc(usActivo).update({
+                                alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
+                            });
+                        } catch(e) {}
+                    }
                 }
             }
             document.getElementById('modal-alerta-global').style.display = 'none';
@@ -1266,13 +1224,13 @@
                 if(!leidas.includes(alertaGlobalIdActual)) {
                     leidas.push(alertaGlobalIdActual);
                     window.lsSet('tc_alertas_leidas', leidas);
-                }
-                if(navigator.onLine && usActivo) {
-                    try {
-                        db.collection('usuarios').doc(usActivo).update({
-                            alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
-                        });
-                    } catch(e) {}
+                    if(navigator.onLine && usActivo) {
+                        try {
+                            db.collection('usuarios').doc(usActivo).update({
+                                alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
+                            });
+                        } catch(e) {}
+                    }
                 }
             }
             document.getElementById('modal-alerta-global').style.display = 'none';
@@ -1280,173 +1238,50 @@
         }
 
         let rafagaActiva = false;
-        let sesionRafaga = {
-            activa: false,
-            inicio: null,
-            accion: '',
-            detalles: '',
-            animales: new Set()
-        };
-
-        window.registrarEventoEspecial = function(accion, valor, detalles) {
-            if(!maestroId) return;
-            const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
-            const docRef = colRef.doc();
-            const obj = {
-                id: docRef.id,
-                fecha: new Date().toISOString(),
-                accion: accion,
-                caravana: "---",
-                valor: valor,
-                detalles: detalles + ` | Op: ${usNombre}`,
-                maestro: maestroId,
-                autor_email: usActivo,
-                autor_nombre: usNombre,
-                autor_rol: usRol
-            };
-            if (navigator.onLine) {
-                docRef.set(obj).catch(()=>{});
-            }
-        };
-
         window.toggleRafaga = function() {
             rafagaActiva = !rafagaActiva;
             const btn = document.getElementById('btn-toggle-rafaga');
             const opciones = document.getElementById('opciones-rafaga');
-            
             if(rafagaActiva) {
-                sesionRafaga.activa = true;
-                sesionRafaga.inicio = new Date();
-                sesionRafaga.animales = new Set();
-                
-                let selAccion = document.getElementById('rafaga-accion') ? document.getElementById('rafaga-accion').value : 'solo_peso';
-                let customProd = (document.getElementById('rafaga-prod-custom') && !document.getElementById('rafaga-prod-custom').classList.contains('oculto')) ? document.getElementById('rafaga-prod-custom').value.trim() : '';
-                let dxVal = (document.getElementById('rafaga-dx-resultado') ? document.getElementById('rafaga-dx-resultado').value : 'Preñada');
-                let prodNombre = (selAccion === 'tacto' ? ('Tacto (Dx: ' + dxVal + ')') : (selAccion === 'OTRO' ? customProd : (selAccion === 'solo_peso' ? 'Solo Pesaje' : selAccion))) || 'Tratamiento General';
-                sesionRafaga.accion = prodNombre;
-                sesionRafaga.detalles = document.getElementById('rafaga-detalles') ? document.getElementById('rafaga-detalles').value.trim() : '';
-
-                btn.innerText = "ENCENDIDO (0)";
-                btn.style.background = "var(--secundario)";
-                btn.style.color = "white";
-                opciones.classList.remove('oculto');
-                window.verificarRafagaCustom();
-
-                // Notificación inicial al arrancar el modo ráfaga
-                let isDueno = usRol.includes('Propietario') || usRol.includes('Dueño');
-                let rolEtiqueta = isDueno ? 'Propietario' : 'Operador';
-                let msgInicio = `⚡ ${usNombre} (${rolEtiqueta}) inició Modo Ráfaga en ${usHacienda} [Configurado: ${prodNombre}]`;
-                window.notificarPropietario(msgInicio);
-                window.mostrarToast(`⚡ Modo Ráfaga Iniciado: ${prodNombre}`);
-                window.registrarEventoEspecial('Ráfaga_Inicio', prodNombre, `Iniciado por ${usNombre} (${rolEtiqueta})`);
+                btn.innerText = "ENCENDIDO"; btn.style.background = "var(--secundario)"; btn.style.color = "white";
+                opciones.classList.remove('oculto'); window.verificarRafagaCustom();
             } else {
-                let total = sesionRafaga.animales.size;
-                let accionRealizada = sesionRafaga.accion || 'Tratamiento / Pesaje';
-                
-                // Notificación final al concluir el modo ráfaga con conteo y tratamiento
-                if (total > 0) {
-                    let isDueno = usRol.includes('Propietario') || usRol.includes('Dueño');
-                    let rolEtiqueta = isDueno ? 'Propietario' : 'Operador';
-                    let msgFin = `🏁 ${usNombre} (${rolEtiqueta}) finalizó Modo Ráfaga en ${usHacienda}: Se cargaron ${total} animales [Tratamiento: ${accionRealizada}]`;
-                    window.notificarPropietario(msgFin);
-                    window.mostrarToast(`🏁 Ráfaga finalizada: ${total} animales procesados`);
-                    window.registrarEventoEspecial('Ráfaga_Fin', `${total} animales`, `Finalizado por ${usNombre} | Acción: ${accionRealizada}`);
-                } else {
-                    window.mostrarToast("Modo Ráfaga desactivado (sin registros)");
-                }
-
-                sesionRafaga.activa = false;
-                sesionRafaga.animales.clear();
-                btn.innerText = "APAGADO";
-                btn.style.background = "transparent";
-                btn.style.color = "var(--texto)";
+                btn.innerText = "APAGADO"; btn.style.background = "transparent"; btn.style.color = "var(--texto)";
                 opciones.classList.add('oculto');
             }
         };
 
-                        window.verificarRafagaCustom = function() {
-            const sel = document.getElementById('rafaga-accion') ? document.getElementById('rafaga-accion').value : 'solo_peso';
+        window.verificarRafagaCustom = function() {
+            const sel = document.getElementById('rafaga-accion').value;
             const modalidad = document.getElementById('rafaga-modalidad') ? document.getElementById('rafaga-modalidad').value : 'rfid';
             const customInput = document.getElementById('rafaga-prod-custom');
             const detallesBox = document.getElementById('caja-rafaga-detalles');
-            const dxBox = document.getElementById('caja-rafaga-dx');
-            const recordatorioBox = document.getElementById('caja-rafaga-recordatorio');
             const cajaManual = document.getElementById('caja-rafaga-manual');
             
-            if(cajaManual) {
-                if(modalidad === 'manual') {
-                    cajaManual.style.display = 'flex';
-                    cajaManual.classList.remove('oculto');
-                    let inputRp = document.getElementById('rm-caravana');
-                    if(inputRp) setTimeout(() => inputRp.focus(), 100);
-                } else {
-                    cajaManual.style.display = 'none';
-                    cajaManual.classList.add('oculto');
-                }
-            }
+            if(modalidad === 'manual') cajaManual.classList.remove('oculto'); else cajaManual.classList.add('oculto');
             
-            if(sel === 'solo_peso') {
-                if(customInput) customInput.classList.add('oculto');
-                if(detallesBox) { detallesBox.style.display = 'none'; detallesBox.classList.add('oculto'); }
-                if(dxBox) { dxBox.style.display = 'none'; dxBox.classList.add('oculto'); }
-                if(recordatorioBox) { recordatorioBox.style.display = 'none'; recordatorioBox.classList.add('oculto'); }
-            } else if(sel === 'tacto') {
-                if(customInput) customInput.classList.add('oculto');
-                if(detallesBox) { detallesBox.style.display = 'none'; detallesBox.classList.add('oculto'); }
-                if(dxBox) { dxBox.style.display = 'flex'; dxBox.classList.remove('oculto'); }
-                if(recordatorioBox) { recordatorioBox.style.display = 'none'; recordatorioBox.classList.add('oculto'); }
-            } else {
-                if(dxBox) { dxBox.style.display = 'none'; dxBox.classList.add('oculto'); }
-                if(detallesBox) { detallesBox.style.display = 'block'; detallesBox.classList.remove('oculto'); }
-                if(recordatorioBox) { recordatorioBox.style.display = 'flex'; recordatorioBox.classList.remove('oculto'); }
-                if(sel === 'OTRO') {
-                    if(customInput) { customInput.classList.remove('oculto'); customInput.focus(); }
-                } else {
-                    if(customInput) customInput.classList.add('oculto');
-                }
-            }
+            if(sel === 'solo_peso') { customInput.classList.add('oculto'); detallesBox.classList.add('oculto'); }
+            else { detallesBox.classList.remove('oculto'); if(sel === 'OTRO') { customInput.classList.remove('oculto'); customInput.focus(); } else { customInput.classList.add('oculto'); } }
         };
 
-                window.ejecutarRafagaManual = function() {
-            let inputRp = document.getElementById('rm-caravana');
-            let inputVal = document.getElementById('rm-valor');
-            let rp = inputRp ? inputRp.value.trim().toUpperCase() : '';
-            let pesoVal = inputVal ? inputVal.value.trim().replace(',', '.') : '';
-            if(!rp) return;
+        window.ejecutarRafagaManual = function() {
+            let rp = document.getElementById('rm-caravana').value.trim().toUpperCase();
+            let val = document.getElementById('rm-valor').value.trim().toUpperCase();
+            if(!rp || !val) return;
             rpActivo = rp;
+            let sel = document.getElementById('rafaga-accion').value; let notas = document.getElementById('rafaga-detalles').value.trim(); let recordatorio = document.getElementById('rafaga-recordatorio').value; 
             
-            let sel = document.getElementById('rafaga-accion') ? document.getElementById('rafaga-accion').value : 'solo_peso';
-            let notas = document.getElementById('rafaga-detalles') ? document.getElementById('rafaga-detalles').value.trim() : '';
-            let recordatorio = document.getElementById('rafaga-recordatorio') ? document.getElementById('rafaga-recordatorio').value : '0';
-
-            // 1. Si se cargó peso en el campo exclusivo de peso
-            if(pesoVal && !isNaN(parseFloat(pesoVal))) {
-                let numKg = parseFloat(pesoVal).toFixed(1);
-                window.ejecutarAccion('Peso', numKg + " Kg", "Ráfaga Manual", null);
-            } else if(sel === 'solo_peso') {
-                window.mostrarToast("⚠️ Ingrese los Kg para este animal", true);
-                if(inputVal) inputVal.focus();
-                return;
-            }
-
-            // 2. Si la acción seleccionada es Tacto
-            if(sel === 'tacto') {
-                let dxSel = document.getElementById('rafaga-dx-resultado') ? document.getElementById('rafaga-dx-resultado').value : 'Preñada';
-                window.ejecutarAccion('Diagnóstico', "Dx: " + dxSel, "Ráfaga Manual", null);
-            }
-            // 3. Si la acción es Tratamiento / Vacuna
-            else if(sel !== 'solo_peso') {
-                let customInput = document.getElementById('rafaga-prod-custom');
-                let producto = sel === 'OTRO' ? ((customInput && customInput.value.trim()) || 'Tratamiento General') : sel;
-                let detCompleto = (notas ? notas + " | " : "") + "Ráfaga Manual";
-                if (recordatorio !== "0" && recordatorio !== "") detCompleto += ` | [RECORDATORIO:${recordatorio}]`;
+            if(!isNaN(val) || val.includes('.')) { window.ejecutarAccion('Peso', val + " Kg", "Automático (Ráfaga Manual)", null); } 
+            else { window.ejecutarAccion('Sanidad', val, "Automático (Ráfaga Manual)", null); }
+            
+            if(sel !== 'solo_peso') {
+                let producto = sel === 'OTRO' ? (document.getElementById('rafaga-prod-custom').value.trim() || 'Tratamiento General') : sel;
+                let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga Manual";
+                if (recordatorio !== "0") detCompleto += ` | [RECORDATORIO:${recordatorio}]`;
                 window.ejecutarAccion('Sanidad', producto, detCompleto, null);
             }
-
-            window.emitirBeepHardware('combo');
-            window.mostrarToast("✅ Cargado RP: " + rp);
-            if(inputRp) { inputRp.value = ""; inputRp.focus(); }
-            if(inputVal) inputVal.value = "";
+            window.mostrarToast("✅ Combo asignado al RP: " + rp);
+            document.getElementById('rm-caravana').value = ""; document.getElementById('rm-valor').value = ""; document.getElementById('rm-caravana').focus();
         };
 
         window.setEstadoRed = function(online, texto = null) {
@@ -1532,13 +1367,7 @@
         window.notificarPropietario = function(mensaje) {
             if(!navigator.onLine) return;
             let isDueno = usRol.includes('Propietario') || usRol.includes('Dueño');
-            const fd = new URLSearchParams();
-            fd.append('accion', 'notificar_accion');
-            fd.append('maestro', maestroId);
-            fd.append('mensaje', mensaje);
-            fd.append('remitente_es_dueno', isDueno);
-            fd.append('remitente_nombre', usNombre);
-            fd.append('remitente_usuario', usActivo);
+            const fd = new URLSearchParams(); fd.append('accion', 'notificar_accion'); fd.append('maestro', maestroId); fd.append('mensaje', mensaje); fd.append('remitente_es_dueno', isDueno);
             fetch("https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec", { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
         }
 
@@ -1560,23 +1389,8 @@
                 if(unsubscribeConfig) unsubscribeConfig();
                 unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot(doc => {
                     if(doc.exists) {
-                        const conf = doc.data() || {};
-                        let msg = (conf.alerta_global || "").trim();
-                        let alertaId = conf.alerta_id || (msg ? "alerta_id_" + encodeURIComponent(msg).slice(0, 20) : "");
-                        let expira = conf.alerta_expira || 0;
-                        
-                        // SANITIZACIÓN ROBUSTA: Si es el viejo texto 'hola' o está vacía o ya expiró, NO se muestra nunca
-                        let esAntiguoHola = msg.toLowerCase() === 'hola' ||
-                                            msg.toLowerCase() === '⏳ aviso: hola' ||
-                                            msg.toLowerCase().includes('aviso importante hola') ||
-                                            msg.toLowerCase() === 'aviso importante: hola';
-
-                        if (!msg || esAntiguoHola || (expira > 0 && Date.now() > expira)) {
-                            window.procesarAlertaServidor("", "");
-                        } else {
-                            window.procesarAlertaServidor(msg, alertaId);
-                        }
-
+                        const conf = doc.data();
+                        window.procesarAlertaServidor(conf.alerta_global, "alerta_fb");
                         const pantMant = document.getElementById('pantalla-mantenimiento');
                         if(conf.mantenimiento) { if(pantMant) pantMant.classList.remove('oculto'); }
                         else { if(pantMant) pantMant.classList.add('oculto'); }
@@ -1597,23 +1411,13 @@
                     window.fusionarDatos(nuevosDatos);
 
                     if (notificar.length > 0 && mapAnterior.size > 0) {
-                        let isDuenoActual = usRol.includes('Propietario') || usRol.includes('Dueño');
-                        // REGLA FUNDAMENTAL: Los operadores NUNCA reciben notificaciones
-                        if (isDuenoActual && notificar.length <= 5) {
+                        if (notificar.length <= 3) {
                             notificar.forEach(n => {
-                                let opNombre = n.autor_nombre || (n.detalles && n.detalles.includes("Op: ") ? n.detalles.split("Op: ")[1].trim() : (n.usuario || "Un operador"));
-                                let opEmail = n.autor_email || n.usuario || "";
-                                
-                                // REGLA FUNDAMENTAL: NUNCA notificarse a sí mismo
-                                let esAutorMismo = (opEmail && usActivo && opEmail.toLowerCase() === usActivo.toLowerCase()) ||
-                                                   (opNombre && usNombre && opNombre.toLowerCase() === usNombre.toLowerCase());
-
-                                if (!esAutorMismo && n.maestro === maestroId) {
-                                    if (n.accion === 'Ráfaga_Inicio' || n.accion === 'Ráfaga_Fin') {
-                                        window.lanzarNotificacionEscritorio("⚡ Modo Ráfaga Taurus", `${opNombre}: ${n.valor}`);
-                                    } else if (n.caravana !== '---' && n.caravana !== 'null' && String(n.caravana).toLowerCase() !== 'null') {
-                                        window.lanzarNotificacionEscritorio("Alerta Taurus", `${opNombre} registró [${n.accion}] al RP ${n.caravana}`);
-                                    }
+                                let op = n.usuario || "Un operador";
+                                if (n.detalles && n.detalles.includes("Op: ")) { op = n.detalles.split("Op: ")[1].trim(); }
+                                let isDuenoActual = usRol.includes('Propietario') || usRol.includes('Dueño');
+                                if(isDuenoActual && n.maestro === maestroId && op.toLowerCase() !== usNombre.toLowerCase() && n.caravana !== '---' && n.caravana !== 'null' && String(n.caravana).toLowerCase() !== 'null') {
+                                    window.lanzarNotificacionEscritorio("Alerta Taurus", `${op} registró [${n.accion}] al RP ${n.caravana}`);
                                 }
                             });
                         }
@@ -1708,7 +1512,7 @@
                     }
                 }).catch(e => {});
 
-                const prefs = window.lsGet('tc_prefs', ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
+                const prefs = window.lsGet('tc_prefs', ['1', '2']); document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
 
                 db.collection('estancias').doc(m).onSnapshot({ includeMetadataChanges: true }, docE => {
                     let hNombre = usHacienda || "HACIENDA";
@@ -1731,7 +1535,7 @@
                 document.getElementById('pantalla-app').classList.remove('oculto');
                 document.getElementById('pantalla-mantenimiento').classList.add('oculto');
                 if(tabSeleccionado) { window.cambiarVista(vistaInicial, tabSeleccionado); } else { window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
-                window.sincronizarPendientesAuto(); window.cargarListasFiltrosSelects(); window.cargarListaOperadores(); window.aplicarVisibilidadCora();
+                window.sincronizarPendientesAuto(); window.cargarListasFiltrosSelects(); window.cargarListaOperadores();
                 
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
@@ -1821,9 +1625,8 @@
         }
 
         window.obtenerNombreCategoriaLegible = function(sigla) {
-            if(!sigla || sigla === "-" || sigla === "null" || sigla === "undefined" || String(sigla).trim() === "") return "Sin Categoría";
+            if(!sigla) return "Sin Categoría";
             let s = String(sigla).trim().toUpperCase();
-            if(s === "SIN CATEGORÍA" || s === "SIN CATEGORIA") return "Sin Categoría";
             if(s.startsWith('V:')) return "Vaca / Vaquilla";
             if(s.startsWith('VV:')) return "Vaca Vieja";
             if(s.startsWith('TH:')) return "Ternera Hembra";
@@ -1874,11 +1677,10 @@
                 if(el) {
                     let curr = el.value;
                     let opts = '<option value="ALL">🐄 Todas las Categorías</option>';
-                    opts += '<option value="Sin Categoría">⚠️ Sin Categoría</option>';
                     catsSet.add("Vaca / Vaquilla"); catsSet.add("Vaca Vieja"); catsSet.add("Ternera Hembra");
                     catsSet.add("Ternero Macho"); catsSet.add("Desmamante Hembra"); catsSet.add("Desmamante Macho");
                     catsSet.add("Toros"); catsSet.add("Novillos"); catsSet.add("Bueyes / Señuelos");
-                    Array.from(catsSet).filter(c => c !== "Sin Categoría" && c !== "-").sort().forEach(c => { opts += `<option value="${c}">${c}</option>`; });
+                    Array.from(catsSet).sort().forEach(c => { opts += `<option value="${c}">${c}</option>`; });
                     el.innerHTML = opts;
                     if(curr && curr !== "") el.value = curr;
                 }
@@ -1888,24 +1690,34 @@
         window.buscarCaravanaBtn = function(rpForzado = null) {
             try {
                 let rp = rpForzado ? rpForzado : document.getElementById('buscador-caravana').value.trim();
-                if(!rp || String(rp).toLowerCase() === 'null') return;
+                if(!esCaravanaValida(rp)) return;
                 let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === rp.toLowerCase());
                 if(esRFIDRegistrado) rp = esRFIDRegistrado.caravana;
 
-                rpActivo = rp; document.getElementById('ficha-animal').classList.remove('oculto');
-                const elCaravanaTop = document.getElementById('val-caravana'); if(elCaravanaTop) elCaravanaTop.innerText = rp;
+                rpActivo = rp; 
+                document.getElementById('ficha-animal').classList.remove('oculto');
+                const elCaravanaTop = document.getElementById('val-caravana'); 
+                if(elCaravanaTop) elCaravanaTop.innerText = rp;
                 
                 const regs = window.obtenerHistorial(rp);
                 const uBaja = regs.find(d => d.accion === 'Baja');
                 const badgeBaja = document.getElementById('badge-estado-animal');
-                if(uBaja) { badgeBaja.style.display = 'block'; badgeBaja.innerText = "BAJA: " + uBaja.valor.toUpperCase(); } else { badgeBaja.style.display = 'none'; }
+                if(uBaja) { 
+                    badgeBaja.style.display = 'block'; 
+                    badgeBaja.innerText = "BAJA: " + uBaja.valor.toUpperCase(); 
+                } else { 
+                    badgeBaja.style.display = 'none'; 
+                }
 
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", nutricion="-", sanidad="-", inseminacion="-", htmlNotas="";
                 let gdpHtml = "";
+
+                // Detección y Cálculo de Pesaje
                 let todosLosPesos = regs.filter(d => String(d.accion).includes('Peso'));
                 if(todosLosPesos.length >= 1) {
                     let pesoActual = todosLosPesos[0];
-                    let p1 = parseFloat(String(pesoActual.valor).replace(/[^\d.-]/g, '')); let d1 = new Date(pesoActual.fecha); 
+                    let p1 = parseFloat(String(pesoActual.valor).replace(/[^\d.-]/g, '')); 
+                    let d1 = new Date(pesoActual.fecha); 
                     let pesoAnterior = null;
                     for(let i = 1; i < todosLosPesos.length; i++) { 
                         let pTest = parseFloat(String(todosLosPesos[i].valor).replace(/[^\d.-]/g, ''));
@@ -1913,50 +1725,126 @@
                         if(pTest !== p1 || diffT > 86400000) { pesoAnterior = todosLosPesos[i]; break; } 
                     }
                     if(pesoAnterior) {
-                        let p2 = parseFloat(String(pesoAnterior.valor).replace(/[^\d.-]/g, '')); let d2 = new Date(pesoAnterior.fecha);
-                        let diffTime = Math.abs(d1 - d2); let dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                        if(dias >= 1) { 
+                        let p2 = parseFloat(String(pesoAnterior.valor).replace(/[^\d.-]/g, '')); 
+                        let d2 = new Date(pesoAnterior.fecha);
+                        let diffTime = Math.abs(d1 - d2); 
+                        let dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        if(dias >= 1 && !isNaN(p1) && !isNaN(p2)) { 
                             let gdp = parseFloat(((p1 - p2) / dias).toFixed(3)); 
                             if(gdp > 0) gdpHtml = `<span style="color:var(--exito); font-weight:bold; font-size:12px;">🚀 +${gdp} Kg/día</span>`; 
                             else if(gdp < 0) gdpHtml = `<span style="color:var(--peligro); font-weight:bold; font-size:12px;">⚠️ ${gdp} Kg/día</span>`; 
                             else gdpHtml = `<span style="color:var(--muted); font-weight:bold; font-size:12px;">⚖️ Mantuvo su peso</span>`; 
                         }
                     } else {
-                        if(todosLosPesos.length > 1) { gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Múltiples pesos idénticos/mismo día)</span>`; } else { gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Falta peso histórico)</span>`; }
+                        if(todosLosPesos.length > 1) { 
+                            gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Múltiples pesos idénticos/mismo día)</span>`; 
+                        } else { 
+                            gdpHtml = `<span style="color:var(--muted); font-size:10px; font-style:italic;">(Falta peso histórico)</span>`; 
+                        }
                     }
                 }
-                const elGdp = document.getElementById('val-gdp'); if (elGdp) elGdp.innerHTML = gdpHtml;
+                const elGdp = document.getElementById('val-gdp'); 
+                if (elGdp) elGdp.innerHTML = gdpHtml;
 
                 if(regs.length > 0) {
                     const uP = regs.find(d => d.accion === 'Perfil Master');
-                    if(uP) { let p = String(uP.valor || "").split('|'); raza = p[0] || "-"; edad = p[1] || "-"; padre = p[2] || "-"; madre = p[3] || "-"; cat = String(uP.detalles || "").split('|')[0] || "-"; }
+                    if(uP) { 
+                        let p = String(uP.valor || "").split('|'); 
+                        raza = p[0] || "-"; 
+                        edad = p[1] || "-"; 
+                        padre = p[2] || "-"; 
+                        madre = p[3] || "-"; 
+                        cat = String(uP.detalles || "").split('|')[0] || "-"; 
+                    }
                     const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                    if(uC) { let v = String(uC.valor || "").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-"; }
+                    if(uC) { 
+                        let v = String(uC.valor || "").split('|'); 
+                        cat = v[0] ? v[0].replace('Cat:','').trim() : cat; 
+                        carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; 
+                        lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-"; 
+                    }
                     
                     const uPeso = regs.find(d => String(d.accion).includes('Peso')); 
                     if(uPeso) {
-                        let fPesoStr = new Date(uPeso.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'});
+                        let fPesoStr = uPeso.fecha ? new Date(uPeso.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'}) : '';
                         peso = `${uPeso.valor || "-"} <span style="font-size:11px; color:var(--muted); display:block; margin-top:2px;">(Pesado: ${fPesoStr})</span>`;
                     }
                     
                     const uDx = regs.find(d => d.accion === 'Diagnóstico');
-
                     let loteLow = lote.toLowerCase();
                     let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
                     let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
                     let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
                     dx = uDx ? uDx.valor : (esPre ? "Preñada" : (esVacia ? "Vacía" : "-"));
 
-                    const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nutricion = (uNut.valor || "-") + " | " + (uNut.detalles || "");
-                    const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) sanidad = (uSan.valor || "-") + " | " + (uSan.detalles || "");
-                    const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) inseminacion = (uIns.valor || "-") + " | " + (uIns.detalles || "");
+                    // ÚLTIMA SANIDAD
+                    const uSan = regs.find(d => {
+                        let acc = String(d.accion || "").trim().toLowerCase();
+                        return acc === 'sanidad' || acc.includes('sanid') || acc.includes('vacun') || acc.includes('tratamient') || acc.includes('antiparasit');
+                    });
+                    if(uSan) {
+                        let valSan = (uSan.valor && uSan.valor !== '-') ? uSan.valor : 'Tratamiento General';
+                        let detSan = uSan.detalles ? uSan.detalles.split('| Op:')[0].trim() : '';
+                        let fSanStr = uSan.fecha ? new Date(uSan.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'}) : '';
+                        sanidad = `${valSan}`;
+                        if(detSan && detSan !== '-' && detSan !== 'Sin observaciones adicionales' && detSan !== 'Sin notas') {
+                            sanidad += ` <span style="font-size:11px; color:var(--muted); font-weight:normal;">(${detSan})</span>`;
+                        }
+                        if(fSanStr) {
+                            sanidad += `<span style="font-size:11px; color:var(--muted); display:block; margin-top:2px;">(Aplicado: ${fSanStr})</span>`;
+                        }
+                    }
+
+                    // ÚLTIMA INSEMINACIÓN
+                    const uIns = regs.find(d => {
+                        let acc = String(d.accion || "").trim().toLowerCase();
+                        return acc === 'inseminación' || acc === 'inseminacion' || acc.includes('insemin') || acc.includes('monta') || acc.includes('reproducc');
+                    });
+                    if(uIns) {
+                        let fInsStr = uIns.fecha ? new Date(uIns.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'}) : '';
+                        inseminacion = `${uIns.valor || "-"}`;
+                        if(uIns.detalles && uIns.detalles !== '-') {
+                            let detIns = uIns.detalles.split('| Op:')[0].trim();
+                            if(detIns) inseminacion += ` <span style="font-size:11px; color:var(--muted); font-weight:normal;">(${detIns})</span>`;
+                        }
+                        if(fInsStr) {
+                            inseminacion += `<span style="font-size:11px; color:var(--muted); display:block; margin-top:2px;">(Fecha: ${fInsStr})</span>`;
+                        }
+                    }
+
+                    // RÉGIMEN NUTRICIONAL
+                    const uNut = regs.find(d => {
+                        let acc = String(d.accion || "").trim().toLowerCase();
+                        return acc === 'nutrición' || acc === 'nutricion' || acc.includes('nutri') || acc.includes('aliment');
+                    });
+                    if(uNut) {
+                        let fNutStr = uNut.fecha ? new Date(uNut.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'}) : '';
+                        nutricion = `${uNut.valor || "-"}`;
+                        if(uNut.detalles && uNut.detalles !== '-') {
+                            let detNut = uNut.detalles.split('| Op:')[0].trim();
+                            if(detNut) nutricion += ` <span style="font-size:11px; color:var(--muted); font-weight:normal;">(${detNut})</span>`;
+                        }
+                        if(fNutStr) {
+                            nutricion += `<span style="font-size:11px; color:var(--muted); display:block; margin-top:2px;">(Registrado: ${fNutStr})</span>`;
+                        }
+                    }
 
                     let ultComentario = "Sin comentarios.";
                     regs.forEach(r => {
                         try {
-                            let acc = String(r.accion).trim(); let det = String(r.detalles || ""); let notaTexto = "";
-                            if (acc === 'Comentario') { notaTexto = det.split('|')[0] || ""; if(ultComentario === "Sin comentarios.") ultComentario = notaTexto; }
-                            else if (det.includes('Notas:')) { let parts = det.split('Notas:'); if (parts.length > 1) { let n = parts[1].split('|')[0].trim(); if(n && n !== "-" && n !== "") notaTexto = `[${acc}] ${n}`; } }
+                            let acc = String(r.accion).trim(); 
+                            let det = String(r.detalles || ""); 
+                            let notaTexto = "";
+                            if (acc === 'Comentario') { 
+                                notaTexto = det.split('|')[0] || ""; 
+                                if(ultComentario === "Sin comentarios.") ultComentario = notaTexto; 
+                            } else if (det.includes('Notas:')) { 
+                                let parts = det.split('Notas:'); 
+                                if (parts.length > 1) { 
+                                    let n = parts[1].split('|')[0].trim(); 
+                                    if(n && n !== "-" && n !== "") notaTexto = `[${acc}] ${n}`; 
+                                } 
+                            }
                         } catch(e) {}
                     });
                     document.getElementById('val-comentario').innerText = ultComentario;
@@ -1970,12 +1858,12 @@
                 const elLote = document.getElementById('val-lote'); if(elLote) elLote.innerText = lote;
                 const elCarimbo = document.getElementById('val-carimbo'); if(elCarimbo) elCarimbo.innerText = carimbo;
                 const elGenealogia = document.getElementById('val-genealogia'); if(elGenealogia) elGenealogia.innerText = padre + " / " + madre;
-                const elNutricion = document.getElementById('val-nutricion'); if(elNutricion) elNutricion.innerText = nutricion;
-                const elSanidad = document.getElementById('val-sanidad'); if(elSanidad) elSanidad.innerText = sanidad;
-                const elInseminacion = document.getElementById('val-inseminacion'); if(elInseminacion) elInseminacion.innerText = inseminacion;
+                const elNutricion = document.getElementById('val-nutricion'); if(elNutricion) elNutricion.innerHTML = nutricion;
+                const elSanidad = document.getElementById('val-sanidad'); if(elSanidad) elSanidad.innerHTML = sanidad;
+                const elInseminacion = document.getElementById('val-inseminacion'); if(elInseminacion) elInseminacion.innerHTML = inseminacion;
                 const elRaza = document.getElementById('val-raza'); if(elRaza) elRaza.innerText = raza;
-                
                 const elEdad = document.getElementById('val-edad'); if(elEdad) elEdad.innerText = edad;
+
                 const fRaza = document.getElementById('f-raza'); if(fRaza) fRaza.value = raza !== "-" ? raza : "";
                 const fNacimiento = document.getElementById('f-nacimiento');
                 if(fNacimiento) { fNacimiento.value = edad !== "-" ? edad : ""; window.mostrarCarimboCalculado(); }
@@ -1991,55 +1879,43 @@
                             selectLote.selectedIndex = i; encontrado = true; break;
                         }
                     }
-                    if(!encontrado && lote !== "-") { selectLote.value = 'OTRO'; window.verificarSelectOtro(selectLote, 'lote-otro'); document.getElementById('lote-otro').value = lote; }
-                    else { window.verificarSelectOtro(selectLote, 'lote-otro'); }
+                    if(!encontrado && lote !== "-") { 
+                        selectLote.value = 'OTRO'; 
+                        window.verificarSelectOtro(selectLote, 'lote-otro'); 
+                        document.getElementById('lote-otro').value = lote; 
+                    } else { 
+                        window.verificarSelectOtro(selectLote, 'lote-otro'); 
+                    }
                 }
 
                 const fComentario = document.getElementById('f-comentario-txt'); if(fComentario) fComentario.value = "";
                 
                 const catSelect = document.getElementById('input-cat-rapida');
-                if(catSelect) { for(let i=0; i<catSelect.options.length; i++) { if(catSelect.options[i].value.includes(cat)) catSelect.selectedIndex = i; } }
+                if(catSelect) { 
+                    for(let i=0; i<catSelect.options.length; i++) { 
+                        if(catSelect.options[i].value.includes(cat) || catSelect.options[i].text.includes(cat)) {
+                            catSelect.selectedIndex = i; 
+                            break;
+                        }
+                    } 
+                }
             } catch(e) { console.error("Error al visualizar ficha", e); }
-        }
+        };
 
         window.ejecutarAccion = function(tipo, val, det, modalId) {
             let car = rpActivo;
-            if (tipo.includes('Operador') || tipo === 'Alta Operador' || tipo === 'Edición Operador' || tipo === 'Baja Operador' || tipo.startsWith('Ráfaga_')) {
+            if (tipo.includes('Operador') || tipo === 'Alta Operador' || tipo === 'Edición Operador' || tipo === 'Baja Operador') {
                 car = "---";
             } else if (!car || String(car).toLowerCase() === "null" || car === "undefined") {
                 car = "---";
             }
 
-            // Conteo de animales únicos en sesión ráfaga
-            if (rafagaActiva && car !== "---") {
-                sesionRafaga.animales.add(String(car));
-                const btnR = document.getElementById('btn-toggle-rafaga');
-                if (btnR) btnR.innerText = `ENCENDIDO (${sesionRafaga.animales.size})`;
-            }
-
             const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
             const docRef = colRef.doc();
-            const obj = {
-                id: docRef.id,
-                fecha: new Date().toISOString(),
-                accion: tipo,
-                caravana: car,
-                valor: val,
-                detalles: det + ` | Op: ${usNombre}`,
-                maestro: maestroId,
-                autor_email: usActivo,
-                autor_nombre: usNombre,
-                autor_rol: usRol
-            };
-            dbCache.unshift(obj);
-            historiaCache = null;
-            activosCache = null;
-            window.buscarCaravanaBtn(rpActivo);
-            window.procesarDatosDashboard();
+            const obj = { id: docRef.id, fecha: new Date().toISOString(), accion: tipo, caravana: car, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
+            dbCache.unshift(obj); historiaCache = null; activosCache = null; window.buscarCaravanaBtn(rpActivo); window.procesarDatosDashboard();
             if(modalId) window.cerrarModal(modalId);
-            
-            // Si NO está en ráfaga y no es gestión interna: notificar a los dueños
-            if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador' && tipo !== 'Alta Operador' && tipo !== 'Baja Operador' && !tipo.startsWith('Ráfaga_')) {
+            if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador' && tipo !== 'Alta Operador' && tipo !== 'Baja Operador') {
                 window.notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
             }
             if(navigator.onLine) {
@@ -2762,104 +2638,35 @@
             }, 100);
         }
 
-        window.verificarLimiteGraficos = function() {
-            const checks = document.querySelectorAll('.chk-graf:checked');
-            const prefs = Array.from(checks).map(c => c.value);
-            window.lsSet('tc_prefs', prefs);
-            if(dbCache.length > 0) window.procesarDatosDashboard();
-        };
-
-        window.seleccionarTodosGraficos = function(activar) {
-            document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = activar; });
-            window.verificarLimiteGraficos();
-        };
+        window.verificarLimiteGraficos = function(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { alert('Solo puede fijar 3 gráficas simultáneas.'); checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); window.lsSet('tc_prefs', prefs); if(dbCache.length > 0) window.procesarDatosDashboard(); } }
 
         window.filtrarDesdeDashboard = function(tipo, valor) {
             window.cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]);
-            
-            let elEstado = document.getElementById('filtro-reg-estado');
-            let elLote = document.getElementById('filtro-reg-lote');
-            let elCat = document.getElementById('filtro-reg-cat');
-            let elDx = document.getElementById('filtro-reg-dx');
-            let elBusq = document.getElementById('buscador-lista');
+            document.getElementById('buscador-lista').value = "";
 
-            if (elEstado) elEstado.value = 'vivos';
-            if (elLote) elLote.value = 'ALL';
-            if (elCat) elCat.value = 'ALL';
-            if (elDx) elDx.value = 'ALL';
-            if (elBusq) elBusq.value = '';
-
-            if (tipo === 'estado') {
-                if (elEstado) elEstado.value = valor;
-            } else if (tipo === 'categoria') {
-                if (elCat) {
-                    let found = false;
-                    for (let i = 0; i < elCat.options.length; i++) {
-                        if (elCat.options[i].value.toLowerCase() === valor.toLowerCase() || elCat.options[i].text.toLowerCase() === valor.toLowerCase()) {
-                            elCat.selectedIndex = i;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        let opt = document.createElement('option');
-                        opt.value = valor;
-                        opt.text = valor;
-                        elCat.appendChild(opt);
-                        elCat.value = valor;
-                    }
-                }
-            } else if (tipo === 'lote') {
-                if (elLote) {
-                    let found = false;
-                    for (let i = 0; i < elLote.options.length; i++) {
-                        if (elLote.options[i].value.toLowerCase() === valor.toLowerCase() || elLote.options[i].text.toLowerCase() === valor.toLowerCase()) {
-                            elLote.selectedIndex = i;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        let opt = document.createElement('option');
-                        opt.value = valor;
-                        opt.text = valor;
-                        elLote.appendChild(opt);
-                        elLote.value = valor;
-                    }
-                }
-            } else if (tipo === 'lote_prenada') {
-                if (elDx) elDx.value = 'Preñada';
-                if (elLote) {
-                    for (let i = 0; i < elLote.options.length; i++) {
-                        if (elLote.options[i].value.toLowerCase() === valor.toLowerCase()) {
-                            elLote.selectedIndex = i;
-                            break;
-                        }
-                    }
-                }
-            } else if (tipo === 'dx') {
-                if (elDx) elDx.value = valor;
-            } else if (tipo === 'condicion') {
-                if (elBusq) elBusq.value = valor;
-            } else if (tipo === 'vientre_vacio') {
-                if (elDx) elDx.value = 'Vacía';
-                if (valor && valor.includes('Sangre') && elBusq) {
-                    elBusq.value = 'Sangre';
-                }
-            } else if (tipo === 'sanidad_global') {
-                if (elBusq) elBusq.value = (valor === 'Con Registro' ? 'Sanidad' : '');
-            } else if (tipo === 'toro') {
-                if (elDx) elDx.value = 'Preñada';
-                if (elBusq) elBusq.value = valor;
-            } else if (tipo === 'baja_causa') {
-                if (elEstado) elEstado.value = 'bajas';
-                if (elBusq) elBusq.value = valor;
-            } else if (tipo === 'busqueda') {
-                if (elBusq) elBusq.value = valor;
+            if(tipo === 'estado') {
+                document.getElementById('filtro-reg-estado').value = valor;
+                document.getElementById('filtro-reg-dx').value = 'ALL';
+                document.getElementById('filtro-reg-lote').value = 'ALL';
+                document.getElementById('filtro-reg-cat').value = 'ALL';
+            } else if(tipo === 'lote') {
+                document.getElementById('filtro-reg-estado').value = 'vivos';
+                document.getElementById('filtro-reg-lote').value = valor;
+                document.getElementById('filtro-reg-cat').value = 'ALL';
+                document.getElementById('filtro-reg-dx').value = 'ALL';
+            } else if(tipo === 'categoria') {
+                document.getElementById('filtro-reg-estado').value = 'vivos';
+                document.getElementById('filtro-reg-cat').value = valor;
+                document.getElementById('filtro-reg-lote').value = 'ALL';
+                document.getElementById('filtro-reg-dx').value = 'ALL';
+            } else if(tipo === 'dx') {
+                document.getElementById('filtro-reg-estado').value = 'vivos';
+                document.getElementById('filtro-reg-dx').value = valor;
+                document.getElementById('filtro-reg-lote').value = 'ALL';
+                document.getElementById('filtro-reg-cat').value = 'ALL';
             }
-
             window.cargarListaRegistro();
-        };
+        }
 
         window.procesarDatosDashboard = function() {
             const datosActivos = window.obtenerRegistrosActivos(); 
@@ -2981,29 +2788,29 @@
                 else if(g === '4') {
                     let t = g4.opt + g4.bp + g4.sp || 1;
                     let d4 = { "Óptima": g4.opt, "Bajo Peso": g4.bp, "Sobrepeso": g4.sp };
-                    html += makePieAndBars("Condición Corporal", d4, t, 'condicion');
+                    html += makePieAndBars("Condición Corporal", d4, t, 'estado');
                 }
                 else if(g === '5') {
                     let t = g5.norm + g5.san || 1;
                     let d5 = { "Normal": g5.norm, "Sangre/Problema": g5.san };
-                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'vientre_vacio');
+                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'estado');
                 }
                 else if(g === '6') {
                     let t = unicas.length;
                     let d6 = { "Con Registro": g6.con, "Sin Registros": g6.sin };
-                    html += makePieAndBars("Sanidad Global", d6, t, 'sanidad_global');
+                    html += makePieAndBars("Sanidad Global", d6, t, 'estado');
                 }
                 else if(g === '7') {
                     let d7 = {}; Object.keys(g7).forEach(k => d7[k] = g7[k].p);
-                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote_prenada');
+                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote');
                 }
                 else if(g === '8') {
                     let d8 = {}; Object.keys(g8).forEach(k => d8[k] = g8[k].p);
-                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'toro');
+                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'estado');
                 }
                 else if(g === '9') {
                     let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0;
-                    html += `<div class="tarjeta"><div class="tarjeta-titulo">Promedio de Pesos</div><div class="grid-kpis"><div class="kpi-caja" onclick="window.filtrarDesdeDashboard('categoria', 'Vaca / Vaquilla')"><div class="kpi-valor" style="font-size:20px;">${pv} Kg</div><div class="kpi-label">Vacas</div></div><div class="kpi-caja" onclick="window.filtrarDesdeDashboard('categoria', 'Ternero Macho')"><div class="kpi-valor" style="font-size:20px;">${pt} Kg</div><div class="kpi-label">Terneros</div></div></div></div>`;
+                    html += `<div class="tarjeta"><div class="tarjeta-titulo">Promedio de Pesos</div><div class="grid-kpis"><div class="kpi-caja" onclick="window.filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" style="font-size:20px;">${pv} Kg</div><div class="kpi-label">Vacas</div></div><div class="kpi-caja" onclick="window.filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" style="font-size:20px;">${pt} Kg</div><div class="kpi-label">Terneros</div></div></div></div>`;
                 }
                 else if(g === '10') {
                     let d10 = { "Pesajes": g10.peso, "Diagnósticos": g10.dx, "Nutrición": g10.nut, "Sanidad": g10.san };
@@ -3012,7 +2819,7 @@
                 }
                 else if(g === '11') {
                     let t11 = cantBajas || 1;
-                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'baja_causa');
+                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'estado');
                 }
                 htmlGraficos += html;
             }); document.getElementById('contenedor-graficos-dinamicos').innerHTML = htmlGraficos;
@@ -3053,11 +2860,8 @@
                 if (estadoFiltro === 'vivos' && esBaja) return;
                 if (estadoFiltro === 'bajas' && !esBaja) return;
 
-                let cat = "Sin Categoría", lote = "General", dx = "-";
-                const uP = regs.find(d => d.accion === 'Perfil Master');
-                if(uP && uP.detalles) {
-                    cat = String(uP.detalles).split('|')[0] || "Sin Categoría";
-                }
+                let cat = "-", lote = "General", dx = "-";
+                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
                 const uC = regs.find(d => d.accion === 'Actualización de Datos');
                 if(uC) {
                     let v = String(uC.valor||"").split('|');
@@ -3075,26 +2879,23 @@
 
                 let catLegible = window.obtenerNombreCategoriaLegible(cat);
 
-                if (loteFiltro !== "ALL" && !lote.toLowerCase().includes(loteFiltro.toLowerCase())) return;
-
-                // FILTRO ESTRICTO DE CATEGORÍA
-                if (catFiltro === "Sin Categoría") {
-                    if (catLegible !== "Sin Categoría" && cat !== "Sin Categoría" && cat !== "-") return;
-                } else if (catFiltro !== "ALL" && !catLegible.toLowerCase().includes(catFiltro.toLowerCase())) {
-                    return;
-                }
+                if (loteFiltro !== "ALL" && !lote.includes(loteFiltro)) return;
+                if (catFiltro !== "ALL" && !catLegible.includes(catFiltro)) return;
 
                 if (dxFiltro === "Preñada") {
                     if (!esPre) return;
                 } else if (dxFiltro === "Vacía") {
                     if (!esVacia) return;
-                } else if (dxFiltro !== "ALL" && !dx.toLowerCase().includes(dxFiltro.toLowerCase())) {
+                } else if (dxFiltro !== "ALL" && !dx.includes(dxFiltro)) {
                     return;
                 }
 
                 if (txtBusqueda !== "") {
-                    let historialTexto = (car + " " + catLegible + " " + lote + " " + dx + " " + regs.map(r => (r.accion||"") + " " + (r.valor||"") + " " + (r.detalles||"")).join(" ")).toLowerCase();
-                    if (!historialTexto.includes(txtBusqueda)) return;
+                    let matchTexto = car.toLowerCase().includes(txtBusqueda) ||
+                                     catLegible.toLowerCase().includes(txtBusqueda) ||
+                                     lote.toLowerCase().includes(txtBusqueda) ||
+                                     dx.toLowerCase().includes(txtBusqueda);
+                    if (!matchTexto) return;
                 }
 
                 listaFiltrada.push({ car, catLegible, lote, dx, esBaja });
@@ -3107,7 +2908,7 @@
             }
 
             let htmlHTML = "";
-            let limiteRender = 150;
+            let limiteRender = 100;
             listaFiltrada.slice(0, limiteRender).forEach(item => {
                 let badgeBaja = item.esBaja ? `<span style="background:var(--peligro); color:white; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px;">BAJA</span>` : '';
                 htmlHTML += `<li onclick="window.navegarDesdeLista('${item.car}')">
@@ -3124,7 +2925,7 @@
                 htmlHTML += `<li style="text-align:center; color:var(--muted); padding:20px;"> Mostrando los primeros ${limiteRender} resultados. Usa el buscador para encontrar más.</li>`;
             }
             ul.innerHTML = htmlHTML;
-        };
+        }
 
         window.navegarDesdeLista = function(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); window.buscarCaravanaBtn(); }
 
@@ -3418,7 +3219,7 @@
         };
 
         // =========================================================================
-        // PARSEADOR UNIVERSAL DE HARDWARE (ANTENA RFID + BALANZA TAURUS, TRU-TEST, ALLFLEX, BALANZAS)
+        // PARSEADOR UNIVERSAL DE HARDWARE (ESP32 TAURUS, TRU-TEST, ALLFLEX, BALANZAS)
         // =========================================================================
         window.procesarDatoHardware = function(rawInput) {
             if (!rawInput) return;
@@ -3429,7 +3230,7 @@
             let rpExtraido = null;
             let pesoExtraido = null;
 
-            // 1. Detección de JSON (formato JSON Taurus)
+            // 1. Detección de JSON (ESP32 Taurus formato JSON)
             if (s.startsWith('{') && s.endsWith('}')) {
                 try {
                     let d = JSON.parse(s);
@@ -3480,7 +3281,7 @@
                 let notas = document.getElementById('rafaga-detalles') ? document.getElementById('rafaga-detalles').value.trim() : '';
                 let recordatorio = document.getElementById('rafaga-recordatorio') ? document.getElementById('rafaga-recordatorio').value : '0';
 
-                window.ejecutarAccion('Peso', pStr, "Automático (Antena RFID + Balanza Taurus)", null);
+                window.ejecutarAccion('Peso', pStr, "Automático (ESP32 Antena + Balanza)", null);
                 if (sel !== 'solo_peso') {
                     let customInput = document.getElementById('rafaga-prod-custom');
                     let producto = sel === 'OTRO' ? ((customInput && customInput.value.trim()) || 'Tratamiento General') : sel;
@@ -3552,27 +3353,44 @@
         let bleRxCharacteristic = null;
         let bleBuffer = "";
 
-                window.conectarBluetoothBLE = async function() {
-            if (!navigator.bluetooth) return;
+        window.conectarBluetoothBLE = async function() {
+            const btn = document.getElementById('btn-conectar-ble');
+            const lbl = document.getElementById('lbl-estado-bluetooth');
+
+            if (!navigator.bluetooth) {
+                alert("ℹ️ Tu navegador no soporta Web Bluetooth directamente.\n\nSi usas iOS (Safari) o Android, vincula tu balanza o bastón en 'Ajustes > Bluetooth' como Teclado HID. ¡Taurus Control lo leerá automáticamente en segundo plano!");
+                return;
+            }
 
             if (bleDevice && bleDevice.gatt && bleDevice.gatt.connected) {
-                try { bleDevice.gatt.disconnect(); } catch(e){}
+                bleDevice.gatt.disconnect();
+                if (btn) btn.innerText = "Conectar Balanza / Bastón";
+                if (lbl) { lbl.innerText = "Bluetooth: Desconectado"; lbl.style.color = "var(--muted)"; }
                 return;
             }
 
             try {
+                if (btn) btn.innerText = "Buscando...";
                 bleDevice = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
                     optionalServices: [
-                        '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
-                        '0000ffe0-0000-1000-8000-00805f9b34fb',
-                        '000018f0-0000-1000-8000-00805f9b34fb',
-                        '49535343-fe7d-4ae5-8fa9-9fafd205e455'
+                        '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // Nordic UART (ESP32 estándar)
+                        '0000ffe0-0000-1000-8000-00805f9b34fb', // HM-10 / CC2541 común en balanzas
+                        '000018f0-0000-1000-8000-00805f9b34fb', // Tru-Test BLE
+                        '49535343-fe7d-4ae5-8fa9-9fafd205e455'  // Microchip IS1678
                     ]
                 });
 
+                bleDevice.addEventListener('gattserverdisconnected', () => {
+                    if (btn) btn.innerText = "Conectar Balanza / Bastón";
+                    if (lbl) { lbl.innerText = "Bluetooth: Desconectado"; lbl.style.color = "var(--muted)"; }
+                    window.mostrarToast("⚠️ Dispositivo Bluetooth desconectado.");
+                });
+
+                if (btn) btn.innerText = "Conectando...";
                 bleServer = await bleDevice.gatt.connect();
 
+                // Buscar servicio UART compatible
                 let services = await bleServer.getPrimaryServices();
                 let foundChar = null;
 
@@ -3596,18 +3414,27 @@
                         let dec = new TextDecoder('utf-8');
                         let chunk = dec.decode(event.target.value);
                         bleBuffer += chunk;
-                        if (bleBuffer.indexOf("\n") !== -1 || bleBuffer.indexOf("\n") !== -1) {
-                            let lineas = bleBuffer.split(new RegExp("[\r\n]+"));
-                            bleBuffer = lineas.pop();
+                        if (bleBuffer.includes('\n') || bleBuffer.includes('\r')) {
+                            let lineas = bleBuffer.split(/[\r\n]+/);
+                            bleBuffer = lineas.pop(); // Mantener remanente
                             lineas.forEach(l => {
                                 let limpia = l.trim();
-                                if (limpia.length > 0) procesarDatoHardware(limpia);
+                                if (limpia.length > 0) window.procesarDatoHardware(limpia);
                             });
                         }
                     });
+
+                    if (btn) btn.innerText = "Desconectar";
+                    if (lbl) { lbl.innerText = `🟢 Conectado: ${bleDevice.name || 'Balanza / Bastón'}`; lbl.style.color = "var(--exito)"; }
+                    window.mostrarToast(`🟢 Conectado con éxito a ${bleDevice.name || 'Dispositivo'}`);
+                } else {
+                    if (btn) btn.innerText = "Conectado (HID)";
+                    if (lbl) { lbl.innerText = `🟢 Conectado: ${bleDevice.name || 'Dispositivo'}`; lbl.style.color = "var(--exito)"; }
                 }
             } catch(error) {
-                console.warn('[BLE]:', error);
+                console.warn('[Bluetooth BLE Error]:', error);
+                if (btn) btn.innerText = "Conectar Balanza / Bastón";
+                if (lbl) { lbl.innerText = "Bluetooth: Desconectado"; lbl.style.color = "var(--muted)"; }
             }
         };
 
@@ -3682,49 +3509,14 @@
 
       let isDraggingAura = false;
       let auraStartX, auraStartY, initialAuraLeft, initialAuraTop;
-      let hasDraggedAura = false;
-      let auraTouchStartTime = 0;
-
-      window.toggleCoraVisibilidad = function() {
-          let activo = localStorage.getItem('tc_cora_activo') !== 'no';
-          let nuevo = activo ? 'no' : 'si';
-          localStorage.setItem('tc_cora_activo', nuevo);
-          window.aplicarVisibilidadCora();
-      };
-
-      window.aplicarVisibilidadCora = function() {
-          let activo = localStorage.getItem('tc_cora_activo') !== 'no';
-          const btnA = document.getElementById('btn-aura');
-          const btnToggle = document.getElementById('btn-toggle-cora-vis');
-          if (btnToggle) {
-              btnToggle.innerText = activo ? 'Ocultar' : 'Activar';
-              btnToggle.style.background = activo ? 'var(--peligro)' : 'var(--secundario)';
-              btnToggle.style.color = 'white';
-          }
-          if (btnA) {
-              if (!activo) {
-                  btnA.style.display = 'none';
-                  const est = document.getElementById('estado-ia');
-                  if(est) est.style.display = 'none';
-              } else {
-                  let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
-                  let tienePermisoCora = isPropietario || usRol.includes('cora');
-                  if (navigator.onLine && tienePermisoCora) {
-                      btnA.style.display = 'flex';
-                  } else {
-                      btnA.style.display = 'none';
-                  }
-              }
-          }
-      };
+      let hasDraggedAura = false; 
 
       if (btnAura) {
-          btnAura.addEventListener('touchstart', dragStartAura, {passive: true});
+          btnAura.addEventListener('touchstart', dragStartAura, {passive: false});
           btnAura.addEventListener('mousedown', dragStartAura);
       }
 
       function dragStartAura(e) {
-          auraTouchStartTime = Date.now();
           if (e.type === 'touchstart') {
               auraStartX = e.touches[0].clientX;
               auraStartY = e.touches[0].clientY;
@@ -3738,7 +3530,7 @@
           isDraggingAura = true;
           hasDraggedAura = false;
 
-          document.addEventListener('touchmove', dragAura, {passive: true});
+          document.addEventListener('touchmove', dragAura, {passive: false});
           document.addEventListener('mousemove', dragAura);
           document.addEventListener('touchend', dragEndAura);
           document.addEventListener('mouseup', dragEndAura);
@@ -3746,15 +3538,21 @@
 
       function dragAura(e) {
           if (!isDraggingAura) return;
-          let currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-          let currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+          let currentX, currentY;
+          if (e.type === 'touchmove') {
+              currentX = e.touches[0].clientX;
+              currentY = e.touches[0].clientY;
+          } else {
+              currentX = e.clientX;
+              currentY = e.clientY;
+          }
 
           let deltaX = currentX - auraStartX;
           let deltaY = currentY - auraStartY;
 
-          // Umbral de 15px para no confundir toques rápidos con arrastre
-          if (Math.abs(deltaX) > 15 || Math.abs(deltaY) > 15) {
+          if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
               hasDraggedAura = true;
+              if (e.cancelable) e.preventDefault();
 
               let newLeft = initialAuraLeft + deltaX;
               let newTop = initialAuraTop + deltaY;
@@ -3784,10 +3582,7 @@
           document.removeEventListener('mousemove', dragAura);
           document.removeEventListener('touchend', dragEndAura);
           document.removeEventListener('mouseup', dragEndAura);
-          
-          if (Date.now() - auraTouchStartTime < 250) {
-              hasDraggedAura = false;
-          }
+          setTimeout(() => { hasDraggedAura = false; }, 50);
       }
 
       if (btnAura) {
@@ -3798,30 +3593,28 @@
                return; 
             }
 
-            try {
-                if (window.speechSynthesis && window.speechSynthesis.speaking) {
-                      interrupcionManual = true; 
-                      window.speechSynthesis.cancel();
-                }
+            if (window.speechSynthesis.speaking) {
+                  interrupcionManual = true; 
+                  window.speechSynthesis.cancel();
+            }
 
-                if (!audioDesbloqueado && window.speechSynthesis) {
-                    let silencio = new SpeechSynthesisUtterance('');
-                    silencio.volume = 0;
-                    window.speechSynthesis.speak(silencio);
-                    audioDesbloqueado = true;
-                }
-            } catch(err) {}
+            if (!audioDesbloqueado) {
+                let silencio = new SpeechSynthesisUtterance('');
+                silencio.volume = 0;
+                window.speechSynthesis.speak(silencio);
+                audioDesbloqueado = true;
+            }
 
             if (!reconocimiento) {
-              alert("ℹ️ El control por voz (Web Speech API) no está disponible en este WebView/APK de Android.\n\nPuedes usar todas las funciones del sistema normalmente.");
+              alert("Tu navegador no soporta control por voz.");
               return;
             }
             if (btnAura.classList.contains('escuchando')) {
               btnAura.classList.remove('escuchando');
-              try { reconocimiento.stop(); } catch(e){}
+              reconocimiento.stop();
               if(estadoIA) estadoIA.style.display = 'none';
             } else {
-              try { reconocimiento.start(); } catch(e){ reconocimiento.stop(); }
+              reconocimiento.start();
             }
           });
       }
