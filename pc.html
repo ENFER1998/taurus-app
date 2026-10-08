@@ -296,7 +296,7 @@
         <div class="topbar">
             <div class="topbar-title" id="topbar-estancia">TERMINAL CORPORATIVA DE TRAZABILIDAD</div>
             <div class="topbar-right" style="display:flex; gap:10px; align-items:center;">
-                <div id="estado-red" class="badge online" style="padding: 6px 12px; font-size: 11px; margin: 0; cursor:pointer;" onclick="verificarConexionReal()">🟢 Conectado</div>
+                <div id="estado-red" class="badge online" style="padding: 6px 12px; font-size: 11px; margin: 0;">🟢 Conectado</div>
             </div>
         </div>
 
@@ -315,13 +315,13 @@
             </div>
 
             <div class="grid-3" style="margin-bottom: 20px;">
-                <div class="kpi-box" style="border-color: var(--primary);" onclick="filtrarDesdeDashboard('estado', 'vivos')" title="Ver todas las cabezas vivas">
+                <div class="kpi-box" style="border-color: var(--primary);" onclick="filtrarDesdeDashboard('estado', 'vivos')">
                     <span>Inventario General Activo</span><strong id="dash-cabezas">0</strong>
                 </div>
-                <div class="kpi-box" style="border-color: var(--danger);" onclick="filtrarDesdeDashboard('estado', 'bajas')" title="Ver todas las bajas / mortalidad">
+                <div class="kpi-box" style="border-color: var(--danger);" onclick="filtrarDesdeDashboard('estado', 'bajas')">
                     <span>Mortalidad / Bajas</span><strong id="dash-bajas">0</strong>
                 </div>
-                <div class="kpi-box" style="border-color: var(--success); cursor:pointer;" onclick="cambiarVista('v-reporte', document.querySelectorAll('.sidebar-nav li')[3]); document.getElementById('f-inf-modo').value='eventos'; cambiarModoReporte();" title="Ver historial de tratamientos y pesajes">
+                <div class="kpi-box" style="border-color: var(--success);">
                     <span>Registros Históricos Procesados</span><strong id="dash-acciones">0</strong>
                 </div>
             </div>
@@ -341,76 +341,46 @@
         <div id="v-ficha" class="vista oculto">
             <h2 class="titulo-seccion">Expediente Clínico Individual</h2>
             
-            <div id="tarjeta-rafaga" class="tarjeta" style="margin-bottom: 12px; padding: 12px 18px; border-left: 4px solid var(--primary); background: var(--bg-card);">
+            <div id="tarjeta-rafaga" class="tarjeta" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid var(--primary); background: var(--bg-card);">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div style="display:flex; align-items:center; gap:10px;">
-                        <span style="font-size:20px;">⚡</span>
+                        <span style="font-size:24px;">⚡</span>
                         <div>
-                            <strong style="display:block; color:var(--text-main); font-size:13px;">Modo Ráfaga</strong>
-                            <span style="font-size:11px; color:var(--text-muted);">Automático por hardware o manual por teclado</span>
+                            <strong style="display:block; color:var(--text-main); font-size:14px;">Modo Ráfaga (Automático)</strong>
+                            <span style="font-size:11px; color:var(--text-muted);">Automatización al recibir datos del bastón/balanza</span>
                         </div>
                     </div>
-                    <button type="button" id="btn-toggle-rafaga" class="btn-outline" style="font-weight:bold; padding: 5px 14px; font-size:11px;" onclick="toggleRafaga()">APAGADO</button>
+                    <button type="button" id="btn-toggle-rafaga" class="btn-outline" style="font-weight:bold; padding: 6px 12px; font-size:12px;" onclick="toggleRafaga()">APAGADO</button>
                 </div>
-
-                <div id="opciones-rafaga" class="oculto" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border);">
-                    <!-- Modalidad compacta -->
-                    <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
-                        <span style="font-size:11px; font-weight:bold; color:var(--text-muted); white-space:nowrap;">Modalidad:</span>
-                        <select id="rafaga-modalidad" class="form-control" style="padding:6px 10px; font-size:12px; height:34px; margin:0;" onchange="verificarRafagaCustom()">
-                            <option value="rfid">📡 Antena / Balanza Automática</option>
-                            <option value="manual">⌨️ Carga Rápida (Teclado)</option>
-                        </select>
-                    </div>
-
-                    <!-- CAJA DE RÁFAGA MANUAL PARA PC (RP obligatorio, Peso Kg exclusivo y opcional si solo tratamiento/tacto) -->
-                    <div id="caja-rafaga-manual" class="form-grupo oculto" style="display:none; gap:8px; margin-bottom:8px; background: rgba(37, 99, 235, 0.08); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border);">
-                        <input type="text" id="rm-caravana" class="form-control" placeholder="Nº RP" style="flex:1; margin:0; padding:6px 10px; font-size:12px; height:32px;" onkeyup="if(event.key === 'Enter') { if(document.getElementById('rm-valor').value.trim() !== '') ejecutarRafagaManual(); else document.getElementById('rm-valor').focus(); }">
-                        <input type="number" step="0.5" id="rm-valor" class="form-control" placeholder="Peso Kg (Opcional)" style="flex:1; margin:0; padding:6px 10px; font-size:12px; height:32px;" onkeyup="if(event.key === 'Enter') ejecutarRafagaManual()">
-                        <button type="button" class="btn btn-primary" style="margin:0; width:auto; padding:0 16px; font-size:11px;" onclick="ejecutarRafagaManual()">▶ Cargar</button>
-                    </div>
-
-                    <!-- Selector de Acción de Ráfaga -->
-                    <div style="display:flex; gap:10px; margin-bottom:8px;">
-                        <div style="flex:1; min-width:0;">
-                            <select id="rafaga-accion" class="form-control" style="padding:6px 10px; font-size:12px; height:34px; margin:0;" onchange="verificarRafagaCustom()">
-                                <option value="solo_peso">⚖️ Solo Peso</option>
-                                <option value="tacto">🩺 Tacto / Diagnóstico</option>
+                <div id="opciones-rafaga" class="oculto" style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border);">
+                    <div class="grid-2">
+                        <div class="form-grupo">
+                            <label style="font-size:11px; color:var(--text-muted); font-weight:bold; display:block; margin-bottom:5px;">Acción combinada con el peso:</label>
+                            <select id="rafaga-accion" class="form-control" style="padding:8px; font-size:13px; font-weight:bold;" onchange="verificarRafagaCustom()">
+                                <option value="solo_peso">⚖️ Solo Registrar Peso</option>
                                 <option value="Vacuna Aftosa">💉 Vacuna Aftosa</option>
                                 <option value="Vacuna Carbunclo">💉 Vacuna Carbunclo</option>
-                                <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario</option>
-                                <option value="Vitamina ADE">💉 Vitamina ADE</option>
-                                <option value="OTRO">✏️ Personalizado...</option>
+                                <option value="Antiparasitario (Ivermectina)">💉 Antiparasitario (Ivermectina)</option>
+                                <option value="Vitamina ADE">💉 Vitamina ADE / Reconstituyente</option>
+                                <option value="OTRO">✏️ Personalizado (Escribir otro)...</option>
                             </select>
-                            <input type="text" id="rafaga-prod-custom" class="form-control oculto" placeholder="Escriba el producto..." style="margin-top:6px; padding:6px 8px; font-size:12px; height:30px;">
+                            <input type="text" id="rafaga-prod-custom" class="form-control oculto" placeholder="Escriba el producto o tratamiento..." style="margin-top:8px; padding:8px; font-size:13px;">
                         </div>
-                        <div id="caja-rafaga-detalles" class="oculto" style="flex:1; min-width:0; display:none;">
-                            <input type="text" id="rafaga-detalles" class="form-control" placeholder="Dosis / Nota (opcional)" style="padding:6px 10px; font-size:12px; height:34px; margin:0;">
+                        <div id="caja-rafaga-detalles" class="form-grupo oculto">
+                            <label style="font-size:11px; color:var(--text-muted); font-weight:bold; display:block; margin-bottom:5px;">Dosis y Nota / Observación:</label>
+                            <input type="text" id="rafaga-detalles" class="form-control" placeholder="Ej: 5ml - Lote 12 | Subcutánea" style="padding:8px; font-size:13px; margin-bottom:10px;">
+                            
+                            <label style="font-size:11px; color:var(--warning); display:block; margin-bottom:5px; font-weight:bold;">⏳ Próxima Dosis a este lote:</label>
+                            <select id="rafaga-recordatorio" class="form-control" style="padding:8px; font-size:13px; border-color: var(--warning);">
+                                <option value="0">Sin recordatorio (Única dosis)</option>
+                                <option value="15">Avisar en 15 días</option>
+                                <option value="21">Avisar en 21 días</option>
+                                <option value="30">Avisar en 1 mes</option>
+                                <option value="90">Avisar en 3 meses</option>
+                                <option value="180">Avisar en 6 meses</option>
+                                <option value="365">Avisar en 1 año</option>
+                            </select>
                         </div>
-                    </div>
-
-                    <!-- Opciones dinámicas para Tacto / Diagnóstico -->
-                    <div id="caja-rafaga-dx" class="oculto" style="display:none; align-items:center; gap:8px; margin-bottom:8px;">
-                        <span style="font-size:11px; font-weight:bold; color:var(--success); white-space:nowrap;">Diagnóstico:</span>
-                        <select id="rafaga-dx-resultado" class="form-control" style="padding:4px 8px; font-size:11px; height:30px; margin:0; border-color: var(--success); font-weight:bold;">
-                            <option value="Preñada">✅ Preñada</option>
-                            <option value="Vacía">❌ Vacía</option>
-                            <option value="Vacía (Sangre)">🩸 Vacía (Sangre)</option>
-                        </select>
-                    </div>
-
-                    <!-- Próxima dosis para Sanidad -->
-                    <div id="caja-rafaga-recordatorio" class="oculto" style="display:none; align-items:center; gap:8px;">
-                        <span style="font-size:11px; font-weight:bold; color:var(--warning); white-space:nowrap;">Próxima dosis:</span>
-                        <select id="rafaga-recordatorio" class="form-control" style="padding:4px 8px; font-size:11px; height:30px; margin:0; border-color: var(--warning);">
-                            <option value="0">Sin recordatorio</option>
-                            <option value="15">En 15 días</option>
-                            <option value="21">En 21 días</option>
-                            <option value="30">En 1 mes</option>
-                            <option value="90">En 3 meses</option>
-                            <option value="180">En 6 meses</option>
-                            <option value="365">En 1 año</option>
-                        </select>
                     </div>
                 </div>
             </div>
@@ -750,13 +720,6 @@
 
                 <div>
                     <div class="tarjeta">
-                        <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px; color:var(--text-main);">📶 Dispositivos y Hardware Taurus</h3>
-                        <p style="font-size:12px; color:var(--text-muted); margin:0; line-height:1.6;">
-                            Puedes vincular tu <strong>Antena RFID y Balanza Taurus</strong>, bastones y lectores inalámbricos directamente desde la <strong>Configuración de Bluetooth o USB</strong> de tu PC. Taurus se comunica de forma 100% automática en segundo plano: una vez vinculado en tu sistema, empieza a trabajar y los datos ingresarán solos sin pasos manuales ni avisos molestos.
-                        </p>
-                    </div>
-
-                    <div class="tarjeta">
                         <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px; color:var(--text-main);">🎨 Apariencia</h3>
                         <div style="display: flex; align-items: center; justify-content: space-between;">
                             <span style="font-weight: bold; color: var(--text-main);">Tema Claro / Oscuro</span>
@@ -766,11 +729,6 @@
                     
                     <div class="tarjeta" id="panel-analiticas">
                         <h3 style="margin-top:0; font-size:14px; text-transform:uppercase; border-bottom:1px solid var(--border); padding-bottom:10px;">📊 Analíticas Visibles en Dashboard</h3>
-                        <p style="font-size:11px; color:var(--text-muted); margin:0 0 10px 0;">Selecciona cuántas analíticas deseas desplegar en pantalla (puedes activar desde 1 hasta las 11 completas):</p>
-                        <div style="display:flex; gap:8px; margin-bottom:12px;">
-                            <button type="button" class="btn btn-outline" style="padding:6px 12px; font-size:12px; background:var(--primary); color:white; border-color:var(--primary);" onclick="seleccionarTodosGraficos(true)">✅ Activar Todas (11)</button>
-                            <button type="button" class="btn btn-outline" style="padding:6px 12px; font-size:12px;" onclick="seleccionarTodosGraficos(false)">Deseleccionar</button>
-                        </div>
                         <div style="display:flex; flex-direction:column; gap:8px;">
                             <label><input type="checkbox" class="chk-graf" value="1" onchange="verificarLimiteGraficos(this)"> <span>1. Tasa de Preñez Dinámica</span></label>
                             <label><input type="checkbox" class="chk-graf" value="2" onchange="verificarLimiteGraficos(this)"> <span>2. Composición de Hacienda</span></label>
@@ -793,66 +751,10 @@
     </div>
 
     <!-- MODALES GANADEROS -->
-    <div id="m-baja" class="modal">
-        <div class="modal-body">
-            <span class="btn-cerrar" onclick="cerrarModal('m-baja')">&times;</span>
-            <h3>💀 Registro de Baja / Muerte</h3>
-            <div class="form-grupo">
-                <label>Causa de Baja / Venta</label>
-                <select class="form-control" id="i-baja-causa" onchange="verificarSelectOtro(this, 'baja-otro')">
-                    <option>Enfermedad</option>
-                    <option>Accidente</option>
-                    <option>Depredador</option>
-                    <option>Natural / Desconocida</option>
-                    <option>Venta / Faena</option>
-                    <option value="OTRO">✏️ Personalizado (Escribir otro)...</option>
-                </select>
-                <input type="text" id="baja-otro" class="form-control oculto" placeholder="Escriba la causa..." style="margin-top:8px;">
-            </div>
-            <div class="form-grupo">
-                <label>Observaciones (Opcional)</label>
-                <textarea class="form-control textarea" id="i-baja-txt" placeholder="Detalles de la baja..."></textarea>
-            </div>
-            <button type="button" class="btn-guardar" style="background:var(--danger);" onclick="prepararGuardado('m-baja', 'Baja')">Confirmar Baja</button>
-        </div>
-    </div>
-
-    <div id="m-renombrar" class="modal">
-        <div class="modal-body">
-            <span class="btn-cerrar" onclick="cerrarModal('m-renombrar')">&times;</span>
-            <h3>Modificar Número RP</h3>
-            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">El historial clínico se enlazará al nuevo número.</p>
-            <div class="form-grupo">
-                <label>Nuevo Número RP</label>
-                <input type="text" class="form-control" id="f-nueva-caravana" autocomplete="off">
-            </div>
-            <button type="button" class="btn-guardar" onclick="guardarCambioCaravana()">Confirmar Cambio</button>
-        </div>
-    </div>
-
-    <div id="m-nota" class="modal">
-        <div class="modal-body">
-            <span class="btn-cerrar" onclick="cerrarModal('m-nota')">&times;</span>
-            <h3>Anotación Libre</h3>
-            <div class="form-grupo">
-                <textarea class="form-control textarea" id="f-comentario-txt" placeholder="Describa la observación general..."></textarea>
-            </div>
-            <button type="button" class="btn-guardar" onclick="prepararGuardado('m-nota', 'Comentario')">Guardar en Historial</button>
-        </div>
-    </div>
-
-    <div id="m-rfid" class="modal">
-        <div class="modal-body">
-            <span class="btn-cerrar" onclick="cerrarModal('m-rfid')">&times;</span>
-            <h3>Vincular Bastón RFID</h3>
-            <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px; line-height: 1.5;">El chip leído (<strong id="lbl-rfid-scaneado" style="color:var(--primary);"></strong>) no está asignado. Ingrese el RP para vincularlo.</p>
-            <div class="form-grupo">
-                <label>Caravana Visual (RP)</label>
-                <input type="text" class="form-control" id="f-rfid-caravana" autocomplete="off" placeholder="Ej: 1234">
-            </div>
-            <button type="button" class="btn-guardar" onclick="guardarVinculacionRFID()">Vincular y Abrir Ficha</button>
-        </div>
-    </div>
+    <div id="m-baja" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-baja')">&times;</span><h3>💀 Registro de Baja / Muerte</h3><div class="form-grupo"><label>Causa de Baja / Venta</label><select class="form-control" id="i-baja-causa"><option>Enfermedad</option><option>Accidente</option><option>Depredador</option><option>Natural / Desconocida</option><option>Venta / Faena</option></select></div><div class="form-grupo"><label>Observaciones (Opcional)</label><textarea class="form-control textarea" id="i-baja-txt" placeholder="Detalles de la baja..."></textarea></div><button type="button" class="btn-guardar" style="background:var(--danger);" onclick="prepararGuardado('m-baja', 'Baja')">Confirmar Baja</button></div></div>
+    <div id="m-renombrar" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-renombrar')">&times;</span><h3>Modificar Número RP</h3><p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">El historial clínico se enlazará al nuevo número.</p><div class="form-grupo"><label>Nuevo Número RP</label><input type="text" class="form-control" id="f-nueva-caravana" autocomplete="off"></div><button type="button" class="btn-guardar" onclick="guardarCambioCaravana()">Confirmar Cambio</button></div></div>
+    <div id="m-nota" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-nota')">&times;</span><h3>Anotación Libre</h3><div class="form-grupo"><textarea class="form-control textarea" id="f-comentario-txt" placeholder="Describa la observación general..."></textarea></div><button type="button" class="btn-guardar" onclick="prepararGuardado('m-nota', 'Comentario')">Guardar en Historial</button></div></div>
+    <div id="m-rfid" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-rfid')">&times;</span><h3>Vincular Bastón RFID</h3><p style="font-size:13px; color:var(--text-muted); margin-bottom:15px; line-height: 1.5;">El chip leído (<strong id="lbl-rfid-scaneado" style="color:var(--primary);"></strong>) no está asignado. Ingrese el RP para vincularlo.</p><div class="form-grupo"><label>Caravana Visual (RP)</label><input type="text" class="form-control" id="f-rfid-caravana" autocomplete="off" placeholder="Ej: 1234"></div><button type="button" class="btn-guardar" onclick="guardarVinculacionRFID()">Vincular y Abrir Ficha</button></div></div>
     
     <div id="m-perfil" class="modal">
         <div class="modal-body">
@@ -872,218 +774,29 @@
         </div>
     </div>
     
-    <div id="m-clasi" class="modal">
-        <div class="modal-body">
-            <span class="btn-cerrar" onclick="cerrarModal('m-clasi')">&times;</span>
-            <h3>Clasificación y Ubicación</h3>
-            <div class="form-grupo">
-                <label>Categoría Oficial</label>
-                <select class="form-control" id="input-cat-rapida">
-                    <option value="TH: Ternera Hembra">TH: Ternera Hembra</option>
-                    <option value="TM: Ternero Macho">TM: Ternero Macho</option>
-                    <option value="DH: Desmamante Hembra">DH: Desmamante Hembra</option>
-                    <option value="DM: Desmamante Macho">DM: Desmamante Macho</option>
-                    <option value="V: Vaca/Vaquilla">V: Vaca/Vaquilla</option>
-                    <option value="VV: Vaca Vieja">VV: Vaca Vieja</option>
-                    <option value="Toros">Toros</option>
-                    <option value="Novillos">Novillos</option>
-                    <option value="Bueyes">Bueyes / Señuelos</option>
-                </select>
-            </div>
-            <div class="form-grupo">
-                <label>Lote Asignado</label>
-                <select class="form-control" id="input-lote-rapido" onchange="verificarSelectOtro(this, 'lote-otro')">
-                    <option>Hacienda General</option>
-                    <option>Lecheras</option>
-                    <option>Preñadas</option>
-                    <option>Inseminadas</option>
-                    <option>Destete</option>
-                    <option>Enfermería</option>
-                    <option value="OTRO">✏️ Personalizado (Escribir otro)...</option>
-                </select>
-                <input type="text" id="lote-otro" class="form-control oculto" placeholder="Escriba el nombre del lote..." style="margin-top:8px;">
-            </div>
-            <div class="form-grupo">
-                <label>Carimbo Manual (Opcional)</label>
-                <input type="number" class="form-control" id="input-carimbo-rapido" placeholder="Solo si desconoces el mes de nacimiento">
-            </div>
-            <button type="button" class="btn-guardar" onclick="guardarClasificacion()">Actualizar Ubicación</button>
-        </div>
-    </div>
+    <div id="m-clasi" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-clasi')">&times;</span><h3>Clasificación y Ubicación</h3><div class="form-grupo"><label>Categoría Oficial</label><select class="form-control" id="input-cat-rapida"><option value="TH: Ternera Hembra">TH: Ternera Hembra</option><option value="TM: Ternero Macho">TM: Ternero Macho</option><option value="DH: Desmamante Hembra">DH: Desmamante Hembra</option><option value="DM: Desmamante Macho">DM: Desmamante Macho</option><option value="V: Vaca/Vaquilla">V: Vaca/Vaquilla</option><option value="VV: Vaca Vieja">VV: Vaca Vieja</option><option value="Toros">Toros</option><option value="Novillos">Novillos</option><option value="Bueyes">Bueyes / Señuelos</option></select></div><div class="form-grupo"><label>Lote Asignado</label><input type="text" list="lista-lotes" class="form-control" id="input-lote-rapido"><datalist id="lista-lotes"><option value="Hacienda General"></option><option value="Lecheras"></option><option value="Preñadas"></option><option value="Inseminadas"></option></datalist></div><div class="form-grupo"><label>Carimbo Manual (Opcional)</label><input type="number" class="form-control" id="input-carimbo-rapido" placeholder="Solo si desconoces el mes de nacimiento"></div><button type="button" class="btn-guardar" onclick="guardarClasificacion()">Actualizar Ubicación</button></div></div>
     
-    <div id="m-dx" class="modal">
-        <div class="modal-body">
-            <span class="btn-cerrar" onclick="cerrarModal('m-dx')">&times;</span>
-            <h3>Resultado de Tacto</h3>
-            <div class="form-grupo">
-                <select class="form-control" id="i-dx-sel" onchange="verificarSelectOtro(this, 'dx-otro')">
-                    <option value="Preñada">✅ Preñada</option>
-                    <option value="Vacía">❌ Vacía</option>
-                    <option value="Vacía (Sangre)">🩸 Vacía (Sangre)</option>
-                    <option value="OTRO">✏️ Personalizado (Escribir otro)...</option>
-                </select>
-                <input type="text" id="dx-otro" class="form-control oculto" placeholder="Escriba el diagnóstico..." style="margin-top:8px;">
-            </div>
-            <div class="form-grupo">
-                <label>Observación del Veterinario</label>
-                <textarea class="form-control textarea" id="i-dx-txt"></textarea>
-            </div>
-            <button type="button" class="btn-guardar" onclick="prepararGuardado('m-dx', 'Diagnóstico')">Registrar Tacto</button>
-        </div>
-    </div>
-
-    <div id="m-peso" class="modal">
-        <div class="modal-body">
-            <span class="btn-cerrar" onclick="cerrarModal('m-peso')">&times;</span>
-            <h3>Registro de Peso</h3>
-            <div class="form-grupo">
-                <input type="number" step="0.5" class="form-control" id="i-peso-val" placeholder="Peso detectado en Kg" style="font-size:22px; font-weight:bold; text-align:center;">
-            </div>
-            <div class="form-grupo">
-                <label>Condición Corporal</label>
-                <select class="form-control" id="i-peso-cond" onchange="verificarSelectOtro(this, 'peso-otro')">
-                    <option>Óptima</option>
-                    <option>Bajo Peso</option>
-                    <option>Sobrepeso</option>
-                    <option value="OTRO">✏️ Otra condición...</option>
-                </select>
-                <input type="text" id="peso-otro" class="form-control oculto" placeholder="Especificar..." style="margin-top:8px;">
-            </div>
-            <div class="form-grupo">
-                <label>Notas Opcionales</label>
-                <textarea class="form-control textarea" id="i-peso-txt"></textarea>
-            </div>
-            <button type="button" class="btn-guardar" onclick="prepararGuardado('m-peso', 'Peso')">Registrar Peso</button>
-        </div>
-    </div>
+    <div id="m-dx" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-dx')">&times;</span><h3>Resultado de Tacto</h3><div class="form-grupo"><select class="form-control" id="i-dx-sel"><option>Preñada</option><option>Vacía</option><option>Vacía (Sangre)</option></select></div><div class="form-grupo"><label>Observación del Veterinario</label><textarea class="form-control textarea" id="i-dx-txt"></textarea></div><button type="button" class="btn-guardar" onclick="prepararGuardado('m-dx', 'Diagnóstico')">Registrar Tacto</button></div></div>
+    <div id="m-peso" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-peso')">&times;</span><h3>Registro de Peso</h3><div class="form-grupo"><input type="number" step="0.5" class="form-control" id="i-peso-val" placeholder="Peso detectado en Kg"></div><div class="form-grupo"><label>Condición Corporal</label><select class="form-control" id="i-peso-cond"><option>Óptima</option><option>Bajo Peso</option><option>Sobrepeso</option></select></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-peso-txt"></textarea></div><button type="button" class="btn-guardar" onclick="prepararGuardado('m-peso', 'Peso')">Registrar Peso</button></div></div>
     
-    <div id="m-sani" class="modal">
-        <div class="modal-body">
-            <span class="btn-cerrar" onclick="cerrarModal('m-sani')">&times;</span>
-            <h3>Control Sanitario</h3>
-            <div class="form-grupo">
-                <label>Tipo de Aplicación / Producto</label>
-                <select class="form-control" id="i-sani-sel" onchange="verificarSelectOtro(this, 'sani-otro')">
-                    <option>Antiparasitario (Ivermectina)</option>
-                    <option>Vacuna Aftosa</option>
-                    <option>Vacuna Carbunclo</option>
-                    <option>Vitamina ADE</option>
-                    <option>Tratamiento General</option>
-                    <option value="OTRO">✏️ Personalizado (Escribir otro)...</option>
-                </select>
-                <input type="text" id="sani-otro" class="form-control oculto" placeholder="Escriba el producto..." style="margin-top:8px;">
-            </div>
-            <div class="form-grupo">
-                <label>Lote / Detalles del Producto</label>
-                <input type="text" class="form-control" id="i-sani-lote" placeholder="Marca del producto o Número de Lote">
-            </div>
-            <div class="form-grupo">
-                <label>Notas Opcionales</label>
-                <textarea class="form-control textarea" id="i-sani-txt"></textarea>
-            </div>
-            <div class="form-grupo">
-                <label style="color:var(--warning);">⏳ Próxima Dosis / Recordatorio</label>
-                <select class="form-control" id="i-sani-recordatorio" style="border-color: var(--warning);">
-                    <option value="0">Sin recordatorio (Única dosis)</option>
-                    <option value="15">Avisarme en 15 días</option>
-                    <option value="21">Avisarme en 21 días</option>
-                    <option value="30">Avisarme en 1 mes</option>
-                    <option value="90">Avisarme en 3 meses</option>
-                    <option value="180">Avisarme en 6 meses</option>
-                    <option value="365">Avisarme en 1 año</option>
-                </select>
-            </div>
-            <button type="button" class="btn-guardar" onclick="prepararGuardado('m-sani', 'Sanidad')">Registrar Sanidad</button>
+    <div id="m-sani" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-sani')">&times;</span><h3>Control Sanitario</h3><div class="form-grupo"><label>Tipo de Aplicación</label><select class="form-control" id="i-sani-sel"><option>Antiparasitario</option><option>Vacuna Aftosa</option><option>Tratamiento General</option></select></div><div class="form-grupo"><label>Producto Utilizado</label><input type="text" class="form-control" id="i-sani-lote" placeholder="Marca del producto o Número de Lote"></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-sani-txt"></textarea></div>
+        <div class="form-grupo">
+            <label style="color:var(--warning);">⏳ Próxima Dosis / Recordatorio</label>
+            <select class="form-control" id="i-sani-recordatorio" style="border-color: var(--warning);">
+                <option value="0">Sin recordatorio (Única dosis)</option>
+                <option value="15">Avisarme en 15 días</option>
+                <option value="21">Avisarme en 21 días</option>
+                <option value="30">Avisarme en 1 mes</option>
+                <option value="90">Avisarme en 3 meses</option>
+                <option value="180">Avisarme en 6 meses</option>
+                <option value="365">Avisarme en 1 año</option>
+            </select>
         </div>
-    </div>
+        <button type="button" class="btn-guardar" onclick="prepararGuardado('m-sani', 'Sanidad')">Registrar Sanidad</button></div></div>
         
-    <div id="m-ins" class="modal">
-        <div class="modal-body">
-            <span class="btn-cerrar" onclick="cerrarModal('m-ins')">&times;</span>
-            <h3>Registro de Inseminación</h3>
-            <div class="form-grupo">
-                <label>Método / Inseminador</label>
-                <select class="form-control" id="i-ins-quien" onchange="verificarSelectOtro(this, 'ins-otro')">
-                    <option>IATF</option>
-                    <option>Monta Natural</option>
-                    <option>Repaso con Toro</option>
-                    <option value="OTRO">✏️ Otro método/inseminador...</option>
-                </select>
-                <input type="text" id="ins-otro" class="form-control oculto" placeholder="Especificar..." style="margin-top:8px;">
-            </div>
-            <div class="form-grupo">
-                <label>Genética Utilizada</label>
-                <input type="text" class="form-control" id="i-ins-toro" placeholder="Toro o Código de Pajuela">
-            </div>
-            <div class="form-grupo">
-                <label>Notas Opcionales</label>
-                <textarea class="form-control textarea" id="i-ins-txt"></textarea>
-            </div>
-            <button type="button" class="btn-guardar" onclick="prepararGuardado('m-ins', 'Inseminación')">Registrar Servicio</button>
-        </div>
-    </div>
-
-    <div id="m-nut" class="modal">
-        <div class="modal-body">
-            <span class="btn-cerrar" onclick="cerrarModal('m-nut')">&times;</span>
-            <h3>Suplemento Nutricional</h3>
-            <div class="form-grupo">
-                <label>Alimento Suministrado</label>
-                <select class="form-control" id="i-nut-prod" onchange="verificarSelectOtro(this, 'nut-otro')">
-                    <option>Sal Mineral</option>
-                    <option>Sal Proteica</option>
-                    <option>Forraje / Pastura</option>
-                    <option>Balanceado</option>
-                    <option value="OTRO">✏️ Otro alimento...</option>
-                </select>
-                <input type="text" id="nut-otro" class="form-control oculto" placeholder="Escriba el alimento..." style="margin-top:8px;">
-            </div>
-            <div class="form-grupo">
-                <label>Dosificación</label>
-                <input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 0.50gr/kg/día...">
-            </div>
-            <div class="form-grupo">
-                <label>Notas Opcionales</label>
-                <textarea class="form-control textarea" id="i-nut-txt"></textarea>
-            </div>
-            <button type="button" class="btn-guardar" onclick="prepararGuardado('m-nut', 'Nutrición')">Registrar Nutrición</button>
-        </div>
-    </div>
-
-    <!-- MODAL DE EDICIÓN CON FECHA Y HORA -->
-    <div id="modal-editar-registro" class="modal">
-        <div class="modal-body">
-            <span class="btn-cerrar" onclick="cerrarModal('modal-editar-registro')">&times;</span>
-            <h3>✏️ Editar Registro</h3>
-            <input type="hidden" id="edit-reg-id">
-            <div class="form-grupo">
-                <label>Fecha y Hora</label>
-                <input type="datetime-local" class="form-control" id="edit-reg-fecha">
-            </div>
-            <div class="form-grupo">
-                <label>Valor Principal</label>
-                <input type="text" class="form-control" id="edit-reg-valor">
-            </div>
-            <div class="form-grupo">
-                <label>Observaciones / Detalles</label>
-                <textarea class="form-control textarea" id="edit-reg-detalles"></textarea>
-            </div>
-            <button type="button" class="btn-guardar" onclick="guardarEdicionRegistro()">Guardar Cambios</button>
-        </div>
-    </div>
-
-    <div id="m-traza" class="modal">
-        <div class="modal-body large">
-            <span class="btn-cerrar" onclick="cerrarModal('m-traza')">&times;</span>
-            <h3>Trazabilidad Completa del RP</h3>
-            <div style="max-height:450px;overflow-y:auto; margin-top:15px;">
-                <table class="tabla-datos">
-                    <thead><tr><th>Fecha</th><th>Acción</th><th>Valor Principal</th><th>Detalles Adicionales</th><th>Acción</th></tr></thead>
-                    <tbody id="tb-traza"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    <div id="m-ins" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-ins')">&times;</span><h3>Registro de Inseminación</h3><div class="form-grupo"><label>Profesional a Cargo</label><input type="text" class="form-control" id="i-ins-quien" placeholder="Nombre del Inseminador"></div><div class="form-grupo"><label>Genética Utilizada</label><input type="text" class="form-control" id="i-ins-toro" placeholder="Toro o Código de Pajuela"></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-ins-txt"></textarea></div><button type="button" class="btn-guardar" onclick="prepararGuardado('m-ins', 'Inseminación')">Registrar Servicio</button></div></div>
+    <div id="m-nut" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-nut')">&times;</span><h3>Suplemento Nutricional</h3><div class="form-grupo"><label>Alimento Suministrado</label><input type="text" class="form-control" id="i-nut-prod" list="lista-alimentos"><datalist id="lista-alimentos"><option value="FOSFO Plus! 90f (Sal Mineral)"></option><option value="FOSFO Plus! Proteica Ternero"></option><option value="Forraje / Pastura"></option></datalist></div><div class="form-grupo"><label>Dosificación</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 0.50gr/kg/día..."></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div><button type="button" class="btn-guardar" onclick="prepararGuardado('m-nut', 'Nutrición')">Registrar Nutrición</button></div></div>
+    <div id="m-traza" class="modal"><div class="modal-body" style="width:700px;"><span class="btn-cerrar" onclick="cerrarModal('m-traza')">&times;</span><h3>Trazabilidad Completa del RP</h3><div style="max-height:450px;overflow-y:auto; margin-top:15px;"><table class="tabla-datos"><thead><tr><th>Fecha</th><th>Acción</th><th>Valor Principal</th><th>Detalles Adicionales</th></tr></thead><tbody id="tb-traza"></tbody></table></div></div></div>
 
     <!-- BOTÓN AURA DE CORA Y ESTADO -->
     <button id="btn-aura" title="Hablar con Cora">
@@ -1258,208 +971,14 @@
             }
         };
 
-        
-
-
-                function verificarSelectOtro(selectElement, inputId) {
-            let input = document.getElementById(inputId);
-            if(!input) return;
-            if(selectElement.value === 'OTRO') {
-                input.classList.remove('oculto');
-                input.focus();
-            } else {
-                input.classList.add('oculto');
-            }
-        }
-
-        window.verificarSelectOtro = verificarSelectOtro;
-
-        async function verificarConexionReal() {
-            setEstadoRed(false, '🔄 Verificando red...');
-            if(!navigator.onLine) {
-                setEstadoRed(false, '🔴 Red Local');
-                return;
-            }
-            try {
-                await sincronizarPendientesAuto();
-                await db.collection('sistema').doc('config').get();
-                setEstadoRed(true, '🟢 Conectado');
-                mostrarToast('🟢 Conexión activa verificada');
-            } catch(e) {
-                setEstadoRed(false, '🔴 Red Local (Sin internet)');
-            }
-        }
-
-        window.verificarConexionReal = verificarConexionReal;
-
-                window.ejecutarRafagaManual = function() {
-            let inputRp = document.getElementById('rm-caravana');
-            let inputVal = document.getElementById('rm-valor');
-            let rp = inputRp ? inputRp.value.trim().toUpperCase() : '';
-            let pesoVal = inputVal ? inputVal.value.trim().replace(',', '.') : '';
-            if(!rp) return;
-            rpActivo = rp;
-            
-            let sel = document.getElementById('rafaga-accion') ? document.getElementById('rafaga-accion').value : 'solo_peso';
-            let notas = document.getElementById('rafaga-detalles') ? document.getElementById('rafaga-detalles').value.trim() : '';
-            let recordatorio = document.getElementById('rafaga-recordatorio') ? document.getElementById('rafaga-recordatorio').value : '0';
-
-            // 1. Si se cargó peso en el campo exclusivo de peso
-            if(pesoVal && !isNaN(parseFloat(pesoVal))) {
-                let numKg = parseFloat(pesoVal).toFixed(1);
-                ejecutarAccion('Peso', numKg + " Kg", "Ráfaga Manual", null);
-            } else if(sel === 'solo_peso') {
-                mostrarToast("⚠️ Ingrese los Kg para este animal");
-                if(inputVal) inputVal.focus();
-                return;
-            }
-
-            // 2. Si la acción es Tacto
-            if(sel === 'tacto') {
-                let dxSel = document.getElementById('rafaga-dx-resultado') ? document.getElementById('rafaga-dx-resultado').value : 'Preñada';
-                ejecutarAccion('Diagnóstico', "Dx: " + dxSel, "Ráfaga Manual", null);
-            }
-            // 3. Si la acción es Tratamiento / Vacuna
-            else if(sel !== 'solo_peso') {
-                let customInput = document.getElementById('rafaga-prod-custom');
-                let producto = sel === 'OTRO' ? ((customInput && customInput.value.trim()) || 'Tratamiento General') : sel;
-                let detCompleto = (notas ? notas + " | " : "") + "Ráfaga Manual";
-                if (recordatorio !== "0" && recordatorio !== "") detCompleto += ` | [RECORDATORIO:${recordatorio}]`;
-                ejecutarAccion('Sanidad', producto, detCompleto, null);
-            }
-
-            emitirBeepHardware('combo');
-            mostrarToast("✅ Cargado RP: " + rp);
-            if(inputRp) { inputRp.value = ""; inputRp.focus(); }
-            if(inputVal) inputVal.value = "";
-        };
-
-                window.verificarRafagaCustom = function() {
-            const sel = document.getElementById('rafaga-accion') ? document.getElementById('rafaga-accion').value : 'solo_peso';
-            const modalidad = document.getElementById('rafaga-modalidad') ? document.getElementById('rafaga-modalidad').value : 'rfid';
+        window.verificarRafagaCustom = function() {
+            const sel = document.getElementById('rafaga-accion').value;
             const customInput = document.getElementById('rafaga-prod-custom');
             const detallesBox = document.getElementById('caja-rafaga-detalles');
-            const dxBox = document.getElementById('caja-rafaga-dx');
-            const recordatorioBox = document.getElementById('caja-rafaga-recordatorio');
-            const cajaManual = document.getElementById('caja-rafaga-manual');
-            
-            if(cajaManual) {
-                if(modalidad === 'manual') {
-                    cajaManual.style.display = 'flex';
-                    cajaManual.classList.remove('oculto');
-                    let inputRp = document.getElementById('rm-caravana');
-                    if(inputRp) setTimeout(() => inputRp.focus(), 100);
-                } else {
-                    cajaManual.style.display = 'none';
-                    cajaManual.classList.add('oculto');
-                }
-            }
-            
-            if(sel === 'solo_peso') {
-                if(customInput) customInput.classList.add('oculto');
-                if(detallesBox) { detallesBox.style.display = 'none'; detallesBox.classList.add('oculto'); }
-                if(dxBox) { dxBox.style.display = 'none'; dxBox.classList.add('oculto'); }
-                if(recordatorioBox) { recordatorioBox.style.display = 'none'; recordatorioBox.classList.add('oculto'); }
-            } else if(sel === 'tacto') {
-                if(customInput) customInput.classList.add('oculto');
-                if(detallesBox) { detallesBox.style.display = 'none'; detallesBox.classList.add('oculto'); }
-                if(dxBox) { dxBox.style.display = 'flex'; dxBox.classList.remove('oculto'); }
-                if(recordatorioBox) { recordatorioBox.style.display = 'none'; recordatorioBox.classList.add('oculto'); }
-            } else {
-                if(dxBox) { dxBox.style.display = 'none'; dxBox.classList.add('oculto'); }
-                if(detallesBox) { detallesBox.style.display = 'block'; detallesBox.classList.remove('oculto'); }
-                if(recordatorioBox) { recordatorioBox.style.display = 'flex'; recordatorioBox.classList.remove('oculto'); }
-                if(sel === 'OTRO') {
-                    if(customInput) { customInput.classList.remove('oculto'); customInput.focus(); }
-                } else {
-                    if(customInput) customInput.classList.add('oculto');
-                }
-            }
+            if(sel === 'solo_peso') { customInput.classList.add('oculto'); detallesBox.classList.add('oculto'); } 
+            else { detallesBox.classList.remove('oculto'); if(sel === 'OTRO') { customInput.classList.remove('oculto'); customInput.focus(); } else { customInput.classList.add('oculto'); } }
         };
 
-        // =========================================================================
-        // SOPORTE ELECTRON PUERTO SERIAL / COM (USB-RS232 BALANZAS)
-        // =========================================================================
-        let serialPort = null;
-        let serialReader = null;
-
-        async function conectarSerialCOM() {
-            
-            
-
-            if (!navigator.serial) {
-                alert('ℹ️ Web Serial API no detectada en este entorno.\n\nSi usas Electron, asegúrate de habilitar los permisos de puerto serie o conecta la balanza en modo Teclado HID.');
-                return;
-            }
-
-            if (serialPort) {
-                try {
-                    if(serialReader) await serialReader.cancel();
-                    await serialPort.close();
-                } catch(e){}
-                serialPort = null;
-                serialReader = null;
-                if(btn) btn.innerText = '🔌 Conectar Balanza COM / USB';
-                
-                mostrarToast('Puerto serie desconectado.');
-                return;
-            }
-
-            try {
-                serialPort = await navigator.serial.requestPort();
-                await serialPort.open({ baudRate: 9600 });
-                if(btn) btn.innerText = '🔌 Desconectar Puerto COM';
-                
-                
-
-                const textDecoder = new TextDecoderStream();
-                const readableStreamClosed = serialPort.readable.pipeTo(textDecoder.writable);
-                const reader = textDecoder.readable.getReader();
-                serialReader = reader;
-                let bufferSerial = '';
-
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-                    bufferSerial += value;
-                    if (bufferSerial.includes('\n') || bufferSerial.includes('\r')) {
-                        let lineas = bufferSerial.split(/[\r\n]+/);
-                        bufferSerial = lineas.pop();
-                        lineas.forEach(l => {
-                            let limpia = l.trim();
-                            if (limpia.length > 0) procesarDatoHardware(limpia);
-                        });
-                    }
-                }
-            } catch(err) {
-                console.warn('[Serial Error]:', err);
-                if(btn) btn.innerText = '🔌 Conectar Balanza COM / USB';
-            }
-        }
-
-        window.conectarSerialCOM = conectarSerialCOM;
-
-        // PUENTE NATIVO PARA ELECTRON IPC (PRELOAD O MAIN PROCESS)
-        if (typeof window !== 'undefined') {
-            window.recibirDatoBluetooth = function(data) {
-                procesarDatoHardware(data);
-            };
-            window.recibirTagNFC = function(tagHex) {
-                procesarDatoHardware(tagHex);
-            };
-            if (window.electronAPI && typeof window.electronAPI.onHardwareData === 'function') {
-                window.electronAPI.onHardwareData((event, data) => procesarDatoHardware(data));
-            } else if (typeof window.require === 'function') {
-                try {
-                    const { ipcRenderer } = window.require('electron');
-                    if (ipcRenderer) {
-                        ipcRenderer.on('hardware-data', (event, data) => procesarDatoHardware(data));
-                        ipcRenderer.on('bluetooth-data', (event, data) => procesarDatoHardware(data));
-                        ipcRenderer.on('scale-data', (event, data) => procesarDatoHardware(data));
-                    }
-                } catch(e) {}
-            }
-        }
 
         function setEstadoRed(online, texto = null) {
             const b = document.getElementById('estado-red');
@@ -1739,27 +1258,18 @@
             }
         }
 
-                function esCaravanaValida(c) {
-            if (!c && c !== 0) return false;
-            let s = String(c).trim();
-            if (!s || s === "---" || s === "-" || s === "undefined" || s === "None" || s.toLowerCase() === "null") return false;
-            return true;
-        }
-
-        window.esCaravanaValida = esCaravanaValida;
-
         function procesarEventos() {
             if (historiaCache) return historiaCache;
             let dbAsc = [...dbCache].sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
             let historiaPorRP = {};
             dbAsc.forEach(evt => {
-                let rp = String(evt.caravana || "").trim();
-                if(!esCaravanaValida(rp)) return;
+                let rp = String(evt.caravana);
+                if(rp === "---" || !rp) return;
                 if(!historiaPorRP[rp]) historiaPorRP[rp] = [];
                 if(evt.accion === 'Borrar_Caravana') {
                     historiaPorRP[rp] = []; 
                 } else if(evt.accion === 'Cambio de Caravana') {
-                    let nuevoRP = String(evt.valor || "").trim();
+                    let nuevoRP = String(evt.valor);
                     if(!historiaPorRP[nuevoRP]) historiaPorRP[nuevoRP] = [];
                     let eventosTraspasados = historiaPorRP[rp].map(e => ({...e, caravana: nuevoRP}));
                     historiaPorRP[nuevoRP] = historiaPorRP[nuevoRP].concat(eventosTraspasados);
@@ -1780,26 +1290,20 @@
             if (activosCache) return activosCache;
             let historia = procesarEventos();
             let validos = [];
-            for(let rp in historia) {
-                if (esCaravanaValida(rp)) {
-                    validos.push(...historia[rp]);
-                }
-            }
-            const globalEvents = dbCache.filter(d => !esCaravanaValida(d.caravana));
+            for(let rp in historia) { validos.push(...historia[rp]); }
+            const globalEvents = dbCache.filter(d => d.caravana === "---" || !d.caravana);
             activosCache = [...validos, ...globalEvents].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
             return activosCache;
         }
 
         function obtenerHistorial(caravana) {
-            if (!esCaravanaValida(caravana)) return [];
             let historia = procesarEventos();
-            return historia[String(caravana).trim()] || [];
+            return historia[String(caravana)] || [];
         }
 
         function obtenerNombreCategoriaLegible(sigla) {
-            if(!sigla || sigla === "-" || sigla === "null" || sigla === "undefined" || String(sigla).trim() === "") return "Sin Categoría";
+            if(!sigla) return "Sin Categoría";
             let s = String(sigla).trim().toUpperCase();
-            if(s === "SIN CATEGORÍA" || s === "SIN CATEGORIA") return "Sin Categoría";
             if(s.startsWith('V:')) return "Vaca / Vaquilla";
             if(s.startsWith('VV:')) return "Vaca Vieja";
             if(s.startsWith('TH:')) return "Ternera Hembra";
@@ -1814,7 +1318,7 @@
 
         function cargarListasFiltrosSelects() {
             let datosActivos = obtenerRegistrosActivos();
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => esCaravanaValida(c)))];
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
             let lotesSet = new Set();
             let catsSet = new Set();
 
@@ -1850,11 +1354,10 @@
                 if(el) {
                     let curr = el.value;
                     let opts = '<option value="ALL">🐄 Todas las Categorías</option>';
-                    opts += '<option value="Sin Categoría">⚠️ Sin Categoría</option>';
                     catsSet.add("Vaca / Vaquilla"); catsSet.add("Vaca Vieja"); catsSet.add("Ternera Hembra"); 
                     catsSet.add("Ternero Macho"); catsSet.add("Desmamante Hembra"); catsSet.add("Desmamante Macho"); 
                     catsSet.add("Toros"); catsSet.add("Novillos"); catsSet.add("Bueyes / Señuelos");
-                    Array.from(catsSet).filter(c => c !== "Sin Categoría" && c !== "-").sort().forEach(c => { opts += `<option value="${c}">${c}</option>`; });
+                    Array.from(catsSet).sort().forEach(c => { opts += `<option value="${c}">${c}</option>`; });
                     el.innerHTML = opts;
                     if(curr && curr !== "") el.value = curr;
                 }
@@ -1868,75 +1371,190 @@
                 let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === rp.toLowerCase());
                 if(esRFIDRegistrado) rp = esRFIDRegistrado.caravana;
 
-                rpActivo = rp; document.getElementById('ficha-animal').classList.remove('oculto'); 
-                const elCaravanaTop = document.getElementById('val-caravana'); if(elCaravanaTop) elCaravanaTop.innerText = rp;
+                rpActivo = rp; 
+                document.getElementById('ficha-animal').classList.remove('oculto'); 
+                const elCaravanaTop = document.getElementById('val-caravana'); 
+                if(elCaravanaTop) elCaravanaTop.innerText = rp;
                 
                 const regs = obtenerHistorial(rp); 
                 const uBaja = regs.find(d => d.accion === 'Baja');
                 const badgeBaja = document.getElementById('badge-estado-animal');
-                if(uBaja) { badgeBaja.style.display = 'inline-block'; badgeBaja.innerText = "BAJA: " + uBaja.valor.toUpperCase(); } else { badgeBaja.style.display = 'none'; }
+                if(uBaja) { 
+                    badgeBaja.style.display = 'inline-block'; 
+                    badgeBaja.innerText = "BAJA: " + uBaja.valor.toUpperCase(); 
+                } else { 
+                    badgeBaja.style.display = 'none'; 
+                }
 
                 let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", padre="-", madre="-", nutricion="-", sanidad="-", inseminacion="-", htmlNotas=""; 
                 let gdpHtml = "";
-                let todosLosPesos = regs.filter(d => d.accion === 'Peso');
+
+                // 1. Detección y Cálculo de Pesaje
+                let todosLosPesos = regs.filter(d => String(d.accion).includes('Peso'));
                 if(todosLosPesos.length >= 1) {
                     let pesoActual = todosLosPesos[0];
-                    let p1 = parseFloat(pesoActual.valor); let d1 = new Date(pesoActual.fecha); let f1_str = pesoActual.fecha.split('T')[0] || ""; 
+                    let p1 = parseFloat(String(pesoActual.valor).replace(/[^\d.-]/g, '')); 
+                    let d1 = new Date(pesoActual.fecha); 
+                    let f1_str = (pesoActual.fecha && pesoActual.fecha.includes('T')) ? pesoActual.fecha.split('T')[0] : ""; 
                     let pesoAnterior = null;
-                    for(let i = 1; i < todosLosPesos.length; i++) { let fTemp_str = todosLosPesos[i].fecha.split('T')[0] || ""; if(f1_str !== fTemp_str && fTemp_str !== "") { pesoAnterior = todosLosPesos[i]; break; } }
+
+                    for(let i = 1; i < todosLosPesos.length; i++) { 
+                        let fTemp_str = (todosLosPesos[i].fecha && todosLosPesos[i].fecha.includes('T')) ? todosLosPesos[i].fecha.split('T')[0] : ""; 
+                        let pTest = parseFloat(String(todosLosPesos[i].valor).replace(/[^\d.-]/g, ''));
+                        if(f1_str !== fTemp_str && fTemp_str !== "" && pTest !== p1) { 
+                            pesoAnterior = todosLosPesos[i]; 
+                            break; 
+                        } 
+                    }
+
                     if(pesoAnterior) {
-                        let p2 = parseFloat(pesoAnterior.valor); let d2 = new Date(pesoAnterior.fecha);
-                        let diffTime = Math.abs(d1 - d2); let dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                        if(dias >= 1) { let gdp = ((p1 - p2) / dias).toFixed(3); if(gdp > 0) gdpHtml = `<span style="color:var(--success); font-weight:bold; font-size:11px;">🚀 +${gdp} Kg/día</span>`; else if(gdp < 0) gdpHtml = `<span style="color:var(--danger); font-weight:bold; font-size:11px;">⚠️ ${gdp} Kg/día</span>`; else gdpHtml = `<span style="color:var(--text-muted); font-weight:bold; font-size:11px;">⚖️ Mantuvo su peso</span>`; }
+                        let p2 = parseFloat(String(pesoAnterior.valor).replace(/[^\d.-]/g, '')); 
+                        let d2 = new Date(pesoAnterior.fecha);
+                        let diffTime = Math.abs(d1 - d2); 
+                        let dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                        if(dias >= 1 && !isNaN(p1) && !isNaN(p2)) { 
+                            let gdp = ((p1 - p2) / dias).toFixed(3); 
+                            if(gdp > 0) gdpHtml = `<span style="color:var(--success); font-weight:bold; font-size:11px;">🚀 +${gdp} Kg/día</span>`; 
+                            else if(gdp < 0) gdpHtml = `<span style="color:var(--danger); font-weight:bold; font-size:11px;">⚠️ ${gdp} Kg/día</span>`; 
+                            else gdpHtml = `<span style="color:var(--text-muted); font-weight:bold; font-size:11px;">⚖️ Mantuvo su peso</span>`; 
+                        }
                     } else {
-                        if(todosLosPesos.length > 1) { gdpHtml = `<span style="color:var(--text-muted); font-size:10px; font-style:italic;">(Pesos del mismo día)</span>`; } else { gdpHtml = `<span style="color:var(--text-muted); font-size:10px; font-style:italic;">(Falta peso histórico)</span>`; }
+                        if(todosLosPesos.length > 1) { 
+                            gdpHtml = `<span style="color:var(--text-muted); font-size:10px; font-style:italic;">(Pesajes del mismo día)</span>`; 
+                        } else { 
+                            gdpHtml = `<span style="color:var(--text-muted); font-size:10px; font-style:italic;">(Falta peso histórico)</span>`; 
+                        }
                     }
                 }
-                const elGdp = document.getElementById('val-gdp'); if (elGdp) elGdp.innerHTML = gdpHtml;
+                const elGdp = document.getElementById('val-gdp'); 
+                if (elGdp) elGdp.innerHTML = gdpHtml;
 
                 if(regs.length > 0) {
+                    // Perfil Master (Genética)
                     const uP = regs.find(d => d.accion === 'Perfil Master'); 
-                    if(uP) { let p = String(uP.valor || "").split('|'); raza = p[0] || "-"; edad = p[1] || "-"; padre = p[2] || "-"; madre = p[3] || "-"; cat = String(uP.detalles || "").split('|')[0] || "-"; } 
+                    if(uP) { 
+                        let p = String(uP.valor || "").split('|'); 
+                        raza = p[0] || "-"; 
+                        edad = p[1] || "-"; 
+                        padre = p[2] || "-"; 
+                        madre = p[3] || "-"; 
+                        cat = String(uP.detalles || "").split('|')[0] || "-"; 
+                    } 
+
+                    // Actualización de Datos (Lote y Categoría)
                     const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
-                    if(uC) { let v = String(uC.valor || "").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-"; } 
-                    const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
+                    if(uC) { 
+                        let v = String(uC.valor || "").split('|'); 
+                        cat = v[0] ? v[0].replace('Cat:','').trim() : cat; 
+                        carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; 
+                        lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:','').trim() : "-"; 
+                    } 
+
+                    // Último Peso
+                    const uPeso = regs.find(d => String(d.accion).includes('Peso')); 
+                    if(uPeso) {
+                        let fPesoStr = uPeso.fecha ? new Date(uPeso.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'}) : '';
+                        peso = `${uPeso.valor || "-"} <span style="font-size:11px; color:var(--text-muted); display:block; margin-top:2px;">(Pesado: ${fPesoStr})</span>`; 
+                    }
+
+                    // Diagnóstico Tacto
                     const uDx = regs.find(d => d.accion === 'Diagnóstico'); 
-                    
                     let loteLow = lote.toLowerCase();
                     let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
                     let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
                     let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
                     dx = uDx ? uDx.valor : (esPre ? "Preñada (Lote/Notas)" : (esVacia ? "Vacía" : "-"));
 
-                    const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nutricion = (uNut.valor || "-") + " | " + (uNut.detalles || "");
-                    const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "-") + " | " + (uSan.detalles || "");
-                    const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) inseminacion = (uIns.valor || "-") + " | " + (uIns.detalles || "");
+                    // ÚLTIMA SANIDAD (Búsqueda robusta por nombre o tipo)
+                    const uSan = regs.find(d => {
+                        let acc = String(d.accion || "").trim().toLowerCase();
+                        return acc === 'sanidad' || acc.includes('sanid') || acc.includes('vacun') || acc.includes('tratamient') || acc.includes('antiparasit');
+                    });
+                    if(uSan) {
+                        let valSan = (uSan.valor && uSan.valor !== '-') ? uSan.valor : 'Tratamiento General';
+                        let detSan = uSan.detalles ? uSan.detalles.split('| Op:')[0].trim() : '';
+                        let fSanStr = uSan.fecha ? new Date(uSan.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'}) : '';
+                        sanidad = `${valSan}`;
+                        if(detSan && detSan !== '-' && detSan !== 'Sin observaciones adicionales' && detSan !== 'Sin notas') {
+                            sanidad += ` <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">(${detSan})</span>`;
+                        }
+                        if(fSanStr) {
+                            sanidad += `<span style="font-size:11px; color:var(--text-muted); display:block; margin-top:2px;">(Aplicado: ${fSanStr})</span>`;
+                        }
+                    }
+
+                    // ÚLTIMA INSEMINACIÓN
+                    const uIns = regs.find(d => {
+                        let acc = String(d.accion || "").trim().toLowerCase();
+                        return acc === 'inseminación' || acc === 'inseminacion' || acc.includes('insemin') || acc.includes('monta') || acc.includes('reproducc');
+                    });
+                    if(uIns) {
+                        let fInsStr = uIns.fecha ? new Date(uIns.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'}) : '';
+                        inseminacion = `${uIns.valor || "-"}`;
+                        if(uIns.detalles && uIns.detalles !== '-') {
+                            let detIns = uIns.detalles.split('| Op:')[0].trim();
+                            if(detIns) inseminacion += ` <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">(${detIns})</span>`;
+                        }
+                        if(fInsStr) {
+                            inseminacion += `<span style="font-size:11px; color:var(--text-muted); display:block; margin-top:2px;">(Fecha: ${fInsStr})</span>`;
+                        }
+                    }
+
+                    // RÉGIMEN NUTRICIONAL
+                    const uNut = regs.find(d => {
+                        let acc = String(d.accion || "").trim().toLowerCase();
+                        return acc === 'nutrición' || acc === 'nutricion' || acc.includes('nutri') || acc.includes('aliment');
+                    });
+                    if(uNut) {
+                        let fNutStr = uNut.fecha ? new Date(uNut.fecha).toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: '2-digit'}) : '';
+                        nutricion = `${uNut.valor || "-"}`;
+                        if(uNut.detalles && uNut.detalles !== '-') {
+                            let detNut = uNut.detalles.split('| Op:')[0].trim();
+                            if(detNut) nutricion += ` <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">(${detNut})</span>`;
+                        }
+                        if(fNutStr) {
+                            nutricion += `<span style="font-size:11px; color:var(--text-muted); display:block; margin-top:2px;">(Registrado: ${fNutStr})</span>`;
+                        }
+                    }
                     
-                    let ultComentario = "Sin comentarios.";
+                    // Historial de Observaciones
                     regs.forEach(r => {
                         try {
-                            let acc = String(r.accion).trim(); let det = String(r.detalles || ""); let notaTexto = "";
-                            if (acc === 'Comentario') { notaTexto = det.split('|')[0] || ""; if(ultComentario === "Sin comentarios.") ultComentario = notaTexto; } 
-                            else if (det.includes('Notas:')) { let parts = det.split('Notas:'); if (parts.length > 1) { let n = parts[1].split('|')[0].trim(); if(n && n !== "-" && n !== "") notaTexto = `[${acc}] ${n}`; } }
-                            if (notaTexto && notaTexto !== "-" && notaTexto.toLowerCase() !== "sin comentarios.") { htmlNotas += `<div class="nota-item"><span class="f">${new Date(r.fecha).toLocaleDateString()}</span><span class="t">${notaTexto}</span></div>`; }
+                            let acc = String(r.accion).trim(); 
+                            let det = String(r.detalles || ""); 
+                            let notaTexto = "";
+                            if (acc === 'Comentario') { 
+                                notaTexto = det.split('|')[0] || ""; 
+                            } else if (det.includes('Notas:')) { 
+                                let parts = det.split('Notas:'); 
+                                if (parts.length > 1) { 
+                                    let n = parts[1].split('|')[0].trim(); 
+                                    if(n && n !== "-" && n !== "") notaTexto = `[${acc}] ${n}`; 
+                                } 
+                            }
+                            if (notaTexto && notaTexto !== "-" && notaTexto.toLowerCase() !== "sin comentarios.") { 
+                                htmlNotas += `<div class="nota-item"><span class="f">${new Date(r.fecha).toLocaleDateString()}</span><span class="t">${notaTexto}</span></div>`; 
+                            }
                         } catch(e) {}
                     });
                 }
                 if(htmlNotas === "") htmlNotas = "<span style='font-size:13px; color:var(--text-muted); font-style:italic;'>Sin anotaciones extra.</span>";
                 
+                // Asignación DOM
                 const elCat = document.getElementById('val-categoria'); if(elCat) elCat.innerText = obtenerNombreCategoriaLegible(cat);
-                const elPeso = document.getElementById('val-peso'); if(elPeso) elPeso.innerText = peso;
+                const elPeso = document.getElementById('val-peso'); if(elPeso) elPeso.innerHTML = peso;
                 const elDx = document.getElementById('val-dx'); if(elDx) elDx.innerText = dx;
                 const elLote = document.getElementById('val-lote'); if(elLote) elLote.innerText = lote;
                 const elCarimbo = document.getElementById('val-carimbo'); if(elCarimbo) elCarimbo.innerText = carimbo;
                 const elGenealogia = document.getElementById('val-genealogia'); if(elGenealogia) elGenealogia.innerText = padre + " / " + madre;
-                const elNutricion = document.getElementById('val-nutricion'); if(elNutricion) elNutricion.innerText = nutricion;
-                const elSanidad = document.getElementById('val-sanidad'); if(elSanidad) elSanidad.innerText = sanidad;
-                const elInseminacion = document.getElementById('val-inseminacion'); if(elInseminacion) elInseminacion.innerText = inseminacion;
+                const elNutricion = document.getElementById('val-nutricion'); if(elNutricion) elNutricion.innerHTML = nutricion;
+                const elSanidad = document.getElementById('val-sanidad'); if(elSanidad) elSanidad.innerHTML = sanidad;
+                const elInseminacion = document.getElementById('val-inseminacion'); if(elInseminacion) elInseminacion.innerHTML = inseminacion;
                 const elNotas = document.getElementById('val-notas'); if(elNotas) elNotas.innerHTML = htmlNotas;
                 const elRaza = document.getElementById('val-raza'); if(elRaza) elRaza.innerText = raza;
-                
                 const elEdad = document.getElementById('val-edad'); if(elEdad) elEdad.innerText = edad;
+
+                // Pre-rellenado de campos en modales para edición directa
                 const fRaza = document.getElementById('f-raza'); if(fRaza) fRaza.value = raza !== "-" ? raza : ""; 
                 const fNacimiento = document.getElementById('f-nacimiento'); 
                 if(fNacimiento) { fNacimiento.value = edad !== "-" ? edad : ""; mostrarCarimboCalculado(); } 
@@ -1947,7 +1565,14 @@
                 const fComentario = document.getElementById('f-comentario-txt'); if(fComentario) fComentario.value = ""; 
                 
                 const catSelect = document.getElementById('input-cat-rapida'); 
-                if(catSelect) { for(let i=0; i<catSelect.options.length; i++) { if(catSelect.options[i].value === cat) catSelect.selectedIndex = i; } }
+                if(catSelect) { 
+                    for(let i=0; i<catSelect.options.length; i++) { 
+                        if(catSelect.options[i].value.includes(cat) || catSelect.options[i].text.includes(cat)) {
+                            catSelect.selectedIndex = i; 
+                            break;
+                        }
+                    } 
+                }
             } catch(e) { console.error("Error al visualizar ficha", e); }
         }
 
@@ -1967,40 +1592,78 @@
 
         function prepararGuardado(mId, t) { 
             if(!rpActivo) return;
-            let v = '-', d = ''; 
-            let val = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : '';
-            let valOtro = (selId, otroId) => { let s = val(selId); return s === 'OTRO' ? val(otroId) : s; };
+            let v = "-", d = ""; 
+            let val = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : "";
+            let valOtro = (selId, otroId) => { 
+                let s = val(selId); 
+                return s === 'OTRO' ? val(otroId) : s; 
+            };
 
-            if(t === 'Comentario') { d = val('f-comentario-txt'); } 
-            else if(t === 'Peso') { v = val('i-peso-val') + ' Kg'; d = 'Cond: ' + valOtro('i-peso-cond', 'peso-otro') + '. Notas: ' + val('i-peso-txt'); } 
-            else if(t === 'Sanidad') { 
-                let recordatorio = val('i-sani-recordatorio'); 
-                v = valOtro('i-sani-sel', 'sani-otro'); 
-                d = 'Lote: ' + val('i-sani-lote') + '. Notas: ' + val('i-sani-txt'); 
-                if (recordatorio !== '0' && recordatorio !== '') { d += ' | [RECORDATORIO:' + recordatorio + ']'; } 
+            if(t === 'Comentario') { 
+                d = val('f-comentario-txt') || "Anotación general"; 
             } 
-            else if(t === 'Diagnóstico') { v = 'Dx: ' + valOtro('i-dx-sel', 'dx-otro'); d = val('i-dx-txt') || '-'; } 
-            else if(t === 'Inseminación') { v = 'Toro: ' + val('i-ins-toro'); d = 'Método: ' + valOtro('i-ins-quien', 'ins-otro') + '. Notas: ' + val('i-ins-txt'); } 
-            else if(t === 'Nutrición') { v = valOtro('i-nut-prod', 'nut-otro'); d = 'Ración: ' + val('i-nut-rac') + '. Notas: ' + val('i-nut-txt'); } 
-            else if(t === 'Baja') { v = valOtro('i-baja-causa', 'baja-otro'); d = val('i-baja-txt') || 'Sin observaciones'; }
+            else if(t === 'Peso') { 
+                let pVal = val('i-peso-val');
+                if(!pVal) { alert("Por favor ingrese el peso en Kg."); return; }
+                v = pVal + " Kg"; 
+                d = `Cond: ${valOtro('i-peso-cond', 'peso-otro') || 'Óptima'}. Notas: ${val('i-peso-txt') || '-'}`; 
+            } 
+            else if(t === 'Sanidad') { 
+                v = valOtro('i-sani-sel', 'sani-otro');
+                if(!v) v = val('i-sani-sel') || "Tratamiento General";
+                let loteProd = val('i-sani-lote');
+                let notasSan = val('i-sani-txt');
+                let recordatorio = val('i-sani-recordatorio');
+                d = (loteProd ? `Lote: ${loteProd}. ` : '') + (notasSan ? `Notas: ${notasSan}` : 'Sin notas');
+                if (recordatorio && recordatorio !== "0") { 
+                    d += ` | [RECORDATORIO:${recordatorio}]`; 
+                } 
+            } 
+            else if(t === 'Diagnóstico') { 
+                let dxVal = valOtro('i-dx-sel', 'dx-otro');
+                if(!dxVal) dxVal = "Preñada";
+                v = "Dx: " + dxVal; 
+                d = val('i-dx-txt') || "Tacto veterinario"; 
+            } 
+            else if(t === 'Inseminación') { 
+                let toroVal = val('i-ins-toro') || "Toro no especificado";
+                v = "Toro: " + toroVal; 
+                d = `Método: ${valOtro('i-ins-quien', 'ins-otro') || 'IATF'}. Notas: ${val('i-ins-txt') || '-'}`; 
+            } 
+            else if(t === 'Nutrición') { 
+                v = valOtro('i-nut-prod', 'nut-otro') || "Sal Mineral"; 
+                d = `Ración: ${val('i-nut-rac') || 'A voluntad'}. Notas: ${val('i-nut-txt') || '-'}`; 
+            } 
+            else if(t === 'Baja') { 
+                v = valOtro('i-baja-causa', 'baja-otro') || "Natural / Desconocida"; 
+                d = val('i-baja-txt') || "Sin observaciones"; 
+            }
             
             if(t === 'Baja') {
                 ejecutarAccion(t, v, d, mId); 
-                let rpArchivado = rpActivo + '-BAJA-' + Math.floor(Math.random() * 10000);
+                let rpArchivado = rpActivo + "-BAJA-" + Math.floor(Math.random() * 10000);
                 setTimeout(() => {
                     ejecutarAccion('Cambio de Caravana', rpArchivado, 'RP archivado por Baja/Muerte', null);
-                    alert('Baja registrada exitosamente. La caravana original (' + rpActivo + ') ha quedado libre y vacía de datos.');
-                    rpActivo = rpArchivado; buscarCaravanaBtn(rpArchivado);
+                    alert(`Baja registrada exitosamente. La caravana original (${rpActivo}) ha quedado libre y vacía de datos.`);
+                    rpActivo = rpArchivado; 
+                    buscarCaravanaBtn(rpArchivado);
                 }, 400);
-            } else { ejecutarAccion(t, v, d, mId); }
+            } else { 
+                ejecutarAccion(t, v, d, mId); 
+            }
 
-            // Limpiar campos visuales
+            // Limpiar campos visuales de forma segura
             let modalEl = document.getElementById(mId);
             if(modalEl) {
-                modalEl.querySelectorAll('.form-control, .textarea').forEach(el => {
-                    if(el.tagName !== 'SELECT' && el.type !== 'hidden') el.value = '';
+                modalEl.querySelectorAll('input, textarea').forEach(el => {
+                    if(el.type !== 'hidden') el.value = '';
                 });
                 modalEl.querySelectorAll('input[id$="-otro"]').forEach(el => el.classList.add('oculto'));
+                modalEl.querySelectorAll('select').forEach(el => {
+                    if(el.id !== 'rafaga-modalidad' && el.id !== 'rafaga-accion' && el.id !== 'rafaga-recordatorio') {
+                        el.selectedIndex = 0;
+                    }
+                });
             }
         }
 
@@ -2029,15 +1692,7 @@
             }
         }
 
-        function guardarClasificacion() { 
-            if(!rpActivo) return; 
-            let cat = document.getElementById('input-cat-rapida').value;
-            let selLote = document.getElementById('input-lote-rapido').value;
-            let lote = selLote === 'OTRO' ? document.getElementById('lote-otro').value : selLote;
-            let carimbo = document.getElementById('input-carimbo-rapido').value || '-';
-            ejecutarAccion('Actualización de Datos', 'Cat: ' + cat + ' | Carimbo: ' + carimbo, 'Lote: ' + lote, 'm-clasi'); 
-        }
-
+        function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'm-clasi'); }
         function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'm-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
         function borrarCaravana() { if(!rpActivo) return; if(confirm(`¿ELIMINAR todo el historial de la caravana ${rpActivo}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null); alert("Historial eliminado. El número quedó libre."); cambiarVista('v-dash', document.querySelectorAll('.sidebar-nav li')[0]); } }
         function verTrazabilidad() { abrirModal('m-traza'); let h = ""; obtenerHistorial(rpActivo).forEach(r => { h += `<tr><td style="white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${r.accion}</strong></td><td>${r.valor}</td><td style="font-size:12px;">${r.detalles}</td></tr>`; }); document.getElementById('tb-traza').innerHTML = h; }
@@ -2092,7 +1747,7 @@
         function actualizarInformeAvanzado() {
             const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
             const datosActivos = obtenerRegistrosActivos(); 
-            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => esCaravanaValida(c)))]; 
+            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; 
             
             const tbodyMasivo = document.getElementById('tb-informe-masivo');
             const tbodyBajas = document.getElementById('tb-informe-bajas');
@@ -2346,113 +2001,45 @@
             }, 100);
         }
 
-        function verificarLimiteGraficos() {
+        function verificarLimiteGraficos(checkbox) {
             const checks = document.querySelectorAll('.chk-graf:checked');
             const prefs = Array.from(checks).map(c => c.value);
             lsSet('tc_prefs_pc', prefs);
             if(dbCache.length > 0) procesarDatosDashboard();
         }
 
-        window.verificarLimiteGraficos = verificarLimiteGraficos;
-
-        window.seleccionarTodosGraficos = function(activar) {
-            document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = activar; });
-            verificarLimiteGraficos();
-        };
-
         function filtrarDesdeDashboard(tipo, valor) {
             cambiarVista('v-base', document.querySelectorAll('.sidebar-nav li')[2]);
+            document.getElementById('buscador-lista').value = "";
             
-            let elEstado = document.getElementById('filtro-reg-estado');
-            let elLote = document.getElementById('filtro-reg-lote');
-            let elCat = document.getElementById('filtro-reg-cat');
-            let elDx = document.getElementById('filtro-reg-dx');
-            let elBusq = document.getElementById('buscador-lista');
-
-            if (elEstado) elEstado.value = 'vivos';
-            if (elLote) elLote.value = 'ALL';
-            if (elCat) elCat.value = 'ALL';
-            if (elDx) elDx.value = 'ALL';
-            if (elBusq) elBusq.value = '';
-
-            if (tipo === 'estado') {
-                if (elEstado) elEstado.value = valor;
-            } else if (tipo === 'categoria') {
-                if (elCat) {
-                    let found = false;
-                    for (let i = 0; i < elCat.options.length; i++) {
-                        if (elCat.options[i].value.toLowerCase() === valor.toLowerCase() || elCat.options[i].text.toLowerCase() === valor.toLowerCase()) {
-                            elCat.selectedIndex = i;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        let opt = document.createElement('option');
-                        opt.value = valor;
-                        opt.text = valor;
-                        elCat.appendChild(opt);
-                        elCat.value = valor;
-                    }
-                }
-            } else if (tipo === 'lote') {
-                if (elLote) {
-                    let found = false;
-                    for (let i = 0; i < elLote.options.length; i++) {
-                        if (elLote.options[i].value.toLowerCase() === valor.toLowerCase() || elLote.options[i].text.toLowerCase() === valor.toLowerCase()) {
-                            elLote.selectedIndex = i;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        let opt = document.createElement('option');
-                        opt.value = valor;
-                        opt.text = valor;
-                        elLote.appendChild(opt);
-                        elLote.value = valor;
-                    }
-                }
-            } else if (tipo === 'lote_prenada') {
-                if (elDx) elDx.value = 'Preñada';
-                if (elLote) {
-                    for (let i = 0; i < elLote.options.length; i++) {
-                        if (elLote.options[i].value.toLowerCase() === valor.toLowerCase()) {
-                            elLote.selectedIndex = i;
-                            break;
-                        }
-                    }
-                }
-            } else if (tipo === 'dx') {
-                if (elDx) elDx.value = valor;
-            } else if (tipo === 'condicion') {
-                if (elBusq) elBusq.value = valor;
-            } else if (tipo === 'vientre_vacio') {
-                if (elDx) elDx.value = 'Vacía';
-                if (valor && valor.includes('Sangre') && elBusq) {
-                    elBusq.value = 'Sangre';
-                }
-            } else if (tipo === 'sanidad_global') {
-                if (elBusq) elBusq.value = (valor === 'Con Registro' ? 'Sanidad' : '');
-            } else if (tipo === 'toro') {
-                if (elDx) elDx.value = 'Preñada';
-                if (elBusq) elBusq.value = valor;
-            } else if (tipo === 'baja_causa') {
-                if (elEstado) elEstado.value = 'bajas';
-                if (elBusq) elBusq.value = valor;
-            } else if (tipo === 'busqueda') {
-                if (elBusq) elBusq.value = valor;
+            if(tipo === 'estado') {
+                document.getElementById('filtro-reg-estado').value = valor;
+                document.getElementById('filtro-reg-dx').value = 'ALL';
+                document.getElementById('filtro-reg-lote').value = 'ALL';
+                document.getElementById('filtro-reg-cat').value = 'ALL';
+            } else if(tipo === 'lote') {
+                document.getElementById('filtro-reg-estado').value = 'vivos';
+                document.getElementById('filtro-reg-lote').value = valor;
+                document.getElementById('filtro-reg-cat').value = 'ALL';
+                document.getElementById('filtro-reg-dx').value = 'ALL';
+            } else if(tipo === 'categoria') {
+                document.getElementById('filtro-reg-estado').value = 'vivos';
+                document.getElementById('filtro-reg-cat').value = valor;
+                document.getElementById('filtro-reg-lote').value = 'ALL';
+                document.getElementById('filtro-reg-dx').value = 'ALL';
+            } else if(tipo === 'dx') {
+                document.getElementById('filtro-reg-estado').value = 'vivos';
+                document.getElementById('filtro-reg-dx').value = valor;
+                document.getElementById('filtro-reg-lote').value = 'ALL';
+                document.getElementById('filtro-reg-cat').value = 'ALL';
             }
-
             cargarListaRegistro();
         }
 
-        window.filtrarDesdeDashboard = filtrarDesdeDashboard;
-
         function procesarDatosDashboard() {
             const datosActivos = obtenerRegistrosActivos(); 
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => esCaravanaValida(c)))];
-            let vivas = []; let cantBajas = datosActivos.filter(r => r.accion === 'Baja' && esCaravanaValida(r.caravana)).length;
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
+            let vivas = []; let cantBajas = datosActivos.filter(r => r.accion === 'Baja').length;
             unicas.forEach(car => { if(!obtenerHistorial(car).some(x => x.accion === 'Baja')) { vivas.push(car); } }); unicas = vivas; 
             
             document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
@@ -2571,29 +2158,29 @@
                 else if(g === '4') { 
                     let t = g4.opt + g4.bp + g4.sp || 1; 
                     let d4 = { "Óptima": g4.opt, "Bajo Peso": g4.bp, "Sobrepeso": g4.sp };
-                    html += makePieAndBars("Condición Corporal", d4, t, 'condicion'); 
+                    html += makePieAndBars("Condición Corporal", d4, t, 'estado'); 
                 } 
                 else if(g === '5') { 
                     let t = g5.norm + g5.san || 1; 
                     let d5 = { "Normal": g5.norm, "Sangre/Problema": g5.san };
-                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'vientre_vacio'); 
+                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'estado'); 
                 } 
                 else if(g === '6') { 
                     let t = unicas.length; 
                     let d6 = { "Con Registro": g6.con, "Sin Registros": g6.sin };
-                    html += makePieAndBars("Sanidad Global", d6, t, 'sanidad_global'); 
+                    html += makePieAndBars("Sanidad Global", d6, t, 'estado'); 
                 } 
                 else if(g === '7') { 
                     let d7 = {}; Object.keys(g7).forEach(k => d7[k] = g7[k].p);
-                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote_prenada'); 
+                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote'); 
                 } 
                 else if(g === '8') { 
                     let d8 = {}; Object.keys(g8).forEach(k => d8[k] = g8[k].p);
-                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'toro'); 
+                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'estado'); 
                 } 
                 else if(g === '9') { 
                     let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; 
-                    html += `<div class="tarjeta"><h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Promedio de Pesos</h4><div class="grid-2"><div class="kpi-box" style="padding:10px;" onclick="filtrarDesdeDashboard('categoria', 'Vaca / Vaquilla')"><strong style="font-size:20px; color:var(--text-main);">${pv} Kg</strong><span>Vacas</span></div><div class="kpi-box" style="padding:10px;" onclick="filtrarDesdeDashboard('categoria', 'Ternero Macho')"><strong style="font-size:20px; color:var(--text-main);">${pt} Kg</strong><span>Terneros</span></div></div></div>`; 
+                    html += `<div class="tarjeta"><h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Promedio de Pesos</h4><div class="grid-2"><div class="kpi-box" style="padding:10px;" onclick="filtrarDesdeDashboard('estado', 'vivos')"><strong style="font-size:20px; color:var(--text-main);">${pv} Kg</strong><span>Vacas</span></div><div class="kpi-box" style="padding:10px;" onclick="filtrarDesdeDashboard('estado', 'vivos')"><strong style="font-size:20px; color:var(--text-main);">${pt} Kg</strong><span>Terneros</span></div></div></div>`; 
                 } 
                 else if(g === '10') { 
                     let d10 = { "Pesajes": g10.peso, "Diagnósticos": g10.dx, "Nutrición": g10.nut, "Sanidad": g10.san };
@@ -2602,7 +2189,7 @@
                 } 
                 else if(g === '11') { 
                     let t11 = cantBajas || 1;
-                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'baja_causa'); 
+                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'estado'); 
                 }
                 htmlGraficos += html;
             }); document.getElementById('contenedor-graficos').innerHTML = htmlGraficos;
@@ -2626,7 +2213,7 @@
 
         function cargarListaRegistro() {
             const datosActivos = obtenerRegistrosActivos();
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => esCaravanaValida(c)))];
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
             
             let estadoFiltro = document.getElementById('filtro-reg-estado').value;
             let loteFiltro = document.getElementById('filtro-reg-lote').value;
@@ -2643,11 +2230,8 @@
                 if (estadoFiltro === 'vivos' && esBaja) return;
                 if (estadoFiltro === 'bajas' && !esBaja) return;
 
-                let cat = "Sin Categoría", lote = "General", dx = "-";
-                const uP = regs.find(d => d.accion === 'Perfil Master');
-                if(uP && uP.detalles) {
-                    cat = String(uP.detalles).split('|')[0] || "Sin Categoría";
-                }
+                let cat = "-", lote = "General", dx = "-";
+                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
                 const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
                 if(uC) { 
                     let v = String(uC.valor||"").split('|'); 
@@ -2665,26 +2249,23 @@
 
                 let catLegible = obtenerNombreCategoriaLegible(cat);
 
-                if (loteFiltro !== "ALL" && !lote.toLowerCase().includes(loteFiltro.toLowerCase())) return;
-
-                // FILTRO ESTRICTO DE CATEGORÍA
-                if (catFiltro === "Sin Categoría") {
-                    if (catLegible !== "Sin Categoría" && cat !== "Sin Categoría" && cat !== "-") return;
-                } else if (catFiltro !== "ALL" && !catLegible.toLowerCase().includes(catFiltro.toLowerCase())) {
-                    return;
-                }
+                if (loteFiltro !== "ALL" && !lote.includes(loteFiltro)) return;
+                if (catFiltro !== "ALL" && !catLegible.includes(catFiltro)) return;
                 
                 if (dxFiltro === "Preñada") {
                     if (!esPre) return;
                 } else if (dxFiltro === "Vacía") {
                     if (!esVacia) return;
-                } else if (dxFiltro !== "ALL" && !dx.toLowerCase().includes(dxFiltro.toLowerCase())) {
+                } else if (dxFiltro !== "ALL" && !dx.includes(dxFiltro)) {
                     return;
                 }
 
                 if (txtBusqueda !== "") {
-                    let historialTexto = (car + " " + catLegible + " " + lote + " " + dx + " " + regs.map(r => (r.accion||"") + " " + (r.valor||"") + " " + (r.detalles||"")).join(" ")).toLowerCase();
-                    if (!historialTexto.includes(txtBusqueda)) return;
+                    let matchTexto = car.toLowerCase().includes(txtBusqueda) || 
+                                     catLegible.toLowerCase().includes(txtBusqueda) || 
+                                     lote.toLowerCase().includes(txtBusqueda) || 
+                                     dx.toLowerCase().includes(txtBusqueda);
+                    if (!matchTexto) return;
                 }
 
                 listaFiltrada.push({ car, catLegible, lote, dx, esBaja });
@@ -2697,7 +2278,7 @@
             }
 
             let htmlHTML = "";
-            let limiteRender = 150;
+            let limiteRender = 100;
             listaFiltrada.slice(0, limiteRender).forEach(item => {
                 let badgeBaja = item.esBaja ? `<span style="background:var(--danger); color:white; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px;">BAJA</span>` : '';
                 htmlHTML += `<tr onclick="navegarDesdeLista('${item.car}')">
@@ -2705,7 +2286,7 @@
                     <td style="color:var(--text-main);">${item.catLegible}</td>
                     <td style="color:var(--text-main);">${item.lote}</td>
                     <td style="color:var(--text-main);">${item.dx}</td>
-                    <td><button class="btn-outline" style="padding:4px 8px; font-size:11px;">Abrir Ficha</button></td>
+                    <td><button class="btn-outline">Abrir Ficha</button></td>
                 </tr>`;
             });
             if(listaFiltrada.length > limiteRender) {
