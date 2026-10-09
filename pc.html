@@ -514,7 +514,7 @@
                 </div>
             </div>
             
-            <div class="tarjeta" style="padding:0; overflow-y:auto; max-height:calc(100vh - 250px);
+            <div class="tarjeta" style="padding:0; overflow-y:auto; max-height:calc(100vh - 250px);">
                 <table class="tabla-datos">
                     <thead><tr><th>Caravana</th><th>Categoría Oficial</th><th>Ubicación / Lote</th><th>Diagnóstico</th><th>Acción</th></tr></thead>
                     <tbody id="tb-registro"></tbody>
@@ -645,12 +645,11 @@
                 </div>
             </div>
             
-            <div style="overflow-y:auto; max-height:calc(100vh - 280px);
+            <div style="overflow-y:auto; max-height:calc(100vh - 280px);">
                 <table class="tabla-informe" id="tabla-masiva"><thead><tr><th>RP y Carimbo</th><th>Categoría Oficial</th><th>Lote / Ubicación</th><th>Últ. Peso</th><th>Dx Actual</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
-                    <table class="tabla-informe oculto" id="tabla-bajas"><thead><tr><th>Fecha de Baja</th><th>Caravana / RP</th><th>Causa Registrada</th><th>Observaciones</th></tr></thead><tbody id="tb-informe-bajas"></tbody></table>
-                    <table class="tabla-informe oculto" id="tabla-eventos"><thead><tr><th>Fecha</th><th>RP</th><th>Trabajo Realizado</th><th>Detalles Extras</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
-                    <table class="tabla-informe oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Procedimiento</th><th>Valor Principal</th><th>Observaciones Adicionales</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
-                </div>
+                <table class="tabla-informe oculto" id="tabla-bajas"><thead><tr><th>Fecha de Baja</th><th>Caravana / RP</th><th>Causa Registrada</th><th>Observaciones</th></tr></thead><tbody id="tb-informe-bajas"></tbody></table>
+                <table class="tabla-informe oculto" id="tabla-eventos"><thead><tr><th>Fecha</th><th>RP</th><th>Trabajo Realizado</th><th>Detalles Extras</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
+                <table class="tabla-informe oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Procedimiento</th><th>Valor Principal</th><th>Observaciones Adicionales</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
             </div>
         </div>
 
@@ -1262,11 +1261,15 @@
                     }
                 });
                 
-                document.getElementById('f-inf-rango-fecha').value = "30"; manejarRangoFechas();
-                document.getElementById('pantalla-login').classList.add('oculto'); 
-                document.getElementById('sidebar').classList.remove('oculto'); 
-                document.getElementById('main-content').classList.remove('oculto');
-                document.getElementById('pantalla-mantenimiento').classList.add('oculto');
+                const elRango = document.getElementById('f-inf-rango-fecha');
+                if (elRango) elRango.value = "30";
+                if (typeof manejarRangoFechas === 'function') manejarRangoFechas();
+                
+                const elLogin = document.getElementById('pantalla-login'); if(elLogin) elLogin.classList.add('oculto'); 
+                const elSidebar = document.getElementById('sidebar'); if(elSidebar) elSidebar.classList.remove('oculto'); 
+                const elMainContent = document.getElementById('main-content'); if(elMainContent) elMainContent.classList.remove('oculto');
+                const elMantenimiento = document.getElementById('pantalla-mantenimiento'); if(elMantenimiento) elMantenimiento.classList.add('oculto');
+                
                 if(tabSeleccionado) { cambiarVista(vistaInicial, tabSeleccionado); } else { cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4]); }
                 sincronizarPendientesAuto(); cargarListasFiltrosSelects();
             } catch(e) { console.error("Error al construir la pantalla:", e); }
@@ -1583,30 +1586,47 @@
         }
 
         function manejarRangoFechas() {
-            const rango = document.getElementById('f-inf-rango-fecha').value; const cajaManual = document.getElementById('caja-fechas-custom');
-            const dDesde = document.getElementById('f-inf-desde'); const dHasta = document.getElementById('f-inf-hasta');
+            const rangoEl = document.getElementById('f-inf-rango-fecha');
+            if(!rangoEl) return;
+            const rango = rangoEl.value;
+            const cajaManual = document.getElementById('caja-fechas-custom');
+            const cajaPuntual = document.getElementById('caja-fecha-puntual');
+            const dDesde = document.getElementById('f-inf-desde');
+            const dHasta = document.getElementById('f-inf-hasta');
+            const dPuntual = document.getElementById('f-inf-fecha-puntual');
             let hoy = new Date(); let desde = new Date();
-            if (rango === 'custom') { cajaManual.style.display = 'flex'; } else {
-                cajaManual.style.display = 'none';
+            
+            if(cajaPuntual) cajaPuntual.style.display = (rango === 'puntual') ? 'flex' : 'none';
+            if (rango === 'puntual') {
+                if (cajaManual) cajaManual.style.display = 'none';
+                if(dPuntual && !dPuntual.value) dPuntual.value = hoy.toISOString().split('T')[0];
+            } else if (rango === 'custom') { 
+                if(cajaManual) cajaManual.style.display = 'flex'; 
+            } else {
+                if(cajaManual) cajaManual.style.display = 'none';
                 if(rango === 'hoy') { } else if (rango === '7') { desde.setDate(hoy.getDate() - 7); } else if (rango === '30') { desde.setDate(hoy.getDate() - 30); } else if (rango === 'todo') { desde = new Date('2000-01-01'); }
-                dDesde.value = desde.toISOString().split('T')[0]; dHasta.value = hoy.toISOString().split('T')[0];
+                if(dDesde) dDesde.value = desde.toISOString().split('T')[0]; 
+                if(dHasta) dHasta.value = hoy.toISOString().split('T')[0];
             }
             actualizarInformeAvanzado();
         }
 
         function manejarRangoFechasBajas() {
-            const rango = document.getElementById('f-inf-baja-rango').value;
+            const rangoEl = document.getElementById('f-inf-baja-rango');
+            if(!rangoEl) return;
+            const rango = rangoEl.value;
             const cajaManual = document.getElementById('caja-fechas-bajas');
             const dDesde = document.getElementById('f-inf-baja-desde');
             const dHasta = document.getElementById('f-inf-baja-hasta');
             let hoy = new Date(); let desde = new Date();
-            if (rango === 'custom') { cajaManual.style.display = 'flex'; } else {
-                cajaManual.style.display = 'none';
+            if (rango === 'custom') { if(cajaManual) cajaManual.style.display = 'flex'; } else {
+                if(cajaManual) cajaManual.style.display = 'none';
                 if(rango === '30') { desde.setDate(hoy.getDate() - 30); }
                 else if (rango === '90') { desde.setDate(hoy.getDate() - 90); }
                 else if (rango === '365') { desde.setDate(hoy.getDate() - 365); }
                 else if (rango === 'todo') { desde = new Date('2000-01-01'); }
-                dDesde.value = desde.toISOString().split('T')[0]; dHasta.value = hoy.toISOString().split('T')[0];
+                if(dDesde) dDesde.value = desde.toISOString().split('T')[0]; 
+                if(dHasta) dHasta.value = hoy.toISOString().split('T')[0];
             }
             actualizarInformeAvanzado();
         }
@@ -1617,28 +1637,38 @@
         }
 
         function actualizarInformeAvanzado() {
-            const modo = document.getElementById('f-inf-modo').value; const fRp = document.getElementById('f-inf-rp').value.trim().toLowerCase();
-            const datosActivos = obtenerRegistrosActivos(); 
-            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))]; 
+            const modoEl = document.getElementById('f-inf-modo');
+            const modo = modoEl ? modoEl.value : 'inventario';
+            const fRpEl = document.getElementById('f-inf-rp');
+            const fRp = fRpEl ? fRpEl.value.trim().toLowerCase() : '';
+            const datosActivos = typeof obtenerRegistrosActivos === 'function' ? obtenerRegistrosActivos() : []; 
+            const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && String(c).toLowerCase() !== "null" && c !== "undefined" && c !== ""))]; 
             
             const tbodyMasivo = document.getElementById('tb-informe-masivo');
             const tbodyBajas = document.getElementById('tb-informe-bajas');
             const tbodyEventos = document.getElementById('tb-informe-eventos');
             const tbodyIndiv = document.getElementById('tb-informe-individual');
             
-            document.getElementById('tabla-masiva').classList.add('oculto');
-            document.getElementById('tabla-bajas').classList.add('oculto');
-            document.getElementById('tabla-eventos').classList.add('oculto');
-            document.getElementById('tabla-individual').classList.add('oculto');
+            const tMasiva = document.getElementById('tabla-masiva'); if(tMasiva) tMasiva.classList.add('oculto');
+            const tBajas = document.getElementById('tabla-bajas'); if(tBajas) tBajas.classList.add('oculto');
+            const tEventos = document.getElementById('tabla-eventos'); if(tEventos) tEventos.classList.add('oculto');
+            const tIndiv = document.getElementById('tabla-individual'); if(tIndiv) tIndiv.classList.add('oculto');
             
-            let vivas = unicas.filter(car => !obtenerHistorial(car).some(r => r.accion === 'Baja'));
+            let vivas = unicas.filter(car => !(typeof obtenerHistorial === 'function' && obtenerHistorial(car).some(r => r.accion === 'Baja')));
             
             const cajaKpiPre = document.getElementById('caja-kpi-prenadas');
             const lblTotal = document.getElementById('lbl-inf-total');
+            const btnPrint = document.getElementById('btn-print-magico');
+            const elInfTotal = document.getElementById('inf-total');
+            const elInfPrenadas = document.getElementById('inf-prenadas');
 
             if(fRp !== "") {
-                rpPrint = fRp; document.getElementById('btn-print-magico').innerHTML = `🖨️ Dossier: ${fRp.toUpperCase()}`; document.getElementById('tabla-individual').classList.remove('oculto');
-                const regs = obtenerHistorial(fRp); let hInd = ""; pdfExportData = [];
+                rpPrint = fRp; 
+                if(btnPrint) btnPrint.innerHTML = `🖨️ Dossier: ${fRp.toUpperCase()}`; 
+                if(tIndiv) tIndiv.classList.remove('oculto');
+                const regs = typeof obtenerHistorial === 'function' ? obtenerHistorial(fRp) : []; 
+                let hInd = ""; 
+                pdfExportData = [];
                 regs.forEach(r => {
                     if(!r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master') {
                         let fDate = new Date(r.fecha).toLocaleDateString();
@@ -1647,33 +1677,38 @@
                         hInd+=`<tr><td>${fDate}</td><td><strong>${badge}</strong></td><td>${r.valor}</td><td>${r.detalles}</td></tr>`;
                     }
                 });
-                tbodyIndiv.innerHTML = hInd; document.getElementById('inf-total').innerText = regs.filter(r => !r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master').length; document.getElementById('inf-prenadas').innerText = "-"; 
+                if(tbodyIndiv) tbodyIndiv.innerHTML = hInd; 
+                if(elInfTotal) elInfTotal.innerText = regs.filter(r => !r.accion.includes('Vinculacion') && r.accion !== 'Actualización de Datos' && r.accion !== 'Perfil Master').length; 
+                if(elInfPrenadas) elInfPrenadas.innerText = "-"; 
                 if(lblTotal) lblTotal.innerText = "REGISTROS";
                 return;
             }
 
-            rpPrint = ""; document.getElementById('btn-print-magico').innerHTML = `🖨️ Descargar PDF`;
+            rpPrint = ""; 
+            if(btnPrint) btnPrint.innerHTML = `🖨️ Descargar PDF`;
 
             if(modo === 'inventario') {
-                document.getElementById('tabla-masiva').classList.remove('oculto');
+                if(tMasiva) tMasiva.classList.remove('oculto');
                 if (cajaKpiPre) cajaKpiPre.style.display = 'block';
                 if (lblTotal) lblTotal.innerText = "CABEZAS LISTADAS";
 
-                const fLote = document.getElementById('f-inf-lote').value;
-                const fCat = document.getElementById('f-inf-cat').value;
-                const fDx = document.getElementById('f-inf-dx').value;
-                const fCarimbo = document.getElementById('f-inf-carimbo').value;
+                const fLote = document.getElementById('f-inf-lote') ? document.getElementById('f-inf-lote').value : "ALL";
+                const fCat = document.getElementById('f-inf-cat') ? document.getElementById('f-inf-cat').value : "ALL";
+                const fDx = document.getElementById('f-inf-dx') ? document.getElementById('f-inf-dx').value : "ALL";
+                const fCarimbo = document.getElementById('f-inf-carimbo') ? document.getElementById('f-inf-carimbo').value : "ALL";
                 
-                tbodyMasivo.innerHTML = ""; let countTotal = 0; let countPre = 0;
+                if(tbodyMasivo) tbodyMasivo.innerHTML = ""; 
+                let countTotal = 0; let countPre = 0;
                 
                 let bufferHTML = "";
                 let maxRows = 100; pdfExportData = [];
                 vivas.forEach(car => {
-                    const regs = obtenerHistorial(car); let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
+                    const regs = typeof obtenerHistorial === 'function' ? obtenerHistorial(car) : []; 
+                    let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
                     const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
                     const uC = regs.find(d => d.accion === 'Actualización de Datos'); 
                     if(uC) { let v = String(uC.valor||"").split('|'); cat = v[0] ? v[0].replace('Cat:','').trim() : cat; carimbo = v[1] ? v[1].replace('Carimbo:','').trim() : "-"; lote = String(uC.detalles||"split('|')[0]") ? String(uC.detalles||"split('|')[0]").replace('Lote:','').trim() : "-"; }
-                    let catLegible = obtenerNombreCategoriaLegible(cat);
+                    let catLegible = typeof obtenerNombreCategoriaLegible === 'function' ? obtenerNombreCategoriaLegible(cat) : cat;
                     const uPeso = regs.find(d => d.accion === 'Peso'); if(uPeso) peso = uPeso.valor || "-"; 
                     const uDx = regs.find(d => d.accion === 'Diagnóstico'); 
                     
@@ -1701,68 +1736,86 @@
                     }
                 });
                 if(countTotal > maxRows) bufferHTML += `<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-muted);">Mostrando 100 resultados de ${countTotal}. Use filtros o descargue el PDF completo.</td></tr>`;
-                tbodyMasivo.innerHTML = bufferHTML;
-                document.getElementById('inf-total').innerText = countTotal; 
-                document.getElementById('inf-prenadas').innerText = countPre;
+                if(tbodyMasivo) tbodyMasivo.innerHTML = bufferHTML;
+                if(elInfTotal) elInfTotal.innerText = countTotal; 
+                if(elInfPrenadas) elInfPrenadas.innerText = countPre;
                 
             } else if(modo === 'bajas') {
-                document.getElementById('tabla-bajas').classList.remove('oculto');
+                if(tBajas) tBajas.classList.remove('oculto');
                 if (cajaKpiPre) cajaKpiPre.style.display = 'none';
                 if (lblTotal) lblTotal.innerText = "BAJAS / MORTALIDAD";
 
-                const fCausa = document.getElementById('f-inf-baja-causa').value;
-                const fDesde = document.getElementById('f-inf-baja-desde').value;
-                const fHasta = document.getElementById('f-inf-baja-hasta').value;
+                const fCausa = document.getElementById('f-inf-baja-causa') ? document.getElementById('f-inf-baja-causa').value : "ALL";
+                const fDesde = document.getElementById('f-inf-baja-desde') ? document.getElementById('f-inf-baja-desde').value : "";
+                const fHasta = document.getElementById('f-inf-baja-hasta') ? document.getElementById('f-inf-baja-hasta').value : "";
 
                 let bufferBajas = ""; let maxBajas = 100; pdfExportData = [];
                 let countBajas = 0;
 
                 unicas.forEach(car => {
-                    const regs = obtenerHistorial(car);
-                    const rBaja = regs.find(r => r.accion === 'Baja');
-                    if (!rBaja) return;
-
-                    let pasa = true;
-                    if (fCausa !== "ALL" && !String(rBaja.valor).toLowerCase().includes(fCausa.toLowerCase())) pasa = false;
-                    if (fDesde && new Date(rBaja.fecha) < new Date(fDesde + 'T00:00:00')) pasa = false;
-                    if (fHasta && new Date(rBaja.fecha) > new Date(fHasta + 'T23:59:59')) pasa = false;
-
-                    if (pasa) {
-                        countBajas++;
-                        let fDate = new Date(rBaja.fecha).toLocaleDateString();
-                        pdfExportData.push([fDate, car, rBaja.valor, rBaja.detalles||'-']);
-                        if(countBajas <= maxBajas) {
-                            bufferBajas += `<tr><td>${fDate}</td><td><strong>${car}</strong></td><td style="color:var(--danger); font-weight:bold;">${rBaja.valor}</td><td>${rBaja.detalles||'-'}</td></tr>`;
+                    const regs = typeof obtenerHistorial === 'function' ? obtenerHistorial(car) : [];
+                    const bajaEvt = regs.find(r => r.accion === 'Baja');
+                    if(bajaEvt) {
+                        let fDate = bajaEvt.fecha ? String(bajaEvt.fecha).split('T')[0] : "";
+                        let causa = bajaEvt.valor || "No especificada";
+                        let obs = bajaEvt.detalles || "-";
+                        
+                        let pasa = true;
+                        if(fCausa !== "ALL" && causa !== fCausa) pasa = false;
+                        if(fDesde && fDate && fDate < fDesde) pasa = false;
+                        if(fHasta && fDate && fDate > fHasta) pasa = false;
+                        
+                        if(pasa) {
+                            countBajas++;
+                            pdfExportData.push([fDate, car, causa, obs]);
+                            if(countBajas <= maxBajas) {
+                                bufferBajas += `<tr><td>${fDate}</td><td><strong>${car}</strong></td><td><span class="badge" style="background:var(--danger);">${causa}</span></td><td>${obs}</td></tr>`;
+                            }
                         }
                     }
                 });
-                if(countBajas > maxBajas) bufferBajas += `<tr><td colspan="4" style="text-align:center; padding:15px; font-weight:bold; color:var(--text-muted);">Mostrando ${maxBajas} resultados de ${countBajas}. Descargue el PDF para ver el informe completo.</td></tr>`;
-                tbodyBajas.innerHTML = bufferBajas;
-                document.getElementById('inf-total').innerText = countBajas;
+                if(countBajas > maxBajas) bufferBajas += `<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--text-muted);">Mostrando 100 de ${countBajas} bajas.</td></tr>`;
+                if(tbodyBajas) tbodyBajas.innerHTML = bufferBajas;
+                if(elInfTotal) elInfTotal.innerText = countBajas;
+                if(elInfPrenadas) elInfPrenadas.innerText = "-";
 
-            } else {
-                document.getElementById('tabla-eventos').classList.remove('oculto');
+            } else if(modo === 'eventos') {
+                if(tEventos) tEventos.classList.remove('oculto');
                 if (cajaKpiPre) cajaKpiPre.style.display = 'none';
-                if (lblTotal) lblTotal.innerText = "TRABAJOS LISTADOS";
+                if (lblTotal) lblTotal.innerText = "PROCEDIMIENTOS REGISTRADOS";
 
-                const fAcc = document.getElementById('f-inf-accion-oculto').value; const fDesde = document.getElementById('f-inf-desde').value; const fHasta = document.getElementById('f-inf-hasta').value; const fKey = document.getElementById('f-inf-keyword').value.trim().toLowerCase();
-                let eventos = datosActivos.filter(d => !d.accion.includes('Vinculacion') && d.accion !== 'Perfil Master' && d.accion !== 'Actualización de Datos' && d.caravana !== "---" && d.accion !== 'Baja' && d.accion !== 'Baja Operador');
-                if(fAcc !== "ALL") eventos = eventos.filter(d => d.accion === fAcc); if(fDesde) eventos = eventos.filter(d => new Date(d.fecha) >= new Date(fDesde + 'T00:00:00'));
-                if(fHasta) eventos = eventos.filter(d => new Date(d.fecha) <= new Date(fHasta + 'T23:59:59')); if(fKey) eventos = eventos.filter(d => (String(d.valor) + String(d.detalles)).toLowerCase().includes(fKey));
-                
-                let bufferEvt = ""; let maxEvt = 100; pdfExportData = []; let evtCount = 0;
-                eventos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(r => {
-                    evtCount++;
-                    let fDate = new Date(r.fecha).toLocaleDateString();
-                    let badge = obtenerBadgeAccion(r.accion);
-                    pdfExportData.push([fDate, r.caravana, badge, `${r.valor} - ${r.detalles}`]);
-                    if(evtCount <= maxEvt) {
-                        bufferEvt += `<tr><td style="white-space:nowrap;">${fDate}</td><td><strong>${r.caravana}</strong></td><td>${badge}</td><td><strong>${r.valor}</strong><br><span style="color:var(--text-muted);">${r.detalles}</span></td></tr>`;
+                const fAccion = document.getElementById('f-inf-accion-oculto') ? document.getElementById('f-inf-accion-oculto').value : "ALL";
+                const fRango = document.getElementById('f-inf-rango-fecha') ? document.getElementById('f-inf-rango-fecha').value : "30";
+                const fDesde = document.getElementById('f-inf-desde') ? document.getElementById('f-inf-desde').value : "";
+                const fHasta = document.getElementById('f-inf-hasta') ? document.getElementById('f-inf-hasta').value : "";
+                const fPuntual = document.getElementById('f-inf-fecha-puntual') ? document.getElementById('f-inf-fecha-puntual').value : "";
+
+                let bufferEvt = ""; let maxEvt = 100; pdfExportData = [];
+                let countEvt = 0;
+
+                datosActivos.forEach(d => {
+                    if(d.accion.includes('Vinculacion') || d.accion === 'Perfil Master' || d.accion === 'Actualización de Datos') return;
+                    let fDate = d.fecha ? String(d.fecha).split('T')[0] : "";
+                    let badge = obtenerBadgeAccion(d.accion);
+                    let pasa = true;
+
+                    if(fAccion !== "ALL" && d.accion !== fAccion) pasa = false;
+                    if(fRango === 'puntual' && fPuntual && fDate !== fPuntual) pasa = false;
+                    if(fRango !== 'puntual' && fDesde && fDate && fDate < fDesde) pasa = false;
+                    if(fRango !== 'puntual' && fHasta && fDate && fDate > fHasta) pasa = false;
+
+                    if(pasa) {
+                        countEvt++;
+                        pdfExportData.push([fDate, d.caravana, `${badge}: ${d.valor}`, d.detalles]);
+                        if(countEvt <= maxEvt) {
+                            bufferEvt += `<tr><td>${fDate}</td><td><strong>${d.caravana}</strong></td><td><strong>${badge}</strong>: ${d.valor}</td><td>${d.detalles || "-"}</td></tr>`;
+                        }
                     }
                 });
-                if(evtCount > maxEvt) bufferEvt += `<tr><td colspan="4" style="text-align:center; padding:15px; font-weight:bold; color:var(--text-muted);">Mostrando ${maxEvt} resultados de ${evtCount}. Descargue el PDF para ver el informe completo.</td></tr>`;
-                tbodyEventos.innerHTML = bufferEvt;
-                document.getElementById('inf-total').innerText = eventos.length; 
+                if(countEvt > maxEvt) bufferEvt += `<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--text-muted);">Mostrando 100 de ${countEvt} procedimientos.</td></tr>`;
+                if(tbodyEventos) tbodyEventos.innerHTML = bufferEvt;
+                if(elInfTotal) elInfTotal.innerText = countEvt;
+                if(elInfPrenadas) elInfPrenadas.innerText = "-";
             }
         }
 
