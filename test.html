@@ -347,7 +347,7 @@
                 <div class="grid-kpis">
                     <div class="kpi-caja" onclick="filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" id="dash-cabezas">0</div><div class="kpi-label">Cabezas Únicas</div></div>
                     <div class="kpi-caja" style="border-color: var(--peligro);" onclick="filtrarDesdeDashboard('estado', 'bajas')"><div class="kpi-valor" id="dash-bajas" style="color: var(--peligro);">0</div><div class="kpi-label" style="color: var(--peligro);">Mortalidad / Bajas</div></div>
-                    <div class="kpi-caja"><div class="kpi-valor" id="dash-acciones">0</div><div class="kpi-label">Registros Procesados</div></div>
+                    <div class="kpi-caja" style="cursor:pointer;" onclick="filtrarDesdeDashboard('estado', 'todos')"><div class="kpi-valor" id="dash-acciones">0</div><div class="kpi-label">Registros Procesados</div></div>
                 </div>
                 <div class="tarjeta" id="contenedor-alertas" style="display:none;"><div class="tarjeta-titulo" style="color:var(--alerta);">⚠ Alertas (Deslizar)</div><div id="lista-alertas"></div></div>
                 <div id="contenedor-graficos-dinamicos"></div>
@@ -770,7 +770,7 @@
                 </div>
 
                 <div class="tarjeta" id="panel-analiticas">
-                    <div class="tarjeta-titulo">📊 Analíticas en Dashboard (Máx 3)</div>
+                    <div class="tarjeta-titulo">📊 Analíticas en Dashboard</div>
                     <div style="display:flex; flex-direction:column; gap:8px;">
                         <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="1" onchange="verificarLimiteGraficos(this)"> <span>1. Tasa de Preñez Dinámica</span></label>
                         <label style="display:flex; gap:10px; cursor:pointer;"><input type="checkbox" class="chk-graf" value="2" onchange="verificarLimiteGraficos(this)"> <span>2. Composición de Hacienda</span></label>
@@ -1039,7 +1039,7 @@
                 <label>Observaciones / Detalles</label>
                 <textarea class="form-control textarea" id="edit-reg-detalles"></textarea>
             </div>
-            <button class="btn-guardar" onclick="guardarEdicionRegistro()">Guardar Cambios</button>
+            <div style="display:flex; justify-content:space-between; gap:10px; margin-top:15px;"><button class="btn-guardar" style="flex:1;" onclick="guardarEdicionRegistro()">💾 Guardar Cambios</button><button class="btn-guardar" style="background:var(--peligro); padding:12px 16px; width:auto;" onclick="eliminarRegistroIndividual()">🗑️</button></div>
         </div>
     </div>
 
@@ -2077,6 +2077,22 @@
             window.cerrarModal('modal-historial'); window.abrirModal('modal-editar-registro');
         };
 
+        window.eliminarRegistroIndividual = async function() {
+            let id = document.getElementById('edit-reg-id').value; 
+            if(!id) return;
+            if(!confirm("⚠️ ¿Está seguro de eliminar este registro histórico permanentemente?")) return;
+            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; }
+            try {
+                await db.collection('estancias').doc(maestroId).collection('eventos').doc(id).delete();
+                dbCache = dbCache.filter(r => r.id !== id);
+                historiaCache = null; activosCache = null;
+                window.buscarCaravanaBtn(rpActivo);
+                window.cerrarModal('modal-editar-registro');
+                window.mostrarToast("🗑️ Registro eliminado.");
+                window.verHistorial();
+            } catch(e) { alert("Error al eliminar: " + e.message); }
+        };
+
         window.guardarEdicionRegistro = async function() {
             let id = document.getElementById('edit-reg-id').value; 
             let nValor = document.getElementById('edit-reg-valor').value; 
@@ -2652,35 +2668,57 @@
             }, 100);
         }
 
-        window.verificarLimiteGraficos = function(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { alert('Solo puede fijar 3 gráficas simultáneas.'); checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); window.lsSet('tc_prefs', prefs); if(dbCache.length > 0) window.procesarDatosDashboard(); } }
+        window.verificarLimiteGraficos = function(checkbox) {
+            const checks = document.querySelectorAll(".chk-graf:checked");
+            const prefs = Array.from(checks).map(c => c.value);
+            window.lsSet("tc_prefs", prefs);
+            if(dbCache.length > 0) window.procesarDatosDashboard();
+        };
 
         window.filtrarDesdeDashboard = function(tipo, valor) {
-            window.cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]);
-            document.getElementById('buscador-lista').value = "";
+            window.cambiarVista('vista-registro', document.querySelector('.nav-item[onclick*="vista-registro"]') || document.querySelectorAll('.nav-item')[2]);
+            const bLista = document.getElementById('buscador-lista');
+            if(bLista) bLista.value = "";
+
+            const selEstado = document.getElementById('filtro-reg-estado');
+            const selDx = document.getElementById('filtro-reg-dx');
+            const selLote = document.getElementById('filtro-reg-lote');
+            const selCat = document.getElementById('filtro-reg-cat');
+
+            if(selEstado) selEstado.value = 'vivos';
+            if(selDx) selDx.value = 'ALL';
+            if(selLote) selLote.value = 'ALL';
+            if(selCat) selCat.value = 'ALL';
 
             if(tipo === 'estado') {
-                document.getElementById('filtro-reg-estado').value = valor;
-                document.getElementById('filtro-reg-dx').value = 'ALL';
-                document.getElementById('filtro-reg-lote').value = 'ALL';
-                document.getElementById('filtro-reg-cat').value = 'ALL';
+                if(selEstado) selEstado.value = valor;
             } else if(tipo === 'lote') {
-                document.getElementById('filtro-reg-estado').value = 'vivos';
-                document.getElementById('filtro-reg-lote').value = valor;
-                document.getElementById('filtro-reg-cat').value = 'ALL';
-                document.getElementById('filtro-reg-dx').value = 'ALL';
+                if(selLote) selLote.value = valor;
             } else if(tipo === 'categoria') {
-                document.getElementById('filtro-reg-estado').value = 'vivos';
-                document.getElementById('filtro-reg-cat').value = valor;
-                document.getElementById('filtro-reg-lote').value = 'ALL';
-                document.getElementById('filtro-reg-dx').value = 'ALL';
+                if(selCat) selCat.value = valor;
             } else if(tipo === 'dx') {
-                document.getElementById('filtro-reg-estado').value = 'vivos';
-                document.getElementById('filtro-reg-dx').value = valor;
-                document.getElementById('filtro-reg-lote').value = 'ALL';
-                document.getElementById('filtro-reg-cat').value = 'ALL';
+                if(selDx) selDx.value = valor;
+            } else if(tipo === 'condicion') {
+                if(bLista) bLista.value = valor;
+            } else if(tipo === 'causa_vacia') {
+                if(selDx) selDx.value = 'Vacía';
+                if(bLista) bLista.value = valor.includes('Sangre') ? 'Sangre' : '';
+            } else if(tipo === 'sanidad_global') {
+                if(bLista) bLista.value = valor.includes('Sin') ? 'sin sanidad' : 'sanidad';
+            } else if(tipo === 'lote_prenada') {
+                if(selLote) selLote.value = valor;
+                if(selDx) selDx.value = 'Preñada';
+            } else if(tipo === 'toro') {
+                if(bLista) bLista.value = valor;
+            } else if(tipo === 'accion_clinica') {
+                let mapa = { 'Pesajes': 'Peso', 'Diagnósticos': 'Dx', 'Nutrición': 'Nutrición', 'Sanidad': 'Sanidad' };
+                if(bLista) bLista.value = mapa[valor] || valor;
+            } else if(tipo === 'baja_causa') {
+                if(selEstado) selEstado.value = 'bajas';
+                if(bLista) bLista.value = valor;
             }
             window.cargarListaRegistro();
-        }
+        };
 
         window.procesarDatosDashboard = function() {
             const datosActivos = window.obtenerRegistrosActivos(); 
@@ -2742,7 +2780,7 @@
             });
 
             const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
-            const prefs = window.lsGet('tc_prefs', ['1', '3']); let htmlGraficos = "";
+            const prefs = window.lsGet('tc_prefs', ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']); let htmlGraficos = "";
             const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#38bdf8'];
 
             const makePieAndBars = (title, dataObj, totalCount, tipoAccion) => {
@@ -2802,38 +2840,38 @@
                 else if(g === '4') {
                     let t = g4.opt + g4.bp + g4.sp || 1;
                     let d4 = { "Óptima": g4.opt, "Bajo Peso": g4.bp, "Sobrepeso": g4.sp };
-                    html += makePieAndBars("Condición Corporal", d4, t, 'estado');
+                    html += makePieAndBars("Condición Corporal", d4, t, 'condicion');
                 }
                 else if(g === '5') {
                     let t = g5.norm + g5.san || 1;
                     let d5 = { "Normal": g5.norm, "Sangre/Problema": g5.san };
-                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'estado');
+                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'causa_vacia');
                 }
                 else if(g === '6') {
                     let t = unicas.length;
                     let d6 = { "Con Registro": g6.con, "Sin Registros": g6.sin };
-                    html += makePieAndBars("Sanidad Global", d6, t, 'estado');
+                    html += makePieAndBars("Sanidad Global", d6, t, 'sanidad_global');
                 }
                 else if(g === '7') {
                     let d7 = {}; Object.keys(g7).forEach(k => d7[k] = g7[k].p);
-                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote');
+                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote_prenada');
                 }
                 else if(g === '8') {
                     let d8 = {}; Object.keys(g8).forEach(k => d8[k] = g8[k].p);
-                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'estado');
+                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'toro');
                 }
                 else if(g === '9') {
                     let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0;
-                    html += `<div class="tarjeta"><div class="tarjeta-titulo">Promedio de Pesos</div><div class="grid-kpis"><div class="kpi-caja" onclick="window.filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" style="font-size:20px;">${pv} Kg</div><div class="kpi-label">Vacas</div></div><div class="kpi-caja" onclick="window.filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" style="font-size:20px;">${pt} Kg</div><div class="kpi-label">Terneros</div></div></div></div>`;
+                    html += `<div class="tarjeta"><div class="tarjeta-titulo">Promedio de Pesos</div><div class="grid-kpis"><div class="kpi-caja" style="cursor:pointer;" onclick="filtrarDesdeDashboard('categoria', 'Vaca / Vaquilla')"><div class="kpi-valor" style="font-size:20px;">${pv} Kg</div><div class="kpi-label">Vacas</div></div><div class="kpi-caja" style="cursor:pointer;" onclick="filtrarDesdeDashboard('categoria', 'Ternero Macho')"><div class="kpi-valor" style="font-size:20px;">${pt} Kg</div><div class="kpi-label">Terneros</div></div></div></div>`;
                 }
                 else if(g === '10') {
                     let d10 = { "Pesajes": g10.peso, "Diagnósticos": g10.dx, "Nutrición": g10.nut, "Sanidad": g10.san };
                     let t10 = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1;
-                    html += makePieAndBars("Volumen Clínico", d10, t10, 'estado');
+                    html += makePieAndBars("Volumen Clínico", d10, t10, 'accion_clinica');
                 }
                 else if(g === '11') {
                     let t11 = cantBajas || 1;
-                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'estado');
+                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'baja_causa');
                 }
                 htmlGraficos += html;
             }); document.getElementById('contenedor-graficos-dinamicos').innerHTML = htmlGraficos;
@@ -2909,11 +2947,17 @@
                 }
 
                 if (txtBusqueda !== "") {
+                    if (txtBusqueda === 'sin sanidad') {
+                    let tieneSan = regs.some(r => r.accion === 'Sanidad' || r.accion === 'Vacuna' || r.accion === 'Tratamiento');
+                    if (tieneSan) return;
+                } else {
                     let matchTexto = car.toLowerCase().includes(txtBusqueda) || 
                                      catLegible.toLowerCase().includes(txtBusqueda) || 
                                      lote.toLowerCase().includes(txtBusqueda) || 
-                                     dx.toLowerCase().includes(txtBusqueda);
+                                     dx.toLowerCase().includes(txtBusqueda) ||
+                                     notasStr.includes(txtBusqueda);
                     if (!matchTexto) return;
+                }
                 }
 
                 listaFiltrada.push({ car, catLegible, lote, dx, esBaja });
