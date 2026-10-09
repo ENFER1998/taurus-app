@@ -321,7 +321,7 @@
                 <div class="kpi-box" style="border-color: var(--danger);" onclick="filtrarDesdeDashboard('estado', 'bajas')">
                     <span>Mortalidad / Bajas</span><strong id="dash-bajas">0</strong>
                 </div>
-                <div class="kpi-box" style="border-color: var(--success);">
+                <div class="kpi-box" style="border-color: var(--success); cursor:pointer;" onclick="filtrarDesdeDashboard('estado', 'todos')">
                     <span>Registros Históricos Procesados</span><strong id="dash-acciones">0</strong>
                 </div>
             </div>
@@ -810,7 +810,32 @@
         
     <div id="m-ins" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-ins')">&times;</span><h3>Registro de Inseminación</h3><div class="form-grupo"><label>Profesional a Cargo</label><input type="text" class="form-control" id="i-ins-quien" placeholder="Nombre del Inseminador"></div><div class="form-grupo"><label>Genética Utilizada</label><input type="text" class="form-control" id="i-ins-toro" placeholder="Toro o Código de Pajuela"></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-ins-txt"></textarea></div><button type="button" class="btn-guardar" onclick="prepararGuardado('m-ins', 'Inseminación')">Registrar Servicio</button></div></div>
     <div id="m-nut" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-nut')">&times;</span><h3>Suplemento Nutricional</h3><div class="form-grupo"><label>Alimento Suministrado</label><input type="text" class="form-control" id="i-nut-prod" list="lista-alimentos"><datalist id="lista-alimentos"><option value="FOSFO Plus! 90f (Sal Mineral)"></option><option value="FOSFO Plus! Proteica Ternero"></option><option value="Forraje / Pastura"></option></datalist></div><div class="form-grupo"><label>Dosificación</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 0.50gr/kg/día..."></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div><button type="button" class="btn-guardar" onclick="prepararGuardado('m-nut', 'Nutrición')">Registrar Nutrición</button></div></div>
-    <div id="m-traza" class="modal"><div class="modal-body" style="width:700px;"><span class="btn-cerrar" onclick="cerrarModal('m-traza')">&times;</span><h3>Trazabilidad Completa del RP</h3><div style="max-height:450px;overflow-y:auto; margin-top:15px;"><table class="tabla-datos"><thead><tr><th>Fecha</th><th>Acción</th><th>Valor Principal</th><th>Detalles Adicionales</th></tr></thead><tbody id="tb-traza"></tbody></table></div></div></div>
+    <div id="m-traza" class="modal"><div class="modal-body" style="width:700px;"><span class="btn-cerrar" onclick="cerrarModal('m-traza')">&times;</span><h3>Trazabilidad Completa del RP</h3><div style="max-height:450px;overflow-y:auto; margin-top:15px;"><table class="tabla-datos"><thead><tr><th>Fecha</th><th>Acción</th><th>Valor Principal</th><th>Detalles Adicionales</th><th style="text-align:center;">Acción</th></tr></thead><tbody id="tb-traza"></tbody></table></div></div>
+    <!-- MODAL DE EDICIÓN CON FECHA Y HORA (PARIDAD PC) -->
+    <div id="modal-editar-registro" class="modal">
+        <div class="modal-body" style="max-width: 480px; width: 92%;">
+            <span class="btn-cerrar" onclick="cerrarModal('modal-editar-registro')">&times;</span>
+            <h3 style="margin-top:0; font-size:16px; border-bottom:1px solid var(--border); padding-bottom:10px;">✏️ Editar Registro Histórico</h3>
+            <input type="hidden" id="edit-reg-id">
+            <div class="form-grupo">
+                <label style="font-size:12px; font-weight:bold; color:var(--text-muted); display:block; margin-bottom:5px;">Fecha y Hora del Evento</label>
+                <input type="datetime-local" class="form-control" id="edit-reg-fecha" style="font-size:14px; padding:8px;">
+            </div>
+            <div class="form-grupo">
+                <label style="font-size:12px; font-weight:bold; color:var(--text-muted); display:block; margin-bottom:5px;">Valor Principal (Peso, Producto, Dx, etc.)</label>
+                <input type="text" class="form-control" id="edit-reg-valor" style="font-size:14px; padding:8px;">
+            </div>
+            <div class="form-grupo">
+                <label style="font-size:12px; font-weight:bold; color:var(--text-muted); display:block; margin-bottom:5px;">Observaciones / Detalles / Dosis</label>
+                <textarea class="form-control textarea" id="edit-reg-detalles" style="min-height:80px; font-size:13px;"></textarea>
+            </div>
+            <div style="display:flex; justify-content:space-between; gap:10px; margin-top:15px;">
+                <button type="button" class="btn-primary" style="flex:1; background:var(--primary); padding:10px;" onclick="guardarEdicionRegistro()">💾 Guardar Cambios</button>
+                <button type="button" class="btn-outline" style="border-color:var(--danger); color:var(--danger); padding:10px 14px;" onclick="eliminarRegistroIndividual()">🗑️ Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
 
     <!-- BOTÓN AURA DE CORA Y ESTADO -->
     <button id="btn-aura" title="Hablar con Cora">
@@ -1098,7 +1123,7 @@
                 let renderTimeout;
                 unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot(snapshot => {
                     let nuevosDatos = [];
-                    snapshot.forEach(doc => nuevosDatos.push(doc.data()));
+                    snapshot.forEach(doc => { let d = doc.data(); d.id = doc.id; nuevosDatos.push(d); });
                     let mapAnterior = new Set(dbCache.map(d => d.fecha + '_' + d.caravana + '_' + d.accion));
                     let notificar = nuevosDatos.filter(d => d && d.fecha && !mapAnterior.has(d.fecha + '_' + d.caravana + '_' + d.accion));
 
@@ -1611,14 +1636,16 @@
         window.buscarCaravanaBtn = buscarCaravanaBtn;
 
         function ejecutarAccion(tipo, val, det, modalId) {
-            const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: rpActivo, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
+            const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
+            const docRef = colRef.doc();
+            const obj = { id: docRef.id, fecha: new Date().toISOString(), accion: tipo, caravana: rpActivo, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
             dbCache.unshift(obj); historiaCache = null; activosCache = null; buscarCaravanaBtn(rpActivo); procesarDatosDashboard();
             if(modalId) cerrarModal(modalId);
             if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador') {
                 notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
             }
             if(navigator.onLine) { 
-                db.collection('estancias').doc(maestroId).collection('eventos').add(obj).catch(e => {
+                docRef.set(obj).catch(e => {
                     let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); 
                 });
             } else { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); }
@@ -1674,7 +1701,120 @@
         function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'm-clasi'); }
         function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'm-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
         function borrarCaravana() { if(!rpActivo) return; if(confirm(`¿ELIMINAR todo el historial de la caravana ${rpActivo}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null); alert("Historial eliminado. El número quedó libre."); cambiarVista('v-dash', document.querySelectorAll('.sidebar-nav li')[0]); } }
-        function verTrazabilidad() { abrirModal('m-traza'); let h = ""; obtenerHistorial(rpActivo).forEach(r => { h += `<tr><td style="white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${r.accion}</strong></td><td>${r.valor}</td><td style="font-size:12px;">${r.detalles}</td></tr>`; }); document.getElementById('tb-traza').innerHTML = h; }
+        function verTrazabilidad() { 
+            abrirModal('m-traza'); 
+            let h = ""; 
+            obtenerHistorial(rpActivo).forEach(r => { 
+                if(!r.accion.includes('Vinculacion') && !['Alta Operador', 'Edición Operador', 'Baja Operador'].includes(r.accion)) {
+                    let detalleDiferencia = "";
+                    if(r.accion === 'Peso') detalleDiferencia = calcularDiferenciaPeso(rpActivo, r.fecha, r.valor);
+                    let fDate = new Date(r.fecha).toLocaleString();
+                    let btnEdit = (r.id && r.id !== 'undefined') ? `<button type="button" class="btn-outline" style="padding:3px 8px; font-size:11px;" onclick="abrirEdicionRegistro('${r.id}')">✏️ Editar</button>` : `<button type="button" class="btn-outline" style="padding:3px 8px; font-size:11px;" onclick="abrirEdicionRegistroPorContenido('${r.fecha}', '${r.accion}')">✏️ Editar</button>`;
+                    h += `<tr>
+                        <td style="white-space:nowrap; font-size:12px;">${fDate}</td>
+                        <td><strong style="color:var(--text-main);">${r.accion}</strong></td>
+                        <td style="color:var(--primary); font-weight:bold;">${r.valor}<span style="font-size:11px; color:var(--success); font-weight:normal; display:block;">${detalleDiferencia}</span></td>
+                        <td style="font-size:12px; color:var(--text-muted);">${r.detalles}</td>
+                        <td style="text-align:center;">${btnEdit}</td>
+                    </tr>`;
+                }
+            }); 
+            document.getElementById('tb-traza').innerHTML = h || '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">Sin registros históricos para este animal.</td></tr>'; 
+        }
+        window.verTrazabilidad = verTrazabilidad;
+        window.verHistorial = verTrazabilidad;
+
+        function calcularDiferenciaPeso(rp, fechaActual, valorAct) {
+            let historia = obtenerHistorial(rp).filter(r => r.accion === 'Peso' && new Date(r.fecha) < new Date(fechaActual)).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            if(historia.length > 0) {
+                let pAnt = parseFloat(String(historia[0].valor).replace(/[^\d.-]/g, ''));
+                let pAct = parseFloat(String(valorAct).replace(/[^\d.-]/g, ''));
+                if(!isNaN(pAnt) && !isNaN(pAct)) {
+                    let diff = (pAct - pAnt).toFixed(1);
+                    let textoDiff = diff > 0 ? `Subió ${diff} Kg` : (diff < 0 ? `Bajó ${Math.abs(diff)} Kg` : `Mantuvo peso`);
+                    return ` (${textoDiff})`;
+                }
+            }
+            return "";
+        }
+        window.calcularDiferenciaPeso = calcularDiferenciaPeso;
+
+        function abrirEdicionRegistro(id) {
+            if(!id || id === 'undefined') { alert("Este registro aún no se sincronizó con la nube. Espere un momento."); return; }
+            let reg = dbCache.find(r => r.id === id);
+            if(!reg) return;
+            document.getElementById('edit-reg-id').value = id; 
+            document.getElementById('edit-reg-valor').value = reg.valor || ""; 
+            document.getElementById('edit-reg-detalles').value = reg.detalles || "";
+            
+            if(reg.fecha) {
+                let fechaLocal = new Date(reg.fecha);
+                fechaLocal.setMinutes(fechaLocal.getMinutes() - fechaLocal.getTimezoneOffset());
+                document.getElementById('edit-reg-fecha').value = fechaLocal.toISOString().slice(0,16);
+            }
+
+            cerrarModal('m-traza');
+            abrirModal('modal-editar-registro');
+        }
+        window.abrirEdicionRegistro = abrirEdicionRegistro;
+
+        function abrirEdicionRegistroPorContenido(fecha, accion) {
+            let reg = dbCache.find(r => r.fecha === fecha && r.accion === accion && r.caravana === rpActivo);
+            if(reg && reg.id) {
+                abrirEdicionRegistro(reg.id);
+            } else {
+                alert("No se encontró el identificador en la base de datos.");
+            }
+        }
+        window.abrirEdicionRegistroPorContenido = abrirEdicionRegistroPorContenido;
+
+        async function guardarEdicionRegistro() {
+            let id = document.getElementById('edit-reg-id').value; 
+            let nValor = document.getElementById('edit-reg-valor').value; 
+            let nDetalles = document.getElementById('edit-reg-detalles').value;
+            let nFecha = document.getElementById('edit-reg-fecha').value; 
+            
+            if(!nFecha) { alert("Debe ingresar una fecha válida."); return; }
+            if(!navigator.onLine) { alert("Necesitas conexión a internet para editar."); return; }
+            try {
+                let isoFecha = new Date(nFecha).toISOString();
+                await db.collection('estancias').doc(maestroId).collection('eventos').doc(id).update({
+                    valor: nValor,
+                    detalles: nDetalles,
+                    fecha: isoFecha
+                });
+                
+                let i = dbCache.findIndex(r => r.id === id);
+                if(i !== -1) { 
+                    dbCache[i].valor = nValor; 
+                    dbCache[i].detalles = nDetalles; 
+                    dbCache[i].fecha = isoFecha;
+                    historiaCache = null; activosCache = null; 
+                    buscarCaravanaBtn(rpActivo); 
+                }
+                cerrarModal('modal-editar-registro'); 
+                mostrarToast("✅ Registro y fecha actualizados."); 
+                verTrazabilidad();
+            } catch(e) { alert("Error al modificar: " + e.message); }
+        }
+        window.guardarEdicionRegistro = guardarEdicionRegistro;
+
+        async function eliminarRegistroIndividual() {
+            let id = document.getElementById('edit-reg-id').value; 
+            if(!id) return;
+            if(!confirm("⚠️ ¿Está seguro de eliminar este registro histórico permanentemente?")) return;
+            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; }
+            try {
+                await db.collection('estancias').doc(maestroId).collection('eventos').doc(id).delete();
+                dbCache = dbCache.filter(r => r.id !== id);
+                historiaCache = null; activosCache = null;
+                buscarCaravanaBtn(rpActivo);
+                cerrarModal('modal-editar-registro');
+                mostrarToast("🗑️ Registro eliminado.");
+                verTrazabilidad();
+            } catch(e) { alert("Error al eliminar: " + e.message); }
+        }
+        window.eliminarRegistroIndividual = eliminarRegistroIndividual;
 
         function cambiarModoReporte() {
             const modo = document.getElementById('f-inf-modo').value;
@@ -1988,32 +2128,50 @@
         }
 
         function filtrarDesdeDashboard(tipo, valor) {
-            cambiarVista('v-base', document.querySelectorAll('.sidebar-nav li')[2]);
-            document.getElementById('buscador-lista').value = "";
+            cambiarVista('v-base', document.querySelector('.sidebar-nav li[onclick*="v-base"]') || document.querySelectorAll('.sidebar-nav li')[2]);
+            const bLista = document.getElementById('buscador-lista');
+            if(bLista) bLista.value = "";
             
+            const selEstado = document.getElementById('filtro-reg-estado');
+            const selDx = document.getElementById('filtro-reg-dx');
+            const selLote = document.getElementById('filtro-reg-lote');
+            const selCat = document.getElementById('filtro-reg-cat');
+
+            if(selEstado) selEstado.value = 'vivos';
+            if(selDx) selDx.value = 'ALL';
+            if(selLote) selLote.value = 'ALL';
+            if(selCat) selCat.value = 'ALL';
+
             if(tipo === 'estado') {
-                document.getElementById('filtro-reg-estado').value = valor;
-                document.getElementById('filtro-reg-dx').value = 'ALL';
-                document.getElementById('filtro-reg-lote').value = 'ALL';
-                document.getElementById('filtro-reg-cat').value = 'ALL';
+                if(selEstado) selEstado.value = valor;
             } else if(tipo === 'lote') {
-                document.getElementById('filtro-reg-estado').value = 'vivos';
-                document.getElementById('filtro-reg-lote').value = valor;
-                document.getElementById('filtro-reg-cat').value = 'ALL';
-                document.getElementById('filtro-reg-dx').value = 'ALL';
+                if(selLote) selLote.value = valor;
             } else if(tipo === 'categoria') {
-                document.getElementById('filtro-reg-estado').value = 'vivos';
-                document.getElementById('filtro-reg-cat').value = valor;
-                document.getElementById('filtro-reg-lote').value = 'ALL';
-                document.getElementById('filtro-reg-dx').value = 'ALL';
+                if(selCat) selCat.value = valor;
             } else if(tipo === 'dx') {
-                document.getElementById('filtro-reg-estado').value = 'vivos';
-                document.getElementById('filtro-reg-dx').value = valor;
-                document.getElementById('filtro-reg-lote').value = 'ALL';
-                document.getElementById('filtro-reg-cat').value = 'ALL';
+                if(selDx) selDx.value = valor;
+            } else if(tipo === 'condicion') {
+                if(bLista) bLista.value = valor;
+            } else if(tipo === 'causa_vacia') {
+                if(selDx) selDx.value = 'Vacía';
+                if(bLista) bLista.value = valor.includes('Sangre') ? 'Sangre' : '';
+            } else if(tipo === 'sanidad_global') {
+                if(bLista) bLista.value = valor.includes('Sin') ? 'sin sanidad' : 'sanidad';
+            } else if(tipo === 'lote_prenada') {
+                if(selLote) selLote.value = valor;
+                if(selDx) selDx.value = 'Preñada';
+            } else if(tipo === 'toro') {
+                if(bLista) bLista.value = valor;
+            } else if(tipo === 'accion_clinica') {
+                let mapa = { 'Pesajes': 'Peso', 'Diagnósticos': 'Dx', 'Nutrición': 'Nutrición', 'Sanidad': 'Sanidad' };
+                if(bLista) bLista.value = mapa[valor] || valor;
+            } else if(tipo === 'baja_causa') {
+                if(selEstado) selEstado.value = 'bajas';
+                if(bLista) bLista.value = valor;
             }
             cargarListaRegistro();
         }
+        window.filtrarDesdeDashboard = filtrarDesdeDashboard;
 
         function procesarDatosDashboard() {
             const datosActivos = obtenerRegistrosActivos(); 
@@ -2137,25 +2295,25 @@
                 else if(g === '4') { 
                     let t = g4.opt + g4.bp + g4.sp || 1; 
                     let d4 = { "Óptima": g4.opt, "Bajo Peso": g4.bp, "Sobrepeso": g4.sp };
-                    html += makePieAndBars("Condición Corporal", d4, t, 'estado'); 
+                    html += makePieAndBars("Condición Corporal", d4, t, 'condicion'); 
                 } 
                 else if(g === '5') { 
                     let t = g5.norm + g5.san || 1; 
                     let d5 = { "Normal": g5.norm, "Sangre/Problema": g5.san };
-                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'estado'); 
+                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'causa_vacia'); 
                 } 
                 else if(g === '6') { 
                     let t = unicas.length; 
                     let d6 = { "Con Registro": g6.con, "Sin Registros": g6.sin };
-                    html += makePieAndBars("Sanidad Global", d6, t, 'estado'); 
+                    html += makePieAndBars("Sanidad Global", d6, t, 'sanidad_global'); 
                 } 
                 else if(g === '7') { 
                     let d7 = {}; Object.keys(g7).forEach(k => d7[k] = g7[k].p);
-                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote'); 
+                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote_prenada'); 
                 } 
                 else if(g === '8') { 
                     let d8 = {}; Object.keys(g8).forEach(k => d8[k] = g8[k].p);
-                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'estado'); 
+                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'toro'); 
                 } 
                 else if(g === '9') { 
                     let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; 
@@ -2164,11 +2322,11 @@
                 else if(g === '10') { 
                     let d10 = { "Pesajes": g10.peso, "Diagnósticos": g10.dx, "Nutrición": g10.nut, "Sanidad": g10.san };
                     let t10 = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1;
-                    html += makePieAndBars("Volumen Clínico", d10, t10, 'estado'); 
+                    html += makePieAndBars("Volumen Clínico", d10, t10, 'accion_clinica'); 
                 } 
                 else if(g === '11') { 
                     let t11 = cantBajas || 1;
-                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'estado'); 
+                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'baja_causa'); 
                 }
                 htmlGraficos += html;
             }); document.getElementById('contenedor-graficos').innerHTML = htmlGraficos;
@@ -2244,11 +2402,17 @@
                 }
 
                 if (txtBusqueda !== "") {
+                    if (txtBusqueda === 'sin sanidad') {
+                    let tieneSan = regs.some(r => r.accion === 'Sanidad' || r.accion === 'Vacuna' || r.accion === 'Tratamiento');
+                    if (tieneSan) return;
+                } else {
                     let matchTexto = car.toLowerCase().includes(txtBusqueda) || 
                                      catLegible.toLowerCase().includes(txtBusqueda) || 
                                      lote.toLowerCase().includes(txtBusqueda) || 
-                                     dx.toLowerCase().includes(txtBusqueda);
+                                     dx.toLowerCase().includes(txtBusqueda) ||
+                                     notasStr.includes(txtBusqueda);
                     if (!matchTexto) return;
+                }
                 }
 
                 listaFiltrada.push({ car, catLegible, lote, dx, esBaja });
