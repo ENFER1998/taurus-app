@@ -1121,7 +1121,16 @@
                 let renderTimeout;
                 unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot(snapshot => {
                     let nuevosDatos = [];
-                    snapshot.forEach(doc => nuevosDatos.push(doc.data()));
+                    let docsList = [];
+                    snapshot.forEach(doc => {
+                        let d = doc.data();
+                        docsList.push(doc);
+                        if (esEventoGanaderoValido(d) && (d.caravana === '---' || esCaravanaValida(d.caravana))) {
+                            nuevosDatos.push(d);
+                        }
+                    });
+                    purgarEventosOperadoresEnFirestore(docsList);
+
                     let mapAnterior = new Set(dbCache.map(d => d.fecha + '_' + d.caravana + '_' + d.accion));
                     let notificar = nuevosDatos.filter(d => d && d.fecha && !mapAnterior.has(d.fecha + '_' + d.caravana + '_' + d.accion));
 
@@ -1279,10 +1288,18 @@
             let pendientes = lsGet('tc_pendientes', []);
             let mapa = new Map();
             if(Array.isArray(nuevos)) {
-                nuevos.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
+                nuevos.forEach(d => { 
+                    if(d && d.fecha && esEventoGanaderoValido(d) && (d.caravana === '---' || esCaravanaValida(d.caravana))) { 
+                        mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); 
+                    } 
+                });
             }
             if(Array.isArray(pendientes)) {
-                pendientes.forEach(d => { if(d && d.fecha) mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); });
+                pendientes.forEach(d => { 
+                    if(d && d.fecha && esEventoGanaderoValido(d) && (d.caravana === '---' || esCaravanaValida(d.caravana))) { 
+                        mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); 
+                    } 
+                });
             }
             dbCache = Array.from(mapa.values()).sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
             lsSet('tc_db', dbCache);
@@ -1310,18 +1327,67 @@
             }
         }
 
+        // ==========================================
+        // FILTROS Y VALIDACIONES ESTRICTAS DE GANADO
+        // ==========================================
+        function esCaravanaValida(car) {
+            if (car === null || car === undefined) return false;
+            let s = String(car).trim();
+            if (!s || s === "" || s === "---") return false;
+            let low = s.toLowerCase();
+            if (low === "null" || low === "undefined" || low === "nan" || low === "[object object]") return false;
+            if (low.includes("@")) return false; // email de operario
+            if (low.startsWith("op-") || low.startsWith("operador") || low === "operador" || low === "propietario" || low === "dueño") return false;
+            return true;
+        }
+
+        function esEventoGanaderoValido(d) {
+            if (!d) return false;
+            let accion = String(d.accion || "").toLowerCase();
+            if (accion.includes("operador") || accion.startsWith("alta op") || accion.startsWith("edicion op") || accion.startsWith("edición op") || accion.startsWith("baja op") || accion.startsWith("eliminacion op") || accion.startsWith("eliminación op")) return false;
+            let car = String(d.caravana || "").trim().toLowerCase();
+            if (car.includes("@")) return false;
+            return true;
+        }
+
+        async function purgarEventosOperadoresEnFirestore(snapshotDocs) {
+            if (!snapshotDocs || !Array.isArray(snapshotDocs) || snapshotDocs.length === 0) return;
+            try {
+                const batch = db.batch();
+                let hayPurgas = false;
+                snapshotDocs.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const accion = String(data.accion || "").toLowerCase();
+                    const car = String(data.caravana || "").trim().toLowerCase();
+                    const esOpAccion = accion.includes("operador") || accion.startsWith("alta op") || accion.startsWith("edicion op") || accion.startsWith("edición op") || accion.startsWith("baja op");
+                    const esCarInvalida = car.includes("@") || car === "null" || car === "undefined";
+                    if (esOpAccion || esCarInvalida) {
+                        batch.delete(docSnap.ref);
+                        hayPurgas = true;
+                    }
+                });
+                if (hayPurgas) {
+                    await batch.commit();
+                    console.log("Se purgaron eventos residuales de operadores en Firestore.");
+                }
+            } catch(e) {
+                console.warn("Aviso en purga de eventos:", e);
+            }
+        }
+
         function procesarEventos() {
             if (historiaCache) return historiaCache;
-            let dbAsc = [...dbCache].sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+            let dbAsc = [...dbCache].filter(d => esEventoGanaderoValido(d)).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
             let historiaPorRP = {};
             dbAsc.forEach(evt => {
-                let rp = String(evt.caravana);
-                if(rp === "---" || !rp) return;
+                let rp = String(evt.caravana || "").trim();
+                if(!esCaravanaValida(rp)) return;
                 if(!historiaPorRP[rp]) historiaPorRP[rp] = [];
                 if(evt.accion === 'Borrar_Caravana') {
                     historiaPorRP[rp] = []; 
                 } else if(evt.accion === 'Cambio de Caravana') {
-                    let nuevoRP = String(evt.valor);
+                    let nuevoRP = String(evt.valor || "").trim();
+                    if(!esCaravanaValida(nuevoRP)) return;
                     if(!historiaPorRP[nuevoRP]) historiaPorRP[nuevoRP] = [];
                     let eventosTraspasados = historiaPorRP[rp].map(e => ({...e, caravana: nuevoRP}));
                     historiaPorRP[nuevoRP] = historiaPorRP[nuevoRP].concat(eventosTraspasados);
@@ -1342,8 +1408,12 @@
             if (activosCache) return activosCache;
             let historia = procesarEventos();
             let validos = [];
-            for(let rp in historia) { validos.push(...historia[rp]); }
-            const globalEvents = dbCache.filter(d => d.caravana === "---" || !d.caravana);
+            for(let rp in historia) { 
+                if (esCaravanaValida(rp)) {
+                    validos.push(...historia[rp]); 
+                }
+            }
+            const globalEvents = dbCache.filter(d => (d.caravana === "---" || !d.caravana) && esEventoGanaderoValido(d));
             activosCache = [...validos, ...globalEvents].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
             return activosCache;
         }
@@ -1570,7 +1640,7 @@
         function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'm-clasi'); }
         function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'm-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
         function borrarCaravana() { if(!rpActivo) return; if(confirm(`¿ELIMINAR todo el historial de la caravana ${rpActivo}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null); alert("Historial eliminado. El número quedó libre."); cambiarVista('v-dash', document.querySelectorAll('.sidebar-nav li')[0]); } }
-        function verTrazabilidad() { abrirModal('m-traza'); let h = ""; obtenerHistorial(rpActivo).forEach(r => { h += `<tr><td style="white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${r.accion}</strong></td><td>${r.valor}</td><td style="font-size:12px;">${r.detalles}</td></tr>`; }); document.getElementById('tb-traza').innerHTML = h; }
+        function verTrazabilidad() { abrirModal('m-traza'); let h = ""; obtenerHistorial(rpActivo).forEach(r => { if(!esEventoGanaderoValido(r)) return; h += `<tr><td style="white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${r.accion}</strong></td><td>${r.valor}</td><td style="font-size:12px;">${r.detalles}</td></tr>`; }); document.getElementById('tb-traza').innerHTML = h; }
 
         function cambiarModoReporte() {
             const modo = document.getElementById('f-inf-modo').value;
@@ -1962,12 +2032,15 @@
         }
 
         function procesarDatosDashboard() {
-            const datosActivos = obtenerRegistrosActivos(); 
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
-            let vivas = []; let cantBajas = datosActivos.filter(r => r.accion === 'Baja').length;
-            unicas.forEach(car => { if(!obtenerHistorial(car).some(x => x.accion === 'Baja')) { vivas.push(car); } }); unicas = vivas; 
+            const datosActivos = obtenerRegistrosActivos().filter(d => esEventoGanaderoValido(d)); 
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => esCaravanaValida(c)))];
+            let vivas = []; 
+            let cantBajas = datosActivos.filter(r => r.accion === 'Baja' && esCaravanaValida(r.caravana)).length;
+            unicas.forEach(car => { if(!obtenerHistorial(car).some(x => x.accion === 'Baja')) { vivas.push(car); } }); 
+            unicas = vivas; 
             
-            document.getElementById('dash-cabezas').innerText = unicas.length; document.getElementById('dash-acciones').innerText = datosActivos.length;
+            document.getElementById('dash-cabezas').innerText = unicas.length; 
+            document.getElementById('dash-acciones').innerText = datosActivos.length;
             let elBajas = document.getElementById('dash-bajas'); if(elBajas) elBajas.innerText = cantBajas;
 
             if(datosActivos.length === 0) { document.getElementById('contenedor-graficos').innerHTML = "<p style='color:var(--text-main);'>Inventario vacío.</p>"; return; }
@@ -2137,8 +2210,8 @@
         }
 
         function cargarListaRegistro() {
-            const datosActivos = obtenerRegistrosActivos();
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---"))];
+            const datosActivos = obtenerRegistrosActivos().filter(d => esEventoGanaderoValido(d));
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => esCaravanaValida(c)))];
             
             let estadoFiltro = document.getElementById('filtro-reg-estado').value;
             let loteFiltro = document.getElementById('filtro-reg-lote').value;
@@ -2320,7 +2393,7 @@
                 await db.collection('usuarios').doc(email).set({
                     nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', password: p, alertas_leidas: alertasParaOmitir
                 });
-                ejecutarAccion('Alta Operador', email, `Nombre: ${n} | Rol: ${rolFinal}`, null);
+                // Operador registrado solo en usuarios - no en eventos de ganado
                 document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 
                 btn.innerHTML = btnOriginal; btn.disabled = false;
                 alert("Usuario Registrado Exitosamente."); cargarListaOperadores();
@@ -2358,7 +2431,7 @@
             btn.innerHTML = "⏳ Actualizando..."; btn.disabled = true;
             try {
                 await db.collection('usuarios').doc(u).update({ rol: rolFinal });
-                ejecutarAccion('Edición Operador', u, `Rol: ${rolFinal}`, null);
+                // Operador actualizado solo en usuarios - no en eventos de ganado
                 alert("Permisos actualizados con éxito.");
                 document.getElementById('op-edit-usu-sel').value = "";
                 document.getElementById('caja-edit-permisos').classList.add('oculto');
@@ -2390,7 +2463,7 @@
                     const doc = await db.collection('usuarios').doc(u).get();
                     if(doc.exists && doc.data().password) { await gestionarAuthGhostParaBorrado(u, doc.data().password); }
                     await db.collection('usuarios').doc(u).delete();
-                    ejecutarAccion('Baja Operador', u, `Eliminado por el panel PC`, null);
+                    // Operador eliminado solo de usuarios - no en eventos de ganado
                     alert(`El usuario "${u}" ha sido eliminado con éxito.`); 
                     selectEl.value = ''; cargarListaOperadores(); 
                     btn.innerHTML = btnOriginal; btn.disabled = false;
