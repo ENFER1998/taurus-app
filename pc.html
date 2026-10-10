@@ -484,7 +484,7 @@
                                     <button type="button" class="btn-outline" style="padding: 6px 12px; font-size: 12px; background:var(--bg-panel); color:var(--danger); border-color:var(--danger);" onclick="abrirModal('m-baja')">💀 Baja / Muerte</button>
                                     <button type="button" class="btn-outline" style="padding: 6px 12px; font-size: 12px; border-color:var(--danger); color:var(--danger);" onclick="borrarCaravana()">🗑️ Resetear/Borrar</button>
                                 </div>
-                                <button type="button" class="btn-primary" style="margin-top: 15px; background: var(--bg-card); border: 1px solid var(--border); color:var(--text-main);" onclick="verTrazabilidad()">📋 Ver Trazabilidad en Pantalla</button>
+                                <button type="button" class="btn-primary" style="margin-top: 15px; background: var(--bg-card); border: 1px solid var(--border); color:var(--text-main);" onclick="verTrazabilidad()">📋 Ver Historial / Trazabilidad Completa</button>
                             </div>
                         </div>
                     </div>
@@ -1274,6 +1274,7 @@
                     let docsList = [];
                     snapshot.forEach(doc => {
                         let d = doc.data();
+                        d.id = doc.id || ('doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5));
                         docsList.push(doc);
                         if (esEventoGanaderoValido(d) && (d.caravana === '---' || esCaravanaValida(d.caravana))) {
                             nuevosDatos.push(d);
@@ -1440,7 +1441,9 @@
             if(Array.isArray(nuevos)) {
                 nuevos.forEach(d => { 
                     if(d && d.fecha && esEventoGanaderoValido(d) && (d.caravana === '---' || esCaravanaValida(d.caravana))) { 
-                        mapa.set(d.fecha + '_' + d.caravana + '_' + d.accion, d); 
+                        let f = d.fecha || new Date().toISOString();
+                        if(!d.id) d.id = 'ev_' + f.replace(/[^0-9]/g, '') + '_' + String(d.caravana).replace(/[^a-zA-Z0-9]/g, '') + '_' + String(d.accion).replace(/[^a-zA-Z0-9]/g, '');
+                        mapa.set(f + '_' + d.caravana + '_' + d.accion, d); 
                     } 
                 });
             }
@@ -1483,7 +1486,7 @@
         function esCaravanaValida(car) {
             if (car === null || car === undefined) return false;
             let s = String(car).trim();
-            if (!s || s === "" || s === "---" || s === "-" || s === "0") return false;
+            if (!s || s === "" || s === "---") return false;
             let low = s.toLowerCase();
             if (low === "null" || low === "undefined" || low === "nan" || low === "[object object]") return false;
             if (low.includes("@")) return false; // email de operario
@@ -1510,7 +1513,7 @@
                     const accion = String(data.accion || "").toLowerCase();
                     const car = String(data.caravana || "").trim().toLowerCase();
                     const esOpAccion = accion.includes("operador") || accion.startsWith("alta op") || accion.startsWith("edicion op") || accion.startsWith("edición op") || accion.startsWith("baja op");
-                    const esCarInvalida = car.includes("@") || car === "null" || car === "undefined" || car === "---" || car === "" || !esCaravanaValida(data.caravana);
+                    const esCarInvalida = car.includes("@") || car === "null" || car === "undefined" || car === "---" || car === "";
                     if (esOpAccion || esCarInvalida) {
                         batch.delete(docSnap.ref);
                         hayPurgas = true;
@@ -1568,8 +1571,27 @@
         }
 
         function obtenerHistorial(caravana) {
+            if (!caravana || caravana === "null" || caravana === "---" || String(caravana).toLowerCase() === "null") return [];
+            let carStr = String(caravana).trim();
+            let carLow = carStr.toLowerCase();
             let historia = procesarEventos();
-            return historia[String(caravana)] || [];
+            if (historia && historia[carStr] && historia[carStr].length > 0) return historia[carStr];
+            if (historia) {
+                for (let k in historia) {
+                    if (k.toLowerCase() === carLow && historia[k].length > 0) return historia[k];
+                }
+            }
+            if (Array.isArray(dbCache) && dbCache.length > 0) {
+                let directos = dbCache.filter(d => {
+                    if (!d || !d.caravana) return false;
+                    let c = String(d.caravana).trim().toLowerCase();
+                    return c === carLow && esEventoGanaderoValido(d);
+                });
+                if (directos.length > 0) {
+                    return directos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+                }
+            }
+            return [];
         }
 
         function obtenerNombreCategoriaLegible(sigla) {
@@ -1870,71 +1892,123 @@
         }
 
         function verTrazabilidad() {
-            if(!rpActivo || !esCaravanaValida(rpActivo)) {
+            let rp = rpActivo;
+            if (!rp || rp === '---' || rp.toLowerCase() === 'null') {
+                let elVal = document.getElementById('val-caravana');
+                if (elVal && elVal.innerText && elVal.innerText.trim() !== '---') rp = elVal.innerText.trim();
+            }
+            if (!rp || rp === '---' || rp.toLowerCase() === 'null') {
+                let elBusc = document.getElementById('buscador-caravana');
+                if (elBusc && elBusc.value && elBusc.value.trim() !== '') rp = elBusc.value.trim();
+            }
+            if (!rp || rp === '---' || rp.toLowerCase() === 'null' || !esCaravanaValida(rp)) {
                 if(typeof mostrarToast === 'function') mostrarToast("⚠️ Seleccione o identifique un animal primero");
                 return;
             }
+            rpActivo = rp;
             abrirModal('m-traza'); 
-            let lista = typeof obtenerHistorial === 'function' ? obtenerHistorial(rpActivo) : [];
-            let filtrados = lista.filter(r => esEventoGanaderoValido(r) && !r.accion.includes('Vinculacion') && !['Alta Operador', 'Edición Operador', 'Baja Operador'].includes(r.accion));
+            let lista = typeof obtenerHistorial === 'function' ? obtenerHistorial(rp) : [];
+            let filtrados = lista.filter(r => r && esEventoGanaderoValido(r) && !String(r.accion || '').includes('Vinculacion') && !['Alta Operador', 'Edición Operador', 'Baja Operador'].includes(r.accion));
+
+            let tb = document.getElementById('tb-traza');
+            if (!tb) return;
 
             if (filtrados.length === 0) {
-                document.getElementById('tb-traza').innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">Sin sucesos clínicos registrados para el RP ${rpActivo}.</td></tr>`;
+                tb.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:25px; color:var(--text-muted);">Sin sucesos clínicos registrados para el RP ${rp}.</td></tr>`;
                 return;
             }
 
             let h = ""; 
-            filtrados.forEach(r => { 
+            filtrados.forEach((r, idx) => { 
                 let detalleDiferencia = "";
-                if(r.accion === 'Peso') {
-                    detalleDiferencia = calcularDiferenciaPeso(rpActivo, r.fecha, r.valor);
-                }
+                try {
+                    if(r.accion === 'Peso') {
+                        detalleDiferencia = calcularDiferenciaPeso(rp, r.fecha, r.valor);
+                    }
+                } catch(e) {}
+                let regId = r.id || ('ev_' + idx + '_' + (r.fecha ? new Date(r.fecha).getTime() : Date.now()));
+                r.id = regId;
+
                 h += `<tr>
                     <td style="white-space:nowrap;">${r.fecha ? new Date(r.fecha).toLocaleDateString() : "-"}</td>
-                    <td><strong>${r.accion}</strong></td>
-                    <td><span style="color:var(--primary); font-weight:bold;">${r.valor}</span> ${detalleDiferencia}</td>
+                    <td><strong>${r.accion || "-"}</strong></td>
+                    <td><span style="color:var(--primary); font-weight:bold;">${r.valor || "-"}</span> ${detalleDiferencia}</td>
                     <td style="font-size:12px; color:var(--text-muted);">${r.detalles || "-"}</td>
-                    <td><button type="button" class="btn-outline" style="padding:4px 10px; font-size:11px; background:var(--primary); color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="abrirEdicionRegistro('${r.id || ''}')">✏️ Editar</button></td>
+                    <td><button type="button" class="btn-outline" style="padding:4px 10px; font-size:11px; background:var(--primary); color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="window.abrirEdicionRegistro('${regId}', ${idx})">✏️ Editar</button></td>
                 </tr>`; 
             }); 
-            document.getElementById('tb-traza').innerHTML = h; 
+            tb.innerHTML = h; 
         }
 
         function verHistorial() { verTrazabilidad(); }
 
-        function abrirEdicionRegistro(id) {
-            if(!id || id === 'undefined') {
-                alert("Identificador de registro no disponible.");
-                return;
-            }
-            let reg = dbCache.find(r => r.id === id);
-            if(!reg && rpActivo) {
-                let regsAnimal = typeof obtenerHistorial === 'function' ? obtenerHistorial(rpActivo) : [];
-                reg = regsAnimal.find(r => r.id === id);
-            }
-            if(!reg) {
-                alert("Registro no encontrado en memoria.");
-                return;
-            }
-            document.getElementById('edit-reg-id').value = reg.id; 
-            document.getElementById('edit-reg-valor').value = reg.valor || ""; 
-            document.getElementById('edit-reg-detalles').value = reg.detalles || "";
+        window.abrirEdicionRegistro = function(id, idx) {
+            let reg = null;
+            let rp = rpActivo || (document.getElementById('val-caravana') ? document.getElementById('val-caravana').innerText.trim() : '');
             
-            if(reg.fecha) {
-                let fechaLocal = new Date(reg.fecha);
-                fechaLocal.setMinutes(fechaLocal.getMinutes() - fechaLocal.getTimezoneOffset());
-                document.getElementById('edit-reg-fecha').value = fechaLocal.toISOString().slice(0,16);
+            if (id) {
+                reg = dbCache.find(r => r && r.id === id);
             }
+            if (!reg && rp) {
+                let regsAnimal = typeof obtenerHistorial === 'function' ? obtenerHistorial(rp) : [];
+                let filtrados = regsAnimal.filter(r => r && esEventoGanaderoValido(r) && !String(r.accion || '').includes('Vinculacion') && !['Alta Operador', 'Edición Operador', 'Baja Operador'].includes(r.accion));
+                if (idx !== undefined && idx !== null && filtrados[idx]) {
+                    reg = filtrados[idx];
+                } else if (id) {
+                    reg = filtrados.find(r => r && r.id === id);
+                }
+            }
+            if (!reg && id) {
+                reg = dbCache.find(r => r && String(r.id) === String(id));
+            }
+            if (!reg) {
+                alert("No se pudo cargar el registro para editar.");
+                return;
+            }
+
+            if (!reg.id) reg.id = id || ('ev_' + Date.now());
+
+            let inputId = document.getElementById('edit-reg-id');
+            let inputVal = document.getElementById('edit-reg-valor');
+            let inputDet = document.getElementById('edit-reg-detalles');
+            let inputFecha = document.getElementById('edit-reg-fecha');
+
+            if (inputId) inputId.value = reg.id; 
+            if (inputVal) inputVal.value = reg.valor || ""; 
+            if (inputDet) inputDet.value = reg.detalles || "";
+            
+            let fechaStr = "";
+            try {
+                if (reg.fecha) {
+                    let fechaLocal = new Date(reg.fecha);
+                    if (!isNaN(fechaLocal.getTime())) {
+                        fechaLocal.setMinutes(fechaLocal.getMinutes() - fechaLocal.getTimezoneOffset());
+                        fechaStr = fechaLocal.toISOString().slice(0, 16);
+                    }
+                }
+            } catch(e) {}
+            if (!fechaStr) {
+                let hoy = new Date();
+                hoy.setMinutes(hoy.getMinutes() - hoy.getTimezoneOffset());
+                fechaStr = hoy.toISOString().slice(0, 16);
+            }
+            if (inputFecha) inputFecha.value = fechaStr;
 
             cerrarModal('m-traza');
             abrirModal('modal-editar-registro');
-        }
+        };
+        function abrirEdicionRegistro(id, idx) { return window.abrirEdicionRegistro(id, idx); }
 
-        async function guardarEdicionRegistro() {
-            let id = document.getElementById('edit-reg-id').value; 
-            let nValor = document.getElementById('edit-reg-valor').value.trim(); 
-            let nDetalles = document.getElementById('edit-reg-detalles').value.trim();
-            let nFecha = document.getElementById('edit-reg-fecha').value; 
+        window.guardarEdicionRegistro = async function() {
+            let inputId = document.getElementById('edit-reg-id');
+            let inputVal = document.getElementById('edit-reg-valor');
+            let inputDet = document.getElementById('edit-reg-detalles');
+            let inputFecha = document.getElementById('edit-reg-fecha');
+
+            let id = inputId ? inputId.value : ""; 
+            let nValor = inputVal ? inputVal.value.trim() : ""; 
+            let nDetalles = inputDet ? inputDet.value.trim() : ""; 
+            let nFecha = inputFecha ? inputFecha.value : ""; 
             
             if(!nFecha) {
                 alert("Ingrese una fecha válida.");
@@ -1942,19 +2016,25 @@
             }
             let isoFecha = new Date(nFecha).toISOString();
             
-            // 1. Actualizar en caché local y persistencia localStorage
-            let i = dbCache.findIndex(r => r.id === id);
+            let i = dbCache.findIndex(r => r && r.id === id);
             if(i !== -1) { 
                 dbCache[i].valor = nValor; 
                 dbCache[i].detalles = nDetalles; 
                 dbCache[i].fecha = isoFecha;
+            } else if(rpActivo) {
+                let matchIdx = dbCache.findIndex(r => r && r.caravana === rpActivo && (r.id === id || r.valor === nValor));
+                if(matchIdx !== -1) {
+                    dbCache[matchIdx].valor = nValor;
+                    dbCache[matchIdx].detalles = nDetalles;
+                    dbCache[matchIdx].fecha = isoFecha;
+                    id = dbCache[matchIdx].id;
+                }
             }
             historiaCache = null; 
             activosCache = null; 
             lsSet('tc_db', dbCache);
 
-            // 2. Persistir en Firestore si hay red o encolar
-            if(navigator.onLine && maestroId) {
+            if(navigator.onLine && maestroId && id && !id.startsWith('ev_') && !id.startsWith('local_')) {
                 try {
                     await db.collection('estancias').doc(maestroId).collection('eventos').doc(id).update({
                         valor: nValor,
@@ -1967,16 +2047,15 @@
                     p.push({ id: id, valor: nValor, detalles: nDetalles, fecha: isoFecha, accion: 'update' });
                     lsSet('tc_pendientes', p);
                 }
-            } else {
+            } else if (maestroId) {
                 let p = lsGet('tc_pendientes', []);
                 p.push({ id: id, valor: nValor, detalles: nDetalles, fecha: isoFecha, accion: 'update' });
                 lsSet('tc_pendientes', p);
             }
 
             cerrarModal('modal-editar-registro'); 
-            if(typeof mostrarToast === 'function') mostrarToast("✅ Registro actualizado y guardado."); 
+            if(typeof mostrarToast === 'function') mostrarToast("✅ Registro modificado y sincronizado."); 
 
-            // 3. ACTUALIZACIÓN INMEDIATA EN TODOS LOS REPORTES Y VISTAS
             if(rpActivo) {
                 buscarCaravanaBtn(rpActivo);
                 verTrazabilidad();
@@ -1984,7 +2063,8 @@
             if(typeof procesarDatosDashboard === 'function') procesarDatosDashboard();
             if(typeof actualizarInformeAvanzado === 'function') actualizarInformeAvanzado();
             if(typeof cargarListaRegistro === 'function') cargarListaRegistro();
-        }
+        };
+        function guardarEdicionRegistro() { return window.guardarEdicionRegistro(); }
 
         function cambiarModoReporte() {
             const modo = document.getElementById('f-inf-modo').value;
