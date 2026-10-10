@@ -1727,6 +1727,41 @@
         }
 
 
+        
+        let estanciaFeatures = "";
+
+        function actualizarVisibilidadCora() {
+            const btnAura = document.getElementById('btn-aura');
+            const estadoIA = document.getElementById('estado-ia');
+            if (!btnAura) return;
+
+            let userProfile = lsGet('tc_user_profile', {});
+            let featEstancia = String(estanciaFeatures || userProfile.features || "");
+            
+            // REGLA CRÍTICA: Si el Administrador desactivó Cora para la estancia, NINGÚN usuario puede ver el botón flotante
+            let estanciaTieneCora = featEstancia.includes('cora');
+
+            let rolStr = String(usRol || userProfile.rol || "");
+            let isPropietario = rolStr.includes('Propietario') || rolStr.includes('Dueño');
+            let tienePermisoUsuario = isPropietario || rolStr.includes('cora');
+
+            let debeMostrar = Boolean(navigator.onLine && estanciaTieneCora && tienePermisoUsuario);
+
+            if (debeMostrar) {
+                btnAura.style.display = 'flex';
+            } else {
+                btnAura.style.display = 'none';
+                if (estadoIA) estadoIA.style.display = 'none';
+                if (window.speechSynthesis && window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
+                }
+                if (typeof reconocimiento !== 'undefined' && reconocimiento && btnAura.classList.contains('escuchando')) {
+                    btnAura.classList.remove('escuchando');
+                    try { reconocimiento.stop(); } catch(e){}
+                }
+            }
+        }
+
         function setEstadoRed(online, texto = null) {
             const b = document.getElementById('estado-red');
             if(!b) return;
@@ -1734,22 +1769,7 @@
             else if(navigator.onLine || online) { b.classList.replace('offline','online'); b.innerText = '🟢 Conectado'; } 
             else { b.classList.replace('online','offline'); b.innerText = '🔴 Red Local'; }
 
-            const btnAura = document.getElementById('btn-aura');
-            if (btnAura) {
-               let featuresStr = (typeof lsGet('tc_user_profile', {})?.features === 'string')
-                                   ? lsGet('tc_user_profile', {}).features
-                                   : "";
-               let userProfile = lsGet('tc_user_profile', {});
-               let isPropietario = String(userProfile.rol||"").includes('Propietario') || String(userProfile.rol||"").includes('Dueño');
-               let tienePermisoCora = isPropietario || String(userProfile.rol||"").includes('cora');
-               if ((navigator.onLine || online) && (isPropietario || (featuresStr.includes('cora') && tienePermisoCora))) {
-                   btnAura.style.display = 'flex';
-               } else {
-                   btnAura.style.display = 'none';
-                   const estadoIA = document.getElementById('estado-ia');
-                   if (estadoIA) estadoIA.style.display = 'none';
-               }
-            }
+            actualizarVisibilidadCora();
         }
 
         
@@ -1811,16 +1831,10 @@
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
                 
 
-                const elAuraBtn = document.getElementById('btn-aura');
-                if (elAuraBtn) {
-                    let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
-                    let tienePermisoCora = isPropietario || usRol.includes('cora');
-                    if (navigator.onLine && (isPropietario || (String(featuresStr||"").includes('cora') && tienePermisoCora))) {
-                        elAuraBtn.style.display = 'flex';
-                    } else {
-                        elAuraBtn.style.display = 'none';
-                    }
-                }
+                estanciaFeatures = String(featuresStr || "");
+                let profInit = lsGet('tc_user_profile', {});
+                if(profInit && featuresStr) { profInit.features = estanciaFeatures; lsSet('tc_user_profile', profInit); }
+                actualizarVisibilidadCora();
 
 
                 if(unsubscribeConfig) unsubscribeConfig();
@@ -4734,6 +4748,11 @@
         });
 
         function enviarComandoACora(texto) {
+          let featAct = String(estanciaFeatures || lsGet('tc_user_profile', {}).features || "");
+          if (!featAct.includes('cora')) {
+              actualizarVisibilidadCora();
+              return;
+          }
           let totalCabezas = parseInt(document.getElementById('dash-cabezas') ? document.getElementById('dash-cabezas').innerText : "0") || 0;
           let totalBajas = parseInt(document.getElementById('dash-bajas') ? document.getElementById('dash-bajas').innerText : "0") || 0;
           let totalGeneral = totalCabezas + totalBajas;
