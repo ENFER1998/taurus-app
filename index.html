@@ -1678,6 +1678,41 @@
             if(inputVal) { inputVal.value = ""; }
         };
 
+        
+        window.estanciaFeatures = "";
+
+        window.actualizarVisibilidadCora = function() {
+            const btnAura = document.getElementById('btn-aura');
+            const estadoIA = document.getElementById('estado-ia');
+            if (!btnAura) return;
+
+            let userProfile = window.lsGet('tc_user_profile', {});
+            let featEstancia = String(window.estanciaFeatures || userProfile.features || "");
+            
+            // REGLA CRÍTICA: Si el Administrador desactivó Cora para la estancia, NINGÚN usuario puede ver el botón flotante
+            let estanciaTieneCora = featEstancia.includes('cora');
+
+            let rolStr = String(usRol || userProfile.rol || "");
+            let isPropietario = rolStr.includes('Propietario') || rolStr.includes('Dueño');
+            let tienePermisoUsuario = isPropietario || rolStr.includes('cora');
+
+            let debeMostrar = Boolean(navigator.onLine && estanciaTieneCora && tienePermisoUsuario);
+
+            if (debeMostrar) {
+                btnAura.style.display = 'flex';
+            } else {
+                btnAura.style.display = 'none';
+                if (estadoIA) estadoIA.style.display = 'none';
+                if (window.speechSynthesis && window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
+                }
+                if (typeof reconocimiento !== 'undefined' && reconocimiento && btnAura.classList.contains('escuchando')) {
+                    btnAura.classList.remove('escuchando');
+                    try { reconocimiento.stop(); } catch(e){}
+                }
+            }
+        };
+
         window.setEstadoRed = function(online, texto = null) {
             const b = document.getElementById('estado-red');
             if(!b) return;
@@ -1698,20 +1733,7 @@
                 b.innerText = '🔴 Red Local'; 
             }
 
-            const btnAura = document.getElementById('btn-aura');
-            if (btnAura) {
-               let userProfile = window.lsGet('tc_user_profile', {});
-               let isPropietario = String(userProfile.rol||"").includes('Propietario') || String(userProfile.rol||"").includes('Dueño');
-               let tienePermisoCora = isPropietario || String(userProfile.rol||"").includes('cora');
-               
-               if (online && navigator.onLine && tienePermisoCora) {
-                   btnAura.style.display = 'flex';
-               } else {
-                   btnAura.style.display = 'none';
-                   const estadoIA = document.getElementById('estado-ia');
-                   if (estadoIA) estadoIA.style.display = 'none';
-               }
-            }
+            window.actualizarVisibilidadCora();
         };
 
         window.verificarConexionReal = async function() {
@@ -1796,16 +1818,10 @@
             try {
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
                 
-                const elAuraBtn = document.getElementById('btn-aura');
-                if (elAuraBtn) {
-                    let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
-                    let tienePermisoCora = isPropietario || usRol.includes('cora');
-                    if (navigator.onLine && tienePermisoCora) {
-                        elAuraBtn.style.display = 'flex';
-                    } else {
-                        elAuraBtn.style.display = 'none';
-                    }
-                }
+                window.estanciaFeatures = String(featuresStr || "");
+                let profInit = window.lsGet('tc_user_profile', {});
+                if(profInit && featuresStr) { profInit.features = window.estanciaFeatures; window.lsSet('tc_user_profile', profInit); }
+                window.actualizarVisibilidadCora();
 
                 if(unsubscribeConfig) unsubscribeConfig();
                 unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot(doc => {
@@ -1948,8 +1964,14 @@
                     let hNombre = usHacienda || "HACIENDA";
                     let hLogo = "gemini-svg.png";
                     if (docE.exists) {
-                        if (docE.data().logo_hacienda) hLogo = docE.data().logo_hacienda;
-                        if (docE.data().nombre_hacienda) hNombre = docE.data().nombre_hacienda;
+                        let eData = docE.data();
+                        if (eData.logo_hacienda) hLogo = eData.logo_hacienda;
+                        if (eData.nombre_hacienda) hNombre = eData.nombre_hacienda;
+                        if (eData.features !== undefined) {
+                            window.estanciaFeatures = String(eData.features || "");
+                            let prof = window.lsGet('tc_user_profile', {});
+                            if(prof) { prof.features = window.estanciaFeatures; window.lsSet('tc_user_profile', prof); }
+                        }
                     }
                     usHacienda = hNombre;
                     let prof = window.lsGet('tc_user_profile', {});
@@ -1961,6 +1983,7 @@
                         let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
                         lblPerfilMob.value = `${hNombre.toUpperCase()} - ${usNombre} (${isPropietario ? 'Propietario' : 'Operador'})`;
                     }
+                    window.actualizarVisibilidadCora();
                 });
 
                 const elRango = document.getElementById('f-inf-rango-fecha');
@@ -5174,6 +5197,11 @@
       }
 
       function enviarComandoACora(mensaje) {
+        let featAct = String(window.estanciaFeatures || window.lsGet('tc_user_profile', {}).features || "");
+        if (!featAct.includes('cora')) {
+            window.actualizarVisibilidadCora();
+            return;
+        }
         let totalCabezas = parseInt(document.getElementById('dash-cabezas') ? document.getElementById('dash-cabezas').innerText : "0") || 0;
         let totalBajas = parseInt(document.getElementById('dash-bajas') ? document.getElementById('dash-bajas').innerText : "0") || 0;
         let totalGeneral = totalCabezas + totalBajas;
