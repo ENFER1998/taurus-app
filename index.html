@@ -189,6 +189,23 @@
         .form-grupo { margin-bottom: 15px; text-align: left; }
         .form-grupo label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 8px; color: var(--muted);}
         
+        
+        /* AJUSTE DE ANCHOS DE COLUMNAS PARA REPORTES Y OBSERVACIONES AMPLIADAS */
+        #tabla-eventos th:nth-child(1), #tabla-eventos td:nth-child(1) { width: 10%; text-align: center; white-space: nowrap; }
+        #tabla-eventos th:nth-child(2), #tabla-eventos td:nth-child(2) { width: 11%; text-align: center; font-weight: bold; white-space: nowrap; }
+        #tabla-eventos th:nth-child(3), #tabla-eventos td:nth-child(3) { width: 16%; }
+        #tabla-eventos th:nth-child(4), #tabla-eventos td:nth-child(4) { width: 14%; text-align: center; }
+        #tabla-eventos th:nth-child(5), #tabla-eventos td:nth-child(5) { width: 19%; }
+        #tabla-eventos th:nth-child(6), #tabla-eventos td:nth-child(6) { width: 30%; word-break: break-word; }
+
+        #tabla-pesajes th:nth-child(1), #tabla-pesajes td:nth-child(1) { width: 12%; text-align: center; font-weight: bold; }
+        #tabla-pesajes th:nth-child(2), #tabla-pesajes td:nth-child(2) { width: 18%; }
+        #tabla-pesajes th:nth-child(3), #tabla-pesajes td:nth-child(3) { width: 14%; text-align: center; }
+        #tabla-pesajes th:nth-child(4), #tabla-pesajes td:nth-child(4) { width: 14%; text-align: center; font-weight: bold; }
+        #tabla-pesajes th:nth-child(5), #tabla-pesajes td:nth-child(5) { width: 14%; text-align: center; font-weight: bold; }
+        #tabla-pesajes th:nth-child(6), #tabla-pesajes td:nth-child(6) { width: 13%; text-align: center; }
+        #tabla-pesajes th:nth-child(7), #tabla-pesajes td:nth-child(7) { width: 15%; text-align: center; }
+
         /* UNIFICACIÓN RIGUROSA DE TODOS LOS MENÚS DESPLEGABLES Y CAMPOS DE TEXTO */
         .form-control, .filtro-sel { 
             width: 100%; 
@@ -522,6 +539,7 @@
                         <div style="width:190px;">
                             <select class="form-control" id="f-inf-modo" onchange="cambiarModoReporte()" style="margin:0; padding:4px 8px; font-weight:bold; font-size:11px; height:30px; border-color: var(--secundario); background-color: var(--secundario); color: white;">
                                 <option value="inventario">📊 INVENTARIO</option>
+                                <option value="pesajes">⚖️ INFORME DE PESAJES Y GANANCIA</option>
                                 <option value="bajas">💀 REPORTE DE BAJAS</option>
                                 <option value="eventos">📋 TRATAMIENTOS</option>
                             </select>
@@ -570,6 +588,67 @@
                         </div>
                     </div>
 
+                    <div id="filtros-pesajes" class="filtros-grid oculto" style="display:none; gap:6px; margin-bottom:6px;">
+                        <div style="display:flex; gap:6px;">
+                            <select class="form-control" id="f-inf-pes-lote" onchange="actualizarInformeAvanzado()" style="flex:1; margin:0; padding:4px 6px; font-size:11px; height:28px;">
+                                <option value="ALL">🏷️ Lote (Todos)</option>
+                            </select>
+                            <select class="form-control" id="f-inf-pes-cat" onchange="actualizarInformeAvanzado()" style="flex:1; margin:0; padding:4px 6px; font-size:11px; height:28px;">
+                                <option value="ALL">🐄 Categoría (Todas)</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <select class="form-control" id="f-inf-pes-filtro" onchange="actualizarInformeAvanzado()" style="flex:1; margin:0; padding:4px 6px; font-size:11px; height:28px;">
+                                <option value="ALL">📊 Rendimiento (Todos)</option>
+                                <option value="ganancia">🚀 Ganaron Peso (+)</option>
+                                <option value="perdida">⚠️ Perdieron Peso (-)</option>
+                                <option value="estable">⚖️ Mantuvieron Peso (0)</option>
+                                <option value="multiples">📈 Con 2 o más pesajes</option>
+                                <option value="unico">🆕 Con 1 solo pesaje</option>
+                            </select>
+                            <select class="form-control" id="f-inf-pes-rango" onchange="manejarRangoFechasPesajes()" style="flex:1; margin:0; padding:4px 6px; font-size:11px; height:28px;">
+                                <option value="todo">Todo el Historial</option>
+                                <option value="30">Últimos 30 días</option>
+                                <option value="90">Últimos 3 meses</option>
+                                <option value="365">Último año</option>
+                                <option value="custom">📅 Manual...</option>
+                            </select>
+                        </div>
+                        <div id="caja-fechas-pesajes" style="display:none; gap:6px; width:100%;">
+                            <input type="date" id="f-inf-pes-desde" class="form-control" style="flex:1; margin:0; padding:2px 4px; font-size:10px; height:26px;" onchange="actualizarInformeAvanzado()">
+                            <input type="date" id="f-inf-pes-hasta" class="form-control" style="flex:1; margin:0; padding:2px 4px; font-size:10px; height:26px;" onchange="actualizarInformeAvanzado()">
+                        </div>
+                    </div>
+
+                    <!-- RESUMEN EJECUTIVO DE RENDIMIENTO DE PESAJE -->
+                    <div id="resumen-kpis-pesaje" class="oculto" style="display:none; margin-bottom:8px;">
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(105px, 1fr)); gap:6px;">
+                            <div class="dato-min" style="border-left:3px solid var(--secundario); padding:6px 8px;">
+                                <span style="font-size:9px;">Cabezas Pesadas</span>
+                                <strong id="kpi-pes-cabezas" style="color:var(--secundario); font-size:14px;">0</strong>
+                            </div>
+                            <div class="dato-min" style="border-left:3px solid #3b82f6; padding:6px 8px;">
+                                <span style="font-size:9px;">Peso Total Lote</span>
+                                <strong id="kpi-pes-total" style="color:var(--texto); font-size:14px;">0 Kg</strong>
+                            </div>
+                            <div class="dato-min" style="border-left:3px solid #3b82f6; padding:6px 8px;">
+                                <span style="font-size:9px;">Peso Promedio</span>
+                                <strong id="kpi-pes-prom" style="color:var(--secundario); font-size:14px;">0 Kg</strong>
+                            </div>
+                            <div class="dato-min" style="border-left:3px solid var(--exito); padding:6px 8px;">
+                                <span style="font-size:9px;">Ganancia Media</span>
+                                <strong id="kpi-pes-ganancia" style="color:var(--exito); font-size:14px;">+0 Kg</strong>
+                            </div>
+                            <div class="dato-min" style="border-left:3px solid #10b981; padding:6px 8px;">
+                                <span style="font-size:9px;">GDP Promedio</span>
+                                <strong id="kpi-pes-gdp" style="color:var(--exito); font-size:14px;">+0,0 Kg/d</strong>
+                            </div>
+                            <div class="dato-min" style="border-left:3px solid var(--alerta); padding:6px 8px;">
+                                <span style="font-size:9px;">Eficacia Crecimiento</span>
+                                <strong id="kpi-pes-tasa" style="color:var(--alerta); font-size:14px;">0%</strong>
+                            </div>
+                        </div>
+                    </div>
                     <div id="filtros-bajas" class="filtros-grid oculto" style="display:none; gap:6px; margin-bottom:6px;">
                         <div style="display:flex; gap:6px;">
                             <select class="form-control" id="f-inf-baja-causa" onchange="actualizarInformeAvanzado()" style="flex:1; margin:0; padding:4px 6px; font-size:11px; height:28px;">
@@ -640,6 +719,7 @@
                 <div class="tabla-responsive">
                     <table class="tabla-informe" id="tabla-masiva"><thead><tr><th>RP y Carimbo</th><th>Categoría</th><th>Lote</th><th>Últ. Peso</th><th>Dx</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
                     <table class="tabla-informe oculto" id="tabla-bajas"><thead><tr><th>Fecha</th><th>Caravana / RP</th><th>Causa de Baja</th><th>Observaciones</th></tr></thead><tbody id="tb-informe-bajas"></tbody></table>
+                    <table class="tabla-informe oculto" id="tabla-pesajes"><thead><tr><th>Caravana / RP</th><th>Categoría / Lote</th><th>Peso Anterior</th><th>Último Peso</th><th>Ganancia (Δ)</th><th>GDP (Kg/día)</th><th>Evolución</th></tr></thead><tbody id="tb-informe-pesajes"></tbody></table>
                     <table class="tabla-informe oculto" id="tabla-eventos"><thead><tr><th>Fecha</th><th>Caravana / RP</th><th>Categoría / Lote</th><th>Procedimientos Realizados</th><th>Sanidad / Tratamientos / Pesaje</th><th>Observaciones / Detalles</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
                     <table class="tabla-informe oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Trabajo Realizado</th><th>Valor Principal</th><th>Observaciones</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
                 </div>
@@ -1235,9 +1315,20 @@
         };
 
         window.ejecutarRafagaManual = function() {
-            let rp = document.getElementById('rm-caravana').value.trim().toUpperCase();
-            let val = document.getElementById('rm-valor').value.trim().toUpperCase();
-            if(!rp || !val) return;
+            let inputRp = document.getElementById('rm-caravana');
+            let inputVal = document.getElementById('rm-valor');
+            let rp = inputRp ? inputRp.value.trim().toUpperCase() : "";
+            let val = inputVal ? inputVal.value.trim().toUpperCase() : "";
+            if(!rp || !window.esCaravanaValida(rp)) {
+                window.mostrarToast("⚠️ Ingrese un Nº de RP válido (no puede estar vacío ni ser '---')", true);
+                if (inputRp) inputRp.focus();
+                return;
+            }
+            if(!val) {
+                window.mostrarToast("⚠️ Ingrese el peso o producto a registrar", true);
+                if (inputVal) inputVal.focus();
+                return;
+            }
             rpActivo = rp;
             let sel = document.getElementById('rafaga-accion').value; let notas = document.getElementById('rafaga-detalles').value.trim(); let recordatorio = document.getElementById('rafaga-recordatorio').value; 
             
@@ -1376,7 +1467,7 @@
                     let docsList = [];
                     snapshot.forEach(doc => { 
                         let d = doc.data(); 
-                        d.id = doc.id; 
+                        d.id = doc.id || ('doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)); 
                         docsList.push(doc);
                         if (window.esEventoGanaderoValido(d) && (d.caravana === '---' || window.esCaravanaValida(d.caravana))) {
                             nuevosDatos.push(d); 
@@ -1532,7 +1623,8 @@
             if(Array.isArray(nuevos)) { 
                 nuevos.forEach(d => { 
                     if(d && window.esEventoGanaderoValido(d) && (d.caravana === '---' || window.esCaravanaValida(d.caravana))) { 
-                        let f = d.fecha || new Date().toISOString(); 
+                        let f = d.fecha || new Date().toISOString();
+                        if(!d.id) d.id = 'ev_' + f.replace(/[^0-9]/g, '') + '_' + String(d.caravana).replace(/[^a-zA-Z0-9]/g, '') + '_' + String(d.accion).replace(/[^a-zA-Z0-9]/g, '');
                         mapa.set(f + '_' + d.caravana + '_' + d.accion, d); 
                     } 
                 }); 
@@ -1575,7 +1667,7 @@
             }
         }
 
-        window.// ==========================================
+        // ==========================================
         // FILTROS Y VALIDACIONES ESTRICTAS DE GANADO
         // ==========================================
         window.esCaravanaValida = function(car) {
@@ -1608,7 +1700,7 @@
                     const accion = String(data.accion || "").toLowerCase();
                     const car = String(data.caravana || "").trim().toLowerCase();
                     const esOpAccion = accion.includes("operador") || accion.startsWith("alta op") || accion.startsWith("edicion op") || accion.startsWith("edición op") || accion.startsWith("baja op");
-                    const esCarInvalida = car.includes("@") || car === "null" || car === "undefined";
+                    const esCarInvalida = car.includes("@") || car === "null" || car === "undefined" || car === "---" || car === "";
                     if (esOpAccion || esCarInvalida) {
                         batch.delete(docSnap.ref);
                         hayPurgas = true;
@@ -1623,7 +1715,7 @@
             }
         };
 
-        procesarEventos = function() {
+        window.procesarEventos = function() {
             if (historiaCache) return historiaCache;
             let dbAsc = [...dbCache].filter(d => window.esEventoGanaderoValido(d)).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
             let historiaPorRP = {};
@@ -1658,20 +1750,43 @@
             let historia = window.procesarEventos();
             let validos = [];
             for(let rp in historia) {
-                if (rp !== "---" && rp !== "null" && rp !== "undefined" && String(rp).toLowerCase() !== "null") {
+                if (window.esCaravanaValida(rp)) {
                     validos.push(...historia[rp]); 
                 }
             }
-            const globalEvents = dbCache.filter(d => d.caravana === "---" || !d.caravana || String(d.caravana).toLowerCase() === "null");
-            activosCache = [...validos, ...globalEvents].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            activosCache = validos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
             return activosCache;
-        }
+        };
 
         window.obtenerHistorial = function(caravana) {
             if (!caravana || caravana === "null" || caravana === "---" || String(caravana).toLowerCase() === "null") return [];
+            let carStr = String(caravana).trim();
+            let carLow = carStr.toLowerCase();
+            
+            // 1. Buscar en historia procesada
             let historia = window.procesarEventos();
-            return historia[String(caravana)] || [];
-        }
+            if (historia && historia[carStr] && historia[carStr].length > 0) {
+                return historia[carStr];
+            }
+            // 2. Búsqueda insensible a mayúsculas/minúsculas
+            if (historia) {
+                for (let k in historia) {
+                    if (k.toLowerCase() === carLow && historia[k].length > 0) return historia[k];
+                }
+            }
+            // 3. Fallback directo e infalible sobre dbCache
+            if (Array.isArray(dbCache) && dbCache.length > 0) {
+                let directos = dbCache.filter(d => {
+                    if (!d || !d.caravana) return false;
+                    let c = String(d.caravana).trim().toLowerCase();
+                    return c === carLow && window.esEventoGanaderoValido(d);
+                });
+                if (directos.length > 0) {
+                    return directos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+                }
+            }
+            return [];
+        };
 
         window.obtenerNombreCategoriaLegible = function(sigla) {
             if(!sigla) return "Sin Categoría";
@@ -1710,7 +1825,7 @@
                 }
             });
 
-            ['filtro-reg-lote', 'f-inf-lote'].forEach(id => {
+            ['filtro-reg-lote', 'f-inf-lote', 'f-inf-pes-lote'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el) {
                     let curr = el.value;
@@ -1721,7 +1836,7 @@
                 }
             });
 
-            ['filtro-reg-cat', 'f-inf-cat'].forEach(id => {
+            ['filtro-reg-cat', 'f-inf-cat', 'f-inf-pes-cat'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el) {
                     let curr = el.value;
@@ -1768,8 +1883,10 @@
                         let diffTime = Math.abs(d1 - d2); let dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                         if(dias >= 1) { 
                             let gdp = parseFloat(((p1 - p2) / dias).toFixed(3)); 
-                            if(gdp > 0) gdpHtml = `<span style="color:var(--exito); font-weight:bold; font-size:12px;">🚀 +${gdp} Kg/día</span>`; 
-                            else if(gdp < 0) gdpHtml = `<span style="color:var(--peligro); font-weight:bold; font-size:12px;">⚠️ ${gdp} Kg/día</span>`; 
+                            let gdpNum = parseFloat(gdp);
+                            let gdpStr = (gdpNum >= 0 ? "+" : "") + gdpNum.toFixed(1).replace('.', ',') + " Kg/d";
+                            if(gdp > 0) gdpHtml = `<span style="color:var(--exito); font-weight:bold; font-size:12px;">🚀 ${gdpStr}</span>`; 
+                            else if(gdp < 0) gdpHtml = `<span style="color:var(--peligro); font-weight:bold; font-size:12px;">⚠️ ${gdpStr}</span>`; 
                             else gdpHtml = `<span style="color:var(--muted); font-weight:bold; font-size:12px;">⚖️ Mantuvo su peso</span>`; 
                         }
                     } else {
@@ -1857,8 +1974,15 @@
             let car = rpActivo;
             if (tipo.includes('Operador') || tipo === 'Alta Operador' || tipo === 'Edición Operador' || tipo === 'Baja Operador') {
                 car = "---";
-            } else if (!car || String(car).toLowerCase() === "null" || car === "undefined") {
-                car = "---";
+            } else {
+                if (!window.esCaravanaValida(car)) {
+                    console.warn(`[Taurus] Registro ignorado: Acción '${tipo}' descartada por RP inválido ('${car}').`);
+                    if (typeof window.mostrarToast === 'function') {
+                        window.mostrarToast("⚠️ Debe identificar un animal (RP válido) antes de registrar", true);
+                    }
+                    if (modalId) window.cerrarModal(modalId);
+                    return;
+                }
             }
 
             const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
@@ -1883,7 +2007,30 @@
             let valOtro = (selId, otroId) => { let s = val(selId); return s === 'OTRO' ? val(otroId) : s; };
 
             if(t === 'Comentario') { d = val('f-comentario-txt'); }
-            else if(t === 'Peso') { v = val('i-peso-val') + " Kg"; d = `Cond: ${valOtro('i-peso-cond', 'peso-otro')}. Notas: ${val('i-peso-txt')}`; }
+            else if(t === 'Peso') { 
+                let pValNum = parseFloat(val('i-peso-val'));
+                let diffInfo = "";
+                if (!isNaN(pValNum) && rpActivo) {
+                    let regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(rpActivo) : [];
+                    let pesosPrev = regs.filter(r => String(r.accion).includes('Peso') && r.fecha);
+                    if (pesosPrev.length > 0) {
+                        let pUltimo = parseFloat(String(pesosPrev[0].valor).replace(/[^\d.-]/g, ''));
+                        if (!isNaN(pUltimo)) {
+                            let diffKg = pValNum - pUltimo;
+                            let d1 = new Date();
+                            let d2 = new Date(pesosPrev[0].fecha);
+                            let dias = Math.max(1, Math.ceil(Math.abs(d1 - d2) / (1000 * 60 * 60 * 24)));
+                            let gdpVal = diffKg / dias;
+                            let gdpFormatted = (gdpVal >= 0 ? "+" : "") + gdpVal.toFixed(1).replace('.', ',') + " Kg/d";
+                            let signo = diffKg > 0 ? "+" : "";
+                            let diffKgStr = diffKg.toFixed(1).replace('.', ',');
+                            diffInfo = ` | Ganancia: ${signo}${diffKgStr} Kg (${gdpFormatted} en ${dias}d)`;
+                        }
+                    }
+                }
+                v = val('i-peso-val') + " Kg"; 
+                d = `Cond: ${valOtro('i-peso-cond', 'peso-otro')}. Notas: ${val('i-peso-txt')}${diffInfo}`; 
+            }
             else if(t === 'Sanidad') { 
                 let recordatorio = val('i-sani-recordatorio'); 
                 v = valOtro('i-sani-sel', 'sani-otro'); 
@@ -1979,75 +2126,255 @@
             } 
         };
 
-        window.verHistorial = function() { 
-            window.abrirModal('modal-historial'); 
-            let h = "<ul style='list-style:none; padding:0; margin:0;'>"; 
-            window.obtenerHistorial(rpActivo).forEach(r => { 
-                if(!r.accion.includes('Vinculacion') && !['Alta Operador', 'Edición Operador', 'Baja Operador'].includes(r.accion)) { 
-                    let detalleDiferencia = "";
-                    if(r.accion === 'Peso') detalleDiferencia = window.calcularDiferenciaPeso(rpActivo, r.fecha, r.valor);
+        window.calcularDiferenciaPeso = function(caravana, fechaActual, valorActual) {
+            try {
+                let pActual = parseFloat(String(valorActual).replace(/[^\d.-]/g, ''));
+                if (isNaN(pActual)) return "";
+                let fActual = new Date(fechaActual).getTime();
+                if (isNaN(fActual)) return "";
 
-                    h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:10px; position:relative;">
-                        <span style="font-size:12px; color:var(--muted);">${new Date(r.fecha).toLocaleString()}</span>
-                        <button onclick="abrirEdicionRegistro('${r.id}')" style="position:absolute; right:0; top:0; background:transparent; border:1px solid var(--borde); color:var(--muted); border-radius:4px; padding:4px 8px; cursor:pointer;">✏️ Editar</button>
-                        <br><strong style="color:var(--texto); font-size:15px;">${r.accion}</strong><br><span style="color: var(--secundario); font-weight: bold;">${r.valor}</span><span style="font-size:12px; color:var(--exito); font-weight:bold; white-space:pre-wrap;">${detalleDiferencia}</span><br><span style="color: var(--muted); font-size:13px;">${r.detalles}</span>
-                    </li>`; 
+                let regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(caravana) : [];
+                let pesos = regs.filter(d => String(d.accion).includes('Peso') && d.fecha);
+                pesos.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+
+                let anterior = null;
+                for (let i = pesos.length - 1; i >= 0; i--) {
+                    let fP = new Date(pesos[i].fecha).getTime();
+                    if (fP < fActual) {
+                        anterior = pesos[i];
+                        break;
+                    }
                 }
-            }); 
-            document.getElementById('contenido-historial').innerHTML = h + "</ul>"; 
-        }
 
-        window.abrirEdicionRegistro = function(id) {
-            if(!id || id === 'undefined') { alert("Este registro aún no se sincronizó con la nube. Espere un momento."); return; }
-            let reg = dbCache.find(r => r.id === id);
-            if(!reg) return;
-            document.getElementById('edit-reg-id').value = id; 
-            document.getElementById('edit-reg-valor').value = reg.valor || ""; 
-            document.getElementById('edit-reg-detalles').value = reg.detalles || "";
-            
-            if(reg.fecha) {
-                let fechaLocal = new Date(reg.fecha);
-                fechaLocal.setMinutes(fechaLocal.getMinutes() - fechaLocal.getTimezoneOffset());
-                document.getElementById('edit-reg-fecha').value = fechaLocal.toISOString().slice(0,16);
+                if (!anterior) return "";
+                let pAnt = parseFloat(String(anterior.valor).replace(/[^\d.-]/g, ''));
+                if (isNaN(pAnt)) return "";
+
+                let diffKg = pActual - pAnt;
+                let diffDias = Math.max(1, Math.round((fActual - new Date(anterior.fecha).getTime()) / (1000 * 60 * 60 * 24)));
+                let gdpVal = diffKg / diffDias;
+                let gdpFormatted = (gdpVal >= 0 ? "+" : "") + gdpVal.toFixed(1).replace('.', ',') + " Kg/d";
+
+                let signo = diffKg > 0 ? "+" : "";
+                let diffKgStr = diffKg.toFixed(1).replace('.', ',');
+                let color = diffKg > 0 ? "var(--exito)" : (diffKg < 0 ? "var(--peligro)" : "var(--muted)");
+                let icon = diffKg > 0 ? " 🚀" : (diffKg < 0 ? " ⚠️" : "");
+
+                return ` <span style="color:${color}; font-size:11px;">(${signo}${diffKgStr} Kg${icon}${diffDias > 1 ? ` | ${gdpFormatted}` : ''})</span>`;
+            } catch(e) {
+                return "";
+            }
+        };
+
+        window.verHistorial = function() {
+            // Recuperar RP activo desde memoria o desde elementos visibles de la ficha
+            let rp = rpActivo;
+            if (!rp || rp === '---' || rp.toLowerCase() === 'null') {
+                let elVal = document.getElementById('val-caravana');
+                if (elVal && elVal.innerText && elVal.innerText.trim() !== '---') rp = elVal.innerText.trim();
+            }
+            if (!rp || rp === '---' || rp.toLowerCase() === 'null') {
+                let elBusc = document.getElementById('buscador-caravana');
+                if (elBusc && elBusc.value && elBusc.value.trim() !== '') rp = elBusc.value.trim();
+            }
+            if (!rp || rp === '---' || rp.toLowerCase() === 'null' || !window.esCaravanaValida(rp)) {
+                if (typeof window.mostrarToast === 'function') window.mostrarToast("⚠️ Seleccione o busque una caravana (RP) primero", true);
+                return;
+            }
+            rpActivo = rp;
+            window.abrirModal('modal-historial'); 
+
+            let lista = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(rp) : [];
+            let filtrados = lista.filter(r => r && !String(r.accion || '').includes('Vinculacion') && !['Alta Operador', 'Edición Operador', 'Baja Operador'].includes(r.accion));
+
+            let contEl = document.getElementById('contenido-historial');
+            if (!contEl) return;
+
+            if (filtrados.length === 0) {
+                contEl.innerHTML = `<div style="text-align:center; padding:25px; color:var(--muted);">
+                    <p style="font-size:15px; margin-bottom:8px;">No existen sucesos clínicos registrados para el RP <strong>${rp}</strong>.</p>
+                    <span style="font-size:12px;">Puede registrar un pesaje o tratamiento desde la ficha clínica.</span>
+                </div>`;
+                return;
             }
 
-            window.cerrarModal('modal-historial'); window.abrirModal('modal-editar-registro');
+            let h = "<ul style='list-style:none; padding:0; margin:0;'>"; 
+            filtrados.forEach((r, idx) => { 
+                let detalleDiferencia = "";
+                try {
+                    if(String(r.accion).includes('Peso') && typeof window.calcularDiferenciaPeso === 'function') {
+                        detalleDiferencia = window.calcularDiferenciaPeso(rp, r.fecha, r.valor);
+                    }
+                } catch(e) {}
+
+                let regId = r.id || ('ev_' + idx + '_' + (r.fecha ? new Date(r.fecha).getTime() : Date.now()));
+                r.id = regId;
+
+                let fStr = "-";
+                try {
+                    if (r.fecha) fStr = new Date(r.fecha).toLocaleString();
+                } catch(e) {}
+
+                h += `<li style="margin-bottom:15px; border-bottom:1px solid var(--borde); padding-bottom:12px; position:relative; min-height:60px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <span style="font-size:12px; color:var(--muted); font-weight:bold;">${fStr}</span>
+                        <button type="button" class="btn-mini" onclick="window.abrirEdicionRegistro('${regId}', ${idx})" style="background:var(--secundario); color:white; border:none; padding:5px 12px; font-size:11px; border-radius:6px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.3); z-index:10;">✏️ Editar</button>
+                    </div>
+                    <strong style="color:var(--texto); font-size:15px; display:block;">${r.accion || "-"}</strong>
+                    <div style="margin-top:4px;">
+                        <span style="color: var(--secundario); font-weight: bold; font-size:14px;">${r.valor || "-"}</span>
+                        <span style="font-size:12px; font-weight:bold; white-space:pre-wrap;">${detalleDiferencia}</span>
+                    </div>
+                    <span style="color: var(--muted); font-size:13px; display:block; margin-top:4px; line-height:1.4;">${r.detalles || "Sin notas adicionales"}</span>
+                </li>`; 
+            }); 
+            contEl.innerHTML = h + "</ul>"; 
+        };
+
+        window.abrirEdicionRegistro = function(id, idx) {
+            let reg = null;
+            let rp = rpActivo || (document.getElementById('val-caravana') ? document.getElementById('val-caravana').innerText.trim() : '');
+            
+            // 1. Buscar en dbCache
+            if (id) {
+                reg = dbCache.find(r => r && r.id === id);
+            }
+            // 2. Buscar en historial del animal
+            if (!reg && rp) {
+                let lista = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(rp) : [];
+                let filtrados = lista.filter(r => r && !String(r.accion || '').includes('Vinculacion') && !['Alta Operador', 'Edición Operador', 'Baja Operador'].includes(r.accion));
+                if (idx !== undefined && idx !== null && filtrados[idx]) {
+                    reg = filtrados[idx];
+                } else if (id) {
+                    reg = filtrados.find(r => r && r.id === id);
+                }
+            }
+            // 3. Fallback directo
+            if (!reg && id) {
+                reg = dbCache.find(r => r && String(r.id) === String(id));
+            }
+            if (!reg) {
+                alert("No se pudo cargar el registro para editar.");
+                return;
+            }
+
+            if (!reg.id) reg.id = id || ('ev_' + Date.now());
+
+            let inputId = document.getElementById('edit-reg-id');
+            let inputVal = document.getElementById('edit-reg-valor');
+            let inputDet = document.getElementById('edit-reg-detalles');
+            let inputFecha = document.getElementById('edit-reg-fecha');
+
+            if (inputId) inputId.value = reg.id; 
+            if (inputVal) inputVal.value = reg.valor || ""; 
+            if (inputDet) inputDet.value = reg.detalles || "";
+            
+            let fechaStr = "";
+            try {
+                if (reg.fecha) {
+                    let fechaLocal = new Date(reg.fecha);
+                    if (!isNaN(fechaLocal.getTime())) {
+                        fechaLocal.setMinutes(fechaLocal.getMinutes() - fechaLocal.getTimezoneOffset());
+                        fechaStr = fechaLocal.toISOString().slice(0, 16);
+                    }
+                }
+            } catch(e) {}
+            if (!fechaStr) {
+                let hoy = new Date();
+                hoy.setMinutes(hoy.getMinutes() - hoy.getTimezoneOffset());
+                fechaStr = hoy.toISOString().slice(0, 16);
+            }
+            if (inputFecha) inputFecha.value = fechaStr;
+
+            if (document.getElementById('modal-historial')) window.cerrarModal('modal-historial');
+            if (document.getElementById('m-traza')) window.cerrarModal('m-traza');
+            window.abrirModal('modal-editar-registro');
         };
 
         window.guardarEdicionRegistro = async function() {
-            let id = document.getElementById('edit-reg-id').value; 
-            let nValor = document.getElementById('edit-reg-valor').value; 
-            let nDetalles = document.getElementById('edit-reg-detalles').value;
-            let nFecha = document.getElementById('edit-reg-fecha').value; 
+            let inputId = document.getElementById('edit-reg-id');
+            let inputVal = document.getElementById('edit-reg-valor');
+            let inputDet = document.getElementById('edit-reg-detalles');
+            let inputFecha = document.getElementById('edit-reg-fecha');
+
+            let id = inputId ? inputId.value : ""; 
+            let nValor = inputVal ? inputVal.value.trim() : ""; 
+            let nDetalles = inputDet ? inputDet.value.trim() : ""; 
+            let nFecha = inputFecha ? inputFecha.value : ""; 
             
-            if(!navigator.onLine) { alert("Necesitas conexión a internet para editar."); return; }
-            try {
-                let isoFecha = new Date(nFecha).toISOString();
-                await db.collection('estancias').doc(maestroId).collection('eventos').doc(id).update({ valor: nValor, detalles: nDetalles, fecha: isoFecha });
-                
-                let i = dbCache.findIndex(r => r.id === id);
-                if(i !== -1) { 
-                    dbCache[i].valor = nValor; 
-                    dbCache[i].detalles = nDetalles; 
-                    dbCache[i].fecha = isoFecha;
-                    historiaCache = null; activosCache = null; 
-                    window.buscarCaravanaBtn(rpActivo); 
+            if(!nFecha) {
+                alert("Ingrese una fecha válida.");
+                return;
+            }
+            let isoFecha = new Date(nFecha).toISOString();
+            
+            // 1. Actualizar en caché local y persistencia localStorage
+            let i = dbCache.findIndex(r => r && r.id === id);
+            if(i !== -1) { 
+                dbCache[i].valor = nValor; 
+                dbCache[i].detalles = nDetalles; 
+                dbCache[i].fecha = isoFecha;
+            } else if(rpActivo) {
+                let matchIdx = dbCache.findIndex(r => r && r.caravana === rpActivo && (r.id === id || r.valor === nValor));
+                if(matchIdx !== -1) {
+                    dbCache[matchIdx].valor = nValor;
+                    dbCache[matchIdx].detalles = nDetalles;
+                    dbCache[matchIdx].fecha = isoFecha;
+                    id = dbCache[matchIdx].id;
                 }
-                window.cerrarModal('modal-editar-registro'); 
-                window.mostrarToast("✅ Modificado exitosamente."); 
+            }
+            historiaCache = null; 
+            activosCache = null; 
+            if (typeof window.lsSet === 'function') window.lsSet('tc_db', dbCache);
+
+            // 2. Persistir en Firebase Firestore si hay conexión o registrar pendiente
+            if(navigator.onLine && maestroId && id && !id.startsWith('ev_') && !id.startsWith('local_')) {
+                try {
+                    await db.collection('estancias').doc(maestroId).collection('eventos').doc(id).update({
+                        valor: nValor,
+                        detalles: nDetalles,
+                        fecha: isoFecha
+                    });
+                } catch(e) {
+                    console.warn("Aviso al actualizar en Firestore:", e);
+                    let p = window.lsGet('tc_pendientes', []);
+                    p.push({ id: id, valor: nValor, detalles: nDetalles, fecha: isoFecha, accion: 'update' });
+                    window.lsSet('tc_pendientes', p);
+                }
+            } else if (maestroId) {
+                let p = window.lsGet('tc_pendientes', []);
+                p.push({ id: id, valor: nValor, detalles: nDetalles, fecha: isoFecha, accion: 'update' });
+                window.lsSet('tc_pendientes', p);
+            }
+
+            window.cerrarModal('modal-editar-registro'); 
+            window.mostrarToast("✅ Registro modificado y sincronizado."); 
+
+            // 3. ACTUALIZACIÓN INMEDIATA EN TODOS LOS REPORTES Y VISTAS
+            if(rpActivo) {
+                window.buscarCaravanaBtn(rpActivo);
                 window.verHistorial();
-            } catch(e) { alert("Error al modificar."); }
+            }
+            if(typeof window.procesarDatosDashboard === 'function') window.procesarDatosDashboard();
+            if(typeof window.actualizarInformeAvanzado === 'function') window.actualizarInformeAvanzado();
+            if(typeof window.cargarListaRegistro === 'function') window.cargarListaRegistro();
         };
 
         window.cambiarModoReporte = function() {
             const modo = document.getElementById('f-inf-modo').value;
             const fInv = document.getElementById('filtros-inventario');
+            const fPes = document.getElementById('filtros-pesajes');
             const fBajas = document.getElementById('filtros-bajas');
             const fEvt = document.getElementById('filtros-eventos');
+            const kpiPes = document.getElementById('resumen-kpis-pesaje');
             
             if (fInv) {
                 if (modo === 'inventario') { fInv.classList.remove('oculto'); fInv.style.display = 'flex'; }
                 else { fInv.classList.add('oculto'); fInv.style.display = 'none'; }
+            }
+            if (fPes) {
+                if (modo === 'pesajes') { fPes.classList.remove('oculto'); fPes.style.display = 'flex'; }
+                else { fPes.classList.add('oculto'); fPes.style.display = 'none'; }
             }
             if (fBajas) {
                 if (modo === 'bajas') { fBajas.classList.remove('oculto'); fBajas.style.display = 'flex'; }
@@ -2057,9 +2384,35 @@
                 if (modo === 'eventos') { fEvt.classList.remove('oculto'); fEvt.style.display = 'flex'; }
                 else { fEvt.classList.add('oculto'); fEvt.style.display = 'none'; }
             }
+            if (kpiPes) {
+                if (modo === 'pesajes') { kpiPes.classList.remove('oculto'); kpiPes.style.display = 'block'; }
+                else { kpiPes.classList.add('oculto'); kpiPes.style.display = 'none'; }
+            }
             
             window.actualizarInformeAvanzado();
         }
+
+        window.manejarRangoFechasPesajes = function() {
+            const rangoEl = document.getElementById('f-inf-pes-rango');
+            if(!rangoEl) return;
+            const rango = rangoEl.value;
+            const cajaManual = document.getElementById('caja-fechas-pesajes');
+            const dDesde = document.getElementById('f-inf-pes-desde');
+            const dHasta = document.getElementById('f-inf-pes-hasta');
+            let hoy = new Date(); let desde = new Date();
+            if (rango === 'custom') {
+                if(cajaManual) cajaManual.style.display = 'flex';
+            } else {
+                if(cajaManual) cajaManual.style.display = 'none';
+                if(rango === '30') { desde.setDate(hoy.getDate() - 30); }
+                else if (rango === '90') { desde.setDate(hoy.getDate() - 90); }
+                else if (rango === '365') { desde.setDate(hoy.getDate() - 365); }
+                else if (rango === 'todo') { desde = new Date('2000-01-01'); }
+                if(dDesde) dDesde.value = desde.toISOString().split('T')[0];
+                if(dHasta) dHasta.value = hoy.toISOString().split('T')[0];
+            }
+            if (typeof window.actualizarInformeAvanzado === 'function') window.actualizarInformeAvanzado();
+        };
 
         window.manejarRangoFechas = function() {
             const rangoEl = document.getElementById('f-inf-rango-fecha');
@@ -2122,6 +2475,127 @@
             return `${accion}`;
         };
 
+
+        window.obtenerAnalisisCompletoPesajes = function(fLote, fCat, fFiltroRend, fRango, fDesde, fHasta) {
+            let datosActivos = typeof window.obtenerRegistrosActivos === 'function' ? window.obtenerRegistrosActivos() : [];
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => window.esCaravanaValida(c)))];
+            
+            let resultadosAnimales = [];
+            let totalBiomasa = 0;
+            let totalGananciaKg = 0;
+            let sumGDP = 0;
+            let compCount = 0;
+            let posCount = 0;
+            let negCount = 0;
+            let estCount = 0;
+
+            unicas.forEach(car => {
+                let regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(car) : [];
+                let pesosEvt = regs.filter(d => String(d.accion).includes('Peso') && d.fecha && d.valor);
+                if (pesosEvt.length === 0) return;
+
+                // Ordenar cronológicamente (más antiguo al más reciente)
+                pesosEvt.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+
+                // Filtrar según período si está activo
+                if (fRango && fRango !== 'todo') {
+                    if (fDesde) pesosEvt = pesosEvt.filter(p => String(p.fecha).split('T')[0] >= fDesde);
+                    if (fHasta) pesosEvt = pesosEvt.filter(p => String(p.fecha).split('T')[0] <= fHasta);
+                    if (pesosEvt.length === 0) return;
+                }
+
+                // Obtener perfil (categoría y lote)
+                let cat = "-", lote = "-";
+                const uP = regs.find(d => d.accion === 'Perfil Master');
+                if(uP) cat = String(uP.detalles || "").split('|')[0] || "-";
+                const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                if(uC) {
+                    let v = String(uC.valor || "").split('|');
+                    cat = v[0] ? v[0].replace('Cat:', '').trim() : cat;
+                    lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:', '').trim() : "-";
+                }
+                let catLegible = typeof window.obtenerNombreCategoriaLegible === 'function' ? window.obtenerNombreCategoriaLegible(cat) : cat;
+
+                if (fLote && fLote !== 'ALL' && !lote.includes(fLote)) return;
+                if (fCat && fCat !== 'ALL' && !catLegible.includes(fCat)) return;
+
+                let ultimoEvt = pesosEvt[pesosEvt.length - 1];
+                let ultKg = parseFloat(String(ultimoEvt.valor).replace(/[^\d.-]/g, ''));
+                if (isNaN(ultKg)) return;
+
+                let prevEvt = pesosEvt.length > 1 ? pesosEvt[pesosEvt.length - 2] : null;
+                let prevKg = prevEvt ? parseFloat(String(prevEvt.valor).replace(/[^\d.-]/g, '')) : null;
+
+                let diffKg = (prevKg !== null && !isNaN(prevKg)) ? (ultKg - prevKg) : null;
+                let dias = (prevEvt && prevEvt.fecha && ultimoEvt.fecha) 
+                    ? Math.max(1, Math.round(Math.abs(new Date(ultimoEvt.fecha) - new Date(prevEvt.fecha)) / (1000 * 60 * 60 * 24))) 
+                    : 0;
+                let gdp = (diffKg !== null && dias > 0) ? parseFloat((diffKg / dias).toFixed(3)) : null;
+
+                // Evaluación de estado
+                let estadoBadge = "🆕 Primer Pesaje";
+                if (diffKg !== null) {
+                    if (diffKg > 0 && gdp >= 0.4) estadoBadge = "🚀 Óptimo";
+                    else if (diffKg > 0) estadoBadge = "📈 Crecimiento";
+                    else if (diffKg === 0) estadoBadge = "⚖️ Estable";
+                    else estadoBadge = "⚠️ Pérdida";
+                }
+
+                // Filtrar según rendimiento
+                if (fFiltroRend === 'ganancia' && (diffKg === null || diffKg <= 0)) return;
+                if (fFiltroRend === 'perdida' && (diffKg === null || diffKg >= 0)) return;
+                if (fFiltroRend === 'estable' && (diffKg === null || diffKg !== 0)) return;
+                if (fFiltroRend === 'multiples' && pesosEvt.length < 2) return;
+                if (fFiltroRend === 'unico' && pesosEvt.length > 1) return;
+
+                totalBiomasa += ultKg;
+                if (diffKg !== null) {
+                    totalGananciaKg += diffKg;
+                    sumGDP += gdp;
+                    compCount++;
+                    if (diffKg > 0) posCount++;
+                    else if (diffKg < 0) negCount++;
+                    else estCount++;
+                }
+
+                resultadosAnimales.push({
+                    caravana: car,
+                    catLote: `${catLegible} / ${lote}`,
+                    pesoActual: ultKg,
+                    fechaActual: ultimoEvt.fecha ? new Date(ultimoEvt.fecha).toLocaleDateString() : "-",
+                    pesoAnterior: prevKg,
+                    fechaAnterior: prevEvt && prevEvt.fecha ? new Date(prevEvt.fecha).toLocaleDateString() : "-",
+                    diffKg: diffKg,
+                    dias: dias,
+                    gdp: gdp,
+                    estado: estadoBadge,
+                    numPesajes: pesosEvt.length
+                });
+            });
+
+            let totalCabezas = resultadosAnimales.length;
+            let pesoPromedio = totalCabezas > 0 ? (totalBiomasa / totalCabezas).toFixed(1) : "0";
+            let gananciaMedia = compCount > 0 ? (totalGananciaKg / compCount).toFixed(1) : "0";
+            let gdpPromedio = compCount > 0 ? (sumGDP / compCount).toFixed(1).replace('.', ',') : "0,0";
+            let tasaPositiva = compCount > 0 ? Math.round((posCount / compCount) * 100) : 0;
+
+            return {
+                animales: resultadosAnimales,
+                resumen: {
+                    totalCabezas: totalCabezas,
+                    totalBiomasa: totalBiomasa.toFixed(1),
+                    pesoPromedio: pesoPromedio,
+                    gananciaMedia: gananciaMedia,
+                    gdpPromedio: gdpPromedio,
+                    compCount: compCount,
+                    posCount: posCount,
+                    negCount: negCount,
+                    estCount: estCount,
+                    tasaPositiva: tasaPositiva
+                }
+            };
+        };
+
         window.actualizarInformeAvanzado = function() {
             const modoEl = document.getElementById('f-inf-modo');
             const modo = modoEl ? modoEl.value : 'inventario';
@@ -2134,12 +2608,20 @@
             const tbodyMasivo = document.getElementById('tb-informe-masivo');
             const tbodyBajas = document.getElementById('tb-informe-bajas');
             const tbodyEventos = document.getElementById('tb-informe-eventos');
+            const tbodyPesajes = document.getElementById('tb-informe-pesajes');
             const tbodyIndiv = document.getElementById('tb-informe-individual');
 
             const tMasiva = document.getElementById('tabla-masiva'); if(tMasiva) tMasiva.classList.add('oculto');
             const tBajas = document.getElementById('tabla-bajas'); if(tBajas) tBajas.classList.add('oculto');
             const tEventos = document.getElementById('tabla-eventos'); if(tEventos) tEventos.classList.add('oculto');
+            const tPesajes = document.getElementById('tabla-pesajes'); if(tPesajes) tPesajes.classList.add('oculto');
             const tIndiv = document.getElementById('tabla-individual'); if(tIndiv) tIndiv.classList.add('oculto');
+
+            const kpiPes = document.getElementById('resumen-kpis-pesaje');
+            if (kpiPes) {
+                if (modo === 'pesajes') { kpiPes.classList.remove('oculto'); kpiPes.style.display = 'block'; }
+                else { kpiPes.classList.add('oculto'); kpiPes.style.display = 'none'; }
+            }
 
             const cajaKpiPre = document.getElementById('caja-kpi-prenadas');
             const lblTotal = document.getElementById('lbl-inf-total');
@@ -2294,45 +2776,174 @@
                 if(elInfTotal) elInfTotal.innerText = countBajas;
                 if(elInfPrenadas) elInfPrenadas.innerText = "-";
 
+            } else if(modo === 'pesajes') {
+                if(tPesajes) tPesajes.classList.remove('oculto');
+                if (cajaKpiPre) cajaKpiPre.style.display = 'none';
+                if (lblTotal) lblTotal.innerText = "Cabezas Evaluadas";
+
+                const fLote = document.getElementById('f-inf-pes-lote') ? document.getElementById('f-inf-pes-lote').value : "ALL";
+                const fCat = document.getElementById('f-inf-pes-cat') ? document.getElementById('f-inf-pes-cat').value : "ALL";
+                const fFiltroRend = document.getElementById('f-inf-pes-filtro') ? document.getElementById('f-inf-pes-filtro').value : "ALL";
+                const fRango = document.getElementById('f-inf-pes-rango') ? document.getElementById('f-inf-pes-rango').value : "todo";
+                const fDesde = document.getElementById('f-inf-pes-desde') ? document.getElementById('f-inf-pes-desde').value : "";
+                const fHasta = document.getElementById('f-inf-pes-hasta') ? document.getElementById('f-inf-pes-hasta').value : "";
+
+                let analisis = window.obtenerAnalisisCompletoPesajes(fLote, fCat, fFiltroRend, fRango, fDesde, fHasta);
+                let bufferPes = "";
+                let maxRows = 100;
+                pdfExportData = [];
+
+                const elKpiCab = document.getElementById('kpi-pes-cabezas'); if(elKpiCab) elKpiCab.innerText = analisis.resumen.totalCabezas;
+                const elKpiTot = document.getElementById('kpi-pes-total'); if(elKpiTot) elKpiTot.innerText = analisis.resumen.totalBiomasa + " Kg";
+                const elKpiProm = document.getElementById('kpi-pes-prom'); if(elKpiProm) elKpiProm.innerText = analisis.resumen.pesoPromedio + " Kg";
+                const elKpiGan = document.getElementById('kpi-pes-ganancia'); if(elKpiGan) elKpiGan.innerText = (parseFloat(analisis.resumen.gananciaMedia) >= 0 ? "+" : "") + analisis.resumen.gananciaMedia + " Kg";
+                const elKpiGdp = document.getElementById('kpi-pes-gdp'); if(elKpiGdp) elKpiGdp.innerText = (parseFloat(analisis.resumen.gdpPromedio) >= 0 ? "+" : "") + analisis.resumen.gdpPromedio + " Kg/d";
+                const elKpiTasa = document.getElementById('kpi-pes-tasa'); if(elKpiTasa) elKpiTasa.innerText = analisis.resumen.tasaPositiva + "% Positivo";
+
+                analisis.animales.forEach((a, idx) => {
+                    let colAnt = a.pesoAnterior !== null ? `${a.pesoAnterior.toFixed(1)} Kg<br><span style="font-size:10px; color:var(--muted);">${a.fechaAnterior}</span>` : "-";
+                    let colAct = `${a.pesoActual.toFixed(1)} Kg<br><span style="font-size:10px; color:var(--muted);">${a.fechaActual}</span>`;
+                    
+                    let colDiff = "-";
+                    let colGDP = "-";
+                    if (a.diffKg !== null) {
+                        let signo = a.diffKg > 0 ? "+" : "";
+                        let colorTxt = a.diffKg > 0 ? "var(--exito)" : (a.diffKg < 0 ? "var(--peligro)" : "var(--muted)");
+                        colDiff = `<strong style="color:${colorTxt}; font-size:13px;">${signo}${a.diffKg.toFixed(1)} Kg</strong>`;
+                        let gdpValStr = (a.gdp >= 0 ? "+" : "") + a.gdp.toFixed(1).replace('.', ',') + " Kg/d";
+                        colGDP = `<span style="color:${colorTxt}; font-weight:bold; font-size:12px;">${gdpValStr}</span><br><span style="font-size:9px; color:var(--muted);">en ${a.dias} días</span>`;
+                    }
+
+                    let pdfDiff = a.diffKg !== null ? `${a.diffKg > 0 ? "+" : ""}${a.diffKg.toFixed(1)} Kg` : "-";
+                    let pdfGDP = a.gdp !== null ? `${a.gdp >= 0 ? "+" : ""}${a.gdp.toFixed(1).replace('.', ',')} Kg/d` : "-";
+                    let pdfAnt = a.pesoAnterior !== null ? `${a.pesoAnterior.toFixed(1)} Kg (${a.fechaAnterior})` : "-";
+                    let pdfAct = `${a.pesoActual.toFixed(1)} Kg (${a.fechaActual})`;
+
+                    pdfExportData.push([a.caravana, a.catLote, pdfAnt, pdfAct, pdfDiff, pdfGDP, a.estado]);
+
+                    if (idx < maxRows) {
+                        bufferPes += `<tr>
+                            <td><strong>${a.caravana}</strong><br><span style="font-size:10px; color:var(--muted);">${a.numPesajes} pesaje(s)</span></td>
+                            <td>${a.catLote}</td>
+                            <td>${colAnt}</td>
+                            <td><strong>${colAct}</strong></td>
+                            <td>${colDiff}</td>
+                            <td>${colGDP}</td>
+                            <td><span style="font-size:11px; font-weight:bold;">${a.estado}</span></td>
+                        </tr>`;
+                    }
+                });
+
+                if(analisis.animales.length > maxRows) bufferPes += `<tr><td colspan="7" style="text-align:center; padding:15px; color:var(--muted);">Mostrando 100 de ${analisis.animales.length} cabezas. Descargue el PDF para ver el listado total.</td></tr>`;
+                if(tbodyPesajes) tbodyPesajes.innerHTML = bufferPes;
+                if(elInfTotal) elInfTotal.innerText = analisis.animales.length;
+                if(elInfPrenadas) elInfPrenadas.innerText = "-";
+
             } else if(modo === 'eventos') {
                 if(tEventos) tEventos.classList.remove('oculto');
                 if (cajaKpiPre) cajaKpiPre.style.display = 'none';
-                if (lblTotal) lblTotal.innerText = "Procedimientos";
+                if (lblTotal) lblTotal.innerText = "Cabezas Procesadas";
 
                 const fAccion = document.getElementById('f-inf-accion-oculto') ? document.getElementById('f-inf-accion-oculto').value : "ALL";
                 const fRango = document.getElementById('f-inf-rango-fecha') ? document.getElementById('f-inf-rango-fecha').value : "30";
                 const fDesde = document.getElementById('f-inf-desde') ? document.getElementById('f-inf-desde').value : "";
                 const fHasta = document.getElementById('f-inf-hasta') ? document.getElementById('f-inf-hasta').value : "";
                 const fPuntual = document.getElementById('f-inf-fecha-puntual') ? document.getElementById('f-inf-fecha-puntual').value : "";
+                const fKeyword = document.getElementById('f-inf-keyword') ? document.getElementById('f-inf-keyword').value.trim().toLowerCase() : "";
 
                 let bufferEvt = "";
                 let maxEvt = 100;
                 pdfExportData = [];
-                let countEvt = 0;
 
-                datosActivos.forEach(d => {
-                    if(d.accion.includes('Vinculacion') || d.accion === 'Perfil Master' || d.accion === 'Actualización de Datos') return;
+                // 1. Filtrar eventos individuales válidos y descartar registros inválidos o '---'
+                let eventosFiltrados = datosActivos.filter(d => {
+                    if(!d || !window.esCaravanaValida(d.caravana)) return false;
+                    if(d.accion.includes('Vinculacion') || d.accion === 'Perfil Master' || d.accion === 'Actualización de Datos' || d.accion === 'Borrar_Caravana' || d.accion === 'Cambio de Caravana') return false;
+                    
                     let fDate = d.fecha ? String(d.fecha).split('T')[0] : "";
+                    if(fAccion !== "ALL" && d.accion !== fAccion) return false;
+                    if(fRango === 'puntual' && fPuntual && fDate !== fPuntual) return false;
+                    if(fRango !== 'puntual' && fDesde && fDate && fDate < fDesde) return false;
+                    if(fRango !== 'puntual' && fHasta && fDate && fDate > fHasta) return false;
+
+                    if(fKeyword) {
+                        let corpus = (String(d.caravana) + " " + String(d.accion) + " " + String(d.valor || "") + " " + String(d.detalles || "")).toLowerCase();
+                        if(!corpus.includes(fKeyword)) return false;
+                    }
+                    return true;
+                });
+
+                // 2. Consolidar y agrupar por Caravana / RP única para evitar filas duplicadas
+                let agrupadosPorAnimal = new Map();
+                eventosFiltrados.forEach(d => {
+                    let car = String(d.caravana).trim();
+                    if(!agrupadosPorAnimal.has(car)) {
+                        agrupadosPorAnimal.set(car, {
+                            caravana: car,
+                            fechas: [],
+                            procedimientos: [],
+                            tratamientos: [],
+                            observaciones: []
+                        });
+                    }
+                    let item = agrupadosPorAnimal.get(car);
+                    let fFormatted = d.fecha ? new Date(d.fecha).toLocaleDateString() : "-";
+                    if(!item.fechas.includes(fFormatted)) item.fechas.push(fFormatted);
+
                     let badge = typeof window.obtenerBadgeAccion === 'function' ? window.obtenerBadgeAccion(d.accion) : d.accion;
-                    let pasa = true;
+                    if(!item.procedimientos.includes(badge)) item.procedimientos.push(badge);
 
-                    if(fAccion !== "ALL" && d.accion !== fAccion) pasa = false;
-                    if(fRango === 'puntual' && fPuntual && fDate !== fPuntual) pasa = false;
-                    if(fRango !== 'puntual' && fDesde && fDate && fDate < fDesde) pasa = false;
-                    if(fRango !== 'puntual' && fHasta && fDate && fDate > fHasta) pasa = false;
+                    let val = String(d.valor || "").trim();
+                    if(val && val !== "-") {
+                        let trItem = `${badge}: ${val}`;
+                        if(!item.tratamientos.includes(trItem)) item.tratamientos.push(trItem);
+                    }
 
-                    if(pasa) {
-                        countEvt++;
-                        pdfExportData.push([fDate, d.caravana, `${badge}: ${d.valor}`, d.detalles]);
-                        if(countEvt <= maxEvt) {
-                            bufferEvt += `<tr><td>${fDate}</td><td><strong>${d.caravana}</strong></td><td><strong>${badge}</strong>: ${d.valor}</td><td>${d.detalles || "-"}</td></tr>`;
-                        }
+                    let det = String(d.detalles || "").trim();
+                    if(det && det !== "-") {
+                        if(!item.observaciones.includes(det)) item.observaciones.push(det);
                     }
                 });
 
-                if(countEvt > maxEvt) bufferEvt += `<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--muted);">Mostrando 100 de ${countEvt} procedimientos.</td></tr>`;
+                // 3. Renderizar cada animal en una única fila consolidada con sus 6 columnas correspondientes
+                let countAnimales = 0;
+                agrupadosPorAnimal.forEach((data, car) => {
+                    countAnimales++;
+                    const regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(car) : [];
+                    let cat = "-", lote = "-";
+                    const uP = regs.find(r => r.accion === 'Perfil Master');
+                    if(uP) cat = String(uP.detalles || "").split('|')[0] || "-";
+                    const uC = regs.find(r => r.accion === 'Actualización de Datos');
+                    if(uC) {
+                        let v = String(uC.valor || "").split('|');
+                        cat = v[0] ? v[0].replace('Cat:', '').trim() : cat;
+                        lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:', '').trim() : "-";
+                    }
+                    let catLegible = typeof window.obtenerNombreCategoriaLegible === 'function' ? window.obtenerNombreCategoriaLegible(cat) : cat;
+                    let catLoteStr = `${catLegible} / ${lote}`;
+
+                    let fStr = data.fechas.join(', ') || "-";
+                    let procStr = data.procedimientos.join(', ') || "-";
+                    let tratStr = data.tratamientos.join(' • ') || "-";
+                    let obsStr = data.observaciones.join(' • ') || "-";
+
+                    pdfExportData.push([fStr, car, catLoteStr, procStr, tratStr, obsStr]);
+
+                    if(countAnimales <= maxEvt) {
+                        bufferEvt += `<tr>
+                            <td>${fStr}</td>
+                            <td><strong>${car}</strong></td>
+                            <td>${catLoteStr}</td>
+                            <td><span style="background:rgba(59,130,246,0.15); color:var(--secundario); padding:2px 6px; border-radius:4px; font-weight:bold; font-size:11px;">${procStr}</span></td>
+                            <td><strong>${tratStr}</strong></td>
+                            <td style="font-size:12px; color:var(--muted);">${obsStr}</td>
+                        </tr>`;
+                    }
+                });
+
+                if(countAnimales > maxEvt) bufferEvt += `<tr><td colspan="6" style="text-align:center; padding:15px; color:var(--muted);">Mostrando 100 de ${countAnimales} animales procesados.</td></tr>`;
                 if(tbodyEventos) tbodyEventos.innerHTML = bufferEvt;
-                if(elInfTotal) elInfTotal.innerText = countEvt;
+                if(elInfTotal) elInfTotal.innerText = countAnimales;
                 if(elInfPrenadas) elInfPrenadas.innerText = "-";
             }
         };
@@ -2430,6 +3041,49 @@
                         let filename = (fCat !== "ALL") ? `Reporte_${fCat.replace(/[^a-zA-Z0-9]/g, '_')}.pdf` : ((fLote !== "ALL") ? `Reporte_Lote_${fLote.replace(/[^a-zA-Z0-9]/g, '_')}.pdf` : 'Reporte_Inventario.pdf');
                         if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
 
+                    } else if (modo === 'pesajes') {
+                        let fLote = document.getElementById('f-inf-pes-lote') ? document.getElementById('f-inf-pes-lote').value : "ALL";
+                        let fCat = document.getElementById('f-inf-pes-cat') ? document.getElementById('f-inf-pes-cat').value : "ALL";
+                        let titulo = "Informe Analítico de Pesajes, Evolución y Rendimiento";
+                        if (fCat !== "ALL" && fLote !== "ALL") titulo = `Rendimiento de Pesaje - ${fCat} (Lote: ${fLote})`;
+                        else if (fCat !== "ALL") titulo = `Rendimiento de Pesaje - ${fCat}`;
+                        else if (fLote !== "ALL") titulo = `Rendimiento de Pesaje - Lote: ${fLote}`;
+
+                        addMembrete(titulo);
+
+                        let totalCab = document.getElementById('kpi-pes-cabezas') ? document.getElementById('kpi-pes-cabezas').innerText : "0";
+                        let bioTot = document.getElementById('kpi-pes-total') ? document.getElementById('kpi-pes-total').innerText : "0 Kg";
+                        let promTot = document.getElementById('kpi-pes-prom') ? document.getElementById('kpi-pes-prom').innerText : "0 Kg";
+                        let ganMed = document.getElementById('kpi-pes-ganancia') ? document.getElementById('kpi-pes-ganancia').innerText : "+0 Kg";
+                        let gdpMed = document.getElementById('kpi-pes-gdp') ? document.getElementById('kpi-pes-gdp').innerText : "+0,0 Kg/d";
+                        let tasaPos = document.getElementById('kpi-pes-tasa') ? document.getElementById('kpi-pes-tasa').innerText : "0%";
+
+                        doc.setFontSize(8); doc.setFont("helvetica", "normal");
+                        doc.text(`Cabezas Evaluadas: ${window.cleanPDFText(totalCab)} | Biomasa Total: ${window.cleanPDFText(bioTot)} | Peso Promedio: ${window.cleanPDFText(promTot)}`, 14, 40);
+                        doc.text(`Ganancia Media: ${window.cleanPDFText(ganMed)} | GDP Promedio: ${window.cleanPDFText(gdpMed)} | Eficacia de Crecimiento: ${window.cleanPDFText(tasaPos)}`, 14, 44);
+
+                        const tableData = pdfExportData.map(row => row.map(cell => window.cleanPDFText(cell).replace(/\n/g, ' ')));
+                        doc.autoTable({
+                            startY: 48,
+                            theme: 'grid',
+                            head: [['Caravana / RP', 'Categoría / Lote', 'Peso Anterior', 'Último Peso', 'Ganancia (Kg)', 'GDP (Kg/día)', 'Evolución']],
+                            body: tableData,
+                            styles: { fontSize: 7, cellPadding: 2.2, overflow: 'linebreak' },
+                            headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold', halign: 'center' },
+                            columnStyles: {
+                                0: { cellWidth: 22, halign: 'center', fontStyle: 'bold' },
+                                1: { cellWidth: 34 },
+                                2: { cellWidth: 24, halign: 'center' },
+                                3: { cellWidth: 24, halign: 'center', fontStyle: 'bold' },
+                                4: { cellWidth: 24, halign: 'center', fontStyle: 'bold' },
+                                5: { cellWidth: 26, halign: 'center' },
+                                6: { cellWidth: 28, halign: 'center' }
+                            }
+                        });
+
+                        let filename = 'Reporte_Pesajes_Rendimiento.pdf';
+                        if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
+
                     } else {
                         let fDesde = document.getElementById('f-inf-desde').value;
                         let fHasta = document.getElementById('f-inf-hasta').value;
@@ -2453,12 +3107,12 @@
                             styles: { fontSize: 7, cellPadding: 2.5, overflow: 'linebreak' },
                             headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', halign: 'center' },
                             columnStyles: {
-                                0: { cellWidth: 20, halign: 'center' },
-                                1: { cellWidth: 24, halign: 'center', fontStyle: 'bold' },
-                                2: { cellWidth: 32 },
-                                3: { cellWidth: 30, fontStyle: 'bold' },
-                                4: { cellWidth: 50 },
-                                5: { cellWidth: 'auto' }
+                                0: { cellWidth: 18, halign: 'center' },
+                                1: { cellWidth: 18, halign: 'center', fontStyle: 'bold' },
+                                2: { cellWidth: 26 },
+                                3: { cellWidth: 24, fontStyle: 'bold', halign: 'center' },
+                                4: { cellWidth: 34 }, // Optimizado de 50mm a 34mm para ceder espacio vital
+                                5: { cellWidth: 'auto' } // Expandido automáticamente a ~62mm para máxima legibilidad
                             }
                         });
 
@@ -3140,6 +3794,10 @@
                 let tagNorm = String(rpExtraido).trim().toLowerCase();
                 let esRFID = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === tagNorm);
                 let rpFinal = esRFID ? esRFID.caravana : String(rpExtraido).trim().toUpperCase();
+                if (!window.esCaravanaValida(rpFinal)) {
+                    console.warn('[Taurus Hardware] Combo descartado por caravana inválida:', rpFinal);
+                    return;
+                }
 
                 rpActivo = rpFinal;
                 window.forzarSaltoAFicha();
@@ -3172,7 +3830,7 @@
             if (tieneIndPeso && mPeso) {
                 let pNum = parseFloat(mPeso[1]);
                 if (pNum >= 5.0 && pNum <= 2500.0) {
-                    if (rpActivo && rpActivo !== "---") {
+                    if (rpActivo && window.esCaravanaValida(rpActivo)) {
                         let pStr = pNum.toFixed(1) + " Kg";
                         if (typeof rafagaActiva !== 'undefined' && rafagaActiva) {
                             let sel = document.getElementById('rafaga-accion').value;
