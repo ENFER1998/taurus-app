@@ -173,6 +173,23 @@
         body.tema-claro .tabla-informe td { border-color: var(--border); color: #0f172a; }
         body.tema-claro .tabla-informe tr:hover td { background: #f8fafc; }
 
+        /* AJUSTE DE ANCHOS DE COLUMNAS PARA REPORTES Y OBSERVACIONES AMPLIADAS */
+        #tabla-eventos th:nth-child(1), #tabla-eventos td:nth-child(1) { width: 10%; text-align: center; white-space: nowrap; }
+        #tabla-eventos th:nth-child(2), #tabla-eventos td:nth-child(2) { width: 11%; text-align: center; font-weight: bold; white-space: nowrap; }
+        #tabla-eventos th:nth-child(3), #tabla-eventos td:nth-child(3) { width: 16%; }
+        #tabla-eventos th:nth-child(4), #tabla-eventos td:nth-child(4) { width: 14%; text-align: center; }
+        #tabla-eventos th:nth-child(5), #tabla-eventos td:nth-child(5) { width: 19%; }
+        #tabla-eventos th:nth-child(6), #tabla-eventos td:nth-child(6) { width: 30%; word-break: break-word; }
+
+        #tabla-pesajes th:nth-child(1), #tabla-pesajes td:nth-child(1) { width: 12%; text-align: center; font-weight: bold; }
+        #tabla-pesajes th:nth-child(2), #tabla-pesajes td:nth-child(2) { width: 18%; }
+        #tabla-pesajes th:nth-child(3), #tabla-pesajes td:nth-child(3) { width: 14%; text-align: center; }
+        #tabla-pesajes th:nth-child(4), #tabla-pesajes td:nth-child(4) { width: 14%; text-align: center; font-weight: bold; }
+        #tabla-pesajes th:nth-child(5), #tabla-pesajes td:nth-child(5) { width: 14%; text-align: center; font-weight: bold; }
+        #tabla-pesajes th:nth-child(6), #tabla-pesajes td:nth-child(6) { width: 13%; text-align: center; }
+        #tabla-pesajes th:nth-child(7), #tabla-pesajes td:nth-child(7) { width: 15%; text-align: center; }
+
+
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); z-index: 2000; align-items: center; justify-content: center;}
         .modal-body { background: var(--bg-panel); width: 450px; border-radius: 6px; padding: 25px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5);}
         .modal-body h3 { margin: 0 0 20px 0; border-bottom: 1px solid var(--border); padding-bottom: 10px; font-size: 16px; text-transform: uppercase; color: var(--text-main);}
@@ -536,6 +553,7 @@
                     <div style="width:320px;">
                         <select class="form-control" id="f-inf-modo" onchange="cambiarModoReporte()" style="margin:0; padding:6px 12px; font-weight:bold; font-size:12px; height:34px; background:var(--primary); color:white;">
                             <option value="inventario">📊 INVENTARIO (Por Lote y Categorías)</option>
+                            <option value="pesajes">⚖️ INFORME DE PESAJES Y GANANCIA</option>
                             <option value="bajas">💀 REPORTE DE BAJAS Y MORTALIDAD</option>
                             <option value="eventos">📋 TRATAMIENTOS Y PROCEDIMIENTOS</option>
                         </select>
@@ -581,6 +599,63 @@
                     </select>
                 </div>
 
+                                <div id="filtros-pesajes" style="display:none; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                    <select class="form-control" style="width:auto; flex:1; margin:0; padding:4px 8px; font-size:11px; height:30px;" id="f-inf-pes-lote" onchange="actualizarInformeAvanzado()">
+                        <option value="ALL">🏷️ Lote (Todos)</option>
+                    </select>
+                    <select class="form-control" style="width:auto; flex:1; margin:0; padding:4px 8px; font-size:11px; height:30px;" id="f-inf-pes-cat" onchange="actualizarInformeAvanzado()">
+                        <option value="ALL">🐄 Categoría (Todas)</option>
+                    </select>
+                    <select class="form-control" style="width:auto; flex:1; margin:0; padding:4px 8px; font-size:11px; height:30px;" id="f-inf-pes-filtro" onchange="actualizarInformeAvanzado()">
+                        <option value="ALL">📊 Rendimiento (Todos)</option>
+                        <option value="ganancia">🚀 Ganaron Peso (+)</option>
+                        <option value="perdida">⚠️ Perdieron Peso (-)</option>
+                        <option value="estable">⚖️ Mantuvieron Peso (0)</option>
+                        <option value="multiples">📈 Con 2 o más pesajes</option>
+                        <option value="unico">🆕 Con 1 solo pesaje</option>
+                    </select>
+                    <select class="form-control" style="width:auto; flex:1; margin:0; padding:4px 8px; font-size:11px; height:30px;" id="f-inf-pes-rango" onchange="manejarRangoFechasPesajes()">
+                        <option value="todo">Todo el Historial</option>
+                        <option value="30">Últimos 30 Días</option>
+                        <option value="90">Últimos 3 Meses</option>
+                        <option value="365">Último Año</option>
+                        <option value="custom">📅 Manual...</option>
+                    </select>
+                    <div id="caja-fechas-pesajes" style="display:none; gap:6px; flex:1 1 100%;">
+                        <input type="date" id="f-inf-pes-desde" class="form-control" style="margin:0; padding:4px 8px; font-size:11px; height:30px;" onchange="actualizarInformeAvanzado()">
+                        <input type="date" id="f-inf-pes-hasta" class="form-control" style="margin:0; padding:4px 8px; font-size:11px; height:30px;" onchange="actualizarInformeAvanzado()">
+                    </div>
+                </div>
+
+                <!-- RESUMEN EJECUTIVO DE RENDIMIENTO DE PESAJE PC -->
+                <div id="resumen-kpis-pesaje" class="oculto" style="display:none; margin-bottom:10px;">
+                    <div style="display:grid; grid-template-columns:repeat(6, 1fr); gap:10px;">
+                        <div class="dato-box" style="padding:10px; border-left:3px solid var(--primary);">
+                            <span>Cabezas Pesadas</span>
+                            <strong id="kpi-pes-cabezas" style="font-size:18px; color:var(--primary);">0</strong>
+                        </div>
+                        <div class="dato-box" style="padding:10px; border-left:3px solid var(--primary);">
+                            <span>Biomasa Total</span>
+                            <strong id="kpi-pes-total" style="font-size:18px; color:var(--text-main);">0 Kg</strong>
+                        </div>
+                        <div class="dato-box" style="padding:10px; border-left:3px solid var(--primary);">
+                            <span>Peso Promedio</span>
+                            <strong id="kpi-pes-prom" style="font-size:18px; color:var(--primary);">0 Kg</strong>
+                        </div>
+                        <div class="dato-box" style="padding:10px; border-left:3px solid var(--success);">
+                            <span>Ganancia Media</span>
+                            <strong id="kpi-pes-ganancia" style="font-size:18px; color:var(--success);">+0 Kg</strong>
+                        </div>
+                        <div class="dato-box" style="padding:10px; border-left:3px solid var(--success);">
+                            <span>GDP Promedio</span>
+                            <strong id="kpi-pes-gdp" style="font-size:18px; color:var(--success);">+0,0 Kg/d</strong>
+                        </div>
+                        <div class="dato-box" style="padding:10px; border-left:3px solid var(--warning);">
+                            <span>Eficacia Crecimiento</span>
+                            <strong id="kpi-pes-tasa" style="font-size:18px; color:var(--warning);">0%</strong>
+                        </div>
+                    </div>
+                </div>
                 <div id="filtros-bajas" style="display:none; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
                     <select class="form-control" style="width:auto; flex:1; margin:0; padding:4px 8px; font-size:11px; height:30px;" id="f-inf-baja-causa" onchange="actualizarInformeAvanzado()">
                         <option value="ALL">💀 Causas (Todas)</option>
@@ -648,7 +723,8 @@
             <div style="overflow-y:auto; max-height:calc(100vh - 280px);">
                 <table class="tabla-informe" id="tabla-masiva"><thead><tr><th>RP y Carimbo</th><th>Categoría Oficial</th><th>Lote / Ubicación</th><th>Últ. Peso</th><th>Dx Actual</th></tr></thead><tbody id="tb-informe-masivo"></tbody></table>
                 <table class="tabla-informe oculto" id="tabla-bajas"><thead><tr><th>Fecha de Baja</th><th>Caravana / RP</th><th>Causa Registrada</th><th>Observaciones</th></tr></thead><tbody id="tb-informe-bajas"></tbody></table>
-                <table class="tabla-informe oculto" id="tabla-eventos"><thead><tr><th>Fecha</th><th>RP</th><th>Trabajo Realizado</th><th>Detalles Extras</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
+                <table class="tabla-informe oculto" id="tabla-pesajes"><thead><tr><th>Caravana / RP</th><th>Categoría Oficial / Lote</th><th>Peso Anterior</th><th>Último Peso</th><th>Ganancia (Δ)</th><th>GDP (Kg/día)</th><th>Evolución</th></tr></thead><tbody id="tb-informe-pesajes"></tbody></table>
+                <table class="tabla-informe oculto" id="tabla-eventos"><thead><tr><th>Fecha</th><th>Caravana / RP</th><th>Categoría / Lote</th><th>Procedimientos Realizados</th><th>Sanidad / Tratamientos / Pesaje</th><th>Observaciones / Detalles</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
                 <table class="tabla-informe oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Procedimiento</th><th>Valor Principal</th><th>Observaciones Adicionales</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
             </div>
         </div>
@@ -841,7 +917,29 @@
         
     <div id="m-ins" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-ins')">&times;</span><h3>Registro de Inseminación</h3><div class="form-grupo"><label>Profesional a Cargo</label><input type="text" class="form-control" id="i-ins-quien" placeholder="Nombre del Inseminador"></div><div class="form-grupo"><label>Genética Utilizada</label><input type="text" class="form-control" id="i-ins-toro" placeholder="Toro o Código de Pajuela"></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-ins-txt"></textarea></div><button type="button" class="btn-guardar" onclick="prepararGuardado('m-ins', 'Inseminación')">Registrar Servicio</button></div></div>
     <div id="m-nut" class="modal"><div class="modal-body"><span class="btn-cerrar" onclick="cerrarModal('m-nut')">&times;</span><h3>Suplemento Nutricional</h3><div class="form-grupo"><label>Alimento Suministrado</label><input type="text" class="form-control" id="i-nut-prod" list="lista-alimentos"><datalist id="lista-alimentos"><option value="FOSFO Plus! 90f (Sal Mineral)"></option><option value="FOSFO Plus! Proteica Ternero"></option><option value="Forraje / Pastura"></option></datalist></div><div class="form-grupo"><label>Dosificación</label><input type="text" class="form-control" id="i-nut-rac" placeholder="Ej: A voluntad, 0.50gr/kg/día..."></div><div class="form-grupo"><label>Notas Opcionales</label><textarea class="form-control textarea" id="i-nut-txt"></textarea></div><button type="button" class="btn-guardar" onclick="prepararGuardado('m-nut', 'Nutrición')">Registrar Nutrición</button></div></div>
-    <div id="m-traza" class="modal"><div class="modal-body" style="width:700px;"><span class="btn-cerrar" onclick="cerrarModal('m-traza')">&times;</span><h3>Trazabilidad Completa del RP</h3><div style="max-height:450px;overflow-y:auto; margin-top:15px;"><table class="tabla-datos"><thead><tr><th>Fecha</th><th>Acción</th><th>Valor Principal</th><th>Detalles Adicionales</th></tr></thead><tbody id="tb-traza"></tbody></table></div></div></div>
+        <!-- MODAL DE EDICIÓN CON FECHA Y HORA PC -->
+    <div id="modal-editar-registro" class="modal">
+        <div class="modal-body">
+            <span class="btn-cerrar" onclick="cerrarModal('modal-editar-registro')">&times;</span>
+            <h3>✏️ Editar Registro Clínico</h3>
+            <input type="hidden" id="edit-reg-id">
+            <div class="form-grupo">
+                <label>Fecha y Hora</label>
+                <input type="datetime-local" class="form-control" id="edit-reg-fecha">
+            </div>
+            <div class="form-grupo">
+                <label>Valor Principal (Kg / Dosis / Diagnóstico)</label>
+                <input type="text" class="form-control" id="edit-reg-valor">
+            </div>
+            <div class="form-grupo">
+                <label>Observaciones / Detalles</label>
+                <textarea class="form-control textarea" id="edit-reg-detalles"></textarea>
+            </div>
+            <button type="button" class="btn-guardar" onclick="guardarEdicionRegistro()">Guardar Cambios</button>
+        </div>
+    </div>
+
+    <div id="m-traza" class="modal"><div class="modal-body" style="width:700px;"><span class="btn-cerrar" onclick="cerrarModal('m-traza')">&times;</span><h3>Trazabilidad Completa del RP</h3><div style="max-height:450px;overflow-y:auto; margin-top:15px;"><table class="tabla-datos"><thead><tr><th>Fecha</th><th>Acción</th><th>Valor Principal</th><th>Detalles Adicionales</th><th>Editar</th></tr></thead><tbody id="tb-traza"></tbody></table></div></div></div>
 
     <!-- BOTÓN AURA DE CORA Y ESTADO -->
     <button id="btn-aura" title="Hablar con Cora">
@@ -1018,11 +1116,63 @@
 
         window.verificarRafagaCustom = function() {
             const sel = document.getElementById('rafaga-accion').value;
+            const modalidad = document.getElementById('rafaga-modalidad') ? document.getElementById('rafaga-modalidad').value : 'rfid';
             const customInput = document.getElementById('rafaga-prod-custom');
             const detallesBox = document.getElementById('caja-rafaga-detalles');
-            if(sel === 'solo_peso') { customInput.classList.add('oculto'); detallesBox.classList.add('oculto'); } 
-            else { detallesBox.classList.remove('oculto'); if(sel === 'OTRO') { customInput.classList.remove('oculto'); customInput.focus(); } else { customInput.classList.add('oculto'); } }
+            const cajaManual = document.getElementById('caja-rafaga-manual');
+
+            if (cajaManual) {
+                if (modalidad === 'manual') { cajaManual.classList.remove('oculto'); cajaManual.style.display = 'flex'; }
+                else { cajaManual.classList.add('oculto'); cajaManual.style.display = 'none'; }
+            }
+
+            if(sel === 'solo_peso') {
+                if (customInput) customInput.classList.add('oculto');
+                if (detallesBox) { detallesBox.classList.add('oculto'); detallesBox.style.display = 'none'; }
+            } else {
+                if (detallesBox) { detallesBox.classList.remove('oculto'); detallesBox.style.display = 'block'; }
+                if(sel === 'OTRO') {
+                    if (customInput) { customInput.classList.remove('oculto'); customInput.focus(); }
+                } else {
+                    if (customInput) customInput.classList.add('oculto');
+                }
+            }
         };
+
+        function ejecutarRafagaManual() {
+            let inputRp = document.getElementById('rm-caravana');
+            let inputVal = document.getElementById('rm-valor');
+            if(!inputRp) return;
+            let rp = inputRp.value.trim().toUpperCase();
+            let val = inputVal ? inputVal.value.trim().toUpperCase() : "";
+            if(!rp || !esCaravanaValida(rp)) {
+                if (typeof mostrarToast === 'function') mostrarToast("⚠️ Ingrese un Nº de RP válido (no puede estar vacío ni ser '---')");
+                inputRp.focus();
+                return;
+            }
+            if(!val) {
+                if (typeof mostrarToast === 'function') mostrarToast("⚠️ Ingrese el peso o producto a registrar");
+                if (inputVal) inputVal.focus();
+                return;
+            }
+            rpActivo = rp;
+            let sel = document.getElementById('rafaga-accion').value;
+            let notas = document.getElementById('rafaga-detalles') ? document.getElementById('rafaga-detalles').value.trim() : "";
+            let recordatorio = document.getElementById('rafaga-recordatorio') ? document.getElementById('rafaga-recordatorio').value : "0";
+
+            if(!isNaN(val) || val.includes('.')) { ejecutarAccion('Peso', val + " Kg", "Automático (Ráfaga Manual)", null); } 
+            else { ejecutarAccion('Sanidad', val, "Automático (Ráfaga Manual)", null); }
+            
+            if(sel !== 'solo_peso') {
+                let customInput = document.getElementById('rafaga-prod-custom');
+                let producto = sel === 'OTRO' ? ((customInput && customInput.value.trim()) || 'Tratamiento General') : sel;
+                let detCompleto = (notas ? notas + " | " : "") + "Modo Ráfaga Manual";
+                if (recordatorio !== "0") detCompleto += ` | [RECORDATORIO:${recordatorio}]`;
+                ejecutarAccion('Sanidad', producto, detCompleto, null);
+            }
+            if (typeof mostrarToast === 'function') mostrarToast("✅ Combo asignado al RP: " + rp);
+            inputRp.value = ""; if(inputVal) inputVal.value = ""; inputRp.focus();
+        }
 
 
         function setEstadoRed(online, texto = null) {
@@ -1333,7 +1483,7 @@
         function esCaravanaValida(car) {
             if (car === null || car === undefined) return false;
             let s = String(car).trim();
-            if (!s || s === "" || s === "---") return false;
+            if (!s || s === "" || s === "---" || s === "-" || s === "0") return false;
             let low = s.toLowerCase();
             if (low === "null" || low === "undefined" || low === "nan" || low === "[object object]") return false;
             if (low.includes("@")) return false; // email de operario
@@ -1360,7 +1510,7 @@
                     const accion = String(data.accion || "").toLowerCase();
                     const car = String(data.caravana || "").trim().toLowerCase();
                     const esOpAccion = accion.includes("operador") || accion.startsWith("alta op") || accion.startsWith("edicion op") || accion.startsWith("edición op") || accion.startsWith("baja op");
-                    const esCarInvalida = car.includes("@") || car === "null" || car === "undefined";
+                    const esCarInvalida = car.includes("@") || car === "null" || car === "undefined" || car === "---" || car === "" || !esCaravanaValida(data.caravana);
                     if (esOpAccion || esCarInvalida) {
                         batch.delete(docSnap.ref);
                         hayPurgas = true;
@@ -1413,8 +1563,7 @@
                     validos.push(...historia[rp]); 
                 }
             }
-            const globalEvents = dbCache.filter(d => (d.caravana === "---" || !d.caravana) && esEventoGanaderoValido(d));
-            activosCache = [...validos, ...globalEvents].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            activosCache = validos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
             return activosCache;
         }
 
@@ -1460,7 +1609,7 @@
                 }
             });
 
-            ['filtro-reg-lote', 'f-inf-lote'].forEach(id => {
+            ['filtro-reg-lote', 'f-inf-lote', 'f-inf-pes-lote'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el) {
                     let curr = el.value;
@@ -1471,7 +1620,7 @@
                 }
             });
 
-            ['filtro-reg-cat', 'f-inf-cat'].forEach(id => {
+            ['filtro-reg-cat', 'f-inf-cat', 'f-inf-pes-cat'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el) {
                     let curr = el.value;
@@ -1512,7 +1661,9 @@
                     if(pesoAnterior) {
                         let p2 = parseFloat(pesoAnterior.valor); let d2 = new Date(pesoAnterior.fecha);
                         let diffTime = Math.abs(d1 - d2); let dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                        if(dias >= 1) { let gdp = ((p1 - p2) / dias).toFixed(3); if(gdp > 0) gdpHtml = `<span style="color:var(--success); font-weight:bold; font-size:11px;">🚀 +${gdp} Kg/día</span>`; else if(gdp < 0) gdpHtml = `<span style="color:var(--danger); font-weight:bold; font-size:11px;">⚠️ ${gdp} Kg/día</span>`; else gdpHtml = `<span style="color:var(--text-muted); font-weight:bold; font-size:11px;">⚖️ Mantuvo su peso</span>`; }
+                        if(dias >= 1) { let gdp = ((p1 - p2) / dias).toFixed(3); let gdpNum = parseFloat(gdp);
+                        let gdpStr = (gdpNum >= 0 ? "+" : "") + gdpNum.toFixed(1).replace('.', ',') + " Kg/d";
+                        if(gdp > 0) gdpHtml = `<span style="color:var(--success); font-weight:bold; font-size:11px;">🚀 ${gdpStr}</span>`; else if(gdp < 0) gdpHtml = `<span style="color:var(--danger); font-weight:bold; font-size:11px;">⚠️ ${gdpStr}</span>`; else gdpHtml = `<span style="color:var(--text-muted); font-weight:bold; font-size:11px;">⚖️ Mantuvo su peso</span>`; }
                     } else {
                         if(todosLosPesos.length > 1) { gdpHtml = `<span style="color:var(--text-muted); font-size:10px; font-style:italic;">(Pesos del mismo día)</span>`; } else { gdpHtml = `<span style="color:var(--text-muted); font-size:10px; font-style:italic;">(Falta peso histórico)</span>`; }
                     }
@@ -1577,14 +1728,29 @@
         }
 
         function ejecutarAccion(tipo, val, det, modalId) {
-            const obj = { fecha: new Date().toISOString(), accion: tipo, caravana: rpActivo, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
+            let car = rpActivo;
+            if (tipo.includes('Operador') || tipo === 'Alta Operador' || tipo === 'Edición Operador' || tipo === 'Baja Operador') {
+                car = "---";
+            } else {
+                if (!esCaravanaValida(car)) {
+                    console.warn(`[Taurus PC] Acción '${tipo}' ignorada por RP inválido ('${car}').`);
+                    if (typeof mostrarToast === 'function') {
+                        mostrarToast("⚠️ Debe identificar un animal (RP válido) antes de registrar");
+                    }
+                    if (modalId) cerrarModal(modalId);
+                    return;
+                }
+            }
+            const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
+            const docRef = colRef.doc();
+            const obj = { id: docRef.id, fecha: new Date().toISOString(), accion: tipo, caravana: car, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
             dbCache.unshift(obj); historiaCache = null; activosCache = null; buscarCaravanaBtn(rpActivo); procesarDatosDashboard();
             if(modalId) cerrarModal(modalId);
             if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador') {
                 notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
             }
             if(navigator.onLine) { 
-                db.collection('estancias').doc(maestroId).collection('eventos').add(obj).catch(e => {
+                docRef.set(obj).catch(e => {
                     let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); 
                 });
             } else { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); }
@@ -1593,7 +1759,30 @@
         function prepararGuardado(mId, t) { 
             if(!rpActivo) return; let v = "-", d = ""; const i = document.getElementById(mId).querySelectorAll('.form-control, .textarea'); 
             if(t === 'Comentario') { d = i[0].value; } 
-            else if(t === 'Peso') { v = i[0].value + " Kg"; d = `Cond: ${i[1].value}. Notas: ${i[2].value}`; } 
+            else if(t === 'Peso') { 
+                let pValNum = parseFloat(i[0].value);
+                let diffInfo = "";
+                if (!isNaN(pValNum) && rpActivo) {
+                    let regs = typeof obtenerHistorial === 'function' ? obtenerHistorial(rpActivo) : [];
+                    let pesosPrev = regs.filter(r => String(r.accion).includes('Peso') && r.fecha);
+                    if (pesosPrev.length > 0) {
+                        let pUltimo = parseFloat(String(pesosPrev[0].valor).replace(/[^\d.-]/g, ''));
+                        if (!isNaN(pUltimo)) {
+                            let diffKg = pValNum - pUltimo;
+                            let d1 = new Date();
+                            let d2 = new Date(pesosPrev[0].fecha);
+                            let dias = Math.max(1, Math.ceil(Math.abs(d1 - d2) / (1000 * 60 * 60 * 24)));
+                            let gdpVal = diffKg / dias;
+                            let gdpFormatted = (gdpVal >= 0 ? "+" : "") + gdpVal.toFixed(1).replace('.', ',') + " Kg/d";
+                            let signo = diffKg > 0 ? "+" : "";
+                            let diffKgStr = diffKg.toFixed(1).replace('.', ',');
+                            diffInfo = ` | Ganancia: ${signo}${diffKgStr} Kg (${gdpFormatted} en ${dias}d)`;
+                        }
+                    }
+                }
+                v = i[0].value + " Kg"; 
+                d = `Cond: ${i[1].value}. Notas: ${i[2].value}${diffInfo}`; 
+            } 
             else if(t === 'Sanidad') { let recordatorio = document.getElementById('i-sani-recordatorio').value; v = i[0].value; d = `Lote: ${i[1].value}. Notas: ${i[2].value}`; if (recordatorio !== "0") { d += ` | [RECORDATORIO:${recordatorio}]`; } } 
             else if(t === 'Diagnóstico') { v = "Dx: " + i[0].value; d = i[1].value || "-"; } 
             else if(t === 'Inseminación') { v = "Toro: " + i[1].value; d = `Ins: ${i[0].value}. Notas: ${i[2].value}`; } 
@@ -1640,18 +1829,199 @@
         function guardarClasificacion() { if(!rpActivo) return; ejecutarAccion('Actualización de Datos', `Cat: ${document.getElementById('input-cat-rapida').value} | Carimbo: ${document.getElementById('input-carimbo-rapido').value||"-"}`, `Lote: ${document.getElementById('input-lote-rapido').value||"-"}`, 'm-clasi'); }
         function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'm-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
         function borrarCaravana() { if(!rpActivo) return; if(confirm(`¿ELIMINAR todo el historial de la caravana ${rpActivo}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null); alert("Historial eliminado. El número quedó libre."); cambiarVista('v-dash', document.querySelectorAll('.sidebar-nav li')[0]); } }
-        function verTrazabilidad() { abrirModal('m-traza'); let h = ""; obtenerHistorial(rpActivo).forEach(r => { if(!esEventoGanaderoValido(r)) return; h += `<tr><td style="white-space:nowrap;">${new Date(r.fecha).toLocaleDateString()}</td><td><strong>${r.accion}</strong></td><td>${r.valor}</td><td style="font-size:12px;">${r.detalles}</td></tr>`; }); document.getElementById('tb-traza').innerHTML = h; }
+        function calcularDiferenciaPeso(caravana, fechaActual, valorActual) {
+            try {
+                let pActual = parseFloat(String(valorActual).replace(/[^\d.-]/g, ''));
+                if (isNaN(pActual)) return "";
+                let fActual = new Date(fechaActual).getTime();
+                if (isNaN(fActual)) return "";
+
+                let regs = typeof obtenerHistorial === 'function' ? obtenerHistorial(caravana) : [];
+                let pesos = regs.filter(d => String(d.accion).includes('Peso') && d.fecha);
+                pesos.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+
+                let anterior = null;
+                for (let i = pesos.length - 1; i >= 0; i--) {
+                    let fP = new Date(pesos[i].fecha).getTime();
+                    if (fP < fActual) {
+                        anterior = pesos[i];
+                        break;
+                    }
+                }
+
+                if (!anterior) return "";
+                let pAnt = parseFloat(String(anterior.valor).replace(/[^\d.-]/g, ''));
+                if (isNaN(pAnt)) return "";
+
+                let diffKg = pActual - pAnt;
+                let diffDias = Math.max(1, Math.round((fActual - new Date(anterior.fecha).getTime()) / (1000 * 60 * 60 * 24)));
+                let gdpVal = diffKg / diffDias;
+                let gdpFormatted = (gdpVal >= 0 ? "+" : "") + gdpVal.toFixed(1).replace('.', ',') + " Kg/d";
+
+                let signo = diffKg > 0 ? "+" : "";
+                let diffKgStr = diffKg.toFixed(1).replace('.', ',');
+                let color = diffKg > 0 ? "var(--success)" : (diffKg < 0 ? "var(--danger)" : "var(--text-muted)");
+                let icon = diffKg > 0 ? " 🚀" : (diffKg < 0 ? " ⚠️" : "");
+
+                return ` <span style="color:${color}; font-size:11px;">(${signo}${diffKgStr} Kg${icon}${diffDias > 1 ? ` | ${gdpFormatted}` : ''})</span>`;
+            } catch(e) {
+                return "";
+            }
+        }
+
+        function verTrazabilidad() {
+            if(!rpActivo || !esCaravanaValida(rpActivo)) {
+                if(typeof mostrarToast === 'function') mostrarToast("⚠️ Seleccione o identifique un animal primero");
+                return;
+            }
+            abrirModal('m-traza'); 
+            let lista = typeof obtenerHistorial === 'function' ? obtenerHistorial(rpActivo) : [];
+            let filtrados = lista.filter(r => esEventoGanaderoValido(r) && !r.accion.includes('Vinculacion') && !['Alta Operador', 'Edición Operador', 'Baja Operador'].includes(r.accion));
+
+            if (filtrados.length === 0) {
+                document.getElementById('tb-traza').innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">Sin sucesos clínicos registrados para el RP ${rpActivo}.</td></tr>`;
+                return;
+            }
+
+            let h = ""; 
+            filtrados.forEach(r => { 
+                let detalleDiferencia = "";
+                if(r.accion === 'Peso') {
+                    detalleDiferencia = calcularDiferenciaPeso(rpActivo, r.fecha, r.valor);
+                }
+                h += `<tr>
+                    <td style="white-space:nowrap;">${r.fecha ? new Date(r.fecha).toLocaleDateString() : "-"}</td>
+                    <td><strong>${r.accion}</strong></td>
+                    <td><span style="color:var(--primary); font-weight:bold;">${r.valor}</span> ${detalleDiferencia}</td>
+                    <td style="font-size:12px; color:var(--text-muted);">${r.detalles || "-"}</td>
+                    <td><button type="button" class="btn-outline" style="padding:4px 10px; font-size:11px; background:var(--primary); color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="abrirEdicionRegistro('${r.id || ''}')">✏️ Editar</button></td>
+                </tr>`; 
+            }); 
+            document.getElementById('tb-traza').innerHTML = h; 
+        }
+
+        function verHistorial() { verTrazabilidad(); }
+
+        function abrirEdicionRegistro(id) {
+            if(!id || id === 'undefined') {
+                alert("Identificador de registro no disponible.");
+                return;
+            }
+            let reg = dbCache.find(r => r.id === id);
+            if(!reg && rpActivo) {
+                let regsAnimal = typeof obtenerHistorial === 'function' ? obtenerHistorial(rpActivo) : [];
+                reg = regsAnimal.find(r => r.id === id);
+            }
+            if(!reg) {
+                alert("Registro no encontrado en memoria.");
+                return;
+            }
+            document.getElementById('edit-reg-id').value = reg.id; 
+            document.getElementById('edit-reg-valor').value = reg.valor || ""; 
+            document.getElementById('edit-reg-detalles').value = reg.detalles || "";
+            
+            if(reg.fecha) {
+                let fechaLocal = new Date(reg.fecha);
+                fechaLocal.setMinutes(fechaLocal.getMinutes() - fechaLocal.getTimezoneOffset());
+                document.getElementById('edit-reg-fecha').value = fechaLocal.toISOString().slice(0,16);
+            }
+
+            cerrarModal('m-traza');
+            abrirModal('modal-editar-registro');
+        }
+
+        async function guardarEdicionRegistro() {
+            let id = document.getElementById('edit-reg-id').value; 
+            let nValor = document.getElementById('edit-reg-valor').value.trim(); 
+            let nDetalles = document.getElementById('edit-reg-detalles').value.trim();
+            let nFecha = document.getElementById('edit-reg-fecha').value; 
+            
+            if(!nFecha) {
+                alert("Ingrese una fecha válida.");
+                return;
+            }
+            let isoFecha = new Date(nFecha).toISOString();
+            
+            // 1. Actualizar en caché local y persistencia localStorage
+            let i = dbCache.findIndex(r => r.id === id);
+            if(i !== -1) { 
+                dbCache[i].valor = nValor; 
+                dbCache[i].detalles = nDetalles; 
+                dbCache[i].fecha = isoFecha;
+            }
+            historiaCache = null; 
+            activosCache = null; 
+            lsSet('tc_db', dbCache);
+
+            // 2. Persistir en Firestore si hay red o encolar
+            if(navigator.onLine && maestroId) {
+                try {
+                    await db.collection('estancias').doc(maestroId).collection('eventos').doc(id).update({
+                        valor: nValor,
+                        detalles: nDetalles,
+                        fecha: isoFecha
+                    });
+                } catch(e) {
+                    console.warn("Aviso al actualizar en Firestore:", e);
+                    let p = lsGet('tc_pendientes', []);
+                    p.push({ id: id, valor: nValor, detalles: nDetalles, fecha: isoFecha, accion: 'update' });
+                    lsSet('tc_pendientes', p);
+                }
+            } else {
+                let p = lsGet('tc_pendientes', []);
+                p.push({ id: id, valor: nValor, detalles: nDetalles, fecha: isoFecha, accion: 'update' });
+                lsSet('tc_pendientes', p);
+            }
+
+            cerrarModal('modal-editar-registro'); 
+            if(typeof mostrarToast === 'function') mostrarToast("✅ Registro actualizado y guardado."); 
+
+            // 3. ACTUALIZACIÓN INMEDIATA EN TODOS LOS REPORTES Y VISTAS
+            if(rpActivo) {
+                buscarCaravanaBtn(rpActivo);
+                verTrazabilidad();
+            }
+            if(typeof procesarDatosDashboard === 'function') procesarDatosDashboard();
+            if(typeof actualizarInformeAvanzado === 'function') actualizarInformeAvanzado();
+            if(typeof cargarListaRegistro === 'function') cargarListaRegistro();
+        }
 
         function cambiarModoReporte() {
             const modo = document.getElementById('f-inf-modo').value;
             const fInv = document.getElementById('filtros-inventario');
+            const fPes = document.getElementById('filtros-pesajes');
             const fBajas = document.getElementById('filtros-bajas');
             const fEvt = document.getElementById('filtros-eventos');
+            const kpiPes = document.getElementById('resumen-kpis-pesaje');
             
             if (fInv) fInv.style.display = (modo === 'inventario') ? 'flex' : 'none';
+            if (fPes) fPes.style.display = (modo === 'pesajes') ? 'flex' : 'none';
             if (fBajas) fBajas.style.display = (modo === 'bajas') ? 'flex' : 'none';
             if (fEvt) fEvt.style.display = (modo === 'eventos') ? 'flex' : 'none';
+            if (kpiPes) kpiPes.style.display = (modo === 'pesajes') ? 'block' : 'none';
             
+            actualizarInformeAvanzado();
+        }
+
+        function manejarRangoFechasPesajes() {
+            const rangoEl = document.getElementById('f-inf-pes-rango');
+            if(!rangoEl) return;
+            const rango = rangoEl.value;
+            const cajaManual = document.getElementById('caja-fechas-pesajes');
+            const dDesde = document.getElementById('f-inf-pes-desde');
+            const dHasta = document.getElementById('f-inf-pes-hasta');
+            let hoy = new Date(); let desde = new Date();
+            if (rango === 'custom') {
+                if(cajaManual) cajaManual.style.display = 'flex';
+            } else {
+                if(cajaManual) cajaManual.style.display = 'none';
+                if(rango === '30') { desde.setDate(hoy.getDate() - 30); }
+                else if (rango === '90') { desde.setDate(hoy.getDate() - 90); }
+                else if (rango === '365') { desde.setDate(hoy.getDate() - 365); }
+                else if (rango === 'todo') { desde = new Date('2000-01-01'); }
+                if(dDesde) dDesde.value = desde.toISOString().split('T')[0];
+                if(dHasta) dHasta.value = hoy.toISOString().split('T')[0];
+            }
             actualizarInformeAvanzado();
         }
 
@@ -1706,6 +2076,123 @@
             return `${accion}`;
         }
 
+
+        function obtenerAnalisisCompletoPesajes(fLote, fCat, fFiltroRend, fRango, fDesde, fHasta) {
+            let datosActivos = typeof obtenerRegistrosActivos === 'function' ? obtenerRegistrosActivos() : [];
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => esCaravanaValida(c)))];
+            
+            let resultadosAnimales = [];
+            let totalBiomasa = 0;
+            let totalGananciaKg = 0;
+            let sumGDP = 0;
+            let compCount = 0;
+            let posCount = 0;
+            let negCount = 0;
+            let estCount = 0;
+
+            unicas.forEach(car => {
+                let regs = typeof obtenerHistorial === 'function' ? obtenerHistorial(car) : [];
+                let pesosEvt = regs.filter(d => String(d.accion).includes('Peso') && d.fecha && d.valor);
+                if (pesosEvt.length === 0) return;
+
+                // Ordenar cronológicamente (más antiguo al más reciente)
+                pesosEvt.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+
+                if (fRango && fRango !== 'todo') {
+                    if (fDesde) pesosEvt = pesosEvt.filter(p => String(p.fecha).split('T')[0] >= fDesde);
+                    if (fHasta) pesosEvt = pesosEvt.filter(p => String(p.fecha).split('T')[0] <= fHasta);
+                    if (pesosEvt.length === 0) return;
+                }
+
+                let cat = "-", lote = "-";
+                const uP = regs.find(d => d.accion === 'Perfil Master');
+                if(uP) cat = String(uP.detalles || "").split('|')[0] || "-";
+                const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                if(uC) {
+                    let v = String(uC.valor || "").split('|');
+                    cat = v[0] ? v[0].replace('Cat:', '').trim() : cat;
+                    lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:', '').trim() : "-";
+                }
+                let catLegible = typeof obtenerNombreCategoriaLegible === 'function' ? obtenerNombreCategoriaLegible(cat) : cat;
+
+                if (fLote && fLote !== 'ALL' && !lote.includes(fLote)) return;
+                if (fCat && fCat !== 'ALL' && !catLegible.includes(fCat)) return;
+
+                let ultimoEvt = pesosEvt[pesosEvt.length - 1];
+                let ultKg = parseFloat(String(ultimoEvt.valor).replace(/[^\d.-]/g, ''));
+                if (isNaN(ultKg)) return;
+
+                let prevEvt = pesosEvt.length > 1 ? pesosEvt[pesosEvt.length - 2] : null;
+                let prevKg = prevEvt ? parseFloat(String(prevEvt.valor).replace(/[^\d.-]/g, '')) : null;
+
+                let diffKg = (prevKg !== null && !isNaN(prevKg)) ? (ultKg - prevKg) : null;
+                let dias = (prevEvt && prevEvt.fecha && ultimoEvt.fecha) 
+                    ? Math.max(1, Math.round(Math.abs(new Date(ultimoEvt.fecha) - new Date(prevEvt.fecha)) / (1000 * 60 * 60 * 24))) 
+                    : 0;
+                let gdp = (diffKg !== null && dias > 0) ? parseFloat((diffKg / dias).toFixed(3)) : null;
+
+                let estadoBadge = "🆕 Primer Pesaje";
+                if (diffKg !== null) {
+                    if (diffKg > 0 && gdp >= 0.4) estadoBadge = "🚀 Óptimo";
+                    else if (diffKg > 0) estadoBadge = "📈 Crecimiento";
+                    else if (diffKg === 0) estadoBadge = "⚖️ Estable";
+                    else estadoBadge = "⚠️ Pérdida";
+                }
+
+                if (fFiltroRend === 'ganancia' && (diffKg === null || diffKg <= 0)) return;
+                if (fFiltroRend === 'perdida' && (diffKg === null || diffKg >= 0)) return;
+                if (fFiltroRend === 'estable' && (diffKg === null || diffKg !== 0)) return;
+                if (fFiltroRend === 'multiples' && pesosEvt.length < 2) return;
+                if (fFiltroRend === 'unico' && pesosEvt.length > 1) return;
+
+                totalBiomasa += ultKg;
+                if (diffKg !== null) {
+                    totalGananciaKg += diffKg;
+                    sumGDP += gdp;
+                    compCount++;
+                    if (diffKg > 0) posCount++;
+                    else if (diffKg < 0) negCount++;
+                    else estCount++;
+                }
+
+                resultadosAnimales.push({
+                    caravana: car,
+                    catLote: `${catLegible} / ${lote}`,
+                    pesoActual: ultKg,
+                    fechaActual: ultimoEvt.fecha ? new Date(ultimoEvt.fecha).toLocaleDateString() : "-",
+                    pesoAnterior: prevKg,
+                    fechaAnterior: prevEvt && prevEvt.fecha ? new Date(prevEvt.fecha).toLocaleDateString() : "-",
+                    diffKg: diffKg,
+                    dias: dias,
+                    gdp: gdp,
+                    estado: estadoBadge,
+                    numPesajes: pesosEvt.length
+                });
+            });
+
+            let totalCabezas = resultadosAnimales.length;
+            let pesoPromedio = totalCabezas > 0 ? (totalBiomasa / totalCabezas).toFixed(1) : "0";
+            let gananciaMedia = compCount > 0 ? (totalGananciaKg / compCount).toFixed(1) : "0";
+            let gdpPromedio = compCount > 0 ? (sumGDP / compCount).toFixed(1).replace('.', ',') : "0,0";
+            let tasaPositiva = compCount > 0 ? Math.round((posCount / compCount) * 100) : 0;
+
+            return {
+                animales: resultadosAnimales,
+                resumen: {
+                    totalCabezas: totalCabezas,
+                    totalBiomasa: totalBiomasa.toFixed(1),
+                    pesoPromedio: pesoPromedio,
+                    gananciaMedia: gananciaMedia,
+                    gdpPromedio: gdpPromedio,
+                    compCount: compCount,
+                    posCount: posCount,
+                    negCount: negCount,
+                    estCount: estCount,
+                    tasaPositiva: tasaPositiva
+                }
+            };
+        }
+
         function actualizarInformeAvanzado() {
             const modoEl = document.getElementById('f-inf-modo');
             const modo = modoEl ? modoEl.value : 'inventario';
@@ -1717,12 +2204,20 @@
             const tbodyMasivo = document.getElementById('tb-informe-masivo');
             const tbodyBajas = document.getElementById('tb-informe-bajas');
             const tbodyEventos = document.getElementById('tb-informe-eventos');
+            const tbodyPesajes = document.getElementById('tb-informe-pesajes');
             const tbodyIndiv = document.getElementById('tb-informe-individual');
             
             const tMasiva = document.getElementById('tabla-masiva'); if(tMasiva) tMasiva.classList.add('oculto');
             const tBajas = document.getElementById('tabla-bajas'); if(tBajas) tBajas.classList.add('oculto');
             const tEventos = document.getElementById('tabla-eventos'); if(tEventos) tEventos.classList.add('oculto');
+            const tPesajes = document.getElementById('tabla-pesajes'); if(tPesajes) tPesajes.classList.add('oculto');
             const tIndiv = document.getElementById('tabla-individual'); if(tIndiv) tIndiv.classList.add('oculto');
+
+            const kpiPes = document.getElementById('resumen-kpis-pesaje');
+            if (kpiPes) {
+                if (modo === 'pesajes') { kpiPes.classList.remove('oculto'); kpiPes.style.display = 'block'; }
+                else { kpiPes.classList.add('oculto'); kpiPes.style.display = 'none'; }
+            }
             
             let vivas = unicas.filter(car => !(typeof obtenerHistorial === 'function' && obtenerHistorial(car).some(r => r.accion === 'Baja')));
             
@@ -1849,42 +2344,172 @@
                 if(elInfTotal) elInfTotal.innerText = countBajas;
                 if(elInfPrenadas) elInfPrenadas.innerText = "-";
 
+            } else if(modo === 'pesajes') {
+                if(tPesajes) tPesajes.classList.remove('oculto');
+                if (cajaKpiPre) cajaKpiPre.style.display = 'none';
+                if (lblTotal) lblTotal.innerText = "CABEZAS EVALUADAS";
+
+                const fLote = document.getElementById('f-inf-pes-lote') ? document.getElementById('f-inf-pes-lote').value : "ALL";
+                const fCat = document.getElementById('f-inf-pes-cat') ? document.getElementById('f-inf-pes-cat').value : "ALL";
+                const fFiltroRend = document.getElementById('f-inf-pes-filtro') ? document.getElementById('f-inf-pes-filtro').value : "ALL";
+                const fRango = document.getElementById('f-inf-pes-rango') ? document.getElementById('f-inf-pes-rango').value : "todo";
+                const fDesde = document.getElementById('f-inf-pes-desde') ? document.getElementById('f-inf-pes-desde').value : "";
+                const fHasta = document.getElementById('f-inf-pes-hasta') ? document.getElementById('f-inf-pes-hasta').value : "";
+
+                let analisis = obtenerAnalisisCompletoPesajes(fLote, fCat, fFiltroRend, fRango, fDesde, fHasta);
+                let bufferPes = "";
+                let maxRows = 100;
+                pdfExportData = [];
+
+                const elKpiCab = document.getElementById('kpi-pes-cabezas'); if(elKpiCab) elKpiCab.innerText = analisis.resumen.totalCabezas;
+                const elKpiTot = document.getElementById('kpi-pes-total'); if(elKpiTot) elKpiTot.innerText = analisis.resumen.totalBiomasa + " Kg";
+                const elKpiProm = document.getElementById('kpi-pes-prom'); if(elKpiProm) elKpiProm.innerText = analisis.resumen.pesoPromedio + " Kg";
+                const elKpiGan = document.getElementById('kpi-pes-ganancia'); if(elKpiGan) elKpiGan.innerText = (parseFloat(analisis.resumen.gananciaMedia) >= 0 ? "+" : "") + analisis.resumen.gananciaMedia + " Kg";
+                const elKpiGdp = document.getElementById('kpi-pes-gdp'); if(elKpiGdp) elKpiGdp.innerText = (parseFloat(analisis.resumen.gdpPromedio) >= 0 ? "+" : "") + analisis.resumen.gdpPromedio + " Kg/d";
+                const elKpiTasa = document.getElementById('kpi-pes-tasa'); if(elKpiTasa) elKpiTasa.innerText = analisis.resumen.tasaPositiva + "% Positivo";
+
+                analisis.animales.forEach((a, idx) => {
+                    let colAnt = a.pesoAnterior !== null ? `${a.pesoAnterior.toFixed(1)} Kg<br><span style="font-size:11px; color:var(--text-muted);">${a.fechaAnterior}</span>` : "-";
+                    let colAct = `${a.pesoActual.toFixed(1)} Kg<br><span style="font-size:11px; color:var(--text-muted);">${a.fechaActual}</span>`;
+                    
+                    let colDiff = "-";
+                    let colGDP = "-";
+                    if (a.diffKg !== null) {
+                        let signo = a.diffKg > 0 ? "+" : "";
+                        let colorTxt = a.diffKg > 0 ? "var(--success)" : (a.diffKg < 0 ? "var(--danger)" : "var(--text-muted)");
+                        colDiff = `<strong style="color:${colorTxt}; font-size:13px;">${signo}${a.diffKg.toFixed(1)} Kg</strong>`;
+                        let gdpValStr = (a.gdp >= 0 ? "+" : "") + a.gdp.toFixed(1).replace('.', ',') + " Kg/d";
+                        colGDP = `<span style="color:${colorTxt}; font-weight:bold; font-size:12px;">${gdpValStr}</span><br><span style="font-size:10px; color:var(--text-muted);">en ${a.dias} días</span>`;
+                    }
+
+                    let pdfDiff = a.diffKg !== null ? `${a.diffKg > 0 ? "+" : ""}${a.diffKg.toFixed(1)} Kg` : "-";
+                    let pdfGDP = a.gdp !== null ? `${a.gdp >= 0 ? "+" : ""}${a.gdp.toFixed(1).replace('.', ',')} Kg/d` : "-";
+                    let pdfAnt = a.pesoAnterior !== null ? `${a.pesoAnterior.toFixed(1)} Kg (${a.fechaAnterior})` : "-";
+                    let pdfAct = `${a.pesoActual.toFixed(1)} Kg (${a.fechaActual})`;
+
+                    pdfExportData.push([a.caravana, a.catLote, pdfAnt, pdfAct, pdfDiff, pdfGDP, a.estado]);
+
+                    if (idx < maxRows) {
+                        bufferPes += `<tr>
+                            <td><strong>${a.caravana}</strong><br><span style="font-size:10px; color:var(--text-muted);">${a.numPesajes} pesaje(s)</span></td>
+                            <td>${a.catLote}</td>
+                            <td>${colAnt}</td>
+                            <td><strong>${colAct}</strong></td>
+                            <td>${colDiff}</td>
+                            <td>${colGDP}</td>
+                            <td><span style="font-size:11px; font-weight:bold;">${a.estado}</span></td>
+                        </tr>`;
+                    }
+                });
+
+                if(analisis.animales.length > maxRows) bufferPes += `<tr><td colspan="7" style="text-align:center; padding:15px; color:var(--text-muted);">Mostrando 100 de ${analisis.animales.length} cabezas. Utilice la descarga PDF para ver todas.</td></tr>`;
+                if(tbodyPesajes) tbodyPesajes.innerHTML = bufferPes;
+                if(elInfTotal) elInfTotal.innerText = analisis.animales.length;
+                if(elInfPrenadas) elInfPrenadas.innerText = "-";
+
             } else if(modo === 'eventos') {
                 if(tEventos) tEventos.classList.remove('oculto');
                 if (cajaKpiPre) cajaKpiPre.style.display = 'none';
-                if (lblTotal) lblTotal.innerText = "PROCEDIMIENTOS REGISTRADOS";
+                if (lblTotal) lblTotal.innerText = "CABEZAS PROCESADAS";
 
                 const fAccion = document.getElementById('f-inf-accion-oculto') ? document.getElementById('f-inf-accion-oculto').value : "ALL";
                 const fRango = document.getElementById('f-inf-rango-fecha') ? document.getElementById('f-inf-rango-fecha').value : "30";
                 const fDesde = document.getElementById('f-inf-desde') ? document.getElementById('f-inf-desde').value : "";
                 const fHasta = document.getElementById('f-inf-hasta') ? document.getElementById('f-inf-hasta').value : "";
                 const fPuntual = document.getElementById('f-inf-fecha-puntual') ? document.getElementById('f-inf-fecha-puntual').value : "";
+                const fKeyword = document.getElementById('f-inf-keyword') ? document.getElementById('f-inf-keyword').value.trim().toLowerCase() : "";
 
                 let bufferEvt = ""; let maxEvt = 100; pdfExportData = [];
-                let countEvt = 0;
 
-                datosActivos.forEach(d => {
-                    if(d.accion.includes('Vinculacion') || d.accion === 'Perfil Master' || d.accion === 'Actualización de Datos') return;
+                // 1. Filtrar eventos individuales válidos y descartar registros inválidos o '---'
+                let eventosFiltrados = datosActivos.filter(d => {
+                    if(!d || !esCaravanaValida(d.caravana)) return false;
+                    if(d.accion.includes('Vinculacion') || d.accion === 'Perfil Master' || d.accion === 'Actualización de Datos' || d.accion === 'Borrar_Caravana' || d.accion === 'Cambio de Caravana') return false;
+                    
                     let fDate = d.fecha ? String(d.fecha).split('T')[0] : "";
-                    let badge = obtenerBadgeAccion(d.accion);
-                    let pasa = true;
+                    if(fAccion !== "ALL" && d.accion !== fAccion) return false;
+                    if(fRango === 'puntual' && fPuntual && fDate !== fPuntual) return false;
+                    if(fRango !== 'puntual' && fDesde && fDate && fDate < fDesde) return false;
+                    if(fRango !== 'puntual' && fHasta && fDate && fDate > fHasta) return false;
 
-                    if(fAccion !== "ALL" && d.accion !== fAccion) pasa = false;
-                    if(fRango === 'puntual' && fPuntual && fDate !== fPuntual) pasa = false;
-                    if(fRango !== 'puntual' && fDesde && fDate && fDate < fDesde) pasa = false;
-                    if(fRango !== 'puntual' && fHasta && fDate && fDate > fHasta) pasa = false;
+                    if(fKeyword) {
+                        let corpus = (String(d.caravana) + " " + String(d.accion) + " " + String(d.valor || "") + " " + String(d.detalles || "")).toLowerCase();
+                        if(!corpus.includes(fKeyword)) return false;
+                    }
+                    return true;
+                });
 
-                    if(pasa) {
-                        countEvt++;
-                        pdfExportData.push([fDate, d.caravana, `${badge}: ${d.valor}`, d.detalles]);
-                        if(countEvt <= maxEvt) {
-                            bufferEvt += `<tr><td>${fDate}</td><td><strong>${d.caravana}</strong></td><td><strong>${badge}</strong>: ${d.valor}</td><td>${d.detalles || "-"}</td></tr>`;
-                        }
+                // 2. Consolidar y agrupar por caravana única (sin duplicar filas por animal)
+                let agrupadosPorAnimal = new Map();
+                eventosFiltrados.forEach(d => {
+                    let car = String(d.caravana).trim();
+                    if(!agrupadosPorAnimal.has(car)) {
+                        agrupadosPorAnimal.set(car, {
+                            caravana: car,
+                            fechas: [],
+                            procedimientos: [],
+                            tratamientos: [],
+                            observaciones: []
+                        });
+                    }
+                    let item = agrupadosPorAnimal.get(car);
+                    let fFormatted = d.fecha ? new Date(d.fecha).toLocaleDateString() : "-";
+                    if(!item.fechas.includes(fFormatted)) item.fechas.push(fFormatted);
+
+                    let badge = typeof obtenerBadgeAccion === 'function' ? obtenerBadgeAccion(d.accion) : d.accion;
+                    if(!item.procedimientos.includes(badge)) item.procedimientos.push(badge);
+
+                    let val = String(d.valor || "").trim();
+                    if(val && val !== "-") {
+                        let trItem = `${badge}: ${val}`;
+                        if(!item.tratamientos.includes(trItem)) item.tratamientos.push(trItem);
+                    }
+
+                    let det = String(d.detalles || "").trim();
+                    if(det && det !== "-") {
+                        if(!item.observaciones.includes(det)) item.observaciones.push(det);
                     }
                 });
-                if(countEvt > maxEvt) bufferEvt += `<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--text-muted);">Mostrando 100 de ${countEvt} procedimientos.</td></tr>`;
+
+                // 3. Renderizar cada animal en una única fila consolidada con sus 6 columnas correspondientes
+                let countAnimales = 0;
+                agrupadosPorAnimal.forEach((data, car) => {
+                    countAnimales++;
+                    const regs = typeof obtenerHistorial === 'function' ? obtenerHistorial(car) : [];
+                    let cat = "-", lote = "-";
+                    const uP = regs.find(r => r.accion === 'Perfil Master');
+                    if(uP) cat = String(uP.detalles || "").split('|')[0] || "-";
+                    const uC = regs.find(r => r.accion === 'Actualización de Datos');
+                    if(uC) {
+                        let v = String(uC.valor || "").split('|');
+                        cat = v[0] ? v[0].replace('Cat:', '').trim() : cat;
+                        lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:', '').trim() : "-";
+                    }
+                    let catLegible = typeof obtenerNombreCategoriaLegible === 'function' ? obtenerNombreCategoriaLegible(cat) : cat;
+                    let catLoteStr = `${catLegible} / ${lote}`;
+
+                    let fStr = data.fechas.join(', ') || "-";
+                    let procStr = data.procedimientos.join(', ') || "-";
+                    let tratStr = data.tratamientos.join(' • ') || "-";
+                    let obsStr = data.observaciones.join(' • ') || "-";
+
+                    pdfExportData.push([fStr, car, catLoteStr, procStr, tratStr, obsStr]);
+
+                    if(countAnimales <= maxEvt) {
+                        bufferEvt += `<tr>
+                            <td>${fStr}</td>
+                            <td><strong>${car}</strong></td>
+                            <td>${catLoteStr}</td>
+                            <td><span style="background:rgba(37,99,235,0.15); color:var(--primary); padding:2px 6px; border-radius:4px; font-weight:bold; font-size:11px;">${procStr}</span></td>
+                            <td><strong>${tratStr}</strong></td>
+                            <td style="font-size:12px; color:var(--text-muted);">${obsStr}</td>
+                        </tr>`;
+                    }
+                });
+
+                if(countAnimales > maxEvt) bufferEvt += `<tr><td colspan="6" style="text-align:center; padding:15px; color:var(--text-muted);">Mostrando 100 de ${countAnimales} animales procesados.</td></tr>`;
                 if(tbodyEventos) tbodyEventos.innerHTML = bufferEvt;
-                if(elInfTotal) elInfTotal.innerText = countEvt;
+                if(elInfTotal) elInfTotal.innerText = countAnimales;
                 if(elInfPrenadas) elInfPrenadas.innerText = "-";
             }
         }
@@ -1980,13 +2605,80 @@
                         let filename = (fCat !== "ALL") ? `Reporte_${fCat.replace(/[^a-zA-Z0-9]/g, '_')}.pdf` : ((fLote !== "ALL") ? `Reporte_Lote_${fLote.replace(/[^a-zA-Z0-9]/g, '_')}.pdf` : 'Reporte_Inventario.pdf');
                         doc.save(filename);
 
-                    } else {
-                        addMembrete("Reporte de Trabajos y Procedimientos");
-                        const totalReg = document.getElementById('inf-total').innerText;
-                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Procedimientos Listados: ${cleanPDFText(totalReg)}`, 14, 43);
+                    } else if (modo === 'pesajes') {
+                        let fLote = document.getElementById('f-inf-pes-lote') ? document.getElementById('f-inf-pes-lote').value : "ALL";
+                        let fCat = document.getElementById('f-inf-pes-cat') ? document.getElementById('f-inf-pes-cat').value : "ALL";
+                        let titulo = "Informe Analítico de Pesajes, Evolución y Rendimiento";
+                        if (fCat !== "ALL" && fLote !== "ALL") titulo = `Rendimiento de Pesaje - ${fCat} (Lote: ${fLote})`;
+                        else if (fCat !== "ALL") titulo = `Rendimiento de Pesaje - ${fCat}`;
+                        else if (fLote !== "ALL") titulo = `Rendimiento de Pesaje - Lote: ${fLote}`;
+
+                        addMembrete(titulo);
+
+                        let totalCab = document.getElementById('kpi-pes-cabezas') ? document.getElementById('kpi-pes-cabezas').innerText : "0";
+                        let bioTot = document.getElementById('kpi-pes-total') ? document.getElementById('kpi-pes-total').innerText : "0 Kg";
+                        let promTot = document.getElementById('kpi-pes-prom') ? document.getElementById('kpi-pes-prom').innerText : "0 Kg";
+                        let ganMed = document.getElementById('kpi-pes-ganancia') ? document.getElementById('kpi-pes-ganancia').innerText : "+0 Kg";
+                        let gdpMed = document.getElementById('kpi-pes-gdp') ? document.getElementById('kpi-pes-gdp').innerText : "+0,0 Kg/d";
+                        let tasaPos = document.getElementById('kpi-pes-tasa') ? document.getElementById('kpi-pes-tasa').innerText : "0%";
+
+                        doc.setFontSize(8); doc.setFont("helvetica", "normal");
+                        doc.text(`Cabezas Evaluadas: ${cleanPDFText(totalCab)} | Biomasa Total: ${cleanPDFText(bioTot)} | Peso Promedio: ${cleanPDFText(promTot)}`, 14, 40);
+                        doc.text(`Ganancia Media: ${cleanPDFText(ganMed)} | GDP Promedio: ${cleanPDFText(gdpMed)} | Eficacia de Crecimiento: ${cleanPDFText(tasaPos)}`, 14, 44);
 
                         const tableData = pdfExportData.map(row => row.map(cell => cleanPDFText(cell).replace(/\n/g, ' ')));
-                        doc.autoTable({ startY: 48, theme: 'grid', head: [['Fecha', 'Caravana', 'Trabajo Realizado', 'Detalles Extras']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 2: { cellWidth: 40 }, 3: { cellWidth: 'auto' } } });
+                        doc.autoTable({
+                            startY: 48,
+                            theme: 'grid',
+                            head: [['Caravana / RP', 'Categoría Oficial / Lote', 'Peso Anterior', 'Último Peso', 'Ganancia (Kg)', 'GDP (Kg/día)', 'Evolución']],
+                            body: tableData,
+                            styles: { fontSize: 7, cellPadding: 2.2, overflow: 'linebreak' },
+                            headStyles: { fillColor: [5, 150, 105], textColor: 255, fontStyle: 'bold', halign: 'center' },
+                            columnStyles: {
+                                0: { cellWidth: 22, halign: 'center', fontStyle: 'bold' },
+                                1: { cellWidth: 34 },
+                                2: { cellWidth: 24, halign: 'center' },
+                                3: { cellWidth: 24, halign: 'center', fontStyle: 'bold' },
+                                4: { cellWidth: 24, halign: 'center', fontStyle: 'bold' },
+                                5: { cellWidth: 26, halign: 'center' },
+                                6: { cellWidth: 28, halign: 'center' }
+                            }
+                        });
+
+                        let filename = 'Reporte_Pesajes_Rendimiento.pdf';
+                        doc.save(filename);
+
+                    } else {
+                        let fDesde = document.getElementById('f-inf-desde').value;
+                        let fHasta = document.getElementById('f-inf-hasta').value;
+                        let rText = fDesde && fHasta ? ` (Periodo: ${fDesde} a ${fHasta})` : '';
+                        const fRango = document.getElementById('f-inf-rango-fecha') ? document.getElementById('f-inf-rango-fecha').value : '';
+                        const fPuntual = document.getElementById('f-inf-fecha-puntual') ? document.getElementById('f-inf-fecha-puntual').value : '';
+                        let subTitulo = "Reporte de Trabajos y Procedimientos Clínicos";
+                        if (fRango === 'puntual' && fPuntual) subTitulo += ` - Día: ${fPuntual}`;
+                        else if (rText) subTitulo += rText;
+
+                        addMembrete(subTitulo);
+                        const totalReg = document.getElementById('inf-total').innerText;
+                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Cabezas Procesadas: ${cleanPDFText(totalReg)}`, 14, 43);
+
+                        const tableData = pdfExportData.map(row => row.map(cell => cleanPDFText(cell).replace(/\n/g, ' ')));
+                        doc.autoTable({
+                            startY: 48,
+                            theme: 'grid',
+                            head: [['Fecha', 'Caravana / RP', 'Categoría / Lote', 'Procedimientos Realizados', 'Sanidad / Tratamientos / Pesaje', 'Observaciones / Detalles']],
+                            body: tableData,
+                            styles: { fontSize: 7, cellPadding: 2.5, overflow: 'linebreak' },
+                            headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold', halign: 'center' },
+                            columnStyles: {
+                                0: { cellWidth: 18, halign: 'center' },
+                                1: { cellWidth: 18, halign: 'center', fontStyle: 'bold' },
+                                2: { cellWidth: 26 },
+                                3: { cellWidth: 24, fontStyle: 'bold', halign: 'center' },
+                                4: { cellWidth: 34 }, // Optimizado de 50mm a 34mm para ceder espacio vital
+                                5: { cellWidth: 'auto' } // Expandido automáticamente a ~62mm para máxima legibilidad
+                            }
+                        });
                         
                         let filename = 'Reporte_Tratamientos.pdf';
                         doc.save(filename);
