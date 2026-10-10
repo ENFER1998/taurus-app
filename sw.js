@@ -1,62 +1,44 @@
-// Taurus Control - Service Worker PWA (Offline 100%)
-const CACHE_NAME = 'taurus-cache-v4';
+/**
+ * TAURUS CONTROL - SERVICE WORKER OFICIAL PWA (OFFLINE-FIRST)
+ * Desarrollado por Fernando Rodriguez 2026
+ */
 
-// NOTA PARA GITHUB PAGES / SUBDIRECTORIOS:
-// Usamos rutas relativas (sin '/' inicial) para que funcionen tanto en https://dominio/taurus-app/ como en la raíz '/'
-const urlsToCache = [
+const CACHE_NAME = 'taurus-control-v6';
+
+const STATIC_ASSETS = [
   './',
   'index.html',
-  'test.html',
-  'mobiletest.html',
   'pc.html',
   'taurusadmin.html',
   'taurusadminmobile.html',
-  'taurus_control_corregido.html',
-  'taurus_control_reparado.html',
-  'manifest.json',
   'gemini-svg.png',
-  'launchericon-48x48.png',
-  'launchericon-72x72.png',
-  'launchericon-96x96.png',
-  'launchericon-144x144.png',
-  'launchericon-192x192.png',
-  'launchericon-512x512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
   'https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js',
   'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js'
 ];
 
-// 1. INSTALACIÓN RESILIENTE (Un 404 no anula el resto)
-self.addEventListener('install', (e) => {
-  self.skipWaiting();
-  e.waitUntil(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      console.log('[Taurus SW] Precachando archivos del sistema...');
-      await Promise.allSettled(
-        urlsToCache.map(async (url) => {
-          try {
-            await cache.add(url);
-            console.log(`[Taurus SW] Guardado con éxito: ${url}`);
-          } catch(err) {
-            console.warn(`[Taurus SW] Omitiendo archivo no encontrado: ${url}`);
-          }
-        })
-      );
-    })
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('[Taurus SW] Precalentando caché offline con recursos estáticos...');
+      return cache.addAll(STATIC_ASSETS).catch((err) => {
+        console.warn('[Taurus SW] Advertencia al precachear algunos recursos:', err);
+      });
+    }).then(() => self.skipWaiting())
   );
 });
 
-// 2. ACTIVACIÓN Y PURGA DE VERSIONES ANTERIORES
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((name) => {
-          if (name !== CACHE_NAME) {
-            console.log('[Taurus SW] Limpiando caché anterior:', name);
-            return caches.delete(name);
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            console.log('[Taurus SW] Purgando caché obsoleta:', cache);
+            return caches.delete(cache);
           }
         })
       );
@@ -64,79 +46,79 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// 3. INTERCEPTOR DE PETICIONES
-self.addEventListener('fetch', (e) => {
-  // Solo peticiones GET
-  if (e.request.method !== 'GET') return;
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
 
-  const url = new URL(e.request.url);
-
-  // Ignorar protocolos no-http (ej: chrome-extension:)
-  if (!url.protocol.startsWith('http')) return;
-
-  // Ignorar OneSignal y APIs de Google / Firestore streaming
+  // Excluir solicitudes directas a APIs en vivo (OpenRouter, OneSignal, Firestore Live)
   if (
-    url.hostname.includes('onesignal.com') ||
-    url.hostname.includes('script.google.com') ||
-    url.hostname.includes('firestore.googleapis.com') ||
-    url.hostname.includes('firebaseinstallations.googleapis.com')
+    url.origin.includes('firestore.googleapis.com') ||
+    url.origin.includes('openrouter.ai') ||
+    url.origin.includes('onesignal.com') ||
+    url.pathname.includes('/channel')
   ) {
     return;
   }
 
-  // A. NAVEGACIÓN (Páginas HTML): Network First con Respaldo
-  if (e.request.mode === 'navigate' || (e.request.headers.get('accept') && e.request.headers.get('accept').includes('text/html'))) {
-    e.respondWith(
-      fetch(e.request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(e.request, copy));
-          }
-          return response;
-        })
-        .catch(async () => {
-          console.log('[Taurus SW] Sin red, buscando pantalla en caché para:', e.request.url);
-          const match = await caches.match(e.request, { ignoreSearch: true });
-          if (match) return match;
-
-          // Respaldo de navegación adaptable a cualquier ruta o subcarpeta
-          const fallback = await caches.match('test.html') ||
-                           await caches.match('taurus_control_reparado.html') ||
-                           await caches.match('index.html') ||
-                           await caches.match('./');
-          return fallback;
-        })
+  // Navegación HTML: Network-first con fallback a caché
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
+        return networkResponse;
+      }).catch(() => {
+        return caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) return cachedResponse;
+          return caches.match('./') || caches.match('index test posible mejora.html');
+        });
+      })
     );
     return;
   }
 
-  // B. ACTIVOS ESTÁTICOS (JS, CSS, Imágenes, Librerías): Cache First con actualización en fondo
-  e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
+  // Recursos estáticos y CDN: Cache-first con actualización en segundo plano
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        fetch(e.request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200 && (networkResponse.type === 'basic' || networkResponse.type === 'cors')) {
-              const copy = networkResponse.clone();
-              caches.open(CACHE_NAME).then(cache => cache.put(e.request, copy));
-            }
-          })
-          .catch(() => {});
+        // En segundo plano revalidar con la red si está disponible
+        fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, networkResponse);
+            });
+          }
+        }).catch(() => {});
         return cachedResponse;
       }
 
-      return fetch(e.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200 && (networkResponse.type === 'basic' || networkResponse.type === 'cors')) {
-            const copy = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(e.request, copy));
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          return cachedResponse;
-        });
+      return fetch(event.request).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
+        return networkResponse;
+      }).catch((fetchErr) => {
+        console.warn('[Taurus SW] Fallo de red offline para:', event.request.url);
+      });
     })
   );
+});
+
+// Soporte de sincronización en segundo plano si el navegador lo admite
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'taurus-sync-pendientes') {
+    event.waitUntil(
+      self.clients.matchAll().then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ accion: 'sincronizar_pendientes' });
+        });
+      })
+    );
+  }
 });
