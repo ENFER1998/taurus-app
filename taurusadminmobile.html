@@ -12,14 +12,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-    <!-- ONESIGNAL (Reintegrado solo para forzar el bloqueo de notificaciones en este panel) -->
+    <!-- ONESIGNAL (Forzamos el bloqueo de notificaciones push en este panel admin) -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
         try {
             await OneSignal.init({ appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60" });
-            // Fuerza la desuscripción de notificaciones push en este navegador/dispositivo
             OneSignal.User.PushSubscription.optOut();
         } catch(e) {}
       });
@@ -47,25 +46,25 @@
         :root { --primario: #0f172a; --secundario: #3b82f6; --exito: #10b981; --alerta: #f59e0b; --peligro: #ef4444; --borde: #334155; --texto: #f8fafc; --muted: #94a3b8; --info: #3b82f6;}
         
         * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; color: var(--texto); background: #1e293b; min-height: 100vh; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; color: var(--texto); background: #1e293b; min-height: 100vh; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
         .oculto { display: none !important; }
         
         /* LOGIN */
-        #pantalla-login { display: flex; align-items: center; justify-content: center; height: 100vh; width: 100%; flex-direction: column; background: var(--primario); position: fixed; top:0; left:0; z-index:9999;}
+        #pantalla-login { display: flex; align-items: center; justify-content: center; height: 100vh; width: 100vw; flex-direction: column; background: var(--primario); position: fixed; top:0; left:0; z-index:9999;}
         .login-contenedor { background: #1e293b; border-radius: 16px; padding: 40px 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 90%; max-width: 360px; text-align: center; border: 1px solid var(--borde);}
         .logo-icono img { width: 90px; height: 90px; margin-bottom: 10px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); object-fit: contain; }
         .titulo-login { font-size: 24px; font-weight: 900; margin-bottom: 25px; color: var(--texto); }
-        .form-control-login { width: 100%; max-width: 100%; padding: 15px; border: 1px solid var(--borde); border-radius: 8px; font-size: 16px; margin-bottom: 15px; text-align: center; background: #0f172a; color: var(--texto); outline: none; box-sizing:border-box;}
+        .form-control-login { width: 100%; padding: 15px; border: 1px solid var(--borde); border-radius: 8px; font-size: 16px; margin-bottom: 15px; text-align: center; background: #0f172a; color: var(--texto); outline: none;}
         .form-control-login:focus { border-color: var(--secundario); }
         .btn-ingresar { width: 100%; background: var(--secundario); color: white; border: none; padding: 15px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s;}
         
         /* ESTRUCTURA APP */
-        #pantalla-app { padding-bottom: 80px; width: 100%; overflow-x: hidden; }
+        #pantalla-app { padding-bottom: 80px; width: 100vw; overflow-x: hidden; }
         .cabecera { background-color: #0f172a; color: var(--texto); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--borde); position: sticky; top: 0; z-index: 100;}
         .cabecera h1 { margin: 0; font-size: 18px; display: flex; align-items: center; gap: 8px;}
         .badge-estado { font-size: 11px; background: rgba(16,185,129,0.2); padding: 5px 12px; border-radius: 20px; font-weight: bold; color: var(--exito); border: 1px solid var(--exito);}
         
-        .contenedor { padding: 15px; margin: 0 auto; width: 100%; max-width: 100vw; overflow-x: hidden;}
+        .contenedor { padding: 15px; margin: 0 auto; width: 100%; max-width: 100%; }
         .tarjeta { background: #0f172a; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--borde); box-shadow: 0 4px 6px rgba(0,0,0,0.3); width: 100%;}
         .tarjeta-titulo { font-size: 18px; font-weight: bold; margin: 0 0 15px 0; border-bottom: 1px solid var(--borde); padding-bottom: 10px; color: var(--texto); display:flex; align-items:center; gap:8px;}
         
@@ -73,17 +72,17 @@
         .grid-mobile { display: flex; flex-direction: column; gap: 15px; width: 100%; }
         .form-grupo { margin-bottom: 15px; text-align: left; width: 100%; }
         .form-grupo label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 8px; color: var(--muted); text-transform: uppercase;}
-        .form-control { width: 100%; max-width: 100%; min-width: 0; padding: 12px; border: 1px solid var(--borde); border-radius: 8px; font-size: 14px; background: #1e293b; color: var(--texto); outline:none; box-sizing:border-box;}
+        .form-control { width: 100%; padding: 12px; border: 1px solid var(--borde); border-radius: 8px; font-size: 14px; background: #1e293b; color: var(--texto); outline:none; }
         input[type="date"] { display: block; }
         
-        .btn { padding: 12px 15px; background: var(--secundario); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; text-align:center; display:block; width:100%; box-sizing:border-box;}
+        .btn { padding: 12px 15px; background: var(--secundario); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; text-align:center; display:block; width:100%;}
         .btn-success { background: var(--exito); }
         .btn-warning { background: var(--alerta); }
         .btn-danger { background: var(--peligro); }
         .btn-info { background: var(--info); }
         .btn-mini { padding: 8px 12px; font-size: 12px; display:inline-block; width:auto; border: 1px solid transparent;}
 
-        .check-container { display: flex; align-items: center; gap: 10px; background: #1e293b; padding: 12px; border: 1px solid var(--borde); border-radius: 8px; margin-bottom: 8px; width: 100%; box-sizing:border-box;}
+        .check-container { display: flex; align-items: center; gap: 10px; background: #1e293b; padding: 12px; border: 1px solid var(--borde); border-radius: 8px; margin-bottom: 8px; width: 100%;}
         .check-container input { width: 18px; height: 18px; accent-color: var(--secundario); flex-shrink: 0;}
         .check-container span { font-size: 13px; font-weight: bold; color: var(--texto); }
 
@@ -93,17 +92,17 @@
         .kpi-valor { font-size: 26px; font-weight: 900; color: var(--secundario); margin: 5px 0; }
         .kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: bold;}
         
-        /* NAVEGACIÓN INFERIOR */
+        /* NAVEGACIÓN INFERIOR CORREGIDA */
         .nav-inferior { position: fixed; bottom: 0; left: 0; width: 100%; background: #0f172a; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid var(--borde); z-index: 100;}
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--muted); font-size: 10px; font-weight: bold; width: 25%; cursor:pointer;}
+        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); font-size: 10px; font-weight: bold; flex: 1; cursor:pointer;}
         .nav-item.activo { color: var(--secundario); }
         .nav-icon { font-size: 20px; margin-bottom: 4px;}
 
         /* MODALES OVERLAYS Y TOASTS */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding:10px; box-sizing:border-box;}
-        .modal-body { background: #0f172a; width: 100%; max-width: 450px; border-radius: 16px; padding: 20px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--borde); box-sizing:border-box;}
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(4px); padding:10px; }
+        .modal-body { background: #0f172a; width: 100%; max-width: 450px; border-radius: 16px; padding: 20px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--borde);}
         .modal-body h3 { border-bottom: 1px solid var(--borde); padding-bottom: 10px; margin-top:0; color: var(--secundario); font-size: 18px;}
-        .cerrar { float: right; font-size: 28px; color: var(--muted); cursor:pointer;}
+        .cerrar { float: right; font-size: 28px; color: var(--muted); cursor:pointer; line-height: 1;}
 
         #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.9); display:flex; justify-content:center; align-items:center; z-index:9999; flex-direction:column; backdrop-filter: blur(5px); }
         .spinner { border: 4px solid var(--bg-card); border-top: 4px solid var(--secundario); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom:20px;}
@@ -112,7 +111,33 @@
         .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--exito); color: white; padding: 12px 24px; border-radius: 30px; z-index: 9999; font-weight: bold; box-shadow: 0 10px 25px rgba(0,0,0,0.5); font-size: 13px; opacity: 0; transition: opacity 0.3s, bottom 0.3s; pointer-events: none; width:max-content; max-width:90%; text-align:center;}
         .toast.mostrar { opacity: 1; bottom: 90px; }
         .toast.error { background: var(--peligro); }
+
+        .badge-accion { padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; display: inline-block; border: 1px solid transparent; }
+        .badge-sanidad { background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.3); }
+        .badge-peso { background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3); }
+        .badge-datos { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.3); }
+        .badge-diagnostico { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3); }
+        .badge-default { background: var(--borde); color: var(--muted); border-color: var(--borde); }
     </style>
+    <!-- PRECACHÉ OFFLINE PARA ADMIN MOBILE -->
+    <script>
+      if ('caches' in window) {
+        window.addEventListener('load', () => {
+          caches.open('taurus-control-v6').then(cache => {
+            cache.addAll([
+              location.href,
+              'gemini-svg.png',
+              'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+              'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+              'https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js',
+              'https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js',
+              'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js'
+            ]).catch(e => console.log('[Taurus Admin Mob] Precaché local activo.'));
+          }).catch(e => {});
+        });
+      }
+    </script>
+
 </head>
 <body>
 
@@ -126,7 +151,7 @@
             <button class="btn btn-ingresar" id="btn-login" onclick="ingresarAdmin()">Iniciar Sesión</button>
             <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">
                 Taurus Control &copy; 2026<br>
-                <strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">Desarrollado por Fernando Rodriguez</strong>
+                <strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">desarrollado Por Fernando Rodriguez 2026</strong>
             </div>
         </div>
     </div>
@@ -177,6 +202,59 @@
             <div id="lista-equipo-mobile" style="display:flex; flex-direction:column; gap:10px;">
                 <!-- Cards de equipo se generan por JS -->
             </div>
+        </div>
+    </div>
+
+
+    <!-- MODAL EDICIÓN REGISTRO MASIVO -->
+    <div id="modal-editar-evento" class="modal oculto">
+        <div class="modal-body">
+            <span class="cerrar" onclick="cerrarModal('modal-editar-evento')">&times;</span>
+            <h3 style="color:var(--secundario);">✏️ Editar Carga Masiva</h3>
+            <input type="hidden" id="edit-ev-docid">
+            <input type="hidden" id="edit-ev-maestroid">
+
+            <div class="grid-mobile" style="margin-top: 15px;">
+                <div class="form-grupo">
+                    <label>Fecha y Hora *</label>
+                    <input type="datetime-local" id="edit-ev-fecha" class="form-control" required>
+                </div>
+                <div class="form-grupo">
+                    <label>Caravana (RP) *</label>
+                    <input type="text" id="edit-ev-caravana" class="form-control" style="text-transform: uppercase; font-weight: bold; color: var(--secundario);" required>
+                </div>
+                <div class="form-grupo">
+                    <label>Tipo de Acción *</label>
+                    <select id="edit-ev-accion" class="form-control">
+                        <option value="Actualización de Datos">Actualización de Datos</option>
+                        <option value="Sanidad">Sanidad (Tratamiento / Vacuna)</option>
+                        <option value="Peso">Pesaje (Balanza)</option>
+                        <option value="Diagnóstico">Diagnóstico (Tacto / Preñez)</option>
+                        <option value="Perfil Master">Perfil Master (Raza / Carimbo)</option>
+                        <option value="Comentario">Comentario / Observación</option>
+                    </select>
+                </div>
+                <div class="form-grupo">
+                    <label>Valor (Peso/Dosis/Cat) *</label>
+                    <input type="text" id="edit-ev-valor" class="form-control" placeholder="Ej: 420 Kg o Aftosa" required>
+                </div>
+                <div class="form-grupo">
+                    <label>Detalles / Observaciones</label>
+                    <textarea id="edit-ev-detalles" class="form-control" rows="3" style="resize: vertical;" placeholder="Notas..."></textarea>
+                </div>
+                <div class="form-grupo">
+                    <label style="color:var(--muted); font-size:11px;">Batch ID</label>
+                    <input type="text" id="edit-ev-batchid" class="form-control" style="background:#0f172a; color:var(--muted);" readonly>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:8px; margin-top:15px; flex-wrap:wrap;">
+                <button class="btn btn-danger" style="flex:1; padding:12px 10px; font-size:12px;" onclick="eliminarEventoDesdeModal()">🗑️ Eliminar</button>
+                <button class="btn btn-success" style="flex:2; padding:12px 10px;" onclick="guardarEdicionEventoFirestore()">💾 Guardar</button>
+            </div>
+            <button class="btn" style="margin-top:10px; background:rgba(239,68,68,0.15); color:var(--peligro); border:1px solid var(--peligro); font-size:11px; padding:8px;" onclick="eliminarCaravanaDesdeModal()">
+                ⚠️ Purgar toda esta Caravana
+            </button>
         </div>
     </div>
 
@@ -275,37 +353,91 @@
                     
                     <div class="grid-mobile">
                         <div class="form-grupo"><label>Columna CARAVANA (RP) *</label><select id="map-caravana" class="form-control" style="border-color:var(--secundario);"></select></div>
-                        <div class="form-grupo"><label style="color:var(--secundario); font-weight:bold;">📅 Columna FECHA DE TRABAJO / TRATAMIENTO</label><select id="map-fecha" class="form-control" style="border-color:var(--secundario);"></select></div>
-                        <div class="form-grupo"><label style="color:var(--peligro); font-weight:bold;">💉 Columna TRATAMIENTO / SANIDAD (Vacuna, etc.)</label><select id="map-sanidad" class="form-control" style="border-color:var(--peligro);"></select></div>
-                        <div class="form-grupo"><label>Columna DOSIS / DETALLES DE SANIDAD</label><select id="map-dosis" class="form-control"></select></div>
-                        <div class="form-grupo"><label>Columna PESO (Kg)</label><select id="map-peso" class="form-control"></select></div>
                         <div class="form-grupo"><label>Columna CATEGORÍA</label><select id="map-categoria" class="form-control"></select></div>
-                        <div class="form-grupo"><label>Columna LOTE / GRUPO</label><select id="map-lote" class="form-control"></select></div>
-                        <div class="form-grupo"><label>Columna RAZA / GENÉTICA</label><select id="map-raza" class="form-control"></select></div>
-                        <div class="form-grupo"><label>Columna DIAGNÓSTICO (Tacto Rectal)</label><select id="map-dx" class="form-control"></select></div>
+                        <div class="form-grupo"><label>Columna LOTE</label><select id="map-lote" class="form-control"></select></div>
+
+                        <div class="form-grupo"><label>Columna PESO (Kg)</label><select id="map-peso" class="form-control"></select></div>
+                        <div class="form-grupo"><label>Columna RAZA</label><select id="map-raza" class="form-control"></select></div>
+                        <div class="form-grupo"><label>Columna DIAGNÓSTICO (Tacto)</label><select id="map-dx" class="form-control"></select></div>
                         <div class="form-grupo"><label>Columna NOTAS / OBSERVACIONES</label><select id="map-notas" class="form-control"></select></div>
                     </div>
                     <button class="btn btn-success" style="margin-top:15px; font-size: 16px; padding: 15px;" onclick="procesarMapeoEInyectar()">📤 Inyectar a Firebase</button>
                 </div>
             </div>
 
+            <!-- VISTA: GESTIÓN Y EDICIÓN DE CARGAS MASIVAS -->
+            <div id="v-editar-masiva" class="vista oculto">
+                <h2 class="tarjeta-titulo">📝 Edición Cargas Masivas</h2>
+
+                <div class="tarjeta">
+                    <div class="form-grupo">
+                        <label>1. Hacienda Destino *</label>
+                        <select id="sel-hacienda-editar" class="form-control" onchange="cargarEventosCargaMasiva()">
+                            <option value="">-- Elija destino --</option>
+                        </select>
+                    </div>
+                    <div class="form-grupo">
+                        <label>2. Lote Masivo (Batch ID)</label>
+                        <select id="sel-batch-filtro" class="form-control" onchange="filtrarEventosPorLote()" disabled>
+                            <option value="TODOS">-- Todos los lotes --</option>
+                        </select>
+                    </div>
+                    <div class="form-grupo">
+                        <input type="text" id="busqueda-evento-masivo" class="form-control" 
+                               placeholder="🔍 Filtrar Caravana, Acción o Valor..." 
+                               oninput="filtrarEventosEnMemoria()">
+                    </div>
+                    <button class="btn btn-mini" style="background:var(--secundario); width:100%; padding:10px; margin-bottom:15px;" onclick="cargarEventosCargaMasiva()">
+                        🔄 Refrescar Registros
+                    </button>
+
+                    <!-- ACCIONES MASIVAS MOBILE -->
+                    <div style="border-top:1px solid var(--borde); padding-top:15px; margin-top:10px;">
+                        <label style="font-size:11px; font-weight:bold; color:var(--alerta); display:block; margin-bottom:6px;">📅 CAMBIO MASIVO DE FECHA (A TODO EL LOTE)</label>
+                        <div style="display:flex; gap:8px; margin-bottom:10px;">
+                            <input type="datetime-local" id="fecha-cambio-masivo" class="form-control" style="font-size:12px;">
+                            <button class="btn btn-warning btn-mini" style="padding:10px; white-space:nowrap;" onclick="cambiarFechaMasivaLote()">⚡ Aplicar</button>
+                        </div>
+                        <button class="btn btn-danger btn-mini" style="width:100%; padding:10px;" onclick="eliminarCaravanaCompletaMasiva()">
+                            🗑️ Purgar Caravana Completa
+                        </button>
+                    </div>
+                </div>
+
+                <div class="tarjeta" style="padding: 10px; background: transparent; border: none; box-shadow: none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span style="font-size:12px; color:var(--muted);">Total: <strong id="lbl-total-eventos-masivos" style="color:var(--secundario);">0</strong></span>
+                    </div>
+
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid var(--borde);">
+                        <table style="width:100%; border-collapse: collapse; font-size:12px; background: #0f172a;">
+                            <thead>
+                                <tr style="background:#1e293b; text-align:left; color:var(--muted); font-size:10px; text-transform:uppercase;">
+                                    <th style="padding:10px; min-width:85px;">Fecha</th>
+                                    <th style="padding:10px; min-width:75px;">RP</th>
+                                    <th style="padding:10px; min-width:85px;">Acción</th>
+                                    <th style="padding:10px; min-width:100px;">Valor</th>
+                                    <th style="padding:10px; min-width:110px;">Detalles</th>
+                                    <th style="padding:10px; text-align:center; min-width:90px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tb-eventos-masivos">
+                                <tr><td colspan="6" style="text-align:center; color:var(--muted); padding:20px;">Elija una Hacienda para listar.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- VISTA: CONFIGURACIÓN -->
             <div id="v-config" class="vista oculto">
-                <h2 class="tarjeta-titulo">⚙️ Sistema y Mantenimiento</h2>
+                <h2 class="tarjeta-titulo">⚙ Sistema y Mantenimiento</h2>
 
                 <div class="tarjeta" style="border-color: var(--warning);">
                     <h3 style="margin-top:0; color:var(--warning); font-size:16px;">⏳ Anuncio Previo (Push)</h3>
                     <p style="color:var(--muted); font-size:12px; margin-bottom:15px;">Solo envía una notificación, NO bloquea la app.</p>
-                    <div class="form-grupo"><input type="text" id="txt-aviso-mant" class="form-control" placeholder="Ej: Hoy 14:00 actualización de servidores"></div>
+                    <div class="form-grupo"><input type="text" id="txt-aviso-mant" class="form-control" placeholder="Ej: Hoy 14:00 actualización"></div>
                     <button class="btn btn-warning" onclick="enviarAvisoMantenimiento()">📣 Enviar Anuncio</button>
-                    
-                    <div style="margin-top:15px; padding-top:12px; border-top:1px solid var(--borde);">
-                        <span style="font-size:12px; color:var(--muted); display:block; margin-bottom:6px; font-weight:bold;">Aviso actual guardado en base de datos:</span>
-                        <div style="background:#1e293b; padding:10px; border-radius:6px; font-weight:bold; font-size:13px; color:var(--texto); border:1px solid var(--borde); margin-bottom:10px;">
-                            <span id="lbl-aviso-actual-db">Ninguno</span>
-                        </div>
-                        <button class="btn btn-danger" style="background:var(--peligro);" onclick="limpiarAvisoGlobal()">🧹 Borrar / Limpiar Aviso Activo de la BD</button>
-                    </div>
                 </div>
 
                 <div class="tarjeta" style="border-color: var(--peligro);">
@@ -327,6 +459,7 @@
             <div class="nav-item activo" onclick="cambiarVista('v-nuevo', this)"><span class="nav-icon">🚀</span>Alta</div>
             <div class="nav-item" onclick="cambiarVista('v-licencias', this); cargarClientes();"><span class="nav-icon">🔑</span>Licencias</div>
             <div class="nav-item" onclick="cambiarVista('v-masiva', this); cargarClientesMasiva();"><span class="nav-icon">📦</span>Masiva</div>
+            <div class="nav-item" onclick="cambiarVista('v-editar-masiva', this); inicializarModuloEditarMasiva();"><span class="nav-icon">📝</span>Editar</div>
             <div class="nav-item" onclick="cambiarVista('v-config', this); checkStatusInicial();"><span class="nav-icon">⚙️</span>Sistema</div>
         </nav>
     </div>
@@ -342,7 +475,19 @@
             appId: "1:250280835981:web:b95bc0a7ec9f7da2b75bc4"
         };
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+                const db = firebase.firestore();
+
+        try {
+            db.settings({
+                cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
+            });
+        } catch(e) {}
+
+        try {
+            db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
+                console.log("[Taurus Admin Mob Firestore] Persistencia:", err.code);
+            });
+        } catch(e) {}
 
         let clientesCache = [];
         let datosArchivoCrudo = [];
@@ -350,9 +495,21 @@
 
         function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
+        // Arranque offline automático para Admin Mobile
+        ;(function() {
+            try {
+                let session = lsGet("tc_admin_mob_session", null);
+                if (session && session.email && !navigator.onLine) {
+                    document.getElementById('pantalla-login').classList.add('oculto');
+                    document.getElementById('pantalla-app').classList.remove('oculto');
+                }
+            } catch(e) {}
+        })();
+
 
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
+                lsSet("tc_admin_mob_session", { email: user.email, time: Date.now() });
                 document.getElementById('pantalla-login').classList.add('oculto');
                 document.getElementById('pantalla-app').classList.remove('oculto');
                 checkStatusInicial();
@@ -378,7 +535,6 @@
             }
         }
 
-
         function cerrarSesion() { 
             firebase.auth().signOut().then(() => {
                 document.getElementById('admin-email').value = ''; 
@@ -387,9 +543,6 @@
                 document.getElementById('pantalla-app').classList.add('oculto');
                 clientesCache = [];
                 if(unsubscribeConfig) unsubscribeConfig();
-
-                const btnAura = document.getElementById('btn-aura');
-                if (btnAura) btnAura.style.display = 'none';
             });
         }
 
@@ -399,9 +552,6 @@
         function toggleLoading(show, text="Procesando...") { document.getElementById('loading-text').innerText = text; document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; }
         function mostrarToast(mensaje, esError = false) { const toast = document.getElementById('toast-msg'); toast.innerText = mensaje; if(esError) toast.classList.add('error'); else toast.classList.remove('error'); toast.classList.add('mostrar'); setTimeout(() => { toast.classList.remove('mostrar'); }, 3000); }
 
-        // ==========================================
-        // GESTIÓN AUTH FANTASMA (TRUCO MAESTRO)
-        // ==========================================
         async function gestionarAuthUsuario(email, claveActual, accion, nuevaClave = "") {
             const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryGhostAppAdminMob");
             let exito = false;
@@ -422,56 +572,32 @@
             return exito;
         }
 
-        // ==========================================
-        // KILL SWITCH Y NOTIFICACIONES
-        // ==========================================
         const APPS_SCRIPT_NOTIFICACIONES = "https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec";
 
         function checkStatusInicial() {
             if(unsubscribeConfig) unsubscribeConfig();
             unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot((doc) => {
-                if(doc.exists) {
-                    const data = doc.data() || {};
-                    actualizarUIKillSwitch(data.mantenimiento ? 'ON' : 'OFF');
-                    const lblAviso = document.getElementById('lbl-aviso-actual-db');
-                    if (lblAviso) {
-                        let msg = (data.alerta_global || "").trim();
-                        if (msg) {
-                            lblAviso.innerText = msg;
-                            lblAviso.style.color = "var(--alerta)";
-                        } else {
-                            lblAviso.innerText = "Ninguno (Sin avisos activos)";
-                            lblAviso.style.color = "var(--muted)";
-                        }
-                    }
-                } else {
-                    db.collection('sistema').doc('config').set({ mantenimiento: false, alerta_global: "", alerta_id: "", alerta_expira: 0 });
-                    actualizarUIKillSwitch('OFF');
-                }
+                if(doc.exists) { actualizarUIKillSwitch(doc.data().mantenimiento ? 'ON' : 'OFF'); }
+                else { db.collection('sistema').doc('config').set({ mantenimiento: false, alerta_global: "" }); actualizarUIKillSwitch('OFF'); }
             });
         }
 
-        async function limpiarAvisoGlobal() {
-            if(!confirm("⚠️ ¿Estás seguro de eliminar el aviso global de la base de datos?\nEsto quitará el aviso 'hola' y cualquier otro aviso que les aparezca a los usuarios.")) return;
-            toggleLoading(true, "Limpiando aviso en Firestore...");
-            try {
-                await db.collection('sistema').doc('config').set({
-                    alerta_global: "",
-                    alerta_id: "",
-                    alerta_expira: 0,
-                    alerta_fecha: null
-                }, { merge: true });
-                toggleLoading(false);
-                mostrarToast("✅ Aviso global eliminado completamente.");
-                const lbl = document.getElementById('lbl-aviso-actual-db');
-                if(lbl) { lbl.innerText = "Ninguno (Sin avisos activos)"; lbl.style.color = "var(--muted)"; }
-            } catch(e) {
-                toggleLoading(false);
-                mostrarToast("❌ Error al limpiar aviso", true);
+        function actualizarUIKillSwitch(estado) {
+            const btnMant = document.getElementById('btn-toggle-mant');
+            const btnRest = document.getElementById('btn-toggle-rest');
+            const lblStatus = document.getElementById('lbl-status-mantenimiento');
+            const badgeTop = document.getElementById('badge-top-status');
+
+            if(estado === 'ON') {
+                btnMant.classList.add('oculto'); btnRest.classList.remove('oculto');
+                lblStatus.innerText = "BLOQUEADO (MANTENIMIENTO)"; lblStatus.style.color = "var(--peligro)";
+                badgeTop.innerText = "🔴 Mantenimiento"; badgeTop.style.background = "rgba(239,68,68,0.2)"; badgeTop.style.color = "var(--peligro)"; badgeTop.style.borderColor = "var(--peligro)";
+            } else {
+                btnRest.classList.add('oculto'); btnMant.classList.remove('oculto');
+                lblStatus.innerText = "SISTEMA OPERATIVO Y CONECTADO"; lblStatus.style.color = "var(--exito)";
+                badgeTop.innerText = "🟢 En Línea"; badgeTop.style.background = "rgba(16,185,129,0.2)"; badgeTop.style.color = "var(--exito)"; badgeTop.style.borderColor = "var(--exito)";
             }
         }
-
-        
 
         async function toggleMantenimiento(nuevoEstado) {
             if(nuevoEstado === 'ON' && !confirm("⚠️ ¿Estás seguro que deseas desconectar a todos los clientes?")) return;
@@ -485,11 +611,19 @@
             } catch (e) { toggleLoading(false); mostrarToast("❌ Error al cambiar estado", true); }
         }
 
-        
+        async function enviarAvisoMantenimiento() {
+            let msg = document.getElementById('txt-aviso-mant').value.trim();
+            if(!msg) return mostrarToast("⚠️ Escribe el mensaje", true);
+            if(!confirm("📣 ¿Enviar notificación push a TODOS ahora mismo?")) return;
+            toggleLoading(true, "Enviando anuncio...");
+            try {
+                await db.collection('sistema').doc('config').set({ alerta_global: "⏳ AVISO: " + msg }, { merge: true });
+                const fd = new URLSearchParams(); fd.append('accion', 'aviso_mantenimiento'); fd.append('mensaje', "⏳ AVISO: " + msg);
+                fetch('https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec', { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
+                toggleLoading(false); mostrarToast("✅ Aviso enviado"); document.getElementById('txt-aviso-mant').value = '';
+            } catch (e) { toggleLoading(false); mostrarToast("❌ Error al enviar el aviso", true); }
+        }
 
-        // ==========================================
-        // ALTA Y EDICIÓN DE CLIENTES SaaS (FIREBASE)
-        // ==========================================
         function getFeatures(prefijo) {
             let features = [];
             if(document.getElementById(`${prefijo}-feat-rafaga`).checked) features.push('rafaga');
@@ -541,6 +675,11 @@
                     nombre: nom, rol: 'Propietario', maestroId: email, hacienda: h, vencimiento: v, features: feats, password: p
                 });
 
+                // Inicializar colección 'estancias' con el nombre de hacienda
+                await db.collection('estancias').doc(email).set({
+                    nombre_hacienda: h
+                }, { merge: true });
+
                 toggleLoading(false); mostrarToast("✅ Cuenta Master creada.");
                 document.getElementById('n-nombre').value = ''; document.getElementById('n-usu').value = '';
                 document.getElementById('n-pass').value = ''; document.getElementById('n-venc').value = ''; document.getElementById('n-hacienda').value = '';
@@ -556,12 +695,61 @@
             toggleLoading(true, "Cargando licencias...");
             try {
                 const snapshot = await db.collection('usuarios').where('rol', '==', 'Propietario').get();
-                clientesCache = snapshot.docs.filter(doc => doc.id === doc.data().maestroId).map(doc => ({
-                    usuario: doc.id, nombre: doc.data().nombre, hacienda: doc.data().hacienda, vencimiento: doc.data().vencimiento,
-                    features: doc.data().features, password: doc.data().password, maestroId: doc.data().maestroId
-                }));
-                toggleLoading(false); renderizarTablaClientes(); renderizarSelectMasiva(); calcularKPISaaS();
-            } catch (e) { toggleLoading(false); mostrarToast("❌ Error de red", true); }
+                
+                // Consultar colección 'estancias' para obtener nombres de estancia actualizados por los clientes
+                let mapaEstancias = {};
+                try {
+                    const snapEstancias = await db.collection('estancias').get();
+                    snapEstancias.forEach(edoc => {
+                        const edata = edoc.data();
+                        if (edata && edata.nombre_hacienda) {
+                            mapaEstancias[edoc.id] = edata.nombre_hacienda;
+                        }
+                    });
+                } catch(errEst) {
+                    console.warn("Aviso al consultar estancias:", errEst);
+                }
+
+                const batchHeal = db.batch();
+                let haySanaciones = false;
+
+                clientesCache = snapshot.docs.filter(doc => doc.id === doc.data().maestroId).map(doc => {
+                    const data = doc.data();
+                    const idMaestro = doc.id;
+                    const hacEstancia = mapaEstancias[idMaestro];
+                    const hacFinal = hacEstancia || data.hacienda || "Hacienda";
+
+                    // Auto-sanación en tiempo real: sincronizar en 'usuarios' si el cliente actualizó su estancia
+                    if (hacEstancia && hacEstancia !== data.hacienda) {
+                        batchHeal.update(doc.ref, { hacienda: hacEstancia });
+                        haySanaciones = true;
+                    }
+
+                    return {
+                        usuario: idMaestro,
+                        nombre: data.nombre,
+                        hacienda: hacFinal,
+                        vencimiento: data.vencimiento,
+                        features: data.features,
+                        password: data.password,
+                        maestroId: data.maestroId
+                    };
+                });
+
+                if (haySanaciones) {
+                    batchHeal.commit().catch(e => console.warn("Aviso en auto-sanación de usuarios:", e));
+                }
+
+                toggleLoading(false); 
+                renderizarTablaClientes(); 
+                renderizarSelectMasiva(); 
+                poblarSelectHaciendasEditar(); 
+                calcularKPISaaS();
+            } catch (e) { 
+                toggleLoading(false); 
+                console.error("Error al cargar clientes:", e);
+                mostrarToast("❌ Error de red", true); 
+            }
         }
 
         function calcularKPISaaS() {
@@ -585,7 +773,7 @@
                 let fechaF = c.vencimiento ? String(c.vencimiento).split('T')[0] : "";
                 
                 let featBadges = ""; let fc = String(c.features||"");
-                if(fc.includes('rafaga')) featBadges += `<span style="background:var(--bg-card); padding:3px 8px; border-radius:4px; font-size:10px; border:1px solid var(--border);">⚡ Ráfaga</span>`;
+                if(fc.includes('rafaga')) featBadges += `<span style="background:var(--bg-card); padding:3px 8px; border-radius:4px; font-size:10px; border:1px solid var(--borde);">⚡ Ráfaga</span>`;
                 if(fc.includes('bluetooth')) featBadges += `<span style="background:rgba(59,130,246,0.1); color:#60a5fa; padding:3px 8px; border-radius:4px; font-size:10px; border:1px solid rgba(59,130,246,0.3);">📡 BT</span>`;
                 if(fc.includes('cora')) featBadges += `<span style="background:rgba(16,185,129,0.1); color:var(--exito); padding:3px 8px; border-radius:4px; font-size:10px; border:1px solid rgba(16,185,129,0.3);">🤖 Cora IA</span>`;
                 
@@ -620,7 +808,7 @@
                             <button class="btn btn-mini btn-info" style="width:100%; padding:10px;" onclick="verEquipo('${c.maestroId}', '${c.hacienda}')">👥 Equipo</button>
                             <button class="btn btn-mini" style="background:#475569; width:100%; padding:10px;" onclick="cambiarClaveMaestroGhost('${c.usuario}')">🔑 Clave</button>
                             <button class="btn btn-mini" style="background:#2563eb; width:100%; padding:10px;" onclick="abrirEdicion('${c.usuario}', '${c.hacienda}', '${c.features||""}', '${c.nombre||""}')">✏️ Editar</button>
-                            <button class="btn btn-mini btn-danger" style="width:100%; padding:10px;" onclick="borrarUsuarioMaestroGhost('${c.usuario}')">🗑️️ Borrar</button>
+                            <button class="btn btn-mini btn-danger" style="width:100%; padding:10px;" onclick="borrarUsuarioMaestroGhost('${c.usuario}')">🗑 Borrar</button>
                         </div>
                     </div>`;
             });
@@ -653,13 +841,11 @@
             toggleLoading(true, "Purgando Firestore, Auth y Google Sheets...");
             
             try {
-                // 1. Google Sheets
                 const fd = new URLSearchParams();
                 fd.append('accion', 'borrar_estancia_completa');
                 fd.append('maestro', usu);
                 await fetch('https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec', { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
 
-                // 2. Miembros del equipo
                 const snapEquipo = await db.collection('usuarios').where('maestroId', '==', usu).get();
                 for (const docOp of snapEquipo.docs) {
                     let opData = docOp.data();
@@ -669,7 +855,6 @@
                     await docOp.ref.delete();
                 }
 
-                // 3. Subcolecciones y documento de estancia
                 const estanciaRef = db.collection('estancias').doc(usu);
                 const snapshotEventos = await estanciaRef.collection('eventos').get();
                 if (!snapshotEventos.empty) {
@@ -683,7 +868,6 @@
                 }
                 await estanciaRef.delete();
 
-                // 4. Perfil Master en Firestore
                 const docUsu = await db.collection('usuarios').doc(usu).get();
                 let clave = null;
                 if (docUsu.exists) {
@@ -691,7 +875,6 @@
                     await db.collection('usuarios').doc(usu).delete();
                 }
 
-                // 5. Auth de Firebase
                 if (clave) {
                     await gestionarAuthUsuario(usu, clave, 'eliminar');
                 }
@@ -714,9 +897,40 @@
         async function guardarEdicion() {
             const uId = document.getElementById('edit-old-usu').value; const nH = document.getElementById('edit-new-hac').value.trim(); const nN = document.getElementById('edit-new-nombre').value.trim();
             if(!nH || !nN) return mostrarToast("⚠️ Completar campos", true);
-            toggleLoading(true);
-            try { await db.collection('usuarios').doc(uId).update({ nombre: nN, hacienda: nH, features: getFeatures('e') }); toggleLoading(false); cerrarModal('modal-editar'); mostrarToast("✅ Guardado"); cargarClientes(); }
-            catch (e) { toggleLoading(false); mostrarToast("❌ Error", true); }
+            toggleLoading(true, "Guardando...");
+            try { 
+                // 1. Actualizar usuario maestro
+                await db.collection('usuarios').doc(uId).update({ nombre: nN, hacienda: nH, features: getFeatures('e') }); 
+                
+                // 2. Sincronizar en colección 'estancias'
+                try {
+                    await db.collection('estancias').doc(uId).set({ nombre_hacienda: nH }, { merge: true });
+                } catch(errEst) {
+                    console.warn("Aviso actualizando estancia doc:", errEst);
+                }
+
+                // 3. Sincronizar operadores vinculados
+                try {
+                    const opsSnap = await db.collection('usuarios').where('maestroId', '==', uId).get();
+                    const batchOps = db.batch();
+                    opsSnap.forEach(oDoc => {
+                        batchOps.update(oDoc.ref, { hacienda: nH });
+                    });
+                    await batchOps.commit();
+                } catch(errOps) {
+                    console.warn("Aviso actualizando operadores:", errOps);
+                }
+
+                toggleLoading(false); 
+                cerrarModal('modal-editar'); 
+                mostrarToast("✅ Guardado y sincronizado"); 
+                cargarClientes(); 
+            }
+            catch (e) { 
+                toggleLoading(false); 
+                console.error("Error al guardar edición:", e);
+                mostrarToast("❌ Error al guardar datos", true); 
+            }
         }
 
         // ==========================================
@@ -750,7 +964,7 @@
                         </div>
                         <div style="display:flex; gap:8px;">
                             <button class="btn btn-mini" style="background:#475569; flex:1; padding:10px;" onclick="cambiarClaveMiembroGhost('${doc.id}')">🔑 Clave</button>
-                            <button class="btn btn-mini btn-danger" style="flex:1; padding:10px;" onclick="eliminarMiembroGhost('${doc.id}', '${maestroId}')">🗑️ Borrar</button>
+                            <button class="btn btn-mini btn-danger" style="flex:1; padding:10px;" onclick="eliminarMiembroGhost('${doc.id}', '${maestroId}')">🗑 Borrar</button>
                         </div>
                     </div>`;
                 });
@@ -791,44 +1005,6 @@
             clientesCache.forEach(c => { sel.innerHTML += `<option value="${c.maestroId}">${c.hacienda} (${c.usuario})</option>`; });
         }
 
-        function parsearFechaExcel(val) {
-            if (!val && val !== 0) return null;
-            if (val instanceof Date && !isNaN(val.getTime())) return val;
-            if (typeof val === 'number') {
-                if (val > 1000) {
-                    let utc_days = Math.floor(val - 25569);
-                    let utc_value = utc_days * 86400;
-                    let date_info = new Date(utc_value * 1000);
-                    let fractional_day = val - Math.floor(val) + 0.0000001;
-                    let total_seconds = Math.floor(86400 * fractional_day);
-                    date_info.setSeconds(date_info.getSeconds() + total_seconds);
-                    if (!isNaN(date_info.getTime())) return date_info;
-                }
-            }
-            let s = String(val).trim();
-            if (!s) return null;
-            
-            // YYYY-MM-DD o YYYY/MM/DD
-            let mIso = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
-            if (mIso) {
-                let d = new Date(parseInt(mIso[1]), parseInt(mIso[2]) - 1, parseInt(mIso[3]), 12, 0, 0);
-                if (!isNaN(d.getTime())) return d;
-            }
-            
-            // DD/MM/YYYY o DD-MM-YYYY
-            let mLat = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/);
-            if (mLat) {
-                let y = parseInt(mLat[3]);
-                if (y < 100) y += (y < 50 ? 2000 : 1900);
-                let d = new Date(y, parseInt(mLat[2]) - 1, parseInt(mLat[1]), 12, 0, 0);
-                if (!isNaN(d.getTime())) return d;
-            }
-            
-            let parsed = new Date(s);
-            if (!isNaN(parsed.getTime())) return parsed;
-            return null;
-        }
-
         function leerArchivoInteligente() {
             const mId = document.getElementById('sel-cliente-masiva').value; const fi = document.getElementById('archivo-excel');
             if(!mId || !fi.files.length) return mostrarToast("⚠️ Faltan datos o archivo", true);
@@ -842,30 +1018,24 @@
                     const headers = Object.keys(datosArchivoCrudo[0]);
                     
                     llenarSelectMapeo('map-caravana', headers, false); 
-                    llenarSelectMapeo('map-fecha', headers, true); 
-                    llenarSelectMapeo('map-sanidad', headers, true); 
-                    llenarSelectMapeo('map-dosis', headers, true); 
-                    llenarSelectMapeo('map-peso', headers, true); 
                     llenarSelectMapeo('map-categoria', headers, true); 
-                    llenarSelectMapeo('map-lote', headers, true); 
-                    llenarSelectMapeo('map-raza', headers, true); 
-                    llenarSelectMapeo('map-dx', headers, true); 
-                    llenarSelectMapeo('map-notas', headers, true); 
+                    llenarSelectMapeo('map-lote', headers, true);
+                    llenarSelectMapeo('map-peso', headers, true);
+                    llenarSelectMapeo('map-raza', headers, true);
+                    llenarSelectMapeo('map-dx', headers, true);
+                    llenarSelectMapeo('map-notas', headers, true);
                     
-                    autoSeleccionarMapeo('map-caravana', ['caravana', 'rp', 'tag', 'numero', 'nro', 'identificacion']);
-                    autoSeleccionarMapeo('map-fecha', ['fecha', 'date', 'dia', 'fec']);
-                    autoSeleccionarMapeo('map-sanidad', ['tratamiento', 'sanidad', 'vacuna', 'medicamento', 'producto', 'remedio']);
-                    autoSeleccionarMapeo('map-dosis', ['dosis', 'posologia', 'aplicacion']);
-                    autoSeleccionarMapeo('map-peso', ['peso', 'kg', 'kilos', 'weight']);
+                    autoSeleccionarMapeo('map-caravana', ['caravana', 'rp', 'tag']);
                     autoSeleccionarMapeo('map-categoria', ['categoria', 'cat']);
-                    autoSeleccionarMapeo('map-lote', ['lote', 'grupo', 'potrero']);
-                    autoSeleccionarMapeo('map-raza', ['raza', 'genetica', 'cruza']);
+                    autoSeleccionarMapeo('map-lote', ['lote', 'grupo']);
+                    autoSeleccionarMapeo('map-peso', ['peso', 'kg', 'kilos']);
+                    autoSeleccionarMapeo('map-raza', ['raza', 'genetica']);
                     autoSeleccionarMapeo('map-dx', ['diagnostico', 'dx', 'tacto', 'preñez', 'prenez']);
-                    autoSeleccionarMapeo('map-notas', ['observacion', 'obs', 'comentario', 'nota']);
+                    autoSeleccionarMapeo('map-notas', ['nota', 'observacion', 'detalle']);
                     
                     document.getElementById('panel-mapeo').classList.remove('oculto'); 
                     toggleLoading(false); 
-                    mostrarToast("✅ Archivo analizado con éxito");
+                    mostrarToast("✅ Archivo escaneado");
                 } catch (err) { 
                     toggleLoading(false); 
                     mostrarToast("❌ Error al leer. Verifica que sea un Excel válido.", true);
@@ -874,15 +1044,12 @@
         }
 
         function llenarSelectMapeo(id, headers, opc) { 
-            const sel = document.getElementById(id);
-            if (!sel) return;
-            sel.innerHTML = opc ? '<option value="">-- Dejar en blanco --</option>' : '<option value="">-- Seleccione columna --</option>';
+            const sel = document.getElementById(id); sel.innerHTML = opc ? '<option value="">-- Dejar en blanco --</option>' : '<option value="">-- Seleccione columna --</option>';
             headers.forEach(h => { sel.innerHTML += `<option value="${h}">${h}</option>`; }); 
         }
 
         function autoSeleccionarMapeo(id, opcionesBase) {
             const sel = document.getElementById(id);
-            if (!sel) return;
             for(let i=0; i<sel.options.length; i++) {
                 let textoOpt = sel.options[i].text.toLowerCase();
                 if(opcionesBase.some(palabra => textoOpt.includes(palabra))) {
@@ -899,16 +1066,13 @@
             }, 50);
         }
         async function _procesarMapeoEInyectar_internal() {
-            const cCar = document.getElementById('map-caravana') ? document.getElementById('map-caravana').value : ''; 
-            const cFecha = document.getElementById('map-fecha') ? document.getElementById('map-fecha').value : '';
-            const cSan = document.getElementById('map-sanidad') ? document.getElementById('map-sanidad').value : '';
-            const cDosis = document.getElementById('map-dosis') ? document.getElementById('map-dosis').value : '';
-            const cPeso = document.getElementById('map-peso') ? document.getElementById('map-peso').value : ''; 
-            const cCat = document.getElementById('map-categoria') ? document.getElementById('map-categoria').value : ''; 
-            const cLot = document.getElementById('map-lote') ? document.getElementById('map-lote').value : ''; 
-            const cRaza = document.getElementById('map-raza') ? document.getElementById('map-raza').value : ''; 
-            const cDx = document.getElementById('map-dx') ? document.getElementById('map-dx').value : '';
-            const cNot = document.getElementById('map-notas') ? document.getElementById('map-notas').value : ''; 
+            const cCar = document.getElementById('map-caravana').value; 
+            const cCat = document.getElementById('map-categoria').value; 
+            const cLot = document.getElementById('map-lote').value; 
+            const cPeso = document.getElementById('map-peso').value; 
+            const cRaza = document.getElementById('map-raza').value; 
+            const cDx = document.getElementById('map-dx').value;
+            const cNot = document.getElementById('map-notas').value; 
             const mId = document.getElementById('sel-cliente-masiva').value;
             
             if(!cCar) { toggleLoading(false); return mostrarToast("⚠️ Falta Columna Caravana", true); }
@@ -919,19 +1083,11 @@
             datosArchivoCrudo.forEach((f, index) => {
                 let vCar = f[cCar];
                 if(vCar && String(vCar).trim() !== "") {
-                    let rp = String(vCar).trim().toUpperCase();
+                    let rp = String(vCar).trim();
+                    let valCat = cCat && f[cCat] ? String(f[cCat]).trim() : "-";
+                    let valLote = cLot && f[cLot] ? String(f[cLot]).trim() : "Hacienda General";
                     
-                    // Parseo de fecha individual de la fila (o fecha actual si viene vacía)
-                    let rowDate = null;
-                    if (cFecha && f[cFecha]) {
-                        rowDate = parsearFechaExcel(f[cFecha]);
-                    }
-                    let baseTime = (rowDate && !isNaN(rowDate.getTime())) 
-                        ? (rowDate.getTime() + (index % 1000))
-                        : (Date.now() + (index * 10));
-
-                    let valCat = (cCat && f[cCat]) ? String(f[cCat]).trim() : "-";
-                    let valLote = (cLot && f[cLot]) ? String(f[cLot]).trim() : "Hacienda General";
+                    let baseTime = new Date().getTime() + (index * 10);
                     
                     // 1. Ubicación y Clasificación
                     datosAInyectar.push({ 
@@ -945,7 +1101,7 @@
                     });
 
                     // 2. Raza / Genética
-                    if(cRaza && f[cRaza] && String(f[cRaza]).trim() !== "") {
+                    if(cRaza && f[cRaza]) {
                         datosAInyectar.push({ 
                             fecha: new Date(baseTime + 1).toISOString(), 
                             accion: 'Perfil Master', 
@@ -957,57 +1113,40 @@
                         });
                     }
 
-                    // 3. Tratamiento / Sanidad (CON SU FECHA REAL)
-                    if(cSan && f[cSan] && String(f[cSan]).trim() !== "") {
-                        let valDosis = (cDosis && f[cDosis]) ? String(f[cDosis]).trim() : "Dosis estándar / Importación Masiva";
-                        datosAInyectar.push({
-                            fecha: new Date(baseTime + 2).toISOString(),
-                            accion: 'Sanidad',
-                            caravana: rp,
-                            valor: String(f[cSan]).trim(),
-                            detalles: `${valDosis} | Importación Masiva`,
+                    // 3. Pesaje Inicial
+                    if(cPeso && f[cPeso]) {
+                        datosAInyectar.push({ 
+                            fecha: new Date(baseTime + 2).toISOString(), 
+                            accion: 'Peso', 
+                            caravana: rp, 
+                            valor: `${String(f[cPeso]).trim()} Kg`, 
+                            detalles: `Cond: Óptima. Notas: Importación Masiva`, 
                             maestro: mId,
                             batch_id: batchId
                         });
                     }
 
-                    // 4. Pesaje (CON SU FECHA REAL)
-                    if(cPeso && f[cPeso] && String(f[cPeso]).trim() !== "") {
-                        let numPeso = String(f[cPeso]).replace(/[^0-9.-]/g, '').trim();
-                        if(numPeso) {
-                            datosAInyectar.push({ 
-                                fecha: new Date(baseTime + 3).toISOString(), 
-                                accion: 'Peso', 
-                                caravana: rp, 
-                                valor: `${numPeso} Kg`, 
-                                detalles: `Cond: Óptima. Notas: Importación Masiva`, 
-                                maestro: mId,
-                                batch_id: batchId
-                            });
-                        }
+                    // 4. Notas Generales
+                    if(cNot && f[cNot]) {
+                        datosAInyectar.push({ 
+                            fecha: new Date(baseTime + 3).toISOString(), 
+                            accion: 'Comentario', 
+                            caravana: rp, 
+                            valor: `-`, 
+                            detalles: String(f[cNot]).trim(), 
+                            maestro: mId,
+                            batch_id: batchId
+                        });
                     }
 
-                    // 5. Diagnóstico Reproductivo / Tacto
-                    if(cDx && f[cDx] && String(f[cDx]).trim() !== "") {
+                    // 5. Diagnóstico Reproductivo
+                    if(cDx && f[cDx]) {
                         datosAInyectar.push({ 
                             fecha: new Date(baseTime + 4).toISOString(), 
                             accion: 'Diagnóstico', 
                             caravana: rp, 
                             valor: String(f[cDx]).trim(), 
-                            detalles: "Tacto Importación Masiva", 
-                            maestro: mId,
-                            batch_id: batchId
-                        });
-                    }
-
-                    // 6. Observaciones / Comentarios
-                    if(cNot && f[cNot] && String(f[cNot]).trim() !== "") {
-                        datosAInyectar.push({ 
-                            fecha: new Date(baseTime + 5).toISOString(), 
-                            accion: 'Comentario', 
-                            caravana: rp, 
-                            valor: `-`, 
-                            detalles: String(f[cNot]).trim(), 
+                            detalles: "-", 
                             maestro: mId,
                             batch_id: batchId
                         });
@@ -1017,7 +1156,7 @@
             
             if(datosAInyectar.length === 0) { toggleLoading(false); return mostrarToast("❌ Sin datos válidos", true); }
             
-            if(confirm(`Se generaron ${datosAInyectar.length} registros con sus fechas y tratamientos respectivos.\n¿Inyectar en Firestore?`)) {
+            if(confirm(`Se generaron ${datosAInyectar.length} registros para el historial clínico general.\n¿Inyectar en Firestore?`)) {
                 document.getElementById('panel-mapeo').classList.add('oculto'); 
                 lsSet('tc_ultimo_batch', { mId: mId, batchId: batchId });
                 enviarCargaMasivaEnBloques(mId, datosAInyectar); 
@@ -1072,615 +1211,426 @@
             }
         }
 
+
+        // ==========================================
+        // GESTIÓN Y EDICIÓN DE CARGAS MASIVAS
+        // ==========================================
+        let eventosMasivosCache = [];
+        let eventosFiltrados = [];
+
+        function inicializarModuloEditarMasiva() {
+            const sel = document.getElementById('sel-hacienda-editar');
+            if (!sel) return;
+            if (!clientesCache || clientesCache.length === 0) {
+                cargarClientes().then(() => poblarSelectHaciendasEditar());
+            } else {
+                poblarSelectHaciendasEditar();
+            }
+        }
+
+        function poblarSelectHaciendasEditar() {
+            const sel = document.getElementById('sel-hacienda-editar');
+            if (!sel) return;
+            const valorPrevio = sel.value;
+            sel.innerHTML = '<option value="">-- Elija destino --</option>';
+            clientesCache.forEach(c => {
+                sel.innerHTML += `<option value="${c.maestroId}">${c.hacienda} (${c.usuario})</option>`;
+            });
+            if (valorPrevio) sel.value = valorPrevio;
+        }
+
+        async function cargarEventosCargaMasiva() {
+            const maestroId = document.getElementById('sel-hacienda-editar').value;
+            const tbody = document.getElementById('tb-eventos-masivos');
+            const selBatch = document.getElementById('sel-batch-filtro');
+            const lblTotal = document.getElementById('lbl-total-eventos-masivos');
+
+            if (!maestroId) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted); padding: 20px;">Elija una Hacienda para listar.</td></tr>';
+                lblTotal.innerText = '0';
+                selBatch.innerHTML = '<option value="TODOS">-- Todos los lotes --</option>';
+                selBatch.disabled = true;
+                eventosMasivosCache = [];
+                eventosFiltrados = [];
+                return;
+            }
+
+            toggleLoading(true, "Consultando eventos...");
+            try {
+                const snap = await db.collection('estancias')
+                                     .doc(maestroId)
+                                     .collection('eventos')
+                                     .where('batch_id', '>=', '')
+                                     .get();
+
+                eventosMasivosCache = [];
+                const lotesDetectados = new Set();
+
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (data && data.batch_id) {
+                        eventosMasivosCache.push({
+                            id: docSnap.id,
+                            maestroId: maestroId,
+                            fecha: data.fecha || '',
+                            caravana: data.caravana || '',
+                            accion: data.accion || 'Actualización',
+                            valor: data.valor || '',
+                            detalles: data.detalles || '',
+                            batch_id: String(data.batch_id)
+                        });
+                        lotesDetectados.add(String(data.batch_id));
+                    }
+                });
+
+                eventosMasivosCache.sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0));
+
+                selBatch.innerHTML = '<option value="TODOS">-- Todos los lotes --</option>';
+                lotesDetectados.forEach(bId => {
+                    let labelLote = bId;
+                    if (!isNaN(bId) && Number(bId) > 100000000000) {
+                        const f = new Date(Number(bId));
+                        labelLote = `Lote ${f.toLocaleDateString()} (${bId.slice(-4)})`;
+                    }
+                    selBatch.innerHTML += `<option value="${bId}">${labelLote}</option>`;
+                });
+                selBatch.disabled = (lotesDetectados.size === 0);
+
+                eventosFiltrados = [...eventosMasivosCache];
+                renderizarTablaEventosMasivos(eventosFiltrados);
+
+                toggleLoading(false);
+                if (eventosMasivosCache.length === 0) {
+                    mostrarToast("ℹ️ Sin eventos de carga masiva.");
+                } else {
+                    mostrarToast(`✅ ${eventosMasivosCache.length} eventos listados.`);
+                }
+            } catch (err) {
+                toggleLoading(false);
+                console.error("Error al cargar eventos masivos:", err);
+                mostrarToast("❌ Error al consultar Firestore: " + err.message, true);
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--peligro); padding: 20px;">Error: ${err.message}</td></tr>`;
+            }
+        }
+
+        function renderizarTablaEventosMasivos(lista) {
+            const tbody = document.getElementById('tb-eventos-masivos');
+            const lblTotal = document.getElementById('lbl-total-eventos-masivos');
+            lblTotal.innerText = lista.length;
+
+            if (!lista || lista.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted); padding: 20px;">Sin registros coincidentes.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            lista.forEach(ev => {
+                let fechaMostrar = '-';
+                if (ev.fecha) {
+                    try {
+                        const d = new Date(ev.fecha);
+                        fechaMostrar = !isNaN(d.getTime()) ? d.toLocaleDateString() : ev.fecha;
+                    } catch(e) { fechaMostrar = ev.fecha; }
+                }
+
+                let claseBadge = 'badge-default';
+                if (ev.accion.includes('Sanidad')) claseBadge = 'badge-sanidad';
+                else if (ev.accion.includes('Peso')) claseBadge = 'badge-peso';
+                else if (ev.accion.includes('Datos')) claseBadge = 'badge-datos';
+                else if (ev.accion.includes('Diagnóstico')) claseBadge = 'badge-diagnostico';
+
+                html += `
+                <tr style="border-bottom: 1px solid var(--borde);">
+                    <td style="padding:10px; color:var(--muted);">${fechaMostrar}</td>
+                    <td style="padding:10px;"><strong style="color: var(--secundario);">${ev.caravana || 'S/N'}</strong></td>
+                    <td style="padding:10px;"><span class="badge-accion ${claseBadge}">${ev.accion}</span></td>
+                    <td style="padding:10px; font-weight:600;">${ev.valor || '-'}</td>
+                    <td style="padding:10px; color:var(--muted); font-size:11px; max-width:180px; word-break:break-word;">${ev.detalles || '-'}</td>
+                    <td style="padding:10px; text-align: center;">
+                        <div style="display:flex; gap:4px; justify-content:center;">
+                            <button class="btn btn-mini btn-warning" style="padding:5px 8px; font-size:11px;" onclick="abrirModalEditarEvento('${ev.id}')">
+                                ✏️
+                            </button>
+                            <button class="btn btn-mini btn-danger" style="padding:5px 8px; font-size:11px;" onclick="eliminarEventoIndividual('${ev.id}', '${ev.caravana}')">
+                                🗑️
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function filtrarEventosPorLote() {
+            const lote = document.getElementById('sel-batch-filtro').value;
+            const txt = document.getElementById('busqueda-evento-masivo').value.trim().toLowerCase();
+
+            eventosFiltrados = eventosMasivosCache.filter(ev => {
+                const coincideLote = (lote === 'TODOS') || (ev.batch_id === lote);
+                const coincideTxt = !txt || 
+                    (ev.caravana && ev.caravana.toLowerCase().includes(txt)) ||
+                    (ev.valor && ev.valor.toLowerCase().includes(txt)) ||
+                    (ev.accion && ev.accion.toLowerCase().includes(txt)) ||
+                    (ev.detalles && ev.detalles.toLowerCase().includes(txt));
+                return coincideLote && coincideTxt;
+            });
+
+            renderizarTablaEventosMasivos(eventosFiltrados);
+        }
+
+        function filtrarEventosEnMemoria() {
+            filtrarEventosPorLote();
+        }
+
+        function abrirModalEditarEvento(docId) {
+            const ev = eventosMasivosCache.find(item => item.id === docId);
+            if (!ev) return mostrarToast("⚠️ Registro no encontrado.", true);
+
+            document.getElementById('edit-ev-docid').value = ev.id;
+            document.getElementById('edit-ev-maestroid').value = ev.maestroId;
+            document.getElementById('edit-ev-caravana').value = ev.caravana || '';
+            document.getElementById('edit-ev-accion').value = ev.accion || 'Actualización de Datos';
+            document.getElementById('edit-ev-valor').value = ev.valor || '';
+            document.getElementById('edit-ev-detalles').value = ev.detalles || '';
+            document.getElementById('edit-ev-batchid').value = ev.batch_id || '';
+
+            let fechaInput = '';
+            if (ev.fecha) {
+                try {
+                    const d = new Date(ev.fecha);
+                    if (!isNaN(d.getTime())) {
+                        const tzOffset = d.getTimezoneOffset() * 60000;
+                        fechaInput = (new Date(d.getTime() - tzOffset)).toISOString().slice(0, 16);
+                    }
+                } catch(e) {}
+            }
+            if (!fechaInput) {
+                const now = new Date();
+                fechaInput = (new Date(now.getTime() - (now.getTimezoneOffset() * 60000))).toISOString().slice(0, 16);
+            }
+            document.getElementById('edit-ev-fecha').value = fechaInput;
+
+            abrirModal('modal-editar-evento');
+        }
+
+        async function guardarEdicionEventoFirestore() {
+            const docId = document.getElementById('edit-ev-docid').value;
+            const maestroId = document.getElementById('edit-ev-maestroid').value;
+            const caravana = document.getElementById('edit-ev-caravana').value.trim().toUpperCase();
+            const accion = document.getElementById('edit-ev-accion').value;
+            const valor = document.getElementById('edit-ev-valor').value.trim();
+            const detalles = document.getElementById('edit-ev-detalles').value.trim();
+            const fechaVal = document.getElementById('edit-ev-fecha').value;
+
+            if (!docId || !maestroId) return mostrarToast("⚠️ Referencia inválida.", true);
+            if (!caravana) return mostrarToast("⚠️ Caravana obligatoria.", true);
+            if (!valor) return mostrarToast("⚠️ Valor obligatorio.", true);
+            if (!fechaVal) return mostrarToast("⚠️ Fecha requerida.", true);
+
+            const fechaISO = new Date(fechaVal).toISOString();
+
+            const datosActualizados = {
+                caravana: caravana,
+                accion: accion,
+                valor: valor,
+                detalles: detalles,
+                fecha: fechaISO
+            };
+
+            toggleLoading(true, "Guardando...");
+
+            try {
+                await db.collection('estancias')
+                        .doc(maestroId)
+                        .collection('eventos')
+                        .doc(docId)
+                        .update(datosActualizados);
+
+                const indice = eventosMasivosCache.findIndex(e => e.id === docId);
+                if (indice !== -1) {
+                    eventosMasivosCache[indice] = {
+                        ...eventosMasivosCache[indice],
+                        ...datosActualizados
+                    };
+                }
+
+                filtrarEventosPorLote();
+                toggleLoading(false);
+                cerrarModal('modal-editar-evento');
+                mostrarToast("✅ Registro actualizado en Firestore.");
+            } catch (err) {
+                toggleLoading(false);
+                console.error("Error al actualizar evento:", err);
+                mostrarToast("❌ Error al guardar: " + err.message, true);
+            }
+        }
+
+        // ==========================================
+        // CAMBIO MASIVO DE FECHA DE TODO EL ARCHIVO / LOTE
+        // ==========================================
+        async function cambiarFechaMasivaLote() {
+            const maestroId = document.getElementById('sel-hacienda-editar').value;
+            const fechaVal = document.getElementById('fecha-cambio-masivo').value;
+
+            if (!maestroId) return mostrarToast("⚠️ Elija una Hacienda primero.", true);
+            if (!fechaVal) return mostrarToast("⚠️ Elija la nueva fecha y hora.", true);
+            if (!eventosFiltrados || eventosFiltrados.length === 0) {
+                return mostrarToast("⚠️ Sin registros para actualizar fecha.", true);
+            }
+
+            const nuevaFechaISO = new Date(fechaVal).toISOString();
+            const fechaLegible = new Date(fechaVal).toLocaleDateString();
+            const total = eventosFiltrados.length;
+
+            if (!confirm(`⚠️ ¿Cambiar la fecha de los ${total} registros a ${fechaLegible}?`)) {
+                return;
+            }
+
+            toggleLoading(true, `Actualizando ${total} fechas...`);
+
+            try {
+                const chunkSize = 450;
+                const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
+
+                for (let i = 0; i < eventosFiltrados.length; i += chunkSize) {
+                    const chunk = eventosFiltrados.slice(i, i + chunkSize);
+                    const batch = db.batch();
+
+                    chunk.forEach((ev, idx) => {
+                        const tiempoFinal = new Date(new Date(nuevaFechaISO).getTime() + (idx * 5)).toISOString();
+                        const docRef = colRef.doc(ev.id);
+                        batch.update(docRef, { fecha: tiempoFinal });
+                        ev.fecha = tiempoFinal;
+
+                        const original = eventosMasivosCache.find(o => o.id === ev.id);
+                        if (original) original.fecha = tiempoFinal;
+                    });
+
+                    await batch.commit();
+                }
+
+                filtrarEventosPorLote();
+                toggleLoading(false);
+                mostrarToast(`✅ Fecha actualizada en ${total} registros.`);
+            } catch (err) {
+                toggleLoading(false);
+                console.error("Error en cambio masivo de fecha:", err);
+                mostrarToast("❌ Error al actualizar fechas: " + err.message, true);
+            }
+        }
+
+        // ==========================================
+        // ELIMINACIÓN DE REGISTROS INDIVIDUALES Y POR CARAVANA
+        // ==========================================
+        async function eliminarEventoIndividual(docId, caravana) {
+            const maestroId = document.getElementById('sel-hacienda-editar').value;
+            if (!maestroId || !docId) return mostrarToast("⚠️ Referencia no válida.", true);
+
+            if (!confirm(`⚠️ ¿Eliminar registro del RP "${caravana || 'S/N'}"?`)) {
+                return;
+            }
+
+            toggleLoading(true, "Eliminando registro...");
+
+            try {
+                await db.collection('estancias').doc(maestroId).collection('eventos').doc(docId).delete();
+
+                eventosMasivosCache = eventosMasivosCache.filter(e => e.id !== docId);
+                filtrarEventosPorLote();
+
+                toggleLoading(false);
+                mostrarToast("✅ Registro eliminado.");
+            } catch (err) {
+                toggleLoading(false);
+                console.error("Error al eliminar evento:", err);
+                mostrarToast("❌ Error al eliminar: " + err.message, true);
+            }
+        }
+
+        async function eliminarEventoDesdeModal() {
+            const docId = document.getElementById('edit-ev-docid').value;
+            const caravana = document.getElementById('edit-ev-caravana').value;
+            cerrarModal('modal-editar-evento');
+            await eliminarEventoIndividual(docId, caravana);
+        }
+
+        async function eliminarCaravanaDesdeModal() {
+            const caravana = document.getElementById('edit-ev-caravana').value.trim();
+            cerrarModal('modal-editar-evento');
+            if (caravana) {
+                await purgarCaravanaEspecifica(caravana);
+            }
+        }
+
+        async function eliminarCaravanaCompletaMasiva() {
+            const maestroId = document.getElementById('sel-hacienda-editar').value;
+            if (!maestroId) return mostrarToast("⚠️ Selecciona una Hacienda primero.", true);
+            if (!eventosMasivosCache || eventosMasivosCache.length === 0) {
+                return mostrarToast("⚠️ Sin registros cargados.", true);
+            }
+
+            const caravana = prompt("Caravana (RP) a eliminar por completo:");
+            if (!caravana || !caravana.trim()) return;
+
+            await purgarCaravanaEspecifica(caravana.trim().toUpperCase());
+        }
+
+        async function purgarCaravanaEspecifica(caravanaRP) {
+            const maestroId = document.getElementById('sel-hacienda-editar').value;
+            const matches = eventosMasivosCache.filter(e => String(e.caravana).trim().toUpperCase() === caravanaRP.toUpperCase());
+
+            if (matches.length === 0) {
+                return mostrarToast(`⚠️ No se encontraron registros con RP "${caravanaRP}".`, true);
+            }
+
+            if (!confirm(`⚠️ PELIGRO:
+Se encontraron ${matches.length} registro(s) de "${caravanaRP}".
+¿Eliminar TODOS de Firestore?`)) {
+                return;
+            }
+
+            toggleLoading(true, `Purgando "${caravanaRP}"...`);
+
+            try {
+                const chunkSize = 450;
+                const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
+
+                for (let i = 0; i < matches.length; i += chunkSize) {
+                    const chunk = matches.slice(i, i + chunkSize);
+                    const batch = db.batch();
+
+                    chunk.forEach(ev => {
+                        batch.delete(colRef.doc(ev.id));
+                    });
+
+                    await batch.commit();
+                }
+
+                const idsEliminados = new Set(matches.map(m => m.id));
+                eventosMasivosCache = eventosMasivosCache.filter(e => !idsEliminados.has(e.id));
+                filtrarEventosPorLote();
+
+                toggleLoading(false);
+                mostrarToast(`✅ Se eliminaron ${matches.length} registros de "${caravanaRP}".`);
+            } catch (err) {
+                toggleLoading(false);
+                console.error("Error al purgar caravana:", err);
+                mostrarToast("❌ Error al purgar caravana: " + err.message, true);
+            }
+        }
+
         // Anclajes Globales
         window.ingresarAdmin = ingresarAdmin; window.cerrarSesion = cerrarSesion; window.cambiarVista = cambiarVista; window.cerrarModal = cerrarModal;
         window.toggleMantenimiento = toggleMantenimiento; window.enviarAvisoMantenimiento = enviarAvisoMantenimiento; window.crearCliente = crearCliente; window.cargarClientes = cargarClientes;
         window.actualizarVencimiento = actualizarVencimiento; window.cambiarClaveMaestroGhost = cambiarClaveMaestroGhost; window.borrarUsuarioMaestroGhost = borrarUsuarioMaestroGhost;
         window.abrirEdicion = abrirEdicion; window.guardarEdicion = guardarEdicion; window.verEquipo = verEquipo; window.cambiarClaveMiembroGhost = cambiarClaveMiembroGhost; window.eliminarMiembroGhost = eliminarMiembroGhost;
-        window.cargarClientesMasiva = cargarClientesMasiva; window.leerArchivoInteligente = leerArchivoInteligente; window.procesarMapeoEInyectar = procesarMapeoEInyectar; window.deshacerUltimaImportacion = deshacerUltimaImportacion; window.limpiarAvisoGlobal = limpiarAvisoGlobal;
+        window.cargarClientesMasiva = cargarClientesMasiva; window.leerArchivoInteligente = leerArchivoInteligente; window.procesarMapeoEInyectar = procesarMapeoEInyectar; window.deshacerUltimaImportacion = deshacerUltimaImportacion;
+        window.inicializarModuloEditarMasiva = inicializarModuloEditarMasiva; window.cargarEventosCargaMasiva = cargarEventosCargaMasiva;
+        window.filtrarEventosPorLote = filtrarEventosPorLote; window.filtrarEventosEnMemoria = filtrarEventosEnMemoria;
+        window.abrirModalEditarEvento = abrirModalEditarEvento; window.guardarEdicionEventoFirestore = guardarEdicionEventoFirestore;
+        window.cambiarFechaMasivaLote = cambiarFechaMasivaLote; window.eliminarEventoIndividual = eliminarEventoIndividual;
+        window.eliminarEventoDesdeModal = eliminarEventoDesdeModal; window.eliminarCaravanaDesdeModal = eliminarCaravanaDesdeModal;
+        window.eliminarCaravanaCompletaMasiva = eliminarCaravanaCompletaMasiva; window.purgarCaravanaEspecifica = purgarCaravanaEspecifica;
     </script>
-
-    <!-- BOTÓN AURA DE CORA Y ESTADO -->
-    <button id="btn-aura" title="Hablar con Cora">
-      <svg class="icono-mic" viewBox="0 0 24 24">
-        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-      </svg>
-    </button>
-    <div id="estado-ia">Cora lista</div>
-
-    <style>
-        /* ESTILOS DEL AURA DE CORA */
-        #btn-aura {
-          position: fixed;
-          bottom: 40px;
-          right: 30px;
-          width: 70px;
-          height: 70px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #0f172a 0%, #3b82f6 100%);
-          box-shadow: 0 0 15px rgba(59, 130, 246, 0.5), inset 0 0 10px rgba(255,255,255,0.3);
-          border: 1px solid var(--border);
-          cursor: pointer;
-          z-index: 9999;
-          transition: transform 0.1s, top 0.1s, left 0.1s;
-          animation: respirar 3s infinite alternate;
-          display: none;
-          align-items: center;
-          justify-content: center;
-          color: white;
-        }
-        @keyframes respirar {
-          0% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
-          100% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.8); }
-        }
-        #btn-aura.escuchando {
-          background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
-          animation: latir 0.8s infinite alternate;
-        }
-        @keyframes latir {
-          0% { transform: scale(1); box-shadow: 0 0 15px rgba(16, 185, 129, 0.6); }
-          100% { transform: scale(1.15); box-shadow: 0 0 35px rgba(59, 130, 246, 0.9); }
-        }
-        .icono-mic { width: 32px; height: 32px; fill: currentColor; }
-        #estado-ia {
-          position: fixed;
-          bottom: 120px;
-          right: 30px;
-          background: rgba(15, 23, 42, 0.9);
-          color: white;
-          padding: 10px 15px;
-          border-radius: 12px;
-          font-size: 14px;
-          display: none;
-          z-index: 9998;
-          backdrop-filter: blur(5px);
-          max-width: 250px;
-          text-align: center;
-          border: 1px solid var(--border);
-        }
-    </style>
-
-
-    <script>
-        const URL_APPS_SCRIPT_IA = 'https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec';
-        const btnAura = document.getElementById('btn-aura');
-        const estadoIA = document.getElementById('estado-ia');
-        let audioDesbloqueado = false;
-        let vocesDisponibles = [];
-        let interrupcionManual = false;
-        let coraHistorial = [];
-
-        window.speechSynthesis.onvoiceschanged = () => {
-          vocesDisponibles = window.speechSynthesis.getVoices();
-        };
-
-        let isDraggingAura = false;
-        let auraStartX, auraStartY, initialAuraLeft, initialAuraTop;
-        let hasDraggedAura = false;
-        let auraStartTime = 0;
-
-        if (btnAura) {
-            btnAura.addEventListener('touchstart', dragStartAura, {passive: false});
-            btnAura.addEventListener('mousedown', dragStartAura);
-        }
-
-        function dragStartAura(e) {
-            if (e.type === 'touchstart') {
-                auraStartX = e.touches[0].clientX;
-                auraStartY = e.touches[0].clientY;
-            } else {
-                auraStartX = e.clientX;
-                auraStartY = e.clientY;
-            }
-            const rect = btnAura.getBoundingClientRect();
-            initialAuraLeft = rect.left;
-            initialAuraTop = rect.top;
-            isDraggingAura = true;
-            hasDraggedAura = false;
-            auraStartTime = Date.now();
-
-            document.addEventListener('touchmove', dragAura, {passive: false});
-            document.addEventListener('mousemove', dragAura);
-            document.addEventListener('touchend', dragEndAura);
-            document.addEventListener('mouseup', dragEndAura);
-        }
-
-        function dragAura(e) {
-            if (!isDraggingAura) return;
-            let currentX, currentY;
-            if (e.type === 'touchmove') {
-                currentX = e.touches[0].clientX;
-                currentY = e.touches[0].clientY;
-            } else {
-                currentX = e.clientX;
-                currentY = e.clientY;
-            }
-
-            let deltaX = currentX - auraStartX;
-            let deltaY = currentY - auraStartY;
-
-            if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-                hasDraggedAura = true;
-                if (e.cancelable) e.preventDefault();
-
-                let newLeft = initialAuraLeft + deltaX;
-                let newTop = initialAuraTop + deltaY;
-
-                if (newLeft < 0) newLeft = 0;
-                if (newTop < 0) newTop = 0;
-                if (newLeft + btnAura.offsetWidth > window.innerWidth) newLeft = window.innerWidth - btnAura.offsetWidth;
-                if (newTop + btnAura.offsetHeight > window.innerHeight) newTop = window.innerHeight - btnAura.offsetHeight;
-
-                btnAura.style.left = newLeft + 'px';
-                btnAura.style.top = newTop + 'px';
-                btnAura.style.right = 'auto';
-                btnAura.style.bottom = 'auto';
-
-                if (estadoIA) {
-                    estadoIA.style.left = (newLeft - 100) + 'px';
-                    estadoIA.style.top = (newTop - 60) + 'px';
-                    estadoIA.style.right = 'auto';
-                    estadoIA.style.bottom = 'auto';
-                }
-            }
-        }
-
-        function dragEndAura(e) {
-            isDraggingAura = false;
-            document.removeEventListener('touchmove', dragAura);
-            document.removeEventListener('mousemove', dragAura);
-            document.removeEventListener('touchend', dragEndAura);
-            document.removeEventListener('mouseup', dragEndAura);
-
-            setTimeout(() => { hasDraggedAura = false; }, 50);
-        }
-
-        function hablarCora(texto) {
-          window.speechSynthesis.cancel();
-          interrupcionManual = false;
-          const utterance = new SpeechSynthesisUtterance(texto);
-          utterance.lang = 'es-ES';
-          utterance.rate = 1.05;
-          utterance.pitch = 1.0;
-
-          let vozElegida = vocesDisponibles.find(v => v.lang.startsWith('es') && (v.name.includes('Premium') || v.name.includes('Mujer') || v.name.includes('Female'))) ||
-                           vocesDisponibles.find(v => v.lang.startsWith('es') && v.name.includes('Enhanced')) ||
-                           vocesDisponibles.find(v => v.lang === 'es-MX') ||
-                           vocesDisponibles.find(v => v.lang.startsWith('es')) ||
-                           vocesDisponibles.find(v => v.lang.includes('es'));
-
-          if (vozElegida) utterance.voice = vozElegida;
-
-          utterance.onend = function() {
-              if (!interrupcionManual && reconocimiento && document.getElementById('estado-ia').style.display === 'none') {
-                   setTimeout(() => { btnAura.click(); }, 300);
-              }
-              interrupcionManual = false;
-          };
-
-          window.speechSynthesis.speak(utterance);
-        }
-
-        const ReconocimientoVoz = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let reconocimiento = null;
-
-        if (ReconocimientoVoz) {
-          reconocimiento = new ReconocimientoVoz();
-          reconocimiento.lang = 'es-ES';
-          reconocimiento.continuous = true;
-          reconocimiento.interimResults = false;
-
-          reconocimiento.onstart = () => {
-            btnAura.classList.add('escuchando');
-            estadoIA.style.display = 'block';
-            estadoIA.innerText = 'Cora te escucha...';
-          };
-
-          reconocimiento.onresult = (evento) => {
-            let mensajeUsuario = evento.results[evento.results.length - 1][0].transcript;
-            estadoIA.innerText = 'Cora pensando...';
-            enviarComandoACora(mensajeUsuario);
-          };
-
-          reconocimiento.onerror = (evento) => {
-            btnAura.classList.remove('escuchando');
-            estadoIA.innerText = 'No te escuché bien.';
-            setTimeout(() => estadoIA.style.display = 'none', 2500);
-          };
-          reconocimiento.onend = () => {
-              if (!btnAura.classList.contains('escuchando')) return;
-              try { reconocimiento.start(); } catch(e) {}
-          };
-        }
-
-        if (btnAura) {
-            btnAura.addEventListener('click', (e) => {
-              if (hasDraggedAura) {
-                 e.preventDefault();
-                 e.stopPropagation();
-                 return;
-              }
-              if (window.speechSynthesis.speaking) {
-                  interrupcionManual = true;
-                  window.speechSynthesis.cancel();
-              }
-
-              if (!audioDesbloqueado) {
-                let silencio = new SpeechSynthesisUtterance('');
-                silencio.volume = 0;
-                window.speechSynthesis.speak(silencio);
-                audioDesbloqueado = true;
-              }
-
-              if (reconocimiento) {
-                if (btnAura.classList.contains('escuchando')) {
-                    reconocimiento.stop();
-                    estadoIA.style.display = 'none';
-                    btnAura.classList.remove('escuchando');
-                } else {
-                    try { reconocimiento.start(); } catch(e) { reconocimiento.stop(); }
-                }
-              } else {
-                alert("Tu navegador no soporta el reconocimiento de voz.");
-              }
-            });
-        }
-
-        function enviarComandoACora(texto) {
-          let horaLocalActual = new Date().toLocaleString('es-PY', { timeZone: 'America/Asuncion', dateStyle: 'full', timeStyle: 'short' });
-          let usNombreGlobal = "";
-          try { usNombreGlobal = document.getElementById('edit-new-nombre') ? document.getElementById('edit-new-nombre').value : "Admin"; } catch(e) {}
-
-          coraHistorial.push({rol: 'usuario', texto: texto});
-          if(coraHistorial.length > 10) coraHistorial.shift();
-
-          let payload = {
-            accion: 'ia',
-            mensaje: texto,
-            nombreUsuario: "Administrador Master",
-            rolUsuario: "Propietario",
-            haciendaNombre: "Panel de Control",
-            contexto: {
-              cabezasVivas: 0,
-              bajasMortalidad: 0,
-              tasaMortalidad: "0%",
-              prenadas: 0,
-              vacias: 0,
-              rpActualEnPantalla: "Ninguno",
-              horaLocal: horaLocalActual,
-              historial: coraHistorial.slice(0, -1).map(h => (h.rol === 'usuario' ? 'U: ' : 'A: ') + h.texto).join(' | ')
-            }
-          };
-
-          fetch(URL_APPS_SCRIPT_IA, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-          })
-          .then(res => res.json())
-          .then(datos => {
-            estadoIA.style.display = 'none';
-            if (datos.status === 'ok') {
-              coraHistorial.push({rol: 'ia', texto: datos.respuesta});
-              if(coraHistorial.length > 10) coraHistorial.shift();
-
-              hablarCora(datos.respuesta);
-              if (datos.comando) {
-                ejecutarComandoEnApp(datos.comando, datos.parametros);
-              }
-            } else {
-              estadoIA.style.display = 'block';
-              estadoIA.innerText = 'Error: ' + (datos.error || 'Desconocido');
-              setTimeout(() => estadoIA.style.display = 'none', 3000);
-            }
-          })
-          .catch(err => {
-            estadoIA.style.display = 'block';
-            estadoIA.innerText = 'Error de red con Cora';
-            setTimeout(() => estadoIA.style.display = 'none', 3000);
-          });
-        }
-
-
-        function ejecutarComandoEnApp(cmd, params) {
-          params = params || {};
-
-          if (cmd === 'hablar' && params.respuesta) {
-            alert("Cora dice: " + params.respuesta);
-          }
-          else if (cmd === 'soporte') {
-            window.open('https://wa.me/595976139617', '_blank');
-          }
-          else if (cmd === 'navegar') {
-            if (typeof cambiarVista !== 'function') return;
-            // Map PC/Index paths
-            if (params.vista === 'dashboard') cambiarVista('v-dash', document.querySelectorAll('.sidebar-nav li')[0] || document.querySelectorAll('.nav-item')[0]);
-            if (params.vista === 'manga') cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]);
-            if (params.vista === 'registro' || params.vista === 'base') { cambiarVista('v-base', document.querySelectorAll('.sidebar-nav li')[2] || document.querySelectorAll('.nav-item')[2]); if(typeof cargarListaRegistro==='function') cargarListaRegistro(); }
-            if (params.vista === 'informe') { cambiarVista('v-reporte', document.querySelectorAll('.sidebar-nav li')[3] || document.querySelectorAll('.nav-item')[3]); if(typeof actualizarInformeAvanzado==='function') actualizarInformeAvanzado(); }
-
-            // Map Admin paths
-            if (params.vista === 'alta' || params.vista === 'nuevo') cambiarVista('v-nuevo', document.querySelectorAll('.sidebar-nav li')[0] || document.querySelectorAll('.nav-item')[0]);
-            if (params.vista === 'licencias' || params.vista === 'suscripciones') { cambiarVista('v-licencias', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]); if(typeof cargarClientes==='function') cargarClientes(); }
-            if (params.vista === 'masiva' || params.vista === 'importar') { cambiarVista('v-masiva', document.querySelectorAll('.sidebar-nav li')[2] || document.querySelectorAll('.nav-item')[2]); if(typeof cargarClientesMasiva==='function') cargarClientesMasiva(); }
-            if (params.vista === 'sistema' || params.vista === 'config') { cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[3] || document.querySelectorAll('.nav-item')[3] || document.querySelectorAll('.nav-item')[4]); if(typeof checkStatusInicial==='function') checkStatusInicial(); }
-          }
-          else if (cmd === 'cambiar_permiso_operador') {
-             if(params.usuario) {
-                 cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4] || document.querySelectorAll('.nav-item')[4]);
-                 const selEdit = document.getElementById('op-edit-usu-sel');
-                 if(selEdit) {
-                     selEdit.value = params.usuario;
-                     if (typeof cargarPermisosEdicion === 'function') cargarPermisosEdicion();
-
-                     if (params.permiso) {
-                         setTimeout(() => {
-                             document.querySelectorAll('.chk-edit-permiso').forEach(chk => {
-                                 if (chk.value === params.permiso || chk.nextElementSibling.innerText.toLowerCase().includes(params.permiso.toLowerCase())) {
-                                     chk.checked = (params.estado === 'activar');
-                                 }
-                             });
-                             if (params.autoguardar) {
-                                 if (typeof guardarEdicionOperador === 'function') guardarEdicionOperador();
-                             }
-                         }, 600);
-                     }
-                 }
-             }
-          }
-          else if (cmd === 'buscar_caravana') {
-            if (params.rp) {
-              document.getElementById('buscador-caravana').value = params.rp;
-              cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]);
-              if (typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(params.rp);
-            }
-          }
-          else if (cmd === 'filtrar_estado') {
-            if (typeof filtrarDesdeDashboard === 'function') filtrarDesdeDashboard('estado', params.estado || 'vivos');
-          }
-          else if (cmd === 'descargar_pdf' || cmd === 'generar_informe') {
-            cambiarVista('v-reporte', document.querySelectorAll('.sidebar-nav li')[3] || document.querySelectorAll('.nav-item')[3]);
-            if (params.modo) {
-                let mo = document.getElementById('f-inf-modo');
-                if (mo) {
-                    mo.value = params.modo;
-                    if(typeof cambiarModoReporte === 'function') cambiarModoReporte();
-                }
-            }
-            if (params.modo === 'inventario') {
-                if (params.lote && document.getElementById('f-inf-lote')) document.getElementById('f-inf-lote').value = params.lote;
-                if (params.categoria && document.getElementById('f-inf-cat')) document.getElementById('f-inf-cat').value = params.categoria;
-                if (params.dx && document.getElementById('f-inf-dx')) document.getElementById('f-inf-dx').value = params.dx;
-                if (params.carimbo && document.getElementById('f-inf-carimbo')) document.getElementById('f-inf-carimbo').value = params.carimbo;
-            } else if (params.modo === 'bajas') {
-                if (params.causa && document.getElementById('f-inf-baja-causa')) document.getElementById('f-inf-baja-causa').value = params.causa;
-                if (params.rango && document.getElementById('f-inf-baja-rango')) { document.getElementById('f-inf-baja-rango').value = params.rango; if(typeof manejarRangoFechasBajas === 'function') manejarRangoFechasBajas(); }
-            } else if (params.modo === 'eventos') {
-                if (params.rango && document.getElementById('f-inf-rango-fecha')) { document.getElementById('f-inf-rango-fecha').value = params.rango; if(typeof manejarRangoFechas === 'function') manejarRangoFechas(); }
-                if (params.accion && document.getElementById('f-inf-accion-oculto')) document.getElementById('f-inf-accion-oculto').value = params.accion;
-            }
-            if(typeof actualizarInformeAvanzado === 'function') actualizarInformeAvanzado();
-            if (params.autoguardar || cmd === 'descargar_pdf' || cmd === 'generar_informe') {
-               setTimeout(() => { if(typeof ejecutarDescargaPDF === 'function') ejecutarDescargaPDF(); }, 800);
-               if(typeof mostrarToast === 'function') mostrarToast("✅ Generando reporte PDF...");
-            }
-          }
-          else if (cmd === 'activar_rafaga') {
-            cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]);
-            if (typeof rafagaActiva !== 'undefined' && !rafagaActiva && typeof toggleRafaga === 'function') toggleRafaga();
-            if (params.modo && document.getElementById('rafaga-accion')) {
-              document.getElementById('rafaga-accion').value = params.modo;
-              if(typeof verificarRafagaCustom === 'function') verificarRafagaCustom();
-            }
-          }
-          else if (cmd === 'crear_operador') {
-            cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4] || document.querySelectorAll('.nav-item')[4]);
-            if (params.nombre && document.getElementById('op-nombre')) document.getElementById('op-nombre').value = params.nombre;
-            if ((params.usuario || params.pin) && document.getElementById('op-usu')) document.getElementById('op-usu').value = params.usuario || params.pin;
-            if (params.password && document.getElementById('op-pass')) document.getElementById('op-pass').value = params.password;
-            if (params.rol && document.getElementById('op-rol')) {
-              document.getElementById('op-rol').value = params.rol;
-              if (typeof togglePermisos === 'function') togglePermisos();
-            }
-            if (params.permisos && Array.isArray(params.permisos)) {
-              document.querySelectorAll('.chk-permiso').forEach(chk => {
-                chk.checked = params.permisos.includes(chk.value) || params.permisos.some(p => chk.nextElementSibling.innerText.toLowerCase().includes(p.toLowerCase()));
-              });
-            }
-            if (params.autoguardar) {
-               setTimeout(() => { if(typeof crearOperador==='function') crearOperador(); }, 500);
-            }
-          }
-          else if (cmd === 'eliminar_operador') {
-            if (params.usuario) {
-              cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4] || document.querySelectorAll('.nav-item')[4]);
-              const selDel = document.getElementById('op-del-usu-sel');
-              if (selDel) {
-                selDel.value = params.usuario;
-                if (params.autoguardar) {
-                  const originalConfirm = window.confirm;
-                  window.confirm = () => true;
-                  Promise.resolve(eliminarOperador()).finally(() => {
-                    window.confirm = originalConfirm;
-                  });
-                }
-              }
-            }
-          }
-          else if (cmd === 'cambiar_tema') {
-            cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4] || document.querySelectorAll('.nav-item')[4]);
-            if (typeof toggleTema === 'function') toggleTema();
-          }
-          else if (cmd === 'configurar_hacienda') {
-            cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4] || document.querySelectorAll('.nav-item')[4]);
-            if (params.nombre && document.getElementById('cfg-nom')) {
-              document.getElementById('cfg-nom').value = params.nombre;
-              if (params.autoguardar && typeof guardarDisenoServidor === 'function') guardarDisenoServidor();
-            }
-          }
-          else if (cmd === 'seleccionar_graficos') {
-            cambiarVista('v-config', document.querySelectorAll('.sidebar-nav li')[4] || document.querySelectorAll('.nav-item')[4]);
-            if (params.graficos && Array.isArray(params.graficos)) {
-              const checkboxes = document.querySelectorAll('.chk-graf');
-              checkboxes.forEach(chk => {
-                chk.checked = params.graficos.includes(chk.value) || params.graficos.includes(parseInt(chk.value));
-              });
-              const checkedBoxes = document.querySelectorAll('.chk-graf:checked');
-              if (checkedBoxes.length > 0 && typeof verificarLimiteGraficos === 'function') verificarLimiteGraficos(checkedBoxes[0]);
-            }
-          }
-          else if (cmd === 'borrar_caravana') {
-            if (params.rp) {
-              document.getElementById('buscador-caravana').value = params.rp;
-              cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]);
-              if(typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(params.rp);
-            }
-            if (typeof rpActivo !== 'undefined' && rpActivo) {
-              const originalConfirm = window.confirm;
-              window.confirm = () => true;
-              if(typeof borrarCaravana === 'function') borrarCaravana();
-              window.confirm = originalConfirm;
-            } else {
-              alert("No se especificó ninguna caravana para borrar.");
-            }
-          }
-          else if (cmd === 'renombrar_caravana') {
-            if (params.rp) {
-              document.getElementById('buscador-caravana').value = params.rp;
-              cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]);
-              if(typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(params.rp);
-            }
-            if (typeof rpActivo !== 'undefined' && rpActivo && params.nuevo_rp) {
-              if (document.getElementById('f-nueva-caravana')) document.getElementById('f-nueva-caravana').value = params.nuevo_rp;
-              if (params.autoguardar && typeof guardarCambioCaravana === 'function') guardarCambioCaravana();
-            }
-          }
-          else if (cmd === 'clasificar_animal') {
-            if (params.rp) {
-              document.getElementById('buscador-caravana').value = params.rp;
-              cambiarVista('v-ficha', document.querySelectorAll('.sidebar-nav li')[1] || document.querySelectorAll('.nav-item')[1]);
-              if(typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(params.rp);
-            }
-            if (typeof rpActivo !== 'undefined' && rpActivo) {
-              if (params.categoria) {
-                const catSel = document.getElementById('input-cat-rapida');
-                if (catSel) {
-                    for (let i = 0; i < catSel.options.length; i++) {
-                      if (catSel.options[i].value.includes(params.categoria) || catSel.options[i].text.toLowerCase().includes(params.categoria.toLowerCase())) {
-                        catSel.selectedIndex = i;
-                        break;
-                      }
-                    }
-                }
-              }
-              if (params.lote && document.getElementById('input-lote-rapido')) document.getElementById('input-lote-rapido').value = params.lote;
-              if (params.carimbo && document.getElementById('input-carimbo-rapido')) document.getElementById('input-carimbo-rapido').value = params.carimbo;
-              if (params.autoguardar && typeof guardarClasificacion === 'function') guardarClasificacion();
-            }
-          }
-          else if (cmd === 'filtrar_registro') {
-            cambiarVista('v-base', document.querySelectorAll('.sidebar-nav li')[2] || document.querySelectorAll('.nav-item')[2]);
-            if (params.estado && document.getElementById('filtro-reg-estado')) document.getElementById('filtro-reg-estado').value = params.estado;
-
-            if (params.categoria && params.categoria !== 'ALL') {
-              const catSel = document.getElementById('filtro-reg-cat');
-              if (catSel) {
-                  for (let i = 0; i < catSel.options.length; i++) {
-                    if (catSel.options[i].value.toLowerCase().includes(params.categoria.toLowerCase()) || catSel.options[i].text.toLowerCase().includes(params.categoria.toLowerCase())) {
-                      catSel.selectedIndex = i;
-                      break;
-                    }
-                  }
-              }
-            } else {
-              if (document.getElementById('filtro-reg-cat')) document.getElementById('filtro-reg-cat').value = 'ALL';
-            }
-
-            if (params.lote && params.lote !== 'ALL') {
-              const loteSel = document.getElementById('filtro-reg-lote');
-              if (loteSel) {
-                  for (let i = 0; i < loteSel.options.length; i++) {
-                    if (loteSel.options[i].value.toLowerCase().includes(params.lote.toLowerCase())) {
-                      loteSel.selectedIndex = i;
-                      break;
-                    }
-                  }
-              }
-            } else {
-              if (document.getElementById('filtro-reg-lote')) document.getElementById('filtro-reg-lote').value = 'ALL';
-            }
-
-            if (params.dx && document.getElementById('filtro-reg-dx')) document.getElementById('filtro-reg-dx').value = params.dx;
-
-            if (typeof cargarListaRegistro === 'function') cargarListaRegistro();
-          }
-          else if (cmd === 'accion_ganadera') {
-            let rpObjetivo = params.rp ? String(params.rp).trim() : (typeof rpActivo !== 'undefined' ? rpActivo : null);
-
-            if (params.tipo === 'Nacimiento' || params.tipo === 'Crear') {
-                 if (params.rp) {
-                     if (document.getElementById('f-nueva-caravana')) document.getElementById('f-nueva-caravana').value = params.rp;
-                     if (typeof rpActivo !== 'undefined') rpActivo = params.rp;
-                     rpObjetivo = params.rp;
-
-                     if (!params.raza && !params.nacimiento && !params.padre && !params.madre) {
-                         if (typeof ejecutarAccion === 'function') ejecutarAccion('Actualización de Datos', `Cat: Ternero | Carimbo: -`, `Lote: Nacimientos`, null);
-                     }
-                 }
-            }
-
-            if (params.raza || params.nacimiento || params.padre || params.madre) {
-                 if (typeof rpActivo !== 'undefined') rpActivo = rpObjetivo;
-                 if (params.raza && document.getElementById('f-raza')) document.getElementById('f-raza').value = params.raza;
-                 if (params.nacimiento && document.getElementById('f-nacimiento')) document.getElementById('f-nacimiento').value = params.nacimiento;
-                 if (params.padre && document.getElementById('f-padre')) document.getElementById('f-padre').value = params.padre;
-                 if (params.madre && document.getElementById('f-madre')) document.getElementById('f-madre').value = params.madre;
-                 if (typeof guardarPerfilCompleto === 'function') guardarPerfilCompleto();
-                 if (params.tipo === 'Nacimiento' || params.tipo === 'Crear') return;
-            }
-
-            if (!rpObjetivo || rpObjetivo === "---") {
-              if(typeof mostrarToast === 'function') mostrarToast("❌ Falta especificar la caravana", true);
-              return;
-            }
-
-            if (typeof rpActivo !== 'undefined') rpActivo = rpObjetivo;
-            if (document.getElementById('buscador-caravana')) document.getElementById('buscador-caravana').value = rpObjetivo;
-            if (typeof forzarSaltoAFicha === 'function') forzarSaltoAFicha();
-            if (typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(rpObjetivo);
-
-            let tipoAccion = params.tipo;
-            let valorAccion = params.valor || "-";
-            let detallesAccion = params.detalles || "Registrado por Cora";
-
-            if (tipoAccion === 'Baja') {
-              const originalConfirm = window.confirm;
-              window.confirm = () => true;
-              Promise.resolve().then(() => {
-                  if (typeof ejecutarAccion === 'function') ejecutarAccion('Baja', valorAccion, detallesAccion, null);
-                  let rpArchivado = rpObjetivo + "-BAJA-" + Math.floor(Math.random() * 10000);
-                  setTimeout(() => {
-                      if (typeof ejecutarAccion === 'function') ejecutarAccion('Cambio de Caravana', rpArchivado, 'RP archivado por Baja/Muerte', null);
-                      if (typeof rpActivo !== 'undefined') rpActivo = rpArchivado;
-                      if (typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(rpArchivado);
-                  }, 400);
-                  if (typeof mostrarToast === 'function') mostrarToast(`💀 Baja registrada para RP ${rpObjetivo}`);
-              }).finally(() => {
-                  window.confirm = originalConfirm;
-              });
-            } else if (tipoAccion === 'Clasificacion') {
-              if(params.categoria && document.getElementById('input-cat-rapida')) document.getElementById('input-cat-rapida').value = params.categoria;
-              if(params.lote && document.getElementById('input-lote-rapido')) document.getElementById('input-lote-rapido').value = params.lote;
-              if(params.carimbo && document.getElementById('input-carimbo-rapido')) document.getElementById('input-carimbo-rapido').value = params.carimbo;
-              if(typeof guardarClasificacion==='function') guardarClasificacion();
-              if(typeof mostrarToast==='function') mostrarToast(`✅ Clasificación actualizada`);
-            } else {
-              if (typeof ejecutarAccion === 'function') ejecutarAccion(tipoAccion, valorAccion, detallesAccion, null);
-              if (typeof mostrarToast === 'function') mostrarToast(`✅ [${tipoAccion}] guardado: ${valorAccion}`);
-            }
-          }
-        }
-
-    </script>
-
 </body>
 </html>
