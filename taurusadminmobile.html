@@ -677,7 +677,8 @@
 
                 // Inicializar colección 'estancias' con el nombre de hacienda
                 await db.collection('estancias').doc(email).set({
-                    nombre_hacienda: h
+                    nombre_hacienda: h,
+                    features: feats
                 }, { merge: true });
 
                 toggleLoading(false); mostrarToast("✅ Cuenta Master creada.");
@@ -904,7 +905,7 @@
                 
                 // 2. Sincronizar en colección 'estancias'
                 try {
-                    await db.collection('estancias').doc(uId).set({ nombre_hacienda: nH }, { merge: true });
+                    await db.collection('estancias').doc(uId).set({ nombre_hacienda: nH, features: getFeatures('e') }, { merge: true });
                 } catch(errEst) {
                     console.warn("Aviso actualizando estancia doc:", errEst);
                 }
@@ -914,7 +915,7 @@
                     const opsSnap = await db.collection('usuarios').where('maestroId', '==', uId).get();
                     const batchOps = db.batch();
                     opsSnap.forEach(oDoc => {
-                        batchOps.update(oDoc.ref, { hacienda: nH });
+                        batchOps.update(oDoc.ref, { hacienda: nH, features: getFeatures('e') });
                     });
                     await batchOps.commit();
                 } catch(errOps) {
