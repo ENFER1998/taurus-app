@@ -1,9 +1,9 @@
 /**
  * TAURUS TRACK PRO - SERVICE WORKER OFICIAL PWA (OFFLINE-FIRST)
- * Desarrollado por Fernando Rodriguez 2026 - Versión Blindada v8
+ * Desarrollado por Fernando Rodriguez 2026 - Versión Blindada v9
  */
 
-const CACHE_NAME = 'taurus-track-pro-v8';
+const CACHE_NAME = 'taurus-track-pro-v9';
 
 const STATIC_ASSETS = [
   './',
@@ -45,48 +45,50 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Ignorar métodos no idempotentes (POST, PUT, DELETE) y esquemas no soportados (chrome-extension, blob, data)
+  // 1. Filtrado riguroso de métodos y esquemas soportados
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith('http://') && !event.request.url.startsWith('https://')) return;
 
   const url = new URL(event.request.url);
 
-  // Excluir solicitudes directas a APIs en vivo (OpenRouter, OneSignal, Firestore Live)
+  // 2. Excluir explícitamente túneles de comunicación en vivo y APIs en streaming
   if (
     url.origin.includes('firestore.googleapis.com') ||
     url.origin.includes('openrouter.ai') ||
     url.origin.includes('onesignal.com') ||
-    url.pathname.includes('/channel')
+    url.pathname.includes('/channel') ||
+    url.pathname.includes('/google.firestore.v1.')
   ) {
     return;
   }
 
-  // Navegación HTML: Network-first con fallback a caché
+  // 3. Estrategia Network-First con fallback resiliente para navegación HTML
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
-        }
-        return networkResponse;
-      }).catch(() => {
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) return cachedResponse;
-          return caches.match('./') || caches.match('index.html');
-        });
-      })
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(async () => {
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+          return (await caches.match('./')) || (await caches.match('index.html')) || (await caches.match('pc.html'));
+        })
     );
     return;
   }
 
-  // Recursos estáticos y CDN: Cache-first con actualización en segundo plano
+  // 4. Estrategia Cache-First con actualización en segundo plano y respuesta de fallback segura
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // En segundo plano revalidar con la red si está disponible
+        // Revalidar en segundo plano si hay red disponible
         fetch(event.request).then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             caches.open(CACHE_NAME).then((cache) => {
@@ -97,28 +99,28 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse;
       }
 
-      return fetch(event.request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
-        }
-        return networkResponse;
-      }).catch((fetchErr) => {
-        console.warn('[Taurus SW] Fallo de red offline para:', event.request.url);
-        // Garantizar que SIEMPRE se devuelve un objeto Response válido
-        const reqUrl = event.request.url || '';
-        const isImage = event.request.destination === 'image' ||
-                        reqUrl.match(/\.(png|jpg|jpeg|gif|svg|ico|webp)$/i) ||
-                        reqUrl.includes('img.os-content.com');
-        if (isImage) {
-          return caches.match('gemini-svg.png').then((fallbackImg) => {
+      return fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(async () => {
+          const reqUrl = event.request.url || '';
+          const isImage = event.request.destination === 'image' ||
+                          /\.(png|jpg|jpeg|gif|svg|ico|webp)$/i.test(reqUrl) ||
+                          reqUrl.includes('img.os-content.com');
+
+          if (isImage) {
+            const fallbackImg = await caches.match('gemini-svg.png');
             return fallbackImg || new Response('', { status: 404, statusText: 'Imagen no disponible offline' });
-          });
-        }
-        return new Response('', { status: 503, statusText: 'Recurso no disponible offline' });
-      });
+          }
+          return new Response('', { status: 503, statusText: 'Recurso no disponible offline' });
+        });
     })
   );
 });

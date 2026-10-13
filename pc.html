@@ -2041,8 +2041,20 @@
                 const col = db.collection('estancias').doc(maestroId).collection('eventos');
                 const loteSync = [...p];
                 loteSync.forEach(item => {
-                    const docRef = item.id ? col.doc(item.id) : col.doc();
-                    batch.set(docRef, item, { merge: true });
+                    if (!item || !item.id) return;
+                    const docRef = col.doc(item.id);
+                    if (item.accion === 'update' || item._operacion === 'update') {
+                        const updatePayload = {
+                            valor: item.valor || "",
+                            detalles: item.detalles || "",
+                            fecha: item.fecha || new Date().toISOString()
+                        };
+                        batch.update(docRef, updatePayload);
+                    } else {
+                        const cleanItem = { ...item };
+                        delete cleanItem._operacion;
+                        batch.set(docRef, cleanItem, { merge: true });
+                    }
                 });
                 await batch.commit();
 
@@ -2090,7 +2102,7 @@
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
         var dbCache = []; var historiaCache = null; var activosCache = null; var rpActivo = null; var usActivo = ""; var maestroId = ""; var usRol = ""; var rpPrint = ""; var pdfExportData = [];
         var usNombre = ""; var usHacienda = ""; var rfidPendiente = ""; var alertaGlobalIdActual = "";
-        var unsubscribeEventos = null; var unsubscribeConfig = null;
+        var unsubscribeEventos = null; var unsubscribeConfig = null; var unsubscribeEstancia = null;
 
         // =========================================================================
         // MOTOR DE PROCESAMIENTO GANADERO Y EVENTOS CLÍNICOS PC
@@ -2184,7 +2196,53 @@ function esCaravanaValida(car) {
             }
         }
 
-        function obtenerNombreCategoriaLegible(catRaw) {
+                // =========================================================================
+        // MOTOR DE NEGOCIO GANADERO DESACOPLADO DEL DOM (MÁXIMA RESILIENCIA)
+        // =========================================================================
+        const MotorGanadero = {
+            parsearPeso(valor) {
+                if (typeof valor === 'number') return isFinite(valor) ? valor : null;
+                if (!valor || typeof valor !== 'string') return null;
+                const limpio = valor.replace(/[^\d.-]/g, '');
+                const num = parseFloat(limpio);
+                return (!isNaN(num) && isFinite(num)) ? num : null;
+            },
+            calcularDiasEntreFechas(fechaInicio, fechaFin) {
+                if (!fechaInicio || !fechaFin) return 1;
+                try {
+                    const d1 = new Date(fechaInicio);
+                    const d2 = new Date(fechaFin);
+                    if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return 1;
+                    const utc1 = Date.UTC(d1.getFullYear(), d1.getMonth(), d1.getDate());
+                    const utc2 = Date.UTC(d2.getFullYear(), d2.getMonth(), d2.getDate());
+                    const diffDias = Math.round(Math.abs(utc2 - utc1) / 86400000);
+                    return Math.max(1, diffDias);
+                } catch(e) {
+                    return 1;
+                }
+            },
+            calcularGDP(pesoActual, pesoAnterior, dias) {
+                const pAct = this.parsearPeso(pesoActual);
+                const pAnt = this.parsearPeso(pesoAnterior);
+                const d = (typeof dias === 'number' && dias > 0) ? dias : 1;
+                if (pAct === null || pAnt === null) {
+                    return { diffKg: 0, gdpVal: 0, gdpFormatted: "+0,0 Kg/d", diffKgStr: "0,0", valido: false };
+                }
+                const diffKg = pAct - pAnt;
+                const gdpVal = diffKg / d;
+                return {
+                    diffKg: diffKg,
+                    gdpVal: gdpVal,
+                    diffKgStr: (diffKg > 0 ? "+" : "") + diffKg.toFixed(1).replace('.', ','),
+                    gdpFormatted: (gdpVal >= 0 ? "+" : "") + gdpVal.toFixed(1).replace('.', ',') + " Kg/d",
+                    dias: d,
+                    valido: true
+                };
+            }
+        };
+        window.MotorGanadero = MotorGanadero;
+
+function obtenerNombreCategoriaLegible(catRaw) {
     if (!catRaw) return 'Sin Categoría';
     let s = String(catRaw).trim();
     if (s.startsWith('Cat:')) s = s.replace(/^Cat:\s*/, '').trim();
@@ -2993,7 +3051,8 @@ function procesarEventos() {
                 const prefs = lsGet('tc_prefs_pc', ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']);
                 document.querySelectorAll('.chk-graf').forEach(chk => { chk.checked = prefs.includes(chk.value); });
                 
-                db.collection('estancias').doc(m).onSnapshot(docE => {
+                if (unsubscribeEstancia) { try { unsubscribeEstancia(); } catch(e){} unsubscribeEstancia = null; }
+                unsubscribeEstancia = db.collection('estancias').doc(m).onSnapshot({ includeMetadataChanges: true }, docE => {
                     let hNombre = hacienda || "HACIENDA"; 
                     let hLogo = "gemini-svg.png";
                     if (docE.exists) { 
@@ -3315,6 +3374,324 @@ function procesarEventos() {
             let detLote = `Lote: ${lote}` + (potrero ? ` | Potrero: ${potrero}` : "");
             ejecutarAccion('Actualización de Datos', `Cat: ${cat} | Carimbo: ${carimbo}`, detLote, 'm-clasi'); 
         }
+        
+        // =========================================================================
+        // MOTOR DE RENDERIZADO COMPLETO DE FICHA CLÍNICA GANADERA (MANGA / BRETE)
+        // =========================================================================
+        window.buscarCaravanaBtn = function(caravanaParam) {
+            let rp = (typeof caravanaParam === 'string' && caravanaParam.trim()) 
+                ? caravanaParam.trim() 
+                : (document.getElementById('buscador-caravana') ? document.getElementById('buscador-caravana').value.trim() : '');
+            
+            if (!rp && rpActivo) rp = rpActivo;
+
+            // Si aún no hay RP ingresado, intentar tomar el primer animal válido del rodeo en memoria
+            if (!rp && Array.isArray(dbCache) && dbCache.length > 0) {
+                let primerAnimal = dbCache.find(d => d && window.esCaravanaValida(d.caravana));
+                if (primerAnimal) rp = String(primerAnimal.caravana).trim();
+            }
+
+            if (!rp) {
+                if (typeof window.mostrarToast === 'function') window.mostrarToast("⚠️ Ingrese un número de RP o caravana a buscar.", true);
+                return;
+            }
+
+            rp = rp.toUpperCase();
+            rpActivo = rp;
+            const inputBuscador = document.getElementById('buscador-caravana');
+            if (inputBuscador) inputBuscador.value = rp;
+
+            // 1. Mostrar la tarjeta de la ficha del animal
+            const elFicha = document.getElementById('ficha-animal');
+            if (elFicha) {
+                elFicha.classList.remove('oculto');
+                elFicha.style.display = 'block';
+            }
+
+            // 2. Cabecera con número de caravana
+            const elValCar = document.getElementById('val-caravana');
+            if (elValCar) elValCar.innerText = rp;
+
+            const regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(rp) : [];
+
+            // 3. Estado del animal (Vivo / Muerte / Venta)
+            const esMuerto = typeof window.esAnimalMuerto === 'function' ? window.esAnimalMuerto(regs, rp) : false;
+            const esVendido = typeof window.esAnimalVendido === 'function' ? window.esAnimalVendido(regs, rp) : false;
+            const badgeEstado = document.getElementById('badge-estado-animal');
+            if (badgeEstado) {
+                badgeEstado.style.display = 'inline-block';
+                if (esMuerto) {
+                    badgeEstado.innerText = "💀 BAJA / MORTANDAD";
+                    badgeEstado.style.background = "var(--peligro, #dc2626)";
+                    badgeEstado.style.color = "white";
+                } else if (esVendido) {
+                    badgeEstado.innerText = "🚛 VENDIDO / SALIDA";
+                    badgeEstado.style.background = "var(--secundario, #2563eb)";
+                    badgeEstado.style.color = "white";
+                } else {
+                    badgeEstado.innerText = "🟢 VIVO EN CAMPO";
+                    badgeEstado.style.background = "var(--exito, #16a34a)";
+                    badgeEstado.style.color = "white";
+                }
+            }
+
+            // 4. Pesajes y Rendimiento Ponderal
+            const pesos = regs.filter(d => d && String(d.accion).includes('Peso') && d.fecha);
+            pesos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+
+            const elPeso = document.getElementById('val-peso');
+            const elPesoFecha = document.getElementById('val-peso-fecha');
+            const elGananciaBox = document.getElementById('val-ganancia-box');
+            const elGananciaKg = document.getElementById('val-ganancia-kg');
+            const elGdp = document.getElementById('val-gdp');
+            const elCc = document.getElementById('val-cc');
+            const badgeAlertaPeso = document.getElementById('badge-alerta-peso');
+
+            let diffKgUltimo = null;
+
+            if (pesos.length > 0) {
+                const ult = pesos[0];
+                if (elPeso) elPeso.innerText = ult.valor || "-";
+                if (elPesoFecha) elPesoFecha.innerText = ult.fecha ? new Date(ult.fecha).toLocaleDateString() : "";
+
+                // Extracción de condición corporal si existe
+                if (elCc) {
+                    let det = String(ult.detalles || "");
+                    if (det.includes('Cond:')) {
+                        let ccVal = det.split('Cond:')[1].split('.')[0].trim();
+                        elCc.innerText = `CC: ${ccVal}`;
+                    } else {
+                        elCc.innerText = "";
+                    }
+                }
+
+                if (pesos.length >= 2) {
+                    const pAct = window.MotorGanadero.parsearPeso(pesos[0].valor);
+                    const pAnt = window.MotorGanadero.parsearPeso(pesos[1].valor);
+                    const dias = window.MotorGanadero.calcularDiasEntreFechas(pesos[1].fecha, pesos[0].fecha);
+                    const calc = window.MotorGanadero.calcularGDP(pAct, pAnt, dias);
+
+                    if (calc.valido) {
+                        diffKgUltimo = calc.diffKg;
+                        if (elGananciaBox) elGananciaBox.style.display = 'block';
+                        if (elGananciaKg) {
+                            elGananciaKg.innerText = `${calc.diffKgStr} Kg (${dias}d)`;
+                            elGananciaKg.style.color = calc.diffKg >= 0 ? "var(--exito, #16a34a)" : "var(--peligro, #dc2626)";
+                        }
+                        if (elGdp) {
+                            elGdp.innerText = calc.gdpFormatted;
+                            elGdp.style.color = calc.diffKg >= 0 ? "var(--exito, #16a34a)" : "var(--peligro, #dc2626)";
+                        }
+                    } else {
+                        if (elGananciaBox) elGananciaBox.style.display = 'none';
+                    }
+                } else {
+                    if (elGananciaBox) elGananciaBox.style.display = 'none';
+                }
+            } else {
+                if (elPeso) elPeso.innerText = "-";
+                if (elPesoFecha) elPesoFecha.innerText = "";
+                if (elGananciaBox) elGananciaBox.style.display = 'none';
+                if (elCc) elCc.innerText = "";
+            }
+
+            // Alerta de pérdida de peso
+            if (badgeAlertaPeso) {
+                if (diffKgUltimo !== null && diffKgUltimo < 0) {
+                    badgeAlertaPeso.style.display = 'inline-block';
+                    badgeAlertaPeso.innerText = `⚠️ Pérdida: ${diffKgUltimo.toFixed(1)} Kg`;
+                } else {
+                    badgeAlertaPeso.style.display = 'none';
+                }
+            }
+
+            // 5. Categoría, Lote y Carimbo
+            let catRaw = "Sin Categoría", lote = "General", carimbo = "-";
+            const uC = regs.find(d => d && d.accion === 'Actualización de Datos');
+            if (uC) {
+                let v = String(uC.valor || "").split('|');
+                catRaw = v[0] ? v[0].replace('Cat:', '').trim() : "Sin Categoría";
+                if (v[1] && v[1].includes('Carimbo:')) carimbo = v[1].replace('Carimbo:', '').trim();
+                let det = String(uC.detalles || "").split('|')[0];
+                lote = det ? det.replace('Lote:', '').trim() : "General";
+            }
+
+            const uP = regs.find(d => d && d.accion === 'Perfil Master');
+            if (uP && uP.detalles) {
+                let parts = String(uP.detalles).split('|');
+                if (catRaw === "Sin Categoría" && parts[0]) catRaw = parts[0].trim();
+            }
+
+            const elCat = document.getElementById('val-categoria');
+            if (elCat) elCat.innerText = typeof window.obtenerNombreCategoriaLegible === 'function' ? window.obtenerNombreCategoriaLegible(catRaw) : catRaw;
+
+            const elLote = document.getElementById('val-lote');
+            if (elLote) elLote.innerText = lote;
+
+            const elCarimbo = document.getElementById('val-carimbo');
+            if (elCarimbo) elCarimbo.innerText = carimbo;
+
+            // 6. Diagnóstico / Tacto Reproductivo
+            const uDx = regs.find(d => d && d.accion === 'Diagnóstico');
+            const elDx = document.getElementById('val-dx');
+            if (elDx) {
+                if (uDx) {
+                    elDx.innerText = uDx.valor || "-";
+                    elDx.style.color = String(uDx.valor).includes('Preñada') ? "var(--exito, #16a34a)" : "var(--texto)";
+                } else {
+                    let loteLow = lote.toLowerCase();
+                    if (loteLow.includes('preñada')) {
+                        elDx.innerText = "Preñada (Lote)";
+                        elDx.style.color = "var(--exito, #16a34a)";
+                    } else if (loteLow.includes('vacía') || loteLow.includes('vacia')) {
+                        elDx.innerText = "Vacía (Lote)";
+                        elDx.style.color = "var(--peligro, #dc2626)";
+                    } else {
+                        elDx.innerText = "-";
+                        elDx.style.color = "var(--texto)";
+                    }
+                }
+            }
+
+            // 7. Perfil Master: Raza, Nacimiento, Genealogía
+            const elRaza = document.getElementById('val-raza');
+            const elEdad = document.getElementById('val-edad');
+            const elGenealogia = document.getElementById('val-genealogia');
+
+            if (uP && uP.detalles) {
+                let pParts = String(uP.detalles).split('|');
+                if (elRaza) elRaza.innerText = pParts[0] ? pParts[0].trim() : "-";
+                if (elEdad) elEdad.innerText = pParts[1] ? pParts[1].trim() : "-";
+                let padre = pParts[2] ? pParts[2].trim() : "-";
+                let madre = pParts[3] ? pParts[3].trim() : "-";
+                if (elGenealogia) elGenealogia.innerText = `${padre} / ${madre}`;
+            } else {
+                if (elRaza) elRaza.innerText = "-";
+                if (elEdad) elEdad.innerText = "-";
+                if (elGenealogia) elGenealogia.innerText = "-";
+            }
+
+            // 8. Sanidad y Período de Retiro
+            const uSani = regs.find(d => d && d.accion === 'Sanidad');
+            const elSanidad = document.getElementById('val-sanidad');
+            const badgeRetiro = document.getElementById('badge-alerta-retiro');
+
+            if (uSani) {
+                let fechaSani = uSani.fecha ? new Date(uSani.fecha).toLocaleDateString() : "";
+                if (elSanidad) elSanidad.innerText = `${uSani.valor || 'Tratamiento'} (${fechaSani})`;
+
+                let detSani = String(uSani.detalles || "");
+                if (detSani.includes('[RETIRO:') && uSani.fecha) {
+                    let retiroDias = parseInt(detSani.split('[RETIRO:')[1].split(']')[0]) || 0;
+                    if (retiroDias > 0) {
+                        let diasPasados = window.MotorGanadero.calcularDiasEntreFechas(uSani.fecha, new Date());
+                        let diasRestantes = retiroDias - diasPasados;
+                        if (diasRestantes > 0 && badgeRetiro) {
+                            badgeRetiro.style.display = 'inline-block';
+                            badgeRetiro.innerText = `⛔ Retiro: ${diasRestantes}d restantes para faena`;
+                        } else if (badgeRetiro) {
+                            badgeRetiro.style.display = 'none';
+                        }
+                    } else if (badgeRetiro) {
+                        badgeRetiro.style.display = 'none';
+                    }
+                } else if (badgeRetiro) {
+                    badgeRetiro.style.display = 'none';
+                }
+            } else {
+                if (elSanidad) elSanidad.innerText = "-";
+                if (badgeRetiro) badgeRetiro.style.display = 'none';
+            }
+
+            // 9. Inseminación
+            const uIns = regs.find(d => d && d.accion === 'Inseminación');
+            const elIns = document.getElementById('val-inseminacion');
+            if (elIns) {
+                if (uIns) {
+                    let fIns = uIns.fecha ? new Date(uIns.fecha).toLocaleDateString() : "";
+                    elIns.innerText = `${uIns.valor || 'Inseminación'} (${fIns})`;
+                } else {
+                    elIns.innerText = "-";
+                }
+            }
+
+            // 10. Nutrición
+            const uNut = regs.find(d => d && d.accion === 'Nutrición');
+            const elNut = document.getElementById('val-nutricion');
+            if (elNut) {
+                if (uNut) {
+                    let fNut = uNut.fecha ? new Date(uNut.fecha).toLocaleDateString() : "";
+                    elNut.innerText = `${uNut.valor || 'Suplemento'} (${fNut})`;
+                } else {
+                    elNut.innerText = "-";
+                }
+            }
+
+            // 11. Confinamiento / Feedlot
+            const uConf = regs.find(d => d && d.accion === 'Confinamiento');
+            const cardConf = document.getElementById('card-confinamiento');
+            if (cardConf) {
+                if (uConf) {
+                    cardConf.style.display = 'block';
+                    let vConf = String(uConf.valor || "");
+                    let dConf = String(uConf.detalles || "");
+                    let corral = vConf.includes('Corral:') ? vConf.split('Corral:')[1].split('|')[0].trim() : "-";
+                    let estado = vConf.includes('Estado:') ? vConf.split('Estado:')[1].trim() : "En Engorde";
+                    let fIng = dConf.includes('Ingreso:') ? dConf.split('Ingreso:')[1].split('|')[0].trim() : "";
+                    let pIni = dConf.includes('PesoIni:') ? dConf.split('PesoIni:')[1].split('|')[0].replace('Kg', '').trim() : "-";
+                    let pMeta = dConf.includes('Meta:') ? dConf.split('Meta:')[1].split('|')[0].replace('Kg', '').trim() : "-";
+                    let dieta = dConf.includes('Dieta:') ? dConf.split('Dieta:')[1].split('|')[0].trim() : "-";
+
+                    let diasEncierre = fIng ? window.MotorGanadero.calcularDiasEntreFechas(fIng, new Date()) : 1;
+
+                    const elBadge = document.getElementById('conf-estado-badge'); if (elBadge) elBadge.innerText = estado;
+                    const elCorral = document.getElementById('conf-val-corral'); if (elCorral) elCorral.innerText = corral;
+                    const elDias = document.getElementById('conf-val-dias'); if (elDias) elDias.innerText = `${diasEncierre}d`;
+                    const elPIni = document.getElementById('conf-val-peso-ini'); if (elPIni) elPIni.innerText = `${pIni} Kg`;
+                    const elMeta = document.getElementById('conf-val-meta'); if (elMeta) elMeta.innerText = `${pMeta} Kg`;
+                    const elDieta = document.getElementById('conf-val-dieta'); if (elDieta) elDieta.innerText = dieta;
+
+                    const elGmd = document.getElementById('conf-val-gmd');
+                    if (elGmd) {
+                        let pIniNum = parseFloat(pIni);
+                        let pActNum = pesos.length > 0 ? window.MotorGanadero.parsearPeso(pesos[0].valor) : null;
+                        if (!isNaN(pIniNum) && pActNum !== null && diasEncierre > 0) {
+                            let gmd = ((pActNum - pIniNum) / diasEncierre).toFixed(2);
+                            elGmd.innerText = `${gmd} Kg/d`;
+                        } else {
+                            elGmd.innerText = "-";
+                        }
+                    }
+                } else {
+                    cardConf.style.display = 'none';
+                }
+            }
+
+            // 12. Historial de Observaciones y Notas
+            const elNotasMob = document.getElementById('val-lista-notas');
+            const elNotasPC = document.getElementById('val-notas');
+            const notasRegs = regs.filter(d => d && (d.accion === 'Comentario' || (d.detalles && d.detalles.includes('Notas:'))));
+
+            let htmlNotas = "";
+            if (notasRegs.length === 0) {
+                htmlNotas = '<span style="font-size:11px; color:var(--muted); font-style:italic;">Sin anotaciones registradas.</span>';
+            } else {
+                htmlNotas = '<div style="display:flex; flex-direction:column; gap:6px;">';
+                notasRegs.forEach(n => {
+                    let fN = n.fecha ? new Date(n.fecha).toLocaleDateString() : "";
+                    let tN = n.valor || n.detalles || "";
+                    htmlNotas += `<div style="font-size:11px; background:rgba(255,255,255,0.03); padding:4px 8px; border-radius:4px; border-left:2px solid var(--secundario);">
+                        <strong style="color:var(--secundario);">${fN}:</strong> ${window.escapeHTML(tN)}
+                    </div>`;
+                });
+                htmlNotas += '</div>';
+            }
+
+            if (elNotasMob) elNotasMob.innerHTML = htmlNotas;
+            if (elNotasPC) elNotasPC.innerHTML = htmlNotas;
+        };
+        function buscarCaravanaBtn(caravanaParam) { return window.buscarCaravanaBtn(caravanaParam); }
+
         function guardarCambioCaravana() { const n = document.getElementById('f-nueva-caravana').value.trim(); if(!n || n === rpActivo) { alert("Número inválido."); return; } ejecutarAccion('Cambio de Caravana', n, `Renombrado`, 'm-renombrar'); document.getElementById('f-nueva-caravana').value = ''; setTimeout(() => { rpActivo = n; buscarCaravanaBtn(n); }, 300); }
         function borrarCaravana() { if(!rpActivo) return; if(confirm(`¿ELIMINAR todo el historial de la caravana ${rpActivo}?`)) { ejecutarAccion('Borrar_Caravana', 'Eliminado', 'Se borró el historial de este tag', null); alert("Historial eliminado. El número quedó libre."); cambiarVista('v-dash', document.querySelectorAll('.sidebar-nav li')[0]); } }
                 function calcularDiasCalendario(fecha1, fecha2) {
@@ -3532,13 +3909,13 @@ function procesarEventos() {
                     console.warn("Aviso al actualizar en Firestore:", e);
                     let pendKey = 'tc_pendientes_' + maestroId;
                     let p = lsGet(pendKey, []);
-                    p.push({ id: id, valor: nValor, detalles: nDetalles, fecha: isoFecha, accion: 'update' });
+                    p.push({ id: id, valor: nValor, detalles: nDetalles, fecha: isoFecha, _operacion: 'update' });
                     lsSet(pendKey, p);
                 }
             } else if (maestroId) {
                 let pendKey = 'tc_pendientes_' + maestroId;
                 let p = lsGet(pendKey, []);
-                p.push({ id: id, valor: nValor, detalles: nDetalles, fecha: isoFecha, accion: 'update' });
+                p.push({ id: id, valor: nValor, detalles: nDetalles, fecha: isoFecha, _operacion: 'update' });
                 lsSet(pendKey, p);
             }
 
@@ -4672,7 +5049,8 @@ function procesarEventos() {
                 }
             }
         }
-    } function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
+    } function cerrarModal(id) { const m = document.getElementById(id); if (m) { m.classList.add('oculto'); m.style.display = 'none'; } }
+window.cerrarModal = cerrarModal;
         
 
         let timeoutBuscadorRegistro = null;
@@ -5017,6 +5395,8 @@ function procesarEventos() {
         function cerrarSesion() { 
             if (unsubscribeEventos) { try { unsubscribeEventos(); } catch(e){} unsubscribeEventos = null; }
             if (unsubscribeConfig) { try { unsubscribeConfig(); } catch(e){} unsubscribeConfig = null; }
+            if (unsubscribeEstancia) { try { unsubscribeEstancia(); } catch(e){} unsubscribeEstancia = null; }
+            if (typeof bleDevice !== 'undefined' && bleDevice && bleDevice.gatt && bleDevice.gatt.connected) { try { bleDevice.gatt.disconnect(); } catch(e){} }
             dbCache = []; historiaCache = null; activosCache = null; rpActivo = null; usActivo = ""; maestroId = "";
             let prefs = localStorage.getItem('tc_prefs_pc');
             let tema = localStorage.getItem('tc_tema');

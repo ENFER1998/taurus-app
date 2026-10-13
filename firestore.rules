@@ -20,15 +20,33 @@ service cloud.firestore {
       // Lectura: Cualquier usuario autenticado puede leer perfiles (necesario para validar licencias y miembros)
       allow read: if isAuthenticated();
 
-      // Creación/Edición:
-      // 1. El SuperAdmin puede crear o editar cualquier usuario y asignar cualquier rol.
+      // Creación/Edición/Eliminación:
+      // 1. El SuperAdmin tiene control total.
       // 2. Un usuario común SOLO puede crear/editar su propio perfil si NO intenta auto-asignarse rol SuperAdmin ni Admin.
+      // 3. Un Propietario puede crear o editar peones/operadores vinculados a su estancia (maestroId).
+      // 4. Un Propietario puede eliminar peones pertenecientes a su estancia.
       allow write: if isSuperAdmin() || (
-        isAuthenticated() && 
-        request.auth.token.email == userEmail &&
-        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['rol']) || 
-         (request.resource.data.rol != 'SuperAdmin' && request.resource.data.rol != 'Admin')) &&
-        !request.resource.data.keys().hasAny(['password'])
+        isAuthenticated() && (
+          // Caso A: El usuario edita su propia cuenta
+          (
+            request.auth.token.email == userEmail &&
+            (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['rol']) || 
+             (request.resource.data.rol != 'SuperAdmin' && request.resource.data.rol != 'Admin')) &&
+            !request.resource.data.keys().hasAny(['password'])
+          ) ||
+          // Caso B: El Propietario crea o edita un peón subordinado a su estancia
+          (
+            request.resource.data.maestroId == request.auth.token.email &&
+            request.resource.data.rol != 'SuperAdmin' && 
+            request.resource.data.rol != 'Admin' &&
+            request.resource.data.rol != 'Propietario'
+          ) ||
+          // Caso C: El Propietario elimina un peón de su estancia
+          (
+            resource != null &&
+            resource.data.maestroId == request.auth.token.email
+          )
+        )
       );
     }
 
