@@ -2028,11 +2028,44 @@
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         };
 
+        let isSyncingPendientes = false;
+        async function sincronizarPendientesAuto() {
+            if (isSyncingPendientes || !navigator.onLine || !maestroId) return;
+            let pendKey = maestroId ? ('tc_pendientes_' + maestroId) : 'tc_pendientes';
+            let p = lsGet(pendKey, []);
+            if (!Array.isArray(p) || p.length === 0) return;
+
+            isSyncingPendientes = true;
+            try {
+                const batch = db.batch();
+                const col = db.collection('estancias').doc(maestroId).collection('eventos');
+                const loteSync = [...p];
+                loteSync.forEach(item => {
+                    const docRef = item.id ? col.doc(item.id) : col.doc();
+                    batch.set(docRef, item, { merge: true });
+                });
+                await batch.commit();
+
+                // Limpiar de la cola local los items exitosamente enviados
+                let pRestantes = lsGet(pendKey, []);
+                let idsSincronizados = new Set(loteSync.map(x => x.id));
+                let nuevosRestantes = pRestantes.filter(x => !idsSincronizados.has(x.id));
+                lsSet(pendKey, nuevosRestantes);
+                setEstadoRed(true, '🟢 Conectado');
+            } catch(err) {
+                console.warn("[Taurus Sync PC] Error sincronizando pendientes a Firestore:", err);
+            } finally {
+                isSyncingPendientes = false;
+            }
+        }
+        window.sincronizarPendientesAuto = sincronizarPendientesAuto;
+
         let debounceBatchSync = null;
         function programarSyncPorLotes() {
             clearTimeout(debounceBatchSync);
-            let p = lsGet('tc_pendientes', []);
-            let delay = p.length >= 15 ? 400 : 3500;
+            let pendKey = maestroId ? ('tc_pendientes_' + maestroId) : 'tc_pendientes';
+            let p = lsGet(pendKey, []);
+            let delay = p.length >= 15 ? 400 : 2500;
             debounceBatchSync = setTimeout(() => {
                 if (navigator.onLine) sincronizarPendientesAuto();
             }, delay);
@@ -2151,7 +2184,131 @@ function esCaravanaValida(car) {
             }
         }
 
-        function procesarEventos() {
+        function obtenerNombreCategoriaLegible(catRaw) {
+    if (!catRaw) return 'Sin Categoría';
+    let s = String(catRaw).trim();
+    if (s.startsWith('Cat:')) s = s.replace(/^Cat:\s*/, '').trim();
+    if (!s || s === '-' || s === '---') return 'Sin Categoría';
+
+    let mapa = {
+        'TH': 'Ternera Hembra',
+        'TM': 'Ternero Macho',
+        'DH': 'Desmamante Hembra',
+        'DM': 'Desmamante Macho',
+        'V': 'Vaca / Vaquilla',
+        'VV': 'Vaca Vieja',
+        'TORO': 'Toro',
+        'TOROS': 'Toros',
+        'NOVILLO': 'Novillo',
+        'NOVILLOS': 'Novillos',
+        'BUEY': 'Buey',
+        'BUEYES': 'Bueyes',
+        'VAQUILLONA': 'Vaquillona',
+        'VAQUILLA': 'Vaquilla',
+        'VACA': 'Vaca',
+        'TERNERO': 'Ternero',
+        'TERNERA': 'Ternera'
+    };
+
+    let upper = s.toUpperCase();
+    if (mapa[upper]) return mapa[upper];
+
+    if (s.includes(':')) {
+        let partes = s.split(':');
+        let cod = partes[0].trim().toUpperCase();
+        let nom = partes.slice(1).join(':').trim();
+        if (nom) return nom;
+        if (mapa[cod]) return mapa[cod];
+    }
+
+    return s;
+}
+window.obtenerNombreCategoriaLegible = obtenerNombreCategoriaLegible;
+
+function aplicarDisenoEnPantalla(nombre, logo) {
+    try {
+        if (nombre) {
+            const elNomCfg = document.getElementById('cfg-nom');
+            if (elNomCfg) elNomCfg.value = nombre;
+            const elNomRep = document.getElementById('preview-nombre-reporte');
+            if (elNomRep) elNomRep.innerText = nombre;
+            const topbarPC = document.getElementById('topbar-estancia');
+            if (topbarPC) topbarPC.innerText = `ESTANCIA: ${nombre.toUpperCase()} | Operador: ${usNombre || ''}`;
+        }
+        if (logo) {
+            const elLogoCfg = document.getElementById('preview-logo-config');
+            if (elLogoCfg) {
+                elLogoCfg.onerror = function() { this.src = 'gemini-svg.png'; };
+                elLogoCfg.src = logo;
+            }
+            const elLogoRep = document.getElementById('preview-logo-reporte');
+            if (elLogoRep) {
+                elLogoRep.onerror = function() { this.src = 'gemini-svg.png'; };
+                elLogoRep.src = logo;
+            }
+        }
+    } catch(e) {
+        console.warn("[Taurus PC] Error al aplicar diseño en pantalla:", e);
+    }
+}
+window.aplicarDisenoEnPantalla = aplicarDisenoEnPantalla;
+
+function cargarListasFiltrosSelects() {
+    try {
+        let datosActivos = typeof obtenerRegistrosActivos === 'function' ? obtenerRegistrosActivos() : [];
+        let lotesSet = new Set();
+        let catsSet = new Set();
+
+        let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => esCaravanaValida(c)))];
+        unicas.forEach(car => {
+            const regs = typeof obtenerHistorial === 'function' ? obtenerHistorial(car) : [];
+            const uC = regs.find(d => d.accion === 'Actualización de Datos');
+            let catRaw = "Sin Categoría", lote = "General";
+            if (uC) {
+                let v = String(uC.valor||"").split('|');
+                catRaw = v[0] ? v[0].replace('Cat:','').trim() : "Sin Categoría";
+                lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "General";
+            } else {
+                const uP = regs.find(d => d.accion === 'Perfil Master');
+                if (uP && uP.detalles) { catRaw = String(uP.detalles).split('|')[0] || "Sin Categoría"; }
+            }
+            let catLegible = typeof obtenerNombreCategoriaLegible === 'function' ? obtenerNombreCategoriaLegible(catRaw) : catRaw;
+            if (lote && lote !== '-' && lote !== '---') lotesSet.add(lote);
+            if (catLegible && catLegible !== '-' && catLegible !== '---') catsSet.add(catLegible);
+        });
+
+        ['filtro-reg-lote', 'f-inf-lote'].forEach(id => {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+            const currentVal = sel.value;
+            let html = '<option value="ALL">📍 Lote (Todos)</option>';
+            Array.from(lotesSet).sort().forEach(l => {
+                html += `<option value="${window.escapeHTML(l)}">${window.escapeHTML(l)}</option>`;
+            });
+            sel.innerHTML = html;
+            if (currentVal && Array.from(lotesSet).includes(currentVal)) sel.value = currentVal;
+            else sel.value = 'ALL';
+        });
+
+        ['filtro-reg-cat', 'f-inf-cat'].forEach(id => {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+            const currentVal = sel.value;
+            let html = '<option value="ALL">🐄 Categoría (Todas)</option>';
+            Array.from(catsSet).sort().forEach(c => {
+                html += `<option value="${window.escapeHTML(c)}">${window.escapeHTML(c)}</option>`;
+            });
+            sel.innerHTML = html;
+            if (currentVal && Array.from(catsSet).includes(currentVal)) sel.value = currentVal;
+            else sel.value = 'ALL';
+        });
+    } catch(e) {
+        console.warn("[Taurus PC] Error al cargar listas de filtros selects:", e);
+    }
+}
+window.cargarListasFiltrosSelects = cargarListasFiltrosSelects;
+
+function procesarEventos() {
             if (historiaCache) return historiaCache;
             let dbAsc = [...dbCache].filter(d => esEventoGanaderoValido(d)).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
             let historiaPorRP = {};
@@ -2229,6 +2386,19 @@ function esCaravanaValida(car) {
         firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
                 const emailClean = (user.email || "").toLowerCase().trim();
+                const ultimoUsuario = localStorage.getItem('tc_ultimo_usuario');
+                if (ultimoUsuario && ultimoUsuario !== emailClean) {
+                    console.log('[Taurus PC] Cambio de usuario detectado. Limpiando almacenamiento local residual.');
+                    let tema = localStorage.getItem('tc_tema');
+                    let prefs = localStorage.getItem('tc_prefs_pc');
+                    localStorage.clear();
+                    if (tema) localStorage.setItem('tc_tema', tema);
+                    if (prefs) localStorage.setItem('tc_prefs_pc', prefs);
+                }
+                localStorage.setItem('tc_ultimo_usuario', emailClean);
+                localStorage.removeItem('tc_db');
+                localStorage.removeItem('tc_pendientes');
+
                 let cachedProfile = lsGet('tc_user_profile', null);
                 let userData = null;
 
@@ -2576,7 +2746,7 @@ function esCaravanaValida(car) {
         window.addEventListener('online', () => { setEstadoRed(true); sincronizarPendientesAuto(); });
         // Sincronización en tiempo real entre múltiples pestañas / pantallas PC
         window.addEventListener('storage', function(e) {
-            if (e.key === 'tc_db' && e.newValue) {
+            if (maestroId && e.key === ('tc_db_' + maestroId) && e.newValue) {
                 try {
                     dbCache = JSON.parse(e.newValue);
                     historiaCache = null;
@@ -2588,8 +2758,8 @@ function esCaravanaValida(car) {
                     if (!document.getElementById('v-base').classList.contains('oculto')) cargarListaRegistro();
                     if (!document.getElementById('v-reporte').classList.contains('oculto')) actualizarInformeAvanzado();
                 } catch(err){}
-            } else if (e.key === 'tc_pendientes') {
-                let pend = lsGet('tc_pendientes', []);
+            } else if (maestroId && e.key === ('tc_pendientes_' + maestroId)) {
+                let pend = lsGet('tc_pendientes_' + maestroId, []);
                 if (pend.length > 0 && !navigator.onLine) {
                     setEstadoRed(false, '💾 ' + pend.length + ' pendientes');
                 }
@@ -2658,7 +2828,9 @@ function esCaravanaValida(car) {
                 let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.remove('oculto');
 
                 // Carga inmediata local aislada por estancia
-                let cachedDB = lsGet('tc_db_' + m, null) || lsGet('tc_db', []);
+                let cachedDB = lsGet('tc_db_' + m, null);
+                localStorage.removeItem('tc_db');
+                localStorage.removeItem('tc_pendientes');
                 if (cachedDB && Array.isArray(cachedDB) && cachedDB.length > 0) {
                     dbCache = cachedDB;
                     if (typeof procesarDatosDashboard === 'function') procesarDatosDashboard();
@@ -2857,7 +3029,7 @@ function esCaravanaValida(car) {
         }
 
         function fusionarDatos(nuevos) {
-            let pendientes = maestroId ? (lsGet('tc_pendientes_' + maestroId, []) || lsGet('tc_pendientes', [])) : [];
+            let pendientes = maestroId ? lsGet('tc_pendientes_' + maestroId, []) : [];
             let mapa = new Map();
             if (Array.isArray(nuevos)) {
                 nuevos.forEach(d => {
@@ -2880,17 +3052,59 @@ function esCaravanaValida(car) {
             dbCache = Array.from(mapa.values());
             if (maestroId) {
                 lsSet('tc_db_' + maestroId, dbCache);
-                lsSet('tc_db', dbCache);
             }
             historiaCache = null; activosCache = null;
             if (typeof procesarDatosDashboard === 'function') procesarDatosDashboard();
-            if(modalId) cerrarModal(modalId);
-            if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador' && tipo !== 'Alta Operador' && tipo !== 'Baja Operador') {
-                notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
+        }
+
+        function ejecutarAccion(tipo, valor, detalles, modalId) {
+            if (!rpActivo && tipo !== 'Baja Operador' && tipo !== 'Alta Operador' && tipo !== 'Edición Operador') {
+                if (typeof mostrarToast === 'function') mostrarToast("⚠️ Debe seleccionar un RP / Caravana activo primero.", true);
+                return;
             }
-            
-            let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p);
-            programarSyncPorLotes();
+
+            const obj = {
+                id: 'evt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7),
+                fecha: new Date().toISOString(),
+                caravana: rpActivo || '---',
+                accion: tipo,
+                valor: valor || '',
+                detalles: detalles || '',
+                usuario: usActivo,
+                estancia: maestroId,
+                maestro: maestroId
+            };
+
+            dbCache.push(obj);
+            historiaCache = null;
+            activosCache = null;
+
+            if (maestroId) {
+                lsSet('tc_db_' + maestroId, dbCache);
+            }
+
+            if (typeof procesarDatosDashboard === 'function') procesarDatosDashboard();
+            if (!document.getElementById('v-base').classList.contains('oculto') && typeof cargarListaRegistro === 'function') cargarListaRegistro();
+            if (!document.getElementById('v-reporte').classList.contains('oculto') && typeof actualizarInformeAvanzado === 'function') actualizarInformeAvanzado();
+            if (rpActivo && !document.getElementById('v-ficha').classList.contains('oculto') && typeof buscarCaravanaBtn === 'function') buscarCaravanaBtn(rpActivo);
+
+            if (modalId && typeof cerrarModal === 'function') cerrarModal(modalId);
+
+            if (typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador' && tipo !== 'Alta Operador' && tipo !== 'Baja Operador') {
+                if (typeof notificarPropietario === 'function') {
+                    notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
+                }
+            }
+
+            // Encolar y programar sincronización por lotes
+            let pendKey = maestroId ? ('tc_pendientes_' + maestroId) : 'tc_pendientes';
+            let p = lsGet(pendKey, []);
+            p.push(obj);
+            lsSet(pendKey, p);
+
+            if (typeof programarSyncPorLotes === 'function') {
+                programarSyncPorLotes();
+            }
         }
         window.ejecutarAccion = ejecutarAccion;
 
@@ -3305,7 +3519,7 @@ function esCaravanaValida(car) {
             }
             historiaCache = null; 
             activosCache = null; 
-            lsSet('tc_db', dbCache);
+            if (maestroId) lsSet('tc_db_' + maestroId, dbCache);
 
             if(navigator.onLine && maestroId && id && !id.startsWith('ev_') && !id.startsWith('local_')) {
                 try {
@@ -3316,14 +3530,16 @@ function esCaravanaValida(car) {
                     });
                 } catch(e) {
                     console.warn("Aviso al actualizar en Firestore:", e);
-                    let p = lsGet('tc_pendientes', []);
+                    let pendKey = 'tc_pendientes_' + maestroId;
+                    let p = lsGet(pendKey, []);
                     p.push({ id: id, valor: nValor, detalles: nDetalles, fecha: isoFecha, accion: 'update' });
-                    lsSet('tc_pendientes', p);
+                    lsSet(pendKey, p);
                 }
             } else if (maestroId) {
-                let p = lsGet('tc_pendientes', []);
+                let pendKey = 'tc_pendientes_' + maestroId;
+                let p = lsGet(pendKey, []);
                 p.push({ id: id, valor: nValor, detalles: nDetalles, fecha: isoFecha, accion: 'update' });
-                lsSet('tc_pendientes', p);
+                lsSet(pendKey, p);
             }
 
             cerrarModal('modal-editar-registro'); 

@@ -1,9 +1,9 @@
 /**
  * TAURUS TRACK PRO - SERVICE WORKER OFICIAL PWA (OFFLINE-FIRST)
- * Desarrollado por Fernando Rodriguez 2026
+ * Desarrollado por Fernando Rodriguez 2026 - Versión Blindada v8
  */
 
-const CACHE_NAME = 'taurus-track-pro-v7';
+const CACHE_NAME = 'taurus-track-pro-v8';
 
 const STATIC_ASSETS = [
   './',
@@ -107,6 +107,17 @@ self.addEventListener('fetch', (event) => {
         return networkResponse;
       }).catch((fetchErr) => {
         console.warn('[Taurus SW] Fallo de red offline para:', event.request.url);
+        // Garantizar que SIEMPRE se devuelve un objeto Response válido
+        const reqUrl = event.request.url || '';
+        const isImage = event.request.destination === 'image' ||
+                        reqUrl.match(/\.(png|jpg|jpeg|gif|svg|ico|webp)$/i) ||
+                        reqUrl.includes('img.os-content.com');
+        if (isImage) {
+          return caches.match('gemini-svg.png').then((fallbackImg) => {
+            return fallbackImg || new Response('', { status: 404, statusText: 'Imagen no disponible offline' });
+          });
+        }
+        return new Response('', { status: 503, statusText: 'Recurso no disponible offline' });
       });
     })
   );

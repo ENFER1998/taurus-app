@@ -1782,11 +1782,46 @@
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         };
 
+        window.lsSet = function(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} };
+        window.lsGet = function(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } };
+
+        let isSyncingPendientes = false;
+        window.sincronizarPendientesAuto = async function() {
+            if (isSyncingPendientes || !navigator.onLine || !maestroId) return;
+            let pendKey = maestroId ? ('tc_pendientes_' + maestroId) : 'tc_pendientes';
+            let p = window.lsGet(pendKey, []);
+            if (!Array.isArray(p) || p.length === 0) return;
+
+            isSyncingPendientes = true;
+            try {
+                const batch = db.batch();
+                const col = db.collection('estancias').doc(maestroId).collection('eventos');
+                const loteSync = [...p];
+                loteSync.forEach(item => {
+                    const docRef = item.id ? col.doc(item.id) : col.doc();
+                    batch.set(docRef, item, { merge: true });
+                });
+                await batch.commit();
+
+                // Limpiar los elementos exitosamente sincronizados de la cola local
+                let pRestantes = window.lsGet(pendKey, []);
+                let idsSincronizados = new Set(loteSync.map(x => x.id));
+                let nuevosRestantes = pRestantes.filter(x => !idsSincronizados.has(x.id));
+                window.lsSet(pendKey, nuevosRestantes);
+                window.setEstadoRed(true, '🟢 Conectado');
+            } catch(err) {
+                console.warn("[Taurus Sync] Error sincronizando pendientes a Firestore:", err);
+            } finally {
+                isSyncingPendientes = false;
+            }
+        };
+
         let debounceBatchSync = null;
         window.programarSyncPorLotes = function() {
             clearTimeout(debounceBatchSync);
-            let p = window.lsGet('tc_pendientes', []);
-            let delay = p.length >= 15 ? 400 : 3500;
+            let pendKey = maestroId ? ('tc_pendientes_' + maestroId) : 'tc_pendientes';
+            let p = window.lsGet(pendKey, []);
+            let delay = p.length >= 15 ? 400 : 2500;
             debounceBatchSync = setTimeout(() => {
                 if (navigator.onLine) window.sincronizarPendientesAuto();
             }, delay);
@@ -1897,6 +1932,125 @@ window.esCaravanaValida = function(car) {
             }
         };
 
+        window.obtenerNombreCategoriaLegible = function(catRaw) {
+            if (!catRaw) return 'Sin Categoría';
+            let s = String(catRaw).trim();
+            if (s.startsWith('Cat:')) s = s.replace(/^Cat:\s*/, '').trim();
+            if (!s || s === '-' || s === '---') return 'Sin Categoría';
+
+            let mapa = {
+                'TH': 'Ternera Hembra',
+                'TM': 'Ternero Macho',
+                'DH': 'Desmamante Hembra',
+                'DM': 'Desmamante Macho',
+                'V': 'Vaca / Vaquilla',
+                'VV': 'Vaca Vieja',
+                'TORO': 'Toro',
+                'TOROS': 'Toros',
+                'NOVILLO': 'Novillo',
+                'NOVILLOS': 'Novillos',
+                'BUEY': 'Buey',
+                'BUEYES': 'Bueyes',
+                'VAQUILLONA': 'Vaquillona',
+                'VAQUILLA': 'Vaquilla',
+                'VACA': 'Vaca',
+                'TERNERO': 'Ternero',
+                'TERNERA': 'Ternera'
+            };
+
+            let upper = s.toUpperCase();
+            if (mapa[upper]) return mapa[upper];
+
+            if (s.includes(':')) {
+                let partes = s.split(':');
+                let cod = partes[0].trim().toUpperCase();
+                let nom = partes.slice(1).join(':').trim();
+                if (nom) return nom;
+                if (mapa[cod]) return mapa[cod];
+            }
+
+            return s;
+        };
+
+        window.aplicarDisenoEnPantalla = function(nombre, logo) {
+            try {
+                if (nombre) {
+                    const elNomCfg = document.getElementById('cfg-nom');
+                    if (elNomCfg) elNomCfg.value = nombre;
+                    const elNomRep = document.getElementById('preview-nombre-reporte');
+                    if (elNomRep) elNomRep.innerText = nombre;
+                }
+                if (logo) {
+                    const elLogoCfg = document.getElementById('preview-logo-config');
+                    if (elLogoCfg) {
+                        elLogoCfg.onerror = function() { this.src = 'gemini-svg.png'; };
+                        elLogoCfg.src = logo;
+                    }
+                    const elLogoRep = document.getElementById('preview-logo-reporte');
+                    if (elLogoRep) {
+                        elLogoRep.onerror = function() { this.src = 'gemini-svg.png'; };
+                        elLogoRep.src = logo;
+                    }
+                }
+            } catch(e) {
+                console.warn("[Taurus] Error al aplicar diseño en pantalla:", e);
+            }
+        };
+
+        window.cargarListasFiltrosSelects = function() {
+            try {
+                let datosActivos = typeof window.obtenerRegistrosActivos === 'function' ? window.obtenerRegistrosActivos() : [];
+                let lotesSet = new Set();
+                let catsSet = new Set();
+
+                let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => window.esCaravanaValida(c)))];
+                unicas.forEach(car => {
+                    const regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(car) : [];
+                    const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                    let catRaw = "Sin Categoría", lote = "General";
+                    if (uC) {
+                        let v = String(uC.valor||"").split('|');
+                        catRaw = v[0] ? v[0].replace('Cat:','').trim() : "Sin Categoría";
+                        lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "General";
+                    } else {
+                        const uP = regs.find(d => d.accion === 'Perfil Master');
+                        if (uP && uP.detalles) { catRaw = String(uP.detalles).split('|')[0] || "Sin Categoría"; }
+                    }
+                    let catLegible = typeof window.obtenerNombreCategoriaLegible === 'function' ? window.obtenerNombreCategoriaLegible(catRaw) : catRaw;
+                    if (lote && lote !== '-' && lote !== '---') lotesSet.add(lote);
+                    if (catLegible && catLegible !== '-' && catLegible !== '---') catsSet.add(catLegible);
+                });
+
+                ['filtro-reg-lote', 'f-inf-lote'].forEach(id => {
+                    const sel = document.getElementById(id);
+                    if (!sel) return;
+                    const currentVal = sel.value;
+                    let html = '<option value="ALL">📍 Lote (Todos)</option>';
+                    Array.from(lotesSet).sort().forEach(l => {
+                        html += `<option value="${window.escapeHTML(l)}">${window.escapeHTML(l)}</option>`;
+                    });
+                    sel.innerHTML = html;
+                    if (currentVal && Array.from(lotesSet).includes(currentVal)) sel.value = currentVal;
+                    else sel.value = 'ALL';
+                });
+
+                ['filtro-reg-cat', 'f-inf-cat'].forEach(id => {
+                    const sel = document.getElementById(id);
+                    if (!sel) return;
+                    const currentVal = sel.value;
+                    let html = '<option value="ALL">🐄 Categoría (Todas)</option>';
+                    Array.from(catsSet).sort().forEach(c => {
+                        html += `<option value="${window.escapeHTML(c)}">${window.escapeHTML(c)}</option>`;
+                    });
+                    sel.innerHTML = html;
+                    if (currentVal && Array.from(catsSet).includes(currentVal)) sel.value = currentVal;
+                    else sel.value = 'ALL';
+                });
+            } catch(e) {
+                console.warn("[Taurus] Error al cargar listas de filtros selects:", e);
+            }
+        };
+
         window.procesarEventos = function() {
             if (historiaCache) return historiaCache;
             let dbAsc = [...dbCache].filter(d => window.esEventoGanaderoValido(d)).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
@@ -1982,6 +2136,20 @@ window.esCaravanaValida = function(car) {
         firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
                 const emailClean = (user.email || "").toLowerCase().trim();
+                const ultimoUsuario = localStorage.getItem('tc_ultimo_usuario');
+                if (ultimoUsuario && ultimoUsuario !== emailClean) {
+                    console.log('[Taurus] Cambio de usuario detectado. Limpiando almacenamiento local residual.');
+                    let tema = localStorage.getItem('tc_tema');
+                    let prefs = localStorage.getItem('tc_prefs');
+                    localStorage.clear();
+                    if (tema) localStorage.setItem('tc_tema', tema);
+                    if (prefs) localStorage.setItem('tc_prefs', prefs);
+                }
+                localStorage.setItem('tc_ultimo_usuario', emailClean);
+                // Purgar claves no segmentadas que causaban mezclas entre estancias
+                localStorage.removeItem('tc_db');
+                localStorage.removeItem('tc_pendientes');
+
                 let cachedProfile = window.lsGet('tc_user_profile', null);
                 let userData = null;
 
@@ -2342,7 +2510,7 @@ window.esCaravanaValida = function(car) {
         window.addEventListener('online', () => { window.setEstadoRed(true); window.sincronizarPendientesAuto(); });
         // Sincronización en tiempo real entre múltiples pestañas / pantallas
         window.addEventListener('storage', function(e) {
-            if (e.key === 'tc_db' && e.newValue) {
+            if (maestroId && e.key === ('tc_db_' + maestroId) && e.newValue) {
                 try {
                     dbCache = JSON.parse(e.newValue);
                     historiaCache = null;
@@ -2354,8 +2522,8 @@ window.esCaravanaValida = function(car) {
                     if (!document.getElementById('vista-registro').classList.contains('oculto')) window.cargarListaRegistro();
                     if (!document.getElementById('vista-informe').classList.contains('oculto')) window.actualizarInformeAvanzado();
                 } catch(err){}
-            } else if (e.key === 'tc_pendientes') {
-                let pend = window.lsGet('tc_pendientes', []);
+            } else if (maestroId && e.key === ('tc_pendientes_' + maestroId)) {
+                let pend = window.lsGet('tc_pendientes_' + maestroId, []);
                 if (pend.length > 0 && !navigator.onLine) {
                     window.setEstadoRed(false, '💾 ' + pend.length + ' pendientes');
                 }
@@ -2427,7 +2595,9 @@ window.esCaravanaValida = function(car) {
                 let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.remove('oculto');
 
                 // 2. Carga inmediata local aislada por estancia (Cero mezclas entre usuarios)
-                let cachedDB = window.lsGet('tc_db_' + m, null) || window.lsGet('tc_db', []);
+                let cachedDB = window.lsGet('tc_db_' + m, null);
+                localStorage.removeItem('tc_db');
+                localStorage.removeItem('tc_pendientes');
                 if (cachedDB && Array.isArray(cachedDB) && cachedDB.length > 0) {
                     dbCache = cachedDB;
                     window.procesarDatosDashboard();
@@ -2610,7 +2780,7 @@ window.esCaravanaValida = function(car) {
         }
 
         window.fusionarDatos = function(nuevos) {
-            let pendientes = maestroId ? (window.lsGet('tc_pendientes_' + maestroId, []) || window.lsGet('tc_pendientes', [])) : [];
+            let pendientes = maestroId ? window.lsGet('tc_pendientes_' + maestroId, []) : [];
             let mapa = new Map();
             if (Array.isArray(nuevos)) {
                 nuevos.forEach(d => {
@@ -2633,18 +2803,59 @@ window.esCaravanaValida = function(car) {
             dbCache = Array.from(mapa.values());
             if (maestroId) {
                 window.lsSet('tc_db_' + maestroId, dbCache);
-                window.lsSet('tc_db', dbCache);
             }
             historiaCache = null; activosCache = null;
-            window.procesarDatosDashboard();
-            if(modalId) window.cerrarModal(modalId);
-            if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador' && tipo !== 'Alta Operador' && tipo !== 'Baja Operador') {
-                window.notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
+            if (typeof window.procesarDatosDashboard === 'function') window.procesarDatosDashboard();
+        };
+
+        window.ejecutarAccion = function(tipo, valor, detalles, modalId) {
+            if (!rpActivo && tipo !== 'Baja Operador' && tipo !== 'Alta Operador' && tipo !== 'Edición Operador') {
+                if (typeof window.mostrarToast === 'function') window.mostrarToast("⚠️ Debe seleccionar un RP / Caravana activo primero.", true);
+                return;
             }
-            
-            // Encolar y programar escritura por lotes agrupados (Anti-límites Spark)
-            let p = window.lsGet('tc_pendientes', []); p.push(obj); window.lsSet('tc_pendientes', p);
-            window.programarSyncPorLotes();
+
+            const obj = {
+                id: 'evt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7),
+                fecha: new Date().toISOString(),
+                caravana: rpActivo || '---',
+                accion: tipo,
+                valor: valor || '',
+                detalles: detalles || '',
+                usuario: usActivo,
+                estancia: maestroId,
+                maestro: maestroId
+            };
+
+            dbCache.push(obj);
+            historiaCache = null;
+            activosCache = null;
+
+            if (maestroId) {
+                window.lsSet('tc_db_' + maestroId, dbCache);
+            }
+
+            if (typeof window.procesarDatosDashboard === 'function') window.procesarDatosDashboard();
+            if (!document.getElementById('vista-registro').classList.contains('oculto') && typeof window.cargarListaRegistro === 'function') window.cargarListaRegistro();
+            if (!document.getElementById('vista-informe').classList.contains('oculto') && typeof window.actualizarInformeAvanzado === 'function') window.actualizarInformeAvanzado();
+            if (rpActivo && !document.getElementById('vista-manga').classList.contains('oculto') && typeof window.buscarCaravanaBtn === 'function') window.buscarCaravanaBtn(rpActivo);
+
+            if (modalId && typeof window.cerrarModal === 'function') window.cerrarModal(modalId);
+
+            if (typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador' && tipo !== 'Alta Operador' && tipo !== 'Baja Operador') {
+                if (typeof window.notificarPropietario === 'function') {
+                    window.notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
+                }
+            }
+
+            // Encolar y programar sincronización por lotes
+            let pendKey = maestroId ? ('tc_pendientes_' + maestroId) : 'tc_pendientes';
+            let p = window.lsGet(pendKey, []);
+            p.push(obj);
+            window.lsSet(pendKey, p);
+
+            if (typeof window.programarSyncPorLotes === 'function') {
+                window.programarSyncPorLotes();
+            }
         };
 
         window.prepararGuardado = function(mId, t) {
@@ -2864,7 +3075,7 @@ window.esCaravanaValida = function(car) {
                     }
                     
                     dbCache = dbCache.filter(d => d.caravana !== rpActivo);
-                    window.lsSet('tc_db', dbCache);
+                    if (maestroId) window.lsSet('tc_db_' + maestroId, dbCache);
                     historiaCache = null; activosCache = null;
                     alert("Historial purgado completamente. El RP quedó libre."); 
                     window.cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]); 
@@ -3091,7 +3302,7 @@ window.esCaravanaValida = function(car) {
             }
             historiaCache = null; 
             activosCache = null; 
-            if (typeof window.lsSet === 'function') window.lsSet('tc_db', dbCache);
+            if (maestroId && typeof window.lsSet === 'function') window.lsSet('tc_db_' + maestroId, dbCache);
 
             // 2. Persistir en Firebase Firestore si hay conexión o registrar pendiente
             if(navigator.onLine && maestroId && id && !id.startsWith('ev_') && !id.startsWith('local_')) {
@@ -3103,14 +3314,16 @@ window.esCaravanaValida = function(car) {
                     });
                 } catch(e) {
                     console.warn("Aviso al actualizar en Firestore:", e);
-                    let p = window.lsGet('tc_pendientes', []);
+                    let pendKey = 'tc_pendientes_' + maestroId;
+                    let p = window.lsGet(pendKey, []);
                     p.push({ id: id, valor: nValor, detalles: nDetalles, fecha: isoFecha, accion: 'update' });
-                    window.lsSet('tc_pendientes', p);
+                    window.lsSet(pendKey, p);
                 }
             } else if (maestroId) {
-                let p = window.lsGet('tc_pendientes', []);
+                let pendKey = 'tc_pendientes_' + maestroId;
+                let p = window.lsGet(pendKey, []);
                 p.push({ id: id, valor: nValor, detalles: nDetalles, fecha: isoFecha, accion: 'update' });
-                window.lsSet('tc_pendientes', p);
+                window.lsSet(pendKey, p);
             }
 
             window.cerrarModal('modal-editar-registro'); 
