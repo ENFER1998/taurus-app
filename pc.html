@@ -350,7 +350,7 @@
     <script>
       if ('caches' in window) {
         window.addEventListener('load', () => {
-          caches.open('taurus-track-pro-v6').then(cache => {
+          caches.open('taurus-control-v6').then(cache => {
             cache.addAll([
               location.href,
               'gemini-svg.png',
@@ -1436,53 +1436,51 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // =========================================================================
-        // MOTOR DE SINCRONIZACIÓN DELTA Y ESCRITURA POR LOTES (ANTI-CUOTAS SPARK)
-        // =========================================================================
+        // ==========================================
+        // SANITIZADOR XSS Y MOTOR DELTA SYNC
+        // ==========================================
+        window.escapeHTML = function(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        };
+
         let syncDeltasEnProgreso = false;
         async function sincronizarDeltasServidor() {
             if (syncDeltasEnProgreso || !navigator.onLine || !maestroId) return;
             syncDeltasEnProgreso = true;
-
             try {
                 let ultimaSync = lsGet('tc_last_sync_timestamp', null);
                 let colRef = db.collection('estancias').doc(maestroId).collection('eventos');
                 let snapshot;
-
                 if (ultimaSync) {
                     snapshot = await colRef.where('fecha', '>', ultimaSync).orderBy('fecha', 'asc').limit(400).get();
                 } else {
                     snapshot = await colRef.orderBy('fecha', 'desc').limit(500).get();
                 }
-
                 if (!snapshot.empty) {
                     let deltas = [];
                     let maxFecha = ultimaSync || '';
-
                     snapshot.forEach(doc => {
                         let d = doc.data();
                         d.id = doc.id;
                         if (esEventoGanaderoValido(d)) {
                             deltas.push(d);
-                            if (d.fecha && d.fecha > maxFecha) {
-                                maxFecha = d.fecha;
-                            }
+                            if (d.fecha && d.fecha > maxFecha) maxFecha = d.fecha;
                         }
                     });
-
                     if (deltas.length > 0) {
                         fusionarDatos(deltas);
                         if (maxFecha) lsSet('tc_last_sync_timestamp', maxFecha);
-                        if(rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
-                        procesarDatosDashboard();
-                        if(!document.getElementById('vista-registro').classList.contains('oculto')) cargarListaRegistro();
-                        if(!document.getElementById('vista-informe').classList.contains('oculto')) actualizarInformeAvanzado();
+                        if (rpActivo && !document.getElementById('v-ficha').classList.contains('oculto')) { buscarCaravanaBtn(rpActivo); }
+                        if (typeof procesarDatosDashboard === 'function') procesarDatosDashboard();
+                        if (!document.getElementById('v-base').classList.contains('oculto')) cargarListaRegistro();
+                        if (!document.getElementById('v-reporte').classList.contains('oculto')) actualizarInformeAvanzado();
                         cargarListasFiltrosSelects();
                     }
                 }
-                setEstadoRed(true, '🟢 Conectado (Delta Sync)');
-            } catch (err) {
-                console.warn("[Delta Sync Fallo]: Operando 100% offline con caché local:", err);
+                setEstadoRed(true, '🟢 Conectado');
+            } catch(e) {
+                console.warn("[Delta Sync Fallo]: Operando en local:", e);
                 setEstadoRed(false, '🔴 Red Local');
             } finally {
                 syncDeltasEnProgreso = false;
@@ -1496,26 +1494,10 @@
             let p = lsGet('tc_pendientes', []);
             let delay = p.length >= 15 ? 400 : 3500;
             debounceBatchSync = setTimeout(() => {
-                if (navigator.onLine) {
-                    sincronizarPendientesAuto();
-                }
+                if (navigator.onLine) sincronizarPendientesAuto();
             }, delay);
         }
         window.programarSyncPorLotes = programarSyncPorLotes;
-
-
-        // ==========================================
-        // SANITIZADOR XSS UNIVERSAL
-        // ==========================================
-        window.escapeHTML = function(str) {
-            if (str === null || str === undefined) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        };
 
 
         try {
@@ -1532,6 +1514,10 @@
 
         function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
+        var dbCache = []; var historiaCache = null; var activosCache = null; var rpActivo = null; var usActivo = ""; var maestroId = ""; var usRol = ""; var rpPrint = ""; var pdfExportData = [];
+        var usNombre = ""; var usHacienda = ""; var rfidPendiente = ""; var alertaGlobalIdActual = "";
+        var unsubscribeEventos = null; var unsubscribeConfig = null;
+
         // =========================================================================
         // ARRANQUE INMEDIATO FUERA DE LÍNEA PC (EVITA PANTALLA EN BLANCO OFFLINE)
         // =========================================================================
@@ -1553,33 +1539,20 @@
                         cachedProfile.features
                     );
                     setEstadoRed(navigator.onLine, navigator.onLine ? "🟡 Conectando..." : "🔴 Red Local");
-                    if (typeof procesarDatosDashboard === 'function') procesarDatosDashboard();
                 }
             } catch(err) {
                 console.warn("[Taurus PC Boot] Error en arranque offline:", err);
             }
         })();
 
-
-        let dbCache = []; let historiaCache = null; let activosCache = null; let rpActivo = null; let usActivo = ""; let maestroId = ""; let usRol = ""; let rpPrint = ""; let pdfExportData = [];
-        let usNombre = ""; let usHacienda = ""; let rfidPendiente = "";
-        let alertaGlobalIdActual = "";
-        
-        let unsubscribeEventos = null;
-        let unsubscribeConfig = null;
-
-                /* MANEJO OFFLINE Y ROBUSTO DEL ARRANQUE DE SESIÓN */
+        /* MANEJO OFFLINE Y ROBUSTO DEL ARRANQUE DE SESIÓN */
         firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
-                console.log("[Taurus PC Auth] Sesión activa detectada para:", user.email);
                 const emailClean = (user.email || "").toLowerCase().trim();
                 let cachedProfile = lsGet('tc_user_profile', null);
 
-                // Ocultar login de inmediato
-                {
-                    let elL = document.getElementById('pantalla-login'); if (elL) elL.classList.add('oculto');
-                    let elA = document.getElementById('pantalla-app'); if (elA) elA.classList.remove('oculto');
-                }
+                let pLogin = document.getElementById('pantalla-login'); if (pLogin) pLogin.classList.add('oculto');
+                let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.remove('oculto');
 
                 if (cachedProfile && (cachedProfile.email || "").toLowerCase() === emailClean) {
                     arrancarSistemaFirebase(
@@ -1602,8 +1575,8 @@
                         userData = docSnap.data();
                         userData.email = emailClean;
                     }
-                } catch(errFirestore) {
-                    console.warn("[Taurus PC Auth] Fallo al leer /usuarios/ de Firestore:", errFirestore.message);
+                } catch(e) {
+                    console.warn("[Taurus PC Auth] Fallo al consultar Firestore:", e.message);
                 }
 
                 if (!userData) {
@@ -1622,11 +1595,7 @@
 
                 if (userData.vencimiento && userData.vencimiento !== 'Heredado' && userData.vencimiento !== 'Perpetua') {
                     let fLimit = new Date(userData.vencimiento.includes('T') ? userData.vencimiento : userData.vencimiento + "T23:59:59");
-                    if (!isNaN(fLimit.getTime()) && new Date() > fLimit) { 
-                        cerrarSesion(); 
-                        alert("Su licencia ha vencido."); 
-                        return; 
-                    }
+                    if (!isNaN(fLimit.getTime()) && new Date() > fLimit) { cerrarSesion(); alert("Su licencia ha vencido."); return; }
                 }
 
                 arrancarSistemaFirebase(
@@ -1639,13 +1608,9 @@
                 );
 
             } else {
-                console.log("[Taurus PC Auth] Sin usuario autenticado.");
-                const elLogin = document.getElementById('pantalla-login');
-                if (elLogin) elLogin.classList.remove('oculto');
-                const elApp = document.getElementById('pantalla-app');
-                if (elApp) elApp.classList.add('oculto');
-                const btn = document.getElementById('btn-ingreso');
-                if (btn) { btn.disabled = false; btn.innerText = "Ingresar al Sistema"; }
+                let pLogin = document.getElementById('pantalla-login'); if (pLogin) pLogin.classList.remove('oculto');
+                let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.add('oculto');
+                let btn = document.getElementById('btn-ingreso'); if (btn) { btn.disabled = false; btn.innerText = "Ingresar al Sistema"; }
             }
         });
 
@@ -1940,7 +1905,7 @@
         });
  window.addEventListener('offline', () => setEstadoRed(false));
 
-                async function procesarIngreso() {
+        async function procesarIngreso() {
             let u = document.getElementById('usuario').value.trim();
             const p = document.getElementById('password').value.trim();
             const btn = document.getElementById('btn-ingreso');
@@ -1952,7 +1917,7 @@
             }
 
             if (!navigator.onLine) {
-                if (err) { err.innerText = "❌ Sin conexión a Internet para autenticar."; err.style.display = 'block'; }
+                if (err) { err.innerText = "❌ Sin conexión a Internet."; err.style.display = 'block'; }
                 return;
             }
 
@@ -1964,7 +1929,7 @@
                 await firebase.auth().signInWithEmailAndPassword(email, p);
             } catch(error) {
                 console.error("[Login Error]:", error);
-                let msg = "Usuario no registrado o contraseña incorrecta.";
+                let msg = "Usuario no registrado o clave incorrecta.";
                 if (error.code === 'auth/network-request-failed') msg = "Fallo de conexión con el servidor.";
                 if (error.code === 'auth/too-many-requests') msg = "Demasiados intentos fallidos. Espere un momento.";
                 if (err) { err.innerText = msg; err.style.display = 'block'; }
@@ -1981,30 +1946,28 @@
 
         function arrancarSistemaFirebase(u, m, r, nombreCompleto, hacienda, featuresStr) {
             try {
-                {
-                    let elL = document.getElementById('pantalla-login'); if (elL) elL.classList.add('oculto');
-                    let elA = document.getElementById('pantalla-app'); if (elA) elA.classList.remove('oculto');
-                }
-
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
-                window.estanciaFeatures = String(featuresStr || "");
+
+                estanciaFeatures = String(featuresStr || "");
                 let profInit = lsGet('tc_user_profile', {});
-                if(profInit && featuresStr) { profInit.features = window.estanciaFeatures; lsSet('tc_user_profile', profInit); }
+                if(profInit && featuresStr) { profInit.features = estanciaFeatures; lsSet('tc_user_profile', profInit); }
                 actualizarVisibilidadCora();
 
-                // 1. Carga inmediata local (0 lecturas)
+                let pLogin = document.getElementById('pantalla-login'); if (pLogin) pLogin.classList.add('oculto');
+                let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.remove('oculto');
+
+                // Carga inmediata local (0 reads)
                 let cachedDB = lsGet('tc_db', []);
                 if (cachedDB && cachedDB.length > 0) {
                     dbCache = cachedDB;
-                    procesarDatosDashboard();
+                    if (typeof procesarDatosDashboard === 'function') procesarDatosDashboard();
                     cargarListasFiltrosSelects();
                     cargarListaOperadores();
                 }
 
-                // 2. Delta sync inteligente
+                // Delta Sync
                 sincronizarDeltasServidor();
 
-                // 3. Chequeo periódico cada 60s
                 if (window.syncIntervalTimer) clearInterval(window.syncIntervalTimer);
                 window.syncIntervalTimer = setInterval(() => {
                     if (navigator.onLine && document.visibilityState === 'visible') {
@@ -2014,14 +1977,18 @@
 
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
                 let displayRol = isPropietario ? 'Propietario' : 'Operador';
-                if (window.OneSignalDeferred) {
+
+                if (window.OneSignalDeferred) { 
                     OneSignalDeferred.push(async function(OneSignal) {
-                        try { OneSignal.User.addTags({ rol: displayRol, estancia_id: m }); } catch(e) {}
+                        try {
+                            OneSignal.User.addTags({ rol: displayRol, estancia_id: m });
+                        } catch(e) {}
                     });
                 }
 
                 document.querySelectorAll('.vista').forEach(e => e.classList.add('oculto'));
-                document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('activo'));
+                document.querySelectorAll('.sidebar-nav li').forEach(e => e.classList.remove('activo'));
+
                 let tabSeleccionado = null; let vistaInicial = 'v-dash';
 
                 if (isPropietario) {
@@ -2140,6 +2107,7 @@
                     }
                 });
             }
+
             dbCache = Array.from(mapa.values()).sort((a,b) => {
                 let tA = new Date(a.fecha).getTime(); let tB = new Date(b.fecha).getTime();
                 return (isNaN(tB) ? 0 : tB) - (isNaN(tA) ? 0 : tA);
@@ -2160,16 +2128,29 @@
             if(imgCfg) imgCfg.src = l;
         }
 
+        let syncEnCursoPC = false;
         async function sincronizarPendientesAuto() {
-            let p = lsGet('tc_pendientes', []); 
-            if(!p || p.length === 0) return;
-            if(navigator.onLine && maestroId) {
-                try {
+            if (syncEnCursoPC || !navigator.onLine || !maestroId) return;
+            let p = lsGet('tc_pendientes', []);
+            if (!p || p.length === 0) {
+                setEstadoRed(true);
+                return;
+            }
+
+            syncEnCursoPC = true;
+            try {
+                const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
+                const BATCH_LIMIT = 400;
+                const idsSincronizados = new Set();
+
+                for (let i = 0; i < p.length; i += BATCH_LIMIT) {
+                    const chunk = p.slice(i, i + BATCH_LIMIT);
                     const batch = db.batch();
-                    const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
-                    
-                    p.forEach(obj => {
+
+                    chunk.forEach(obj => {
                         if (!obj) return;
+                        let docId = obj.id || colRef.doc().id;
+                        obj.id = docId;
                         if (obj.accion === 'update' && obj.id) {
                             batch.update(colRef.doc(obj.id), {
                                 valor: obj.valor || '-',
@@ -2177,44 +2158,29 @@
                                 fecha: obj.fecha || new Date().toISOString()
                             });
                         } else {
-                            let docId = obj.id || colRef.doc().id;
-                            obj.id = docId;
                             batch.set(colRef.doc(docId), obj, { merge: true });
                         }
+                        idsSincronizados.add(docId);
                     });
-                    
+
                     await batch.commit();
-                    
-                    // Notificar y respaldar en Apps Script sin duplicación
-                    try {
-                        const fd = new URLSearchParams();
-                        fd.append('accion', 'sincronizar_lote');
-                        fd.append('maestro', maestroId);
-                        fd.append('usuario', usActivo || 'Operador PC');
-                        fd.append('eventos', JSON.stringify(p));
-                        fetch(APPS_SCRIPT_NOTIFICACIONES, {
-                            method: 'POST',
-                            body: fd,
-                            mode: 'no-cors'
-                        }).catch(() => {});
-                    } catch(exGAS) {}
-                    
-                    lsSet('tc_pendientes', []);
-                    setEstadoRed(true, '🟢 Conectado');
-                    if (typeof mostrarToast === 'function') mostrarToast('✅ Sincronizados ' + p.length + ' registros locales con la nube.');
-                } catch(e) {
-                    console.warn('[Taurus PC Sync] Error al confirmar lote en Firestore:', e);
-                    setEstadoRed(false, '💾 ' + p.length + ' pendientes');
                 }
+
+                const colaActual = lsGet('tc_pendientes', []);
+                const nuevaCola = colaActual.filter(item => !idsSincronizados.has(item.id));
+                lsSet('tc_pendientes', nuevaCola);
+
+                setEstadoRed(true);
+                console.log('✅ Sincronizados ' + idsSincronizados.size + ' registros locales con la nube.');
+            } catch(e) {
+                console.warn('[Taurus PC Sync Error]:', e);
+                setEstadoRed(false, '💾 ' + p.length + ' pendientes');
+            } finally {
+                syncEnCursoPC = false;
             }
         }
+        window.sincronizarPendientesAuto = sincronizarPendientesAuto;
 
-        // ==========================================
-        // FILTROS Y VALIDACIONES ESTRICTAS DE GANADO
-        // ==========================================
-                // ==========================================
-        // HELPERS UNIVERSALES: VIVOS, MUERTES Y VENTAS
-        // ==========================================
         function esAnimalVendido(regs) {
             if (!regs || !Array.isArray(regs) || regs.length === 0) return false;
             let evtVenta = regs.find(r => r && (r.accion === 'Venta' || r.accion === 'Despacho'));
@@ -2702,28 +2668,25 @@
                 car = "---";
             } else {
                 if (!esCaravanaValida(car)) {
-                    console.warn(`[Taurus PC] Acción '${tipo}' ignorada por RP inválido ('${car}').`);
-                    if (typeof mostrarToast === 'function') {
-                        mostrarToast("⚠️ Debe identificar un animal (RP válido) antes de registrar");
-                    }
-                    if (modalId) cerrarModal(modalId);
+                    console.warn(`[Taurus] Acción '${tipo}' ignorada por RP inválido ('${car}').`);
+                    if(modalId) cerrarModal(modalId);
                     return;
                 }
             }
+
             const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
             const docRef = colRef.doc();
             const obj = { id: docRef.id, fecha: new Date().toISOString(), accion: tipo, caravana: car, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
-            dbCache.unshift(obj); historiaCache = null; activosCache = null; buscarCaravanaBtn(rpActivo); procesarDatosDashboard();
+            dbCache.unshift(obj); historiaCache = null; activosCache = null; buscarCaravanaBtn(rpActivo); if (typeof procesarDatosDashboard === 'function') procesarDatosDashboard();
             if(modalId) cerrarModal(modalId);
-            if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador') {
+            if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador' && tipo !== 'Alta Operador' && tipo !== 'Baja Operador') {
                 notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
             }
-            if(navigator.onLine) { 
-                docRef.set(obj).catch(e => {
-                    let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); 
-                });
-            } else { let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p); }
+            
+            let p = lsGet('tc_pendientes', []); p.push(obj); lsSet('tc_pendientes', p);
+            programarSyncPorLotes();
         }
+        window.ejecutarAccion = ejecutarAccion;
 
         function prepararGuardado(mId, t) { 
             if(!rpActivo) return; 
@@ -3380,22 +3343,13 @@
             };
         }
 
-        let infPaginaActual = 1;
-        const INF_ITEMS_POR_PAGINA = 50;
-
-        window.cambiarPaginaInforme = function(delta) {
-            infPaginaActual += delta;
-            if (infPaginaActual < 1) infPaginaActual = 1;
-            window.actualizarInformeAvanzado();
-        };
-
-        window.actualizarInformeAvanzado = function() {
+        function actualizarInformeAvanzado() {
             const modoEl = document.getElementById('f-inf-modo');
             const modo = modoEl ? modoEl.value : 'inventario';
             const fRpEl = document.getElementById('f-inf-rp');
             const fRp = fRpEl ? fRpEl.value.trim().toLowerCase() : '';
 
-            const datosActivos = typeof window.obtenerRegistrosActivos === 'function' ? window.obtenerRegistrosActivos() : [];
+            const datosActivos = typeof obtenerRegistrosActivos === 'function' ? obtenerRegistrosActivos() : [];
             const unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && String(c).toLowerCase() !== "null" && c !== "undefined" && c !== ""))];
 
             const tbodyMasivo = document.getElementById('tb-informe-masivo');
@@ -3425,20 +3379,18 @@
             const btnPrint = document.getElementById('btn-print-magico');
             const elInfTotal = document.getElementById('inf-total');
             const elInfPrenadas = document.getElementById('inf-prenadas');
-            const paginacionEl = document.getElementById('paginacion-informe');
 
             // ---------------------------------------------------------------------
             // CASO A: BÚSQUEDA POR RP INDIVIDUAL (APLICACIÓN DE REGLAS DE SEPARACIÓN ESTRICTA)
             // ---------------------------------------------------------------------
             if (fRp !== "") {
                 rpPrint = fRp;
-                if (paginacionEl) paginacionEl.style.display = 'none';
-                const regsAnimalRaw = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(fRp) : [];
+                const regsAnimalRaw = typeof obtenerHistorial === 'function' ? obtenerHistorial(fRp) : [];
                 pdfExportData = [];
 
                 // 1. INVENTARIO GENERAL: ÚNICO reporte que cruza y consolida todos los datos
                 if (modo === 'inventario') {
-                    if (btnPrint) btnPrint.innerHTML = `🖨️ Dossier Completo: ${window.escapeHTML(fRp.toUpperCase())}`;
+                    if (btnPrint) btnPrint.innerHTML = `🖨️ Dossier Completo: ${escapeHTML(fRp.toUpperCase())}`;
                     if (tIndiv) tIndiv.classList.remove('oculto');
                     if (cajaKpiPre) cajaKpiPre.style.display = 'none';
                     if (lblTotal) lblTotal.innerText = "Registros Clínicos";
@@ -3451,12 +3403,12 @@
                     let hInd = "";
                     regs.forEach(r => {
                         let fDate = new Date(r.fecha).toLocaleDateString();
-                        let badge = typeof window.obtenerBadgeAccion === 'function' ? window.obtenerBadgeAccion(r.accion) : r.accion;
+                        let badge = typeof obtenerBadgeAccion === 'function' ? obtenerBadgeAccion(r.accion) : r.accion;
                         pdfExportData.push([fDate, badge, r.valor || '-', r.detalles || '-']);
-                        hInd += `<tr><td>${window.escapeHTML(fDate)}</td><td><strong>${window.escapeHTML(badge)}</strong></td><td>${window.escapeHTML(r.valor || '-')}</td><td>${window.escapeHTML(r.detalles || '-')}</td></tr>`;
+                        hInd += `<tr><td>${escapeHTML(fDate)}</td><td><strong>${escapeHTML(badge)}</strong></td><td>${escapeHTML(r.valor || '-')}</td><td>${escapeHTML(r.detalles || '-')}</td></tr>`;
                     });
 
-                    if (tbodyIndiv) tbodyIndiv.innerHTML = hInd || `<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--muted);">Sin eventos registrados para RP ${window.escapeHTML(fRp.toUpperCase())}.</td></tr>`;
+                    if (tbodyIndiv) tbodyIndiv.innerHTML = hInd || `<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--muted);">Sin eventos registrados para RP ${escapeHTML(fRp.toUpperCase())}.</td></tr>`;
                     if (elInfTotal) elInfTotal.innerText = regs.length;
                     if (elInfPrenadas) elInfPrenadas.innerText = "-";
                     return;
@@ -3464,7 +3416,7 @@
 
                 // 2. INFORME DE PESO Y PESAJE: AISLA Y RETORNA EXCLUSIVAMENTE HISTORIAL DE PESO
                 else if (modo === 'pesajes') {
-                    if (btnPrint) btnPrint.innerHTML = `🖨️ Pesajes: ${window.escapeHTML(fRp.toUpperCase())}`;
+                    if (btnPrint) btnPrint.innerHTML = `🖨️ Pesajes: ${escapeHTML(fRp.toUpperCase())}`;
                     if (tPesajes) tPesajes.classList.remove('oculto');
                     if (cajaKpiPre) cajaKpiPre.style.display = 'none';
                     if (lblTotal) lblTotal.innerText = "Pesajes Registrados";
@@ -3492,7 +3444,7 @@
                         pdfExportData.push([fAct, `${fRp.toUpperCase()}`, fAnt !== "-" ? `${pAnt} Kg (${fAnt})` : "-", `${pAct} Kg (${fAct})`, diffStr, gdpStr, diffKg >= 0 ? 'Ganancia' : 'Pérdida']);
 
                         bufferPes += `<tr>
-                            <td><strong>${window.escapeHTML(fRp.toUpperCase())}</strong><br><span style="font-size:10px; color:var(--muted);">${fAct}</span></td>
+                            <td><strong>${escapeHTML(fRp.toUpperCase())}</strong><br><span style="font-size:10px; color:var(--muted);">${fAct}</span></td>
                             <td>Peso Individual</td>
                             <td>${pAnt !== null ? pAnt.toFixed(1) + ' Kg' : '-'}</td>
                             <td><strong>${pAct.toFixed(1)} Kg</strong></td>
@@ -3502,7 +3454,7 @@
                         </tr>`;
                     }
 
-                    if (tbodyPesajes) tbodyPesajes.innerHTML = bufferPes || `<tr><td colspan="7" style="text-align:center; padding:15px; color:var(--muted);">El animal RP: ${window.escapeHTML(fRp.toUpperCase())} no registra pesajes.</td></tr>`;
+                    if (tbodyPesajes) tbodyPesajes.innerHTML = bufferPes || `<tr><td colspan="7" style="text-align:center; padding:15px; color:var(--muted);">El animal RP: ${escapeHTML(fRp.toUpperCase())} no registra pesajes.</td></tr>`;
                     if (elInfTotal) elInfTotal.innerText = pesosAnimal.length;
                     if (elInfPrenadas) elInfPrenadas.innerText = "-";
                     return;
@@ -3510,12 +3462,12 @@
 
                 // 3. REPORTE DE MORTALIDAD: EXCLUSIVAMENTE DETALLES DE MORTALIDAD
                 else if (modo === 'bajas') {
-                    if (btnPrint) btnPrint.innerHTML = `🖨️ Mortandad: ${window.escapeHTML(fRp.toUpperCase())}`;
+                    if (btnPrint) btnPrint.innerHTML = `🖨️ Mortandad: ${escapeHTML(fRp.toUpperCase())}`;
                     if (tBajas) tBajas.classList.remove('oculto');
                     if (cajaKpiPre) cajaKpiPre.style.display = 'none';
                     if (lblTotal) lblTotal.innerText = "Registros Mortandad";
 
-                    let bajaEvt = regsAnimalRaw.find(r => (r.accion === 'Baja' || r.accion === 'Muerte') && window.esAnimalMuerto([r]));
+                    let bajaEvt = regsAnimalRaw.find(r => (r.accion === 'Baja' || r.accion === 'Muerte') && esAnimalMuerto([r]));
 
                     if (bajaEvt) {
                         let fDate = bajaEvt.fecha ? new Date(bajaEvt.fecha).toLocaleDateString() : "-";
@@ -3523,10 +3475,10 @@
                         let obs = bajaEvt.detalles || "-";
                         pdfExportData.push([fDate, fRp.toUpperCase(), causa, obs]);
 
-                        if (tbodyBajas) tbodyBajas.innerHTML = `<tr><td>${window.escapeHTML(fDate)}</td><td><strong>${window.escapeHTML(fRp.toUpperCase())}</strong></td><td><span class="badge" style="background:var(--peligro); color:white; padding:2px 8px; border-radius:4px; font-weight:bold;">${window.escapeHTML(causa)}</span></td><td>${window.escapeHTML(obs)}</td></tr>`;
+                        if (tbodyBajas) tbodyBajas.innerHTML = `<tr><td>${escapeHTML(fDate)}</td><td><strong>${escapeHTML(fRp.toUpperCase())}</strong></td><td><span class="badge" style="background:var(--peligro); color:white; padding:2px 8px; border-radius:4px; font-weight:bold;">${escapeHTML(causa)}</span></td><td>${escapeHTML(obs)}</td></tr>`;
                         if (elInfTotal) elInfTotal.innerText = "1";
                     } else {
-                        if (tbodyBajas) tbodyBajas.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--exito); font-weight:bold;">El animal RP: ${window.escapeHTML(fRp.toUpperCase())} no registra mortandad (Estado: Activo / Vivo).</td></tr>`;
+                        if (tbodyBajas) tbodyBajas.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--exito); font-weight:bold;">El animal RP: ${escapeHTML(fRp.toUpperCase())} no registra mortandad (Estado: Activo / Vivo).</td></tr>`;
                         if (elInfTotal) elInfTotal.innerText = "0";
                     }
                     if (elInfPrenadas) elInfPrenadas.innerText = "-";
@@ -3535,12 +3487,12 @@
 
                 // 4. REPORTE DE VENTAS: EXCLUSIVAMENTE DATOS FINANCIEROS Y DE VENTA
                 else if (modo === 'ventas') {
-                    if (btnPrint) btnPrint.innerHTML = `🖨️ Despacho/Venta: ${window.escapeHTML(fRp.toUpperCase())}`;
+                    if (btnPrint) btnPrint.innerHTML = `🖨️ Despacho/Venta: ${escapeHTML(fRp.toUpperCase())}`;
                     if (tVentas) tVentas.classList.remove('oculto');
                     if (cajaKpiPre) cajaKpiPre.style.display = 'none';
                     if (lblTotal) lblTotal.innerText = "Ventas Registradas";
 
-                    let ventaEvt = regsAnimalRaw.find(r => (r.accion === 'Venta' || (r.accion === 'Baja' && window.esAnimalVendido([r]))));
+                    let ventaEvt = regsAnimalRaw.find(r => (r.accion === 'Venta' || (r.accion === 'Baja' && esAnimalVendido([r]))));
 
                     if (ventaEvt) {
                         let fDate = ventaEvt.fecha ? new Date(ventaEvt.fecha).toLocaleDateString() : "-";
@@ -3548,10 +3500,10 @@
                         let obs = ventaEvt.detalles || "-";
                         pdfExportData.push([fDate, fRp.toUpperCase(), tipoSalida, "-", obs]);
 
-                        if (tbodyVentas) tbodyVentas.innerHTML = `<tr><td>${window.escapeHTML(fDate)}</td><td><strong>${window.escapeHTML(fRp.toUpperCase())}</strong></td><td><span class="badge" style="background:#2563eb; color:white; font-weight:bold; padding:2px 8px; border-radius:4px;">${window.escapeHTML(tipoSalida)}</span></td><td>-</td><td>${window.escapeHTML(obs)}</td></tr>`;
+                        if (tbodyVentas) tbodyVentas.innerHTML = `<tr><td>${escapeHTML(fDate)}</td><td><strong>${escapeHTML(fRp.toUpperCase())}</strong></td><td><span class="badge" style="background:#2563eb; color:white; font-weight:bold; padding:2px 8px; border-radius:4px;">${escapeHTML(tipoSalida)}</span></td><td>-</td><td>${escapeHTML(obs)}</td></tr>`;
                         if (elInfTotal) elInfTotal.innerText = "1";
                     } else {
-                        if (tbodyVentas) tbodyVentas.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--muted);">El animal RP: ${window.escapeHTML(fRp.toUpperCase())} no registra ventas ni despachos.</td></tr>`;
+                        if (tbodyVentas) tbodyVentas.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--muted);">El animal RP: ${escapeHTML(fRp.toUpperCase())} no registra ventas ni despachos.</td></tr>`;
                         if (elInfTotal) elInfTotal.innerText = "0";
                     }
                     if (elInfPrenadas) elInfPrenadas.innerText = "-";
@@ -3560,7 +3512,7 @@
 
                 // 5. TRATAMIENTOS Y PROCEDIMIENTOS: EXCLUSIVAMENTE HISTORIAL MÉDICO/SANITARIO
                 else if (modo === 'eventos') {
-                    if (btnPrint) btnPrint.innerHTML = `🖨️ Sanidad: ${window.escapeHTML(fRp.toUpperCase())}`;
+                    if (btnPrint) btnPrint.innerHTML = `🖨️ Sanidad: ${escapeHTML(fRp.toUpperCase())}`;
                     if (tEventos) tEventos.classList.remove('oculto');
                     if (cajaKpiPre) cajaKpiPre.style.display = 'none';
                     if (lblTotal) lblTotal.innerText = "Tratamientos Médicos";
@@ -3575,10 +3527,10 @@
                         let obs = r.detalles || "-";
                         pdfExportData.push([fDate, fRp.toUpperCase(), "Individual", proc, trat, obs]);
 
-                        bufferEvt += `<tr><td>${window.escapeHTML(fDate)}</td><td><strong>${window.escapeHTML(fRp.toUpperCase())}</strong></td><td>Sanidad</td><td><span style="background:rgba(59,130,246,0.15); color:var(--secundario); padding:2px 6px; border-radius:4px; font-weight:bold;">${window.escapeHTML(proc)}</span></td><td><strong>${window.escapeHTML(trat)}</strong></td><td>${window.escapeHTML(obs)}</td></tr>`;
+                        bufferEvt += `<tr><td>${escapeHTML(fDate)}</td><td><strong>${escapeHTML(fRp.toUpperCase())}</strong></td><td>Sanidad</td><td><span style="background:rgba(59,130,246,0.15); color:var(--secundario); padding:2px 6px; border-radius:4px; font-weight:bold;">${escapeHTML(proc)}</span></td><td><strong>${escapeHTML(trat)}</strong></td><td>${escapeHTML(obs)}</td></tr>`;
                     });
 
-                    if (tbodyEventos) tbodyEventos.innerHTML = bufferEvt || `<tr><td colspan="6" style="text-align:center; padding:15px; color:var(--muted);">Sin tratamientos ni sanidad para RP: ${window.escapeHTML(fRp.toUpperCase())}.</td></tr>`;
+                    if (tbodyEventos) tbodyEventos.innerHTML = bufferEvt || `<tr><td colspan="6" style="text-align:center; padding:15px; color:var(--muted);">Sin tratamientos ni sanidad para RP: ${escapeHTML(fRp.toUpperCase())}.</td></tr>`;
                     if (elInfTotal) elInfTotal.innerText = eventosMedicos.length;
                     if (elInfPrenadas) elInfPrenadas.innerText = "-";
                     return;
@@ -3586,7 +3538,7 @@
 
                 // 6. CONFINAMIENTO Y FEEDLOT: EXCLUSIVAMENTE DATOS DE CONFINAMIENTO
                 else if (modo === 'confinamiento') {
-                    if (btnPrint) btnPrint.innerHTML = `🖨️ Feedlot: ${window.escapeHTML(fRp.toUpperCase())}`;
+                    if (btnPrint) btnPrint.innerHTML = `🖨️ Feedlot: ${escapeHTML(fRp.toUpperCase())}`;
                     if (tConf) tConf.classList.remove('oculto');
                     if (cajaKpiPre) cajaKpiPre.style.display = 'none';
                     if (lblTotal) lblTotal.innerText = "Registros Feedlot";
@@ -3603,7 +3555,7 @@
                         let fIngresoStr = mFecha ? mFecha[1].trim() : "";
                         let pIniVal = mPesoIni ? parseFloat(mPesoIni[1]) : 0;
                         let pMetaVal = mMeta ? parseFloat(mMeta[1]) : 460;
-                        let diasEncierre = fIngresoStr ? window.calcularDiasCalendario(fIngresoStr, new Date().toISOString()) : 1;
+                        let diasEncierre = fIngresoStr ? calcularDiasCalendario(fIngresoStr, new Date().toISOString()) : 1;
 
                         let todosPesos = regsAnimalRaw.filter(d => String(d.accion).includes('Peso'));
                         let pActVal = todosPesos.length >= 1 ? parseFloat(String(todosPesos[0].valor).replace(/[^0-9.-]/g, '')) : pIniVal;
@@ -3612,10 +3564,10 @@
 
                         pdfExportData.push([fRp.toUpperCase(), corralTxt, `${diasEncierre} días`, `${pIniVal} Kg`, `${pActVal} Kg`, `+${diffKg.toFixed(1)} Kg`, `${gmdVal} Kg/d`, `${pMetaVal} Kg`]);
 
-                        if (tbodyConf) tbodyConf.innerHTML = `<tr><td><strong>${window.escapeHTML(fRp.toUpperCase())}</strong></td><td><span style="background:rgba(249,115,22,0.15); color:#f97316; padding:2px 6px; border-radius:4px; font-weight:bold;">${window.escapeHTML(corralTxt)}</span></td><td>${diasEncierre} días</td><td>${pIniVal} Kg</td><td><strong>${pActVal} Kg</strong></td><td>+${diffKg.toFixed(1)} Kg</td><td>${gmdVal} Kg/d</td><td>${pMetaVal} Kg</td></tr>`;
+                        if (tbodyConf) tbodyConf.innerHTML = `<tr><td><strong>${escapeHTML(fRp.toUpperCase())}</strong></td><td><span style="background:rgba(249,115,22,0.15); color:#f97316; padding:2px 6px; border-radius:4px; font-weight:bold;">${escapeHTML(corralTxt)}</span></td><td>${diasEncierre} días</td><td>${pIniVal} Kg</td><td><strong>${pActVal} Kg</strong></td><td>+${diffKg.toFixed(1)} Kg</td><td>${gmdVal} Kg/d</td><td>${pMetaVal} Kg</td></tr>`;
                         if (elInfTotal) elInfTotal.innerText = "1";
                     } else {
-                        if (tbodyConf) tbodyConf.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:15px; color:var(--muted);">El animal RP: ${window.escapeHTML(fRp.toUpperCase())} no registra encierre en confinamiento.</td></tr>`;
+                        if (tbodyConf) tbodyConf.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:15px; color:var(--muted);">El animal RP: ${escapeHTML(fRp.toUpperCase())} no registra encierre en confinamiento.</td></tr>`;
                         if (elInfTotal) elInfTotal.innerText = "0";
                     }
                     if (elInfPrenadas) elInfPrenadas.innerText = "-";
@@ -3628,7 +3580,6 @@
             // ---------------------------------------------------------------------
             rpPrint = "";
             if (btnPrint) btnPrint.innerHTML = `🖨️ Descargar Informe PDF`;
-            if (paginacionEl) paginacionEl.style.display = 'flex';
 
             if(modo === 'inventario') {
                 if(tMasiva) tMasiva.classList.remove('oculto');
@@ -3640,13 +3591,13 @@
                 const fDx = document.getElementById('f-inf-dx') ? document.getElementById('f-inf-dx').value : "ALL";
                 const fCarimbo = document.getElementById('f-inf-carimbo') ? document.getElementById('f-inf-carimbo').value : "ALL";
 
-                let vivas = unicas.filter(car => window.esAnimalVivo(window.obtenerHistorial(car)));
-                let listaFiltrada = [];
+                let vivas = unicas.filter(car => esAnimalVivo(obtenerHistorial(car)));
                 let countPre = 0;
+                let bufferHTML = "";
                 pdfExportData = [];
 
-                vivas.forEach(car => {
-                    const regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(car) : [];
+                vivas.slice(0, 100).forEach(car => {
+                    const regs = typeof obtenerHistorial === 'function' ? obtenerHistorial(car) : [];
                     let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
                     const uP = regs.find(d => d.accion === 'Perfil Master');
                     if(uP) cat = String(uP.detalles || "").split('|')[0] || "-";
@@ -3659,7 +3610,7 @@
                         lote = String(uC.detalles || "").replace('Lote:', '').trim() || "-";
                     }
 
-                    let catLegible = typeof window.obtenerNombreCategoriaLegible === 'function' ? window.obtenerNombreCategoriaLegible(cat) : cat;
+                    let catLegible = typeof obtenerNombreCategoriaLegible === 'function' ? obtenerNombreCategoriaLegible(cat) : cat;
                     const uPeso = regs.find(d => d.accion === 'Peso');
                     if(uPeso) peso = uPeso.valor || "-";
 
@@ -3679,69 +3630,37 @@
 
                     if(pasa) {
                         if(esPre) countPre++;
-                        listaFiltrada.push({ car, carimbo, catLegible, lote, peso, dx });
                         pdfExportData.push([`${car} - Cb:${carimbo}`, catLegible, lote, peso, dx]);
+                        bufferHTML += `<tr><td><strong>${escapeHTML(car)}</strong><br><span style="font-size:10px; color:var(--muted);">Cb: ${escapeHTML(carimbo)}</span></td><td>${escapeHTML(catLegible)}</td><td>${escapeHTML(lote)}</td><td><strong>${escapeHTML(peso)}</strong></td><td>${escapeHTML(dx)}</td></tr>`;
                     }
                 });
 
-                const totalItems = listaFiltrada.length;
-                const totalPaginas = Math.max(1, Math.ceil(totalItems / INF_ITEMS_POR_PAGINA));
-                if (infPaginaActual > totalPaginas) infPaginaActual = totalPaginas;
-
-                const inicio = (infPaginaActual - 1) * INF_ITEMS_POR_PAGINA;
-                const itemsPagina = listaFiltrada.slice(inicio, inicio + INF_ITEMS_POR_PAGINA);
-
-                let bufferHTML = "";
-                itemsPagina.forEach(it => {
-                    bufferHTML += `<tr><td><strong>${window.escapeHTML(it.car)}</strong><br><span style="font-size:10px; color:var(--muted);">Cb: ${window.escapeHTML(it.carimbo)}</span></td><td>${window.escapeHTML(it.catLegible)}</td><td>${window.escapeHTML(it.lote)}</td><td><strong>${window.escapeHTML(it.peso)}</strong></td><td>${window.escapeHTML(it.dx)}</td></tr>`;
-                });
-
                 if(tbodyMasivo) tbodyMasivo.innerHTML = bufferHTML || '<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--muted);">No se encontraron animales con los filtros indicados.</td></tr>';
-                if(elInfTotal) elInfTotal.innerText = totalItems;
+                if(elInfTotal) elInfTotal.innerText = vivas.length;
                 if(elInfPrenadas) elInfPrenadas.innerText = countPre;
-                const lblPag = document.getElementById('lbl-inf-pagina');
-                if (lblPag) lblPag.innerText = `Página ${infPaginaActual} de ${totalPaginas} (${totalItems} cabezas)`;
 
             } else if(modo === 'bajas') {
                 if(tBajas) tBajas.classList.remove('oculto');
                 if (cajaKpiPre) cajaKpiPre.style.display = 'none';
                 if (lblTotal) lblTotal.innerText = "Bajas por Mortandad";
 
-                const fCausa = document.getElementById('f-inf-baja-causa') ? document.getElementById('f-inf-baja-causa').value : "ALL";
-                const fDesde = document.getElementById('f-inf-baja-desde') ? document.getElementById('f-inf-baja-desde').value : "";
-                const fHasta = document.getElementById('f-inf-baja-hasta') ? document.getElementById('f-inf-baja-hasta').value : "";
-
-                let listaBajas = [];
+                let bufferBajas = "";
                 pdfExportData = [];
 
                 unicas.forEach(car => {
-                    const regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(car) : [];
-                    if(!window.esAnimalMuerto(regs)) return;
-
+                    const regs = typeof obtenerHistorial === 'function' ? obtenerHistorial(car) : [];
+                    if(!esAnimalMuerto(regs)) return;
                     const bajaEvt = regs.find(r => r.accion === 'Baja' || r.accion === 'Muerte');
                     if(bajaEvt) {
                         let causa = bajaEvt.valor || "No especificada";
                         let fDate = bajaEvt.fecha ? String(bajaEvt.fecha).split('T')[0] : "";
                         let obs = bajaEvt.detalles || "-";
-
-                        let pasa = true;
-                        if(fCausa !== "ALL" && !causa.toLowerCase().includes(fCausa.toLowerCase())) pasa = false;
-                        if(fDesde && fDate && fDate < fDesde) pasa = false;
-                        if(fHasta && fDate && fDate > fHasta) pasa = false;
-
-                        if(pasa) {
-                            listaBajas.push({ car, fDate, causa, obs });
-                            pdfExportData.push([fDate, car, causa, obs]);
-                        }
+                        pdfExportData.push([fDate, car, causa, obs]);
+                        bufferBajas += `<tr><td>${escapeHTML(fDate)}</td><td><strong>${escapeHTML(car)}</strong></td><td><span class="badge" style="background:var(--peligro); color:white; padding:2px 8px; border-radius:4px; font-weight:bold;">${escapeHTML(causa)}</span></td><td>${escapeHTML(obs)}</td></tr>`;
                     }
                 });
-
-                let bufferBajas = "";
-                listaBajas.slice(0, 100).forEach(b => {
-                    bufferBajas += `<tr><td>${window.escapeHTML(b.fDate)}</td><td><strong>${window.escapeHTML(b.car)}</strong></td><td><span class="badge" style="background:var(--peligro); color:white; padding:2px 8px; border-radius:4px; font-weight:bold;">${window.escapeHTML(b.causa)}</span></td><td>${window.escapeHTML(b.obs)}</td></tr>`;
-                });
                 if(tbodyBajas) tbodyBajas.innerHTML = bufferBajas || '<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--muted);">No hay bajas por mortandad registradas.</td></tr>';
-                if(elInfTotal) elInfTotal.innerText = listaBajas.length;
+                if(elInfTotal) elInfTotal.innerText = pdfExportData.length;
                 if(elInfPrenadas) elInfPrenadas.innerText = "-";
 
             } else if(modo === 'ventas') {
@@ -3749,29 +3668,23 @@
                 if (cajaKpiPre) cajaKpiPre.style.display = 'none';
                 if (lblTotal) lblTotal.innerText = "Cabezas Despachadas / Vendidas";
 
-                let listaVentas = [];
+                let bufferVentas = "";
                 pdfExportData = [];
 
                 unicas.forEach(car => {
-                    const regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(car) : [];
-                    if(!window.esAnimalVendido(regs)) return;
-
-                    const salidaEvt = regs.find(r => r.accion === 'Venta' || (r.accion === 'Baja' && window.esAnimalVendido([r])));
+                    const regs = typeof obtenerHistorial === 'function' ? obtenerHistorial(car) : [];
+                    if(!esAnimalVendido(regs)) return;
+                    const salidaEvt = regs.find(r => r.accion === 'Venta' || (r.accion === 'Baja' && esAnimalVendido([r])));
                     if(salidaEvt) {
                         let tipoSalida = salidaEvt.valor || "Venta Comercial";
                         let fDate = salidaEvt.fecha ? String(salidaEvt.fecha).split('T')[0] : "";
                         let obsTxt = salidaEvt.detalles || "-";
-                        listaVentas.push({ car, fDate, tipoSalida, obsTxt });
                         pdfExportData.push([fDate, car, tipoSalida, "-", obsTxt]);
+                        bufferVentas += `<tr><td>${escapeHTML(fDate)}</td><td><strong>${escapeHTML(car)}</strong></td><td><span class="badge" style="background:#2563eb; color:white; font-weight:bold; padding:2px 8px; border-radius:4px;">${escapeHTML(tipoSalida)}</span></td><td>-</td><td>${escapeHTML(obsTxt)}</td></tr>`;
                     }
                 });
-
-                let bufferVentas = "";
-                listaVentas.slice(0, 100).forEach(v => {
-                    bufferVentas += `<tr><td>${window.escapeHTML(v.fDate)}</td><td><strong>${window.escapeHTML(v.car)}</strong></td><td><span class="badge" style="background:#2563eb; color:white; font-weight:bold; padding:2px 8px; border-radius:4px;">${window.escapeHTML(v.tipoSalida)}</span></td><td>-</td><td>${window.escapeHTML(v.obsTxt)}</td></tr>`;
-                });
                 if(tbodyVentas) tbodyVentas.innerHTML = bufferVentas || '<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--muted);">No hay ventas registradas.</td></tr>';
-                if(elInfTotal) elInfTotal.innerText = listaVentas.length;
+                if(elInfTotal) elInfTotal.innerText = pdfExportData.length;
                 if(elInfPrenadas) elInfPrenadas.innerText = "-";
 
             } else if(modo === 'pesajes') {
@@ -3779,7 +3692,7 @@
                 if (cajaKpiPre) cajaKpiPre.style.display = 'none';
                 if (lblTotal) lblTotal.innerText = "Cabezas Evaluadas";
 
-                let analisis = window.obtenerAnalisisCompletoPesajes("ALL", "ALL", "ALL", "todo", "", "");
+                let analisis = typeof obtenerAnalisisCompletoPesajes === 'function' ? obtenerAnalisisCompletoPesajes("ALL", "ALL", "ALL", "todo", "", "") : { animales: [] };
                 let bufferPes = "";
                 pdfExportData = [];
 
@@ -3788,10 +3701,8 @@
                     let colAct = `${a.pesoActual.toFixed(1)} Kg`;
                     let pdfDiff = a.diffKg !== null ? `${a.diffKg > 0 ? "+" : ""}${a.diffKg.toFixed(1)} Kg` : "-";
                     let pdfGDP = a.gdp !== null ? `${a.gdp >= 0 ? "+" : ""}${a.gdp.toFixed(1)} Kg/d` : "-";
-
                     pdfExportData.push([a.caravana, a.catLote, colAnt, colAct, pdfDiff, pdfGDP, a.estado]);
-
-                    bufferPes += `<tr><td><strong>${window.escapeHTML(a.caravana)}</strong></td><td>${window.escapeHTML(a.catLote)}</td><td>${colAnt}</td><td><strong>${colAct}</strong></td><td>${pdfDiff}</td><td>${pdfGDP}</td><td>${window.escapeHTML(a.estado)}</td></tr>`;
+                    bufferPes += `<tr><td><strong>${escapeHTML(a.caravana)}</strong></td><td>${escapeHTML(a.catLote)}</td><td>${colAnt}</td><td><strong>${colAct}</strong></td><td>${pdfDiff}</td><td>${pdfGDP}</td><td>${escapeHTML(a.estado)}</td></tr>`;
                 });
 
                 if(tbodyPesajes) tbodyPesajes.innerHTML = bufferPes;
@@ -3808,11 +3719,11 @@
                 pdfExportData = [];
 
                 unicas.forEach(car => {
-                    const regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(car) : [];
+                    const regs = typeof obtenerHistorial === 'function' ? obtenerHistorial(car) : [];
                     const confEvt = regs.find(r => r.accion === 'Confinamiento');
                     if(confEvt && !String(confEvt.valor).includes('Salida')) {
                         countConf++;
-                        bufferConf += `<tr><td><strong>${window.escapeHTML(car)}</strong></td><td>Feedlot</td><td>Activo</td><td>-</td><td>-</td><td>-</td><td>-</td><td>460 Kg</td></tr>`;
+                        bufferConf += `<tr><td><strong>${escapeHTML(car)}</strong></td><td>Feedlot</td><td>Activo</td><td>-</td><td>-</td><td>-</td><td>-</td><td>460 Kg</td></tr>`;
                         pdfExportData.push([car, "Feedlot", "Activo", "-", "-", "-", "-", "460 Kg"]);
                     }
                 });
@@ -3831,13 +3742,13 @@
                 pdfExportData = [];
 
                 unicas.slice(0, 100).forEach(car => {
-                    const regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(car) : [];
+                    const regs = typeof obtenerHistorial === 'function' ? obtenerHistorial(car) : [];
                     let med = regs.filter(r => ['Sanidad', 'Vacuna', 'Tratamiento', 'Diagnóstico'].includes(r.accion));
                     if (med.length > 0) {
                         countEvt++;
                         let uM = med[0];
                         let fDate = uM.fecha ? new Date(uM.fecha).toLocaleDateString() : "-";
-                        bufferEvt += `<tr><td>${window.escapeHTML(fDate)}</td><td><strong>${window.escapeHTML(car)}</strong></td><td>General</td><td>${window.escapeHTML(uM.accion)}</td><td>${window.escapeHTML(uM.valor || '-')}</td><td>${window.escapeHTML(uM.detalles || '-')}</td></tr>`;
+                        bufferEvt += `<tr><td>${escapeHTML(fDate)}</td><td><strong>${escapeHTML(car)}</strong></td><td>General</td><td>${escapeHTML(uM.accion)}</td><td>${escapeHTML(uM.valor || '-')}</td><td>${escapeHTML(uM.detalles || '-')}</td></tr>`;
                         pdfExportData.push([fDate, car, "General", uM.accion, uM.valor || "-", uM.detalles || "-"]);
                     }
                 });
@@ -3847,6 +3758,7 @@
                 if(elInfPrenadas) elInfPrenadas.innerText = "-";
             }
         };
+        window.actualizarInformeAvanzado = actualizarInformeAvanzado;
 
         function cleanPDFText(text) {
             if (!text) return ''; let str = String(text);
@@ -3855,14 +3767,14 @@
             return str.trim();
         }
 
-        window.ejecutarDescargaPDF = function() {
+        function ejecutarDescargaPDF() {
             const btn = document.getElementById('btn-print-magico');
             const textoOriginal = btn.innerText; 
             btn.innerText = "⏳ Generando PDF...";
             
             setTimeout(() => {
                 try {
-                    const hd = window.lsGet('tc_hacienda', {}); 
+                    const hd = lsGet('tc_hacienda', {}); 
                     const h_nom = hd.nombre || 'TAURUS TRACK PRO'; 
                     const h_log = hd.logo || "";
                     const modo = document.getElementById('f-inf-modo').value; 
@@ -3871,9 +3783,9 @@
 
                     const addMembrete = (tituloReporte) => {
                         doc.setFontSize(18); doc.setFont("helvetica", "bold"); 
-                        doc.text(window.cleanPDFText(h_nom).toUpperCase(), 14, 20);
+                        doc.text(cleanPDFText(h_nom).toUpperCase(), 14, 20);
                         doc.setFontSize(11); doc.setFont("helvetica", "normal"); 
-                        doc.text(window.cleanPDFText(tituloReporte), 14, 27);
+                        doc.text(cleanPDFText(tituloReporte), 14, 27);
                         doc.setFontSize(9); doc.setTextColor(100);
                         doc.text(`Fecha de Emisión: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, 14, 32);
                         doc.setTextColor(20);
@@ -3889,73 +3801,65 @@
                         doc.setLineWidth(0.5); doc.line(14, 35, 196, 35);
                     };
 
-                    // SEPARACIÓN ESTRICTA EN PDF PARA RP INDIVIDUAL
                     if (rpPrint !== "") {
                         const rpLimpio = rpPrint.toUpperCase();
                         
                         if (modo === 'inventario') {
-                            // 1. INVENTARIO: DOSSIER CLÍNICO INTEGRAL
                             addMembrete(`Dossier Clínico Integral - RP: ${rpLimpio}`);
                             doc.autoTable({
                                 startY: 42,
                                 head: [['Fecha', 'Procedimiento', 'Valor / Detalle', 'Observaciones']],
-                                body: pdfExportData.map(row => row.map(cell => window.cleanPDFText(String(cell)))),
+                                body: pdfExportData.map(row => row.map(cell => cleanPDFText(String(cell)))),
                                 theme: 'striped',
                                 headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' }
                             });
                         } else if (modo === 'pesajes') {
-                            // 2. PESAJES: HISTORIAL EXCLUSIVO DE PESAJE
                             addMembrete(`Historial Exclusivo de Pesaje - RP: ${rpLimpio}`);
                             doc.autoTable({
                                 startY: 42,
                                 head: [['Fecha', 'Caravana', 'Peso Ant.', 'Peso Act.', 'Ganancia (Δ)', 'GDP (Kg/d)', 'Evolución']],
-                                body: pdfExportData.map(row => row.map(cell => window.cleanPDFText(String(cell)))),
+                                body: pdfExportData.map(row => row.map(cell => cleanPDFText(String(cell)))),
                                 theme: 'striped',
                                 headStyles: { fillColor: [5, 150, 105], textColor: 255, fontStyle: 'bold' }
                             });
                         } else if (modo === 'bajas') {
-                            // 3. MORTANDAD: CERTIFICADO DE BAJA
                             addMembrete(`Certificado Oficial de Mortandad - RP: ${rpLimpio}`);
                             doc.autoTable({
                                 startY: 42,
                                 head: [['Fecha Muerte', 'Caravana / RP', 'Causa de Muerte', 'Observaciones / Diagnóstico']],
-                                body: pdfExportData.map(row => row.map(cell => window.cleanPDFText(String(cell)))),
+                                body: pdfExportData.map(row => row.map(cell => cleanPDFText(String(cell)))),
                                 theme: 'striped',
                                 headStyles: { fillColor: [220, 38, 38], textColor: 255, fontStyle: 'bold' }
                             });
                         } else if (modo === 'ventas') {
-                            // 4. VENTAS: COMPROBANTE DE DESPACHO
                             addMembrete(`Registro de Venta y Despacho - RP: ${rpLimpio}`);
                             doc.autoTable({
                                 startY: 42,
                                 head: [['Fecha Despacho', 'Caravana / RP', 'Tipo de Salida', 'Destino / Guía', 'Observaciones']],
-                                body: pdfExportData.map(row => row.map(cell => window.cleanPDFText(String(cell)))),
+                                body: pdfExportData.map(row => row.map(cell => cleanPDFText(String(cell)))),
                                 theme: 'striped',
                                 headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' }
                             });
                         } else if (modo === 'eventos') {
-                            // 5. SANIDAD: HISTORIAL MÉDICO
                             addMembrete(`Historial de Tratamientos y Sanidad - RP: ${rpLimpio}`);
                             doc.autoTable({
                                 startY: 42,
                                 head: [['Fecha', 'Caravana / RP', 'Categoría', 'Procedimiento', 'Medicamento / Dosis', 'Observaciones']],
-                                body: pdfExportData.map(row => row.map(cell => window.cleanPDFText(String(cell)))),
+                                body: pdfExportData.map(row => row.map(cell => cleanPDFText(String(cell)))),
                                 theme: 'striped',
                                 headStyles: { fillColor: [124, 58, 237], textColor: 255, fontStyle: 'bold' }
                             });
                         } else if (modo === 'confinamiento') {
-                            // 6. CONFINAMIENTO: FICHA DE ENGORDE
                             addMembrete(`Ficha de Confinamiento y Feedlot - RP: ${rpLimpio}`);
                             doc.autoTable({
                                 startY: 42,
                                 head: [['Caravana', 'Corral', 'Días Encierre', 'Peso Inicial', 'Últ. Peso', 'Ganancia', 'GMD', 'Meta']],
-                                body: pdfExportData.map(row => row.map(cell => window.cleanPDFText(String(cell)))),
+                                body: pdfExportData.map(row => row.map(cell => cleanPDFText(String(cell)))),
                                 theme: 'striped',
                                 headStyles: { fillColor: [234, 88, 12], textColor: 255, fontStyle: 'bold' }
                             });
                         }
                     } else {
-                        // REPORTE MASIVO
                         const titulos = {
                             'inventario': 'Inventario General Consolidado',
                             'pesajes': 'Informe de Pesajes y Ganancia de Peso',
@@ -3967,7 +3871,7 @@
                         addMembrete(titulos[modo] || 'Reporte Oficial');
                         doc.autoTable({
                             startY: 42,
-                            body: pdfExportData.map(row => row.map(cell => window.cleanPDFText(String(cell)))),
+                            body: pdfExportData.map(row => row.map(cell => cleanPDFText(String(cell)))),
                             theme: 'striped',
                             headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' }
                         });
@@ -3982,371 +3886,247 @@
                 }
             }, 100);
         };
+        window.ejecutarDescargaPDF = ejecutarDescargaPDF;
 
-        window.filtrarInformeDebounced = function() {
-            clearTimeout(timeoutBuscadorInforme);
-            timeoutBuscadorInforme = setTimeout(() => { window.actualizarInformeAvanzado(); }, 400);
+        function verificarLimiteGraficos(checkbox) {
+            const checks = document.querySelectorAll('.chk-graf:checked');
+            const prefs = Array.from(checks).map(c => c.value);
+            lsSet('tc_prefs_pc', prefs);
+            if(dbCache.length > 0) procesarDatosDashboard();
         }
 
-        window.cargarListaRegistro = function() {
-            const datosActivos = window.obtenerRegistrosActivos();
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => c !== "---" && String(c).toLowerCase() !== "null" && c !== "undefined" && c !== ""))];
+        function filtrarDesdeDashboard(tipo, valor) {
+            cambiarVista('v-base', document.querySelectorAll('.sidebar-nav li')[2]);
+            document.getElementById('buscador-lista').value = "";
+            
+            if(tipo === 'estado') {
+                document.getElementById('filtro-reg-estado').value = valor;
+                document.getElementById('filtro-reg-dx').value = 'ALL';
+                document.getElementById('filtro-reg-lote').value = 'ALL';
+                document.getElementById('filtro-reg-cat').value = 'ALL';
+            } else if(tipo === 'lote') {
+                document.getElementById('filtro-reg-estado').value = 'vivos';
+                document.getElementById('filtro-reg-lote').value = valor;
+                document.getElementById('filtro-reg-cat').value = 'ALL';
+                document.getElementById('filtro-reg-dx').value = 'ALL';
+            } else if(tipo === 'categoria') {
+                document.getElementById('filtro-reg-estado').value = 'vivos';
+                document.getElementById('filtro-reg-cat').value = valor;
+                document.getElementById('filtro-reg-lote').value = 'ALL';
+                document.getElementById('filtro-reg-dx').value = 'ALL';
+            } else if(tipo === 'dx') {
+                document.getElementById('filtro-reg-estado').value = 'vivos';
+                document.getElementById('filtro-reg-dx').value = valor;
+                document.getElementById('filtro-reg-lote').value = 'ALL';
+                document.getElementById('filtro-reg-cat').value = 'ALL';
+            }
+            cargarListaRegistro();
+        }
 
-            let estadoFiltro = document.getElementById('filtro-reg-estado').value;
-            let loteFiltro = document.getElementById('filtro-reg-lote').value;
-            let catFiltro = document.getElementById('filtro-reg-cat').value;
-            let dxFiltro = document.getElementById('filtro-reg-dx').value;
-            let txtBusqueda = document.getElementById('buscador-lista').value.trim().toLowerCase();
+        function procesarDatosDashboard() {
+            const datosActivos = obtenerRegistrosActivos().filter(d => esEventoGanaderoValido(d)); 
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => esCaravanaValida(c)))];
+            let vivas = unicas.filter(car => esAnimalVivo(obtenerHistorial(car)));
+            let cantMuertes = unicas.filter(car => esAnimalMuerto(obtenerHistorial(car))).length;
+            let cantVentas = unicas.filter(car => esAnimalVendido(obtenerHistorial(car))).length;
+            let cantBajas = cantMuertes;
+            unicas = vivas;
 
-            let listaFiltrada = [];
+            document.getElementById('dash-cabezas').innerText = vivas.length; 
+            document.getElementById('dash-acciones').innerText = datosActivos.length;
+            let elBajas = document.getElementById('dash-bajas'); if(elBajas) elBajas.innerText = cantMuertes;
+            let elVentas = document.getElementById('dash-ventas'); if(elVentas) elVentas.innerText = cantVentas;
 
+            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos').innerHTML = "<p style='color:var(--text-main);'>Inventario vacío.</p>"; return; }
+            
+            let g1={p:0,v:0}, g2={}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}, g11={}; let alertasHTML = "";
+            datosActivos.forEach(r => { if(r.accion==='Peso') g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; if(r.accion === 'Baja') { let causa = String(r.valor).trim(); g11[causa] = (g11[causa] || 0) + 1; } });
+            
             unicas.forEach(car => {
-                const regs = window.obtenerHistorial(car);
-                let esMuerto = window.esAnimalMuerto(regs);
-                let esVendido = window.esAnimalVendido(regs);
-
-                if (estadoFiltro === 'vivos' && (esMuerto || esVendido)) return;
-                if (estadoFiltro === 'bajas' && !esMuerto) return;
-                if (estadoFiltro === 'ventas' && !esVendido) return;
-
-                let cat = "-", lote = "General", dx = "-";
-                const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) cat = String(uP.detalles||"").split('|')[0] || "-";
-                const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                if(uC) {
-                    let v = String(uC.valor||"").split('|');
-                    cat = v[0] ? v[0].replace('Cat:','').trim() : cat;
-                    lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-";
+                const regs = obtenerHistorial(car); let catRaw = "Sin Categoría", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                if(uC) { let v=String(uC.valor||"").split('|'); catRaw = v[0] ? v[0].replace('Cat:','').trim() : "Sin Categoría"; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; } 
+                else {
+                    const uP = regs.find(d => d.accion === 'Perfil Master');
+                    if(uP && uP.detalles) { catRaw = String(uP.detalles).split('|')[0] || "Sin Categoría"; }
                 }
-                const uDx = regs.find(d => d.accion === 'Diagnóstico');
+                
+                let catLegible = obtenerNombreCategoriaLegible(catRaw);
+                g2[catLegible] = (g2[catLegible] || 0) + 1;
+                g3[lote] = (g3[lote] || 0) + 1;
+
+                const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => d.accion === 'Peso'); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
+                let esVaca = catLegible.toLowerCase().includes('vaca');
 
                 let loteLow = lote.toLowerCase();
                 let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
                 let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
                 let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
 
-                dx = uDx ? uDx.valor : (esPre ? "Preñada" : (esVacia ? "Vacía" : "-"));
-
-                let catLegible = window.obtenerNombreCategoriaLegible(cat);
-
-                if (loteFiltro !== "ALL" && !lote.includes(loteFiltro)) return;
-                if (catFiltro !== "ALL" && !catLegible.includes(catFiltro)) return;
-
-                if (dxFiltro === "Preñada") {
-                    if (!esPre) return;
-                } else if (dxFiltro === "Vacía") {
-                    if (!esVacia) return;
-                } else if (dxFiltro !== "ALL" && !dx.includes(dxFiltro)) {
-                    return;
+                if (esPre) { 
+                    g1.p++; 
+                    if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++; 
+                    if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } 
+                } else if (esVacia) { 
+                    g1.v++; 
+                    alertasHTML += `<div class="alerta-item peligro" onclick="filtrarDesdeDashboard('dx', 'Vacía')"><span>🔴</span><div><strong style="color:var(--text-main);">${car}</strong> diagnosticada Vacía.</div></div>`; 
+                    if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++; 
+                    if(String(uDx ? uDx.valor : "").includes('Sangre')) g5.san++; else g5.norm++; 
+                    if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; } 
                 }
-
-                if (txtBusqueda !== "") {
-                    let matchTexto = car.toLowerCase().includes(txtBusqueda) ||
-                                     catLegible.toLowerCase().includes(txtBusqueda) ||
-                                     lote.toLowerCase().includes(txtBusqueda) ||
-                                     dx.toLowerCase().includes(txtBusqueda);
-                    if (!matchTexto) return;
-                }
-
-                listaFiltrada.push({ car, catLegible, lote, dx, esMuerto, esVendido });
+                
+                if(uPeso) { 
+                    if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--text-main);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; } 
+                    else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++; 
+                    else g4.opt++; 
+                    let pVal = parseFloat(uPeso.valor); 
+                    if(!isNaN(pVal)) { 
+                        if(esVaca) { g9.vw += pVal; g9.vc++; } 
+                        else { g9.tw += pVal; g9.tc++; } 
+                    } 
+                } 
+                if(uSan) g6.con++; else g6.sin++;
             });
+            
+            const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
+            
+            const prefs = lsGet('tc_prefs_pc', ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']); 
+            let htmlGraficos = ""; 
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#38bdf8'];
 
-            const ul = document.getElementById('tb-registro'); ul.innerHTML = "";
-            if(listaFiltrada.length === 0) {
-                ul.innerHTML = '<li style="text-align:center; color:var(--muted); padding:20px;">No se encontraron registros con estos filtros.</li>';
-                return;
-            }
-
-            let htmlHTML = "";
-            let limiteRender = 100;
-            listaFiltrada.slice(0, limiteRender).forEach(item => {
-                let badgeEstado = '';
-                if (item.esVendido) {
-                    badgeEstado = `<span style="background:#2563eb; color:white; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px; font-weight:bold;">VENTA / SALIDA</span>`;
-                } else if (item.esMuerto) {
-                    badgeEstado = `<span style="background:var(--peligro); color:white; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:8px; font-weight:bold;">MUERTE</span>`;
+            const makePieAndBars = (title, dataObj, totalCount, tipoAccion) => {
+                let keys = Object.keys(dataObj).filter(k => dataObj[k] > 0).sort((a,b)=>dataObj[b]-dataObj[a]);
+                if (keys.length === 0) {
+                    return `<div class="tarjeta">
+                        <h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">${title}</h4>
+                        <p style="text-align:center; color:var(--text-muted); font-size:12px; padding:15px; margin:0;">Sin registros para esta métrica aún.</p>
+                    </div>`;
                 }
-                htmlHTML += `<li onclick="window.navegarDesdeLista('${item.car}')">
-                    <div style="display:flex; flex-direction:column; gap:4px;">
-                        <div style="display:flex; align-items:center;">
-                            <strong style="font-size:18px; color:var(--texto);">${item.car}</strong>${badgeEstado}
-                        </div>
-                        <span style="font-size:12px; color:var(--muted);">${item.catLegible} | Lote: ${item.lote} | Dx: ${item.dx}</span>
-                    </div>
-                    <span style="font-size:20px; color:var(--texto);">›</span>
-                </li>`;
-            });
-            if(listaFiltrada.length > limiteRender) {
-                htmlHTML += `<li style="text-align:center; color:var(--muted); padding:20px;"> Mostrando los primeros ${limiteRender} resultados. Usa el buscador para encontrar más.</li>`;
-            }
-            ul.innerHTML = htmlHTML;
-        };
-
-        window.navegarDesdeLista = function(car) { document.getElementById('buscador-caravana').value = car; document.querySelectorAll('.nav-item')[1].click(); window.buscarCaravanaBtn(); };
-
-        window.guardarDisenoServidor = async function() {
-            const n = document.getElementById('cfg-nom').value.trim();
-            const f = document.getElementById('cfg-logo');
-            let p = async (b64) => {
-                try {
-                    await db.collection('estancias').doc(maestroId).set({ nombre_hacienda: n, logo_hacienda: b64 }, { merge: true });
-                    try {
-                        await db.collection('usuarios').doc(maestroId).update({ hacienda: n });
-                    } catch(errUsu) {}
-                    try {
-                        const opsSnap = await db.collection('usuarios').where('maestroId', '==', maestroId).get();
-                        const batch = db.batch();
-                        opsSnap.forEach(opDoc => {
-                            batch.update(opDoc.ref, { hacienda: n });
-                        });
-                        await batch.commit();
-                    } catch(errOps) {}
-                    usHacienda = n;
-                    let prof = window.lsGet('tc_user_profile', {});
-                    if(prof) { prof.hacienda = n; window.lsSet('tc_user_profile', prof); }
-                    window.lsSet('tc_hacienda', { nombre: n, logo: b64 });
-                    window.aplicarDisenoEnPantalla(n, b64);
-                    let lblPerfilMob = document.getElementById('usuario-activo-lbl');
-                    if (lblPerfilMob) {
-                        let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
-                        lblPerfilMob.value = `${n.toUpperCase()} - ${usNombre} (${isPropietario ? 'Propietario' : 'Operador'})`;
-                    }
-                    window.mostrarToast("✅ Estancia y membrete sincronizados con éxito.");
-                } catch(e) {
-                    window.mostrarToast("❌ Error al actualizar: " + (e.message || e), true);
-                }
-            };
-            if(f.files && f.files[0]) {
-                const r = new FileReader(); r.onload = function(e) {
-                    const img = new Image(); img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        let w = img.width, h = img.height;
-                        const maxW = 200, maxH = 200;
-                        if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } }
-                        else { if (h > maxH) { w = Math.round(h * maxH / h); h = maxH; } }
-                        canvas.width = w; canvas.height = h;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, w, h);
-                        p(canvas.toDataURL('image/png'));
-                    };
-                    img.src = e.target.result;
-                };
-                r.readAsDataURL(f.files[0]);
-            } else {
-                const logoGuardado = window.lsGet('tc_hacienda', {}).logo || "";
-                p(logoGuardado);
-            }
-        };
-
-        window.togglePermisos = function() {
-            const rolEl = document.getElementById('op-rol');
-            const caja = document.getElementById('caja-permisos');
-            if (caja && rolEl) {
-                if (rolEl.value === 'Propietario') {
-                    caja.classList.add('oculto');
-                } else {
-                    caja.classList.remove('oculto');
-                }
-            }
-        };
-
-        window.crearOperador = async function() { 
-            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; } 
-            const n = document.getElementById('op-nombre').value.trim();
-            const u = document.getElementById('op-usu').value.trim().toLowerCase(); 
-            const p = document.getElementById('op-pass').value.trim(); 
-            const rolSel = document.getElementById('op-rol').value;
-            if(!n || !u || !p) { alert("Completar Nombre, Usuario y Contraseña."); return; } 
-            if(p.length < 6) { alert("La contraseña debe tener mínimo 6 caracteres."); return; }
-            let rolFinal = rolSel;
-            if (rolSel === 'Operador') {
-                let permisos = Array.from(document.querySelectorAll('.chk-permiso:checked')).map(c => c.value).join(',');
-                if(!permisos) { alert("Debe seleccionar al menos un permiso."); return; }
-                rolFinal = 'Operador|' + permisos;
-            }
-            const btn = document.getElementById('btn-crear-op'); const btnOriginal = btn.innerHTML;
-            btn.innerHTML = "⏳ Registrando..."; btn.disabled = true;
-            let email = u.includes('@') ? u : u + '@taurus.com';
-            try {
-                const secAppName = "SecondaryAppPeon_" + Date.now(); const secondaryApp = firebase.initializeApp(firebaseConfig, secAppName);
-                await secondaryApp.auth().createUserWithEmailAndPassword(email, p);
-                await secondaryApp.auth().signOut();
-                await secondaryApp.delete(); 
-                let alertasParaOmitir = alertaGlobalIdActual ? [alertaGlobalIdActual] : [];
-                await db.collection('usuarios').doc(email).set({
-                    nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', fecha_alta: new Date().toISOString(), alertas_leidas: alertasParaOmitir
+                let currentAngle = 0; let gradientStops = [];
+                let sumValores = keys.reduce((acc, k) => acc + dataObj[k], 0);
+                let divisor = totalCount > 0 ? totalCount : sumValores;
+                keys.forEach((k, idx) => {
+                    let pct = divisor > 0 ? (dataObj[k] / divisor) * 100 : 0;
+                    let nextAngle = currentAngle + pct;
+                    gradientStops.push(`${colors[idx % colors.length]} ${currentAngle}% ${nextAngle}%`);
+                    currentAngle = nextAngle;
                 });
-                // Operador registrado solo en usuarios - no en eventos de ganado
-                document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 
-                btn.innerHTML = btnOriginal; btn.disabled = false;
-                window.mostrarToast("Usuario Registrado."); window.cargarListaOperadores();
-            } catch(e) {
-                alert("Error al crear la cuenta. Verifique que no esté ya registrado.");
-                btn.innerHTML = btnOriginal; btn.disabled = false;
-            }
-        }
+                let conicStyle = gradientStops.length > 0 ? `background: conic-gradient(${gradientStops.join(', ')});` : 'background: var(--border);';
+                
+                let barsHTML = "";
+                keys.forEach((k, idx) => {
+                    let col = colors[idx % colors.length];
+                    let val = dataObj[k];
+                    let p = divisor > 0 ? Math.round((val / divisor) * 100) : 0;
+                    barsHTML += `<div class="barra-cat" onclick="filtrarDesdeDashboard('${tipoAccion}', '${k}')">
+                        <div class="barra-head"><span><span class="punto" style="background:${col};"></span>${k} (${val})</span><span>${p}%</span></div>
+                        <div class="barra-bg"><div class="barra-fill" style="background:${col}; width:${p}%;"></div></div>
+                    </div>`;
+                });
 
-        window.cargarPermisosEdicion = function() {
-            let u = document.getElementById('op-edit-usu-sel').value;
-            let caja = document.getElementById('caja-edit-permisos');
-            if(!u) { caja.classList.add('oculto'); return; }
-            caja.classList.remove('oculto');
-            db.collection('usuarios').doc(u).get().then(doc => {
-                let perms = "dash,ficha,base,reporte,cora";
-                if(doc.exists && doc.data().rol) {
-                    let rolFull = doc.data().rol;
-                    if(rolFull.includes('|')) perms = rolFull.split('|')[1];
-                    else if(rolFull === 'Propietario') perms = "dash,ficha,base,reporte,cora";
-                    else perms = rolFull; 
+                return `<div class="tarjeta">
+                    <h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">${title}</h4>
+                    <div class="grafico-flex">
+                        <div class="torta-container" onclick="filtrarDesdeDashboard('${tipoAccion}', '${keys[0]||''}')">
+                            <div class="torta" style="${conicStyle}"></div>
+                            <div class="torta-centro">${divisor}</div>
+                        </div>
+                        <div class="contenedor-scroll-analitica">${barsHTML}</div>
+                    </div>
+                </div>`;
+            };
+
+            prefs.forEach(g => {
+                let html = "";
+                if(g === '1') { 
+                    let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0; 
+                    let conicBg = t > 0 ? `conic-gradient(var(--success) 0% ${pp}%, var(--danger) ${pp}% 100%)` : 'var(--border)';
+                    html += `<div class="tarjeta">
+                        <h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Tasa de Preñez Dinámica</h4>
+                        <div class="grafico-flex" style="justify-content:space-around;">
+                            <div class="torta-container" onclick="filtrarDesdeDashboard('dx', 'Preñada')">
+                                <div class="torta" style="background: ${conicBg};"></div>
+                                <div class="torta-centro">${t > 0 ? pp + '%' : '0%'}</div>
+                            </div>
+                            <div style="font-size:12px; line-height:1.8; color:var(--text-main);">
+                                <div style="cursor:pointer;" onclick="filtrarDesdeDashboard('dx', 'Preñada')"><span class="punto" style="background: var(--success);"></span> Preñadas (${g1.p})</div>
+                                <div style="cursor:pointer;" onclick="filtrarDesdeDashboard('dx', 'Vacía')"><span class="punto" style="background: var(--danger);"></span> Vacías (${g1.v})</div>
+                            </div>
+                        </div>
+                    </div>`; 
+                } 
+                else if(g === '2') { html += makePieAndBars("Composición de Hacienda", g2, unicas.length, 'categoria'); } 
+                else if(g === '3') { html += makePieAndBars("Distribución por Lotes", g3, unicas.length, 'lote'); } 
+                else if(g === '4') { 
+                    let t = g4.opt + g4.bp + g4.sp || 1; 
+                    let d4 = { "Óptima": g4.opt, "Bajo Peso": g4.bp, "Sobrepeso": g4.sp };
+                    html += makePieAndBars("Condición Corporal", d4, t, 'estado'); 
+                } 
+                else if(g === '5') { 
+                    let t = g5.norm + g5.san || 1; 
+                    let d5 = { "Normal": g5.norm, "Sangre/Problema": g5.san };
+                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'estado'); 
+                } 
+                else if(g === '6') { 
+                    let t = unicas.length; 
+                    let d6 = { "Con Registro": g6.con, "Sin Registros": g6.sin };
+                    html += makePieAndBars("Sanidad Global", d6, t, 'estado'); 
+                } 
+                else if(g === '7') { 
+                    let d7 = {}; Object.keys(g7).forEach(k => d7[k] = g7[k].p);
+                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote'); 
+                } 
+                else if(g === '8') { 
+                    let d8 = {}; Object.keys(g8).forEach(k => d8[k] = g8[k].p);
+                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'estado'); 
+                } 
+                else if(g === '9') { 
+                    let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0; 
+                    html += `<div class="tarjeta"><h4 style="margin-top:0; color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px;">Promedio de Pesos</h4><div class="grid-2"><div class="kpi-box" style="padding:10px;" onclick="filtrarDesdeDashboard('estado', 'vivos')"><strong style="font-size:20px; color:var(--text-main);">${pv} Kg</strong><span>Vacas</span></div><div class="kpi-box" style="padding:10px;" onclick="filtrarDesdeDashboard('estado', 'vivos')"><strong style="font-size:20px; color:var(--text-main);">${pt} Kg</strong><span>Terneros</span></div></div></div>`; 
+                } 
+                else if(g === '10') { 
+                    let d10 = { "Pesajes": g10.peso, "Diagnósticos": g10.dx, "Nutrición": g10.nut, "Sanidad": g10.san };
+                    let t10 = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1;
+                    html += makePieAndBars("Volumen Clínico", d10, t10, 'estado'); 
+                } 
+                else if(g === '11') { 
+                    let sumG11 = Object.values(g11).reduce((acc, curr) => acc + curr, 0);
+                    let t11 = (cantMuertes > 0 ? cantMuertes : sumG11) || 1;
+                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'estado'); 
                 }
-                document.querySelectorAll('.chk-edit-permiso').forEach(chk => { chk.checked = perms.includes(chk.value); });
-            });
+                htmlGraficos += html;
+            }); document.getElementById('contenedor-graficos').innerHTML = htmlGraficos;
         }
 
-        window.guardarEdicionOperador = async function() {
-            if(!navigator.onLine) { alert("Necesitas conexión."); return; }
-            let u = document.getElementById('op-edit-usu-sel').value;
-            if(!u) return;
-            let permisos = Array.from(document.querySelectorAll('.chk-edit-permiso:checked')).map(c => c.value).join(',');
-            if(!permisos) { alert("Seleccione al menos un permiso."); return; }
-            let rolFinal = 'Operador|' + permisos;
-            const btn = document.getElementById('btn-editar-op'); const btnOriginal = btn.innerHTML;
-            btn.innerHTML = "⏳ Actualizando..."; btn.disabled = true;
-            try {
-                await db.collection('usuarios').doc(u).update({ rol: rolFinal });
-                // Operador actualizado solo en usuarios - no en eventos de ganado
-                window.mostrarToast("Permisos actualizados.");
-                document.getElementById('op-edit-usu-sel').value = "";
-                document.getElementById('caja-edit-permisos').classList.add('oculto');
-                btn.innerHTML = btnOriginal; btn.disabled = false;
-            } catch(e) { alert("Error de red."); btn.innerHTML = btnOriginal; btn.disabled = false; }
-        }
-
-        window.gestionarAuthGhostParaBorrado = async function(email, claveActual) {
-            const secAppName = "SecondaryAppGhostDelete_" + Date.now(); const secondaryApp = firebase.initializeApp(firebaseConfig, secAppName);
-            try {
-                await secondaryApp.auth().signInWithEmailAndPassword(email, claveActual);
-                await secondaryApp.auth().currentUser.delete();
-            } catch(e) { } 
-            finally {
-                try { await secondaryApp.auth().signOut(); } catch(e){}
-                try { await secondaryApp.delete(); } catch(e){}
+        function cambiarVista(v, b) { document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); const target = document.getElementById(v); if(target) target.classList.remove('oculto'); document.querySelectorAll('.sidebar-nav li').forEach(e=>e.classList.remove('activo')); if(b) b.classList.add('activo'); if(v === 'v-dash' && typeof procesarDatosDashboard === 'function') { procesarDatosDashboard(); } }
+        function abrirModal(id) { 
+        const m = document.getElementById(id);
+        if (m) m.style.display = 'flex'; 
+        if (id === 'm-conf') {
+            const fIngEl = document.getElementById('i-conf-fecha-ingreso');
+            if (fIngEl && !fIngEl.value) {
+                fIngEl.value = new Date().toISOString().split('T')[0];
+            }
+            const pIngEl = document.getElementById('i-conf-peso-ingreso');
+            if (pIngEl && (!pIngEl.value || pIngEl.value === '0')) {
+                const elPeso = document.getElementById('val-peso');
+                if (elPeso && elPeso.innerText && elPeso.innerText !== '-') {
+                    let pNum = parseFloat(elPeso.innerText.replace(/[^\d.-]/g, ''));
+                    if (!isNaN(pNum) && pNum > 0) {
+                        pIngEl.value = pNum;
+                    }
+                }
             }
         }
-
-        window.eliminarOperador = async function() {
-            if(!navigator.onLine) { alert("Necesitas conexión a internet."); return; }
-            const selectEl = document.getElementById('op-del-usu-sel');
-            const u = selectEl.value.trim();
-            if(!u) { alert("Seleccione un usuario de la lista."); return; }
-            if(confirm(`⚠️ ATENCIÓN: ¿Está seguro de eliminar el acceso de "${u}"?`)) {
-                const btn = document.getElementById('btn-eliminar-op'); const btnOriginal = btn.innerHTML;
-                btn.innerHTML = "⏳ Eliminando..."; btn.disabled = true;
-                try {
-                    await db.collection('usuarios').doc(u).delete();
-                    window.mostrarToast(`El acceso de ${u} ha sido revocado.`);
-                    selectEl.value = ''; 
-                    if (typeof window.cargarListaOperadores === 'function') window.cargarListaOperadores(); 
-                    btn.innerHTML = btnOriginal; btn.disabled = false;
-                } catch(e) { alert("Hubo un error de conexión."); btn.innerHTML = btnOriginal; btn.disabled = false; } 
-            }
-        }
-
-        window.cargarListaOperadores = async function() {
-            if (!usRol.includes('Propietario') && !usRol.includes('Dueño')) return;
-            try {
-                const snapshot = await db.collection('usuarios').where('maestroId', '==', maestroId).get();
-                const ops = snapshot.docs.filter(doc => doc.id !== maestroId).map(doc => doc.id);
-                const selDel = document.getElementById('op-del-usu-sel');
-                const selEdit = document.getElementById('op-edit-usu-sel');
-                let options = '<option value="">-- Seleccione un usuario --</option>';
-                ops.forEach(o => { options += `<option value="${o}">${o}</option>`; });
-                if(selDel) selDel.innerHTML = options;
-                if(selEdit) selEdit.innerHTML = options;
-            } catch(e) { console.error("Error al cargar operadores", e); }
-        }
-
-        window.cambiarMiContrasena = function() { 
-            if(!navigator.onLine) { alert("Necesitas conexión."); return; } 
-            const nueva = document.getElementById('nueva-clave').value.trim(); 
-            if(!nueva || nueva.length < 6) { alert("Mínimo 6 caracteres requeridos."); return; }
-            const user = firebase.auth().currentUser;
-            if(user) {
-                user.updatePassword(nueva).then(() => {
-                    db.collection('usuarios').doc(user.email).update({ password: nueva }).then(() => {
-                        alert("Contraseña actualizada con éxito."); document.getElementById('nueva-clave').value = '';
-                    });
-                }).catch(e => { alert("Error: Es probable que necesites cerrar e iniciar sesión de nuevo."); });
-            }
-        }
+    } function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
         
-        window.cerrarSesion = function() { 
-            let leidas = localStorage.getItem('tc_alertas_leidas');
-            let mostradas = localStorage.getItem('tc_alertas_mostradas');
-            let prefs = localStorage.getItem('tc_prefs');
-            let tema = localStorage.getItem('tc_tema');
-            let pendientes = localStorage.getItem('tc_pendientes');
-            let dbData = localStorage.getItem('tc_db');
-            firebase.auth().signOut().then(() => {
-                localStorage.clear(); 
-                if(leidas) localStorage.setItem('tc_alertas_leidas', leidas);
-                if(mostradas) localStorage.setItem('tc_alertas_mostradas', mostradas);
-                if(prefs) localStorage.setItem('tc_prefs', prefs);
-                if(tema) localStorage.setItem('tc_tema', tema);
-                if(pendientes) localStorage.setItem('tc_pendientes', pendientes);
-                if(dbData) localStorage.setItem('tc_db', dbData);
-                window.location.reload(); 
-            });
+
+        let timeoutBuscadorRegistro = null;
+        function filtrarListaRegistroDebounced() {
+            clearTimeout(timeoutBuscadorRegistro);
+            timeoutBuscadorRegistro = setTimeout(() => { cargarListaRegistro(); }, 400);
         }
 
-        window.forzarSaltoAFicha = function() {
-            let tabFicha = document.querySelectorAll('.nav-item')[1];
-            if (typeof window.cambiarVista === "function" && tabFicha && tabFicha.style.display !== 'none') {
-                window.cambiarVista('vista-manga', tabFicha);
-            }
-        }
-
-        
-        window.guardarVinculacionRFID = function() {
-            const inputCar = document.getElementById('f-rfid-caravana');
-            const rp = inputCar ? inputCar.value.trim().toUpperCase() : '';
-            if (!rp) {
-                alert("Por favor ingrese el número de RP / Caravana.");
-                if (inputCar) inputCar.focus();
-                return;
-            }
-            if (!rfidPendiente) {
-                alert("No hay ningún chip RFID pendiente de vinculación.");
-                return;
-            }
-            rpActivo = rp;
-            window.ejecutarAccion('Vinculación RFID', rfidPendiente.trim().toLowerCase(), `Chip vinculado: ${rfidPendiente}`, 'modal-rfid');
-            window.mostrarToast(`✅ Chip ${rfidPendiente} vinculado al RP ${rp}`);
-            rfidPendiente = "";
-            window.forzarSaltoAFicha();
-            const buscador = document.getElementById('buscador-caravana');
-            if (buscador) buscador.value = rp;
-            window.buscarCaravanaBtn(rp);
-        };
-
-        window.recibirTagNFC = function(tagHex) {
-            let dataMinuscula = String(tagHex).trim().toLowerCase();
-            let esRFIDRegistrado = dbCache.find(d => (d.accion === 'Vinculación RFID' || d.accion === 'Vinculacion_RFID') && String(d.valor).trim().toLowerCase() === dataMinuscula);
-            if(esRFIDRegistrado) {
-                window.forzarSaltoAFicha();
-                let buscador = document.getElementById('buscador-caravana');
-                if (buscador) buscador.value = esRFIDRegistrado.caravana;
-                if (typeof window.buscarCaravanaBtn === "function") window.buscarCaravanaBtn();
-            } else {
-                rfidPendiente = tagHex;
-                let inputVincular = document.getElementById('f-rfid-caravana');
-                if (inputVincular) inputVincular.value = '';
-                let lblScaneado = document.getElementById('lbl-rfid-scaneado');
-                if (lblScaneado) lblScaneado.innerText = tagHex;
-                if (typeof window.abrirModal === "function") window.abrirModal('modal-rfid');
-                setTimeout(() => { if(inputVincular) inputVincular.focus(); }, 500);
-            }
-        };
-
+        let timeoutBuscadorInforme = null;
         function filtrarInformeDebounced() {
             clearTimeout(timeoutBuscadorInforme);
             timeoutBuscadorInforme = setTimeout(() => { actualizarInformeAvanzado(); }, 400);
@@ -4541,7 +4321,7 @@
                 await secondaryApp.delete(); 
                 let alertasParaOmitir = alertaGlobalIdActual ? [alertaGlobalIdActual] : [];
                 await db.collection('usuarios').doc(email).set({
-                    nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', fecha_alta: new Date().toISOString(), alertas_leidas: alertasParaOmitir
+                    nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', alertas_leidas: alertasParaOmitir
                 });
                 // Operador registrado solo en usuarios - no en eventos de ganado
                 document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 

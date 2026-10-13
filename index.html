@@ -50,7 +50,7 @@
       // Precalentar almacenamiento local CacheStorage con los scripts principales
       if ('caches' in window) {
         window.addEventListener('load', () => {
-          caches.open('taurus-track-pro-v5').then(cache => {
+          caches.open('taurus-control-v5').then(cache => {
             cache.addAll([
               location.href,
               'gemini-svg.png',
@@ -861,12 +861,6 @@
                     <table class="tabla-informe oculto" id="tabla-eventos"><thead><tr><th>Fecha</th><th>Caravana / RP</th><th>Categoría / Lote</th><th>Procedimientos Realizados</th><th>Sanidad / Tratamientos / Pesaje</th><th>Observaciones / Detalles</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
                     <table class="tabla-informe oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Trabajo Realizado</th><th>Valor Principal</th><th>Observaciones</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
                 </div>
-                <!-- PAGINACION DE TABLA -->
-                <div id="paginacion-informe" style="display:flex; justify-content:center; align-items:center; gap:12px; margin-top:10px;">
-                    <button class="btn-guardar" id="btn-inf-prev" onclick="cambiarPaginaInforme(-1)" style="width:auto; padding:4px 14px; font-size:11px; background:var(--panel);">◀ Anterior</button>
-                    <span id="lbl-inf-pagina" style="font-size:12px; color:var(--muted); font-weight:bold;">Página 1 de 1</span>
-                    <button class="btn-guardar" id="btn-inf-next" onclick="cambiarPaginaInforme(1)" style="width:auto; padding:4px 14px; font-size:11px; background:var(--panel);">Siguiente ▶</button>
-                </div>
             </div>
 
             <!-- AJUSTES -->
@@ -1402,87 +1396,65 @@
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.firestore();
 
-        // =========================================================================
-        // MOTOR DE SINCRONIZACIÓN DELTA Y ESCRITURA POR LOTES (ANTI-CUOTAS SPARK)
-        // =========================================================================
+        // ==========================================
+        // SANITIZADOR XSS Y MOTOR DELTA SYNC
+        // ==========================================
+        window.escapeHTML = function(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        };
+
         let syncDeltasEnProgreso = false;
         window.sincronizarDeltasServidor = async function() {
             if (syncDeltasEnProgreso || !navigator.onLine || !maestroId) return;
             syncDeltasEnProgreso = true;
-
             try {
                 let ultimaSync = window.lsGet('tc_last_sync_timestamp', null);
                 let colRef = db.collection('estancias').doc(maestroId).collection('eventos');
                 let snapshot;
-
                 if (ultimaSync) {
-                    // Consulta de deltas: SOLO documentos nuevos posteriores a la última sincronización
                     snapshot = await colRef.where('fecha', '>', ultimaSync).orderBy('fecha', 'asc').limit(400).get();
                 } else {
-                    // Primer arranque en dispositivo nuevo: Descargar lote inicial acotado
                     snapshot = await colRef.orderBy('fecha', 'desc').limit(500).get();
                 }
-
                 if (!snapshot.empty) {
                     let deltas = [];
                     let maxFecha = ultimaSync || '';
-
                     snapshot.forEach(doc => {
                         let d = doc.data();
                         d.id = doc.id;
                         if (window.esEventoGanaderoValido(d)) {
                             deltas.push(d);
-                            if (d.fecha && d.fecha > maxFecha) {
-                                maxFecha = d.fecha;
-                            }
+                            if (d.fecha && d.fecha > maxFecha) maxFecha = d.fecha;
                         }
                     });
-
                     if (deltas.length > 0) {
                         window.fusionarDatos(deltas);
                         if (maxFecha) window.lsSet('tc_last_sync_timestamp', maxFecha);
-
-                        if(rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) { window.buscarCaravanaBtn(rpActivo); }
-                        window.procesarDatosDashboard();
-                        if(!document.getElementById('vista-registro').classList.contains('oculto')) window.cargarListaRegistro();
-                        if(!document.getElementById('vista-informe').classList.contains('oculto')) window.actualizarInformeAvanzado();
+                        if (rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) { window.buscarCaravanaBtn(rpActivo); }
+                        if (typeof window.procesarDatosDashboard === 'function') window.procesarDatosDashboard();
+                        if (!document.getElementById('vista-registro').classList.contains('oculto')) window.cargarListaRegistro();
+                        if (!document.getElementById('vista-informe').classList.contains('oculto')) window.actualizarInformeAvanzado();
                         window.cargarListasFiltrosSelects();
                     }
                 }
-                window.setEstadoRed(true, '🟢 Conectado (Delta Sync)');
-            } catch (err) {
-                console.warn("[Delta Sync Fallo]: Operando 100% offline con caché local:", err);
+                window.setEstadoRed(true, '🟢 Conectado');
+            } catch(e) {
+                console.warn("[Delta Sync Fallo]: Operando en local:", e);
                 window.setEstadoRed(false, '🔴 Red Local');
             } finally {
                 syncDeltasEnProgreso = false;
             }
         };
 
-        // BATCHING: Encolado con sincronización por lotes agrupados
         let debounceBatchSync = null;
         window.programarSyncPorLotes = function() {
             clearTimeout(debounceBatchSync);
             let p = window.lsGet('tc_pendientes', []);
             let delay = p.length >= 15 ? 400 : 3500;
             debounceBatchSync = setTimeout(() => {
-                if (navigator.onLine) {
-                    window.sincronizarPendientesAuto();
-                }
+                if (navigator.onLine) window.sincronizarPendientesAuto();
             }, delay);
-        };
-
-
-        // ==========================================
-        // SANITIZADOR XSS UNIVERSAL
-        // ==========================================
-        window.escapeHTML = function(str) {
-            if (str === null || str === undefined) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
         };
 
 
@@ -1537,17 +1509,12 @@
                 /* MANEJO OFFLINE Y ROBUSTO DEL ARRANQUE DE SESIÓN */
         firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
-                console.log("[Taurus Auth] Sesión activa detectada para:", user.email);
                 const emailClean = (user.email || "").toLowerCase().trim();
                 let cachedProfile = window.lsGet('tc_user_profile', null);
 
-                // Forzar ocultación inmediata de pantalla de login y apertura de app
-                {
-                    let elL = document.getElementById('pantalla-login'); if (elL) elL.classList.add('oculto');
-                    let elA = document.getElementById('pantalla-app'); if (elA) elA.classList.remove('oculto');
-                }
+                let pLogin = document.getElementById('pantalla-login'); if (pLogin) pLogin.classList.add('oculto');
+                let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.remove('oculto');
 
-                // Si hay perfil en caché que coincide, arrancar de inmediato
                 if (cachedProfile && (cachedProfile.email || "").toLowerCase() === emailClean) {
                     window.arrancarSistemaFirebase(
                         emailClean,
@@ -1559,7 +1526,6 @@
                     );
                 }
 
-                // Obtener datos frescos desde Firestore con fallback automático
                 let userData = null;
                 try {
                     let docSnap = await db.collection('usuarios').doc(emailClean).get();
@@ -1570,12 +1536,10 @@
                         userData = docSnap.data();
                         userData.email = emailClean;
                     }
-                } catch(errFirestore) {
-                    console.warn("[Taurus Auth] Fallo al leer /usuarios/ de Firestore:", errFirestore.message);
+                } catch(e) {
+                    console.warn("[Taurus Auth] Fallo al consultar Firestore:", e.message);
                 }
 
-                // Si el usuario no tiene documento en /usuarios/ (ej: cuenta creada directamente en Firebase Auth),
-                // se inicializa como Propietario independiente para que pueda entrar y usar la app inmediatamente.
                 if (!userData) {
                     userData = {
                         email: emailClean,
@@ -1592,11 +1556,7 @@
 
                 if (userData.vencimiento && userData.vencimiento !== 'Heredado' && userData.vencimiento !== 'Perpetua') {
                     let fLimit = new Date(userData.vencimiento.includes('T') ? userData.vencimiento : userData.vencimiento + "T23:59:59");
-                    if (!isNaN(fLimit.getTime()) && new Date() > fLimit) { 
-                        window.cerrarSesion(); 
-                        alert("Su licencia ha vencido."); 
-                        return; 
-                    }
+                    if (!isNaN(fLimit.getTime()) && new Date() > fLimit) { window.cerrarSesion(); alert("Su licencia ha vencido."); return; }
                 }
 
                 window.arrancarSistemaFirebase(
@@ -1609,13 +1569,9 @@
                 );
 
             } else {
-                console.log("[Taurus Auth] Sin usuario autenticado. Mostrando pantalla de login.");
-                const elLogin = document.getElementById('pantalla-login');
-                if (elLogin) elLogin.classList.remove('oculto');
-                const elApp = document.getElementById('pantalla-app');
-                if (elApp) elApp.classList.add('oculto');
-                const btn = document.getElementById('btn-ingreso');
-                if (btn) { btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
+                let pLogin = document.getElementById('pantalla-login'); if (pLogin) pLogin.classList.remove('oculto');
+                let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.add('oculto');
+                let btn = document.getElementById('btn-ingreso'); if (btn) { btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
             }
         });
 
@@ -1923,7 +1879,7 @@
  
         window.addEventListener('offline', () => window.setEstadoRed(false));
 
-                window.procesarIngreso = async function() {
+        window.procesarIngreso = async function() {
             let u = document.getElementById('usuario').value.trim();
             const p = document.getElementById('password').value.trim();
             const btn = document.getElementById('btn-ingreso');
@@ -1935,7 +1891,7 @@
             }
 
             if (!navigator.onLine) {
-                if (err) { err.innerText = "❌ Sin conexión a Internet para autenticar."; err.style.display = 'block'; }
+                if (err) { err.innerText = "❌ Sin conexión a Internet."; err.style.display = 'block'; }
                 return;
             }
 
@@ -1945,10 +1901,9 @@
             let email = u.includes('@') ? u.toLowerCase() : u.toLowerCase() + '@taurus.com';
             try {
                 await firebase.auth().signInWithEmailAndPassword(email, p);
-                // onAuthStateChanged se activa y arranca la aplicación
             } catch(error) {
                 console.error("[Login Error]:", error);
-                let msg = "Usuario no registrado o contraseña incorrecta.";
+                let msg = "Usuario no registrado o clave incorrecta.";
                 if (error.code === 'auth/network-request-failed') msg = "Fallo de conexión con el servidor.";
                 if (error.code === 'auth/too-many-requests') msg = "Demasiados intentos fallidos. Espere un momento.";
                 if (err) { err.innerText = msg; err.style.display = 'block'; }
@@ -1963,14 +1918,8 @@
             fetch("https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec", { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
         }
 
-                window.arrancarSistemaFirebase = function(u, m, r, nombreCompleto, hacienda, featuresStr) {
+        window.arrancarSistemaFirebase = function(u, m, r, nombreCompleto, hacienda, featuresStr) {
             try {
-                // Forzar visualización de la app y ocultar login inmediatamente
-                {
-                    let elL = document.getElementById('pantalla-login'); if (elL) elL.classList.add('oculto');
-                    let elA = document.getElementById('pantalla-app'); if (elA) elA.classList.remove('oculto');
-                }
-
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
 
                 window.estanciaFeatures = String(featuresStr || "");
@@ -1978,7 +1927,11 @@
                 if(profInit && featuresStr) { profInit.features = window.estanciaFeatures; window.lsSet('tc_user_profile', profInit); }
                 window.actualizarVisibilidadCora();
 
-                // 1. CARGA INMEDIATA DESDE CACHÉ LOCAL (CERO LECTURAS FIRESTORE AL INICIAR)
+                // 1. Ocultar login de inmediato
+                let pLogin = document.getElementById('pantalla-login'); if (pLogin) pLogin.classList.add('oculto');
+                let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.remove('oculto');
+
+                // 2. Carga inmediata local (Zero Reads en Firestore)
                 let cachedDB = window.lsGet('tc_db', []);
                 if (cachedDB && cachedDB.length > 0) {
                     dbCache = cachedDB;
@@ -1987,10 +1940,10 @@
                     window.cargarListaOperadores();
                 }
 
-                // 2. SINCRONIZACIÓN DELTA INTELIGENTE (SOLO NOVEDADES)
+                // 3. Sincronización Delta Incremental (Anti-Cuotas Spark)
                 window.sincronizarDeltasServidor();
 
-                // 3. VERIFICACIÓN PERIÓDICA EN SEGUNDO PLANO (CADA 60s, NO LISTENER PERMANENTE)
+                // 4. Chequeo periódico cada 60s
                 if (window.syncIntervalTimer) clearInterval(window.syncIntervalTimer);
                 window.syncIntervalTimer = setInterval(() => {
                     if (navigator.onLine && document.visibilityState === 'visible') {
@@ -2098,9 +2051,8 @@
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
 
-                window.fusionarDatos = function(nuevos) {
+        window.fusionarDatos = function(nuevos) {
             let mapa = new Map();
-            // 1. Mantener base de datos local existente
             if (Array.isArray(dbCache)) {
                 dbCache.forEach(d => {
                     if (d && (d.id || d.fecha)) {
@@ -2109,7 +2061,6 @@
                     }
                 });
             }
-            // 2. Fusionar deltas descargados del servidor
             if (Array.isArray(nuevos)) {
                 nuevos.forEach(d => {
                     if (d && window.esEventoGanaderoValido(d) && (d.caravana === '---' || window.esCaravanaValida(d.caravana))) {
@@ -2118,7 +2069,6 @@
                     }
                 });
             }
-            // 3. Fusionar registros pendientes locales
             let pendientes = window.lsGet('tc_pendientes', []);
             if (Array.isArray(pendientes)) {
                 pendientes.forEach(d => {
@@ -2148,16 +2098,31 @@
             if(imgCfg) imgCfg.src = l;
         }
 
+        let syncEnCurso = false;
         window.sincronizarPendientesAuto = async function() {
-            let p = window.lsGet('tc_pendientes', []); 
-            if(!p || p.length === 0) return;
-            if(navigator.onLine && maestroId) {
-                try {
+            if (syncEnCurso || !navigator.onLine || !maestroId) return;
+            let p = window.lsGet('tc_pendientes', []);
+            if (!p || p.length === 0) {
+                window.setEstadoRed(true, '🟢 Conectado');
+                return;
+            }
+
+            syncEnCurso = true;
+            window.setEstadoRed(false, `⏳ Sincronizando ${p.length}...`);
+
+            try {
+                const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
+                const BATCH_LIMIT = 400;
+                const idsSincronizados = new Set();
+
+                for (let i = 0; i < p.length; i += BATCH_LIMIT) {
+                    const chunk = p.slice(i, i + BATCH_LIMIT);
                     const batch = db.batch();
-                    const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
-                    
-                    p.forEach(obj => {
+
+                    chunk.forEach(obj => {
                         if (!obj) return;
+                        let docId = obj.id || colRef.doc().id;
+                        obj.id = docId;
                         if (obj.accion === 'update' && obj.id) {
                             batch.update(colRef.doc(obj.id), {
                                 valor: obj.valor || '-',
@@ -2165,35 +2130,25 @@
                                 fecha: obj.fecha || new Date().toISOString()
                             });
                         } else {
-                            let docId = obj.id || colRef.doc().id;
-                            obj.id = docId;
                             batch.set(colRef.doc(docId), obj, { merge: true });
                         }
+                        idsSincronizados.add(docId);
                     });
-                    
+
                     await batch.commit();
-                    
-                    // Notificar y respaldar en Apps Script sin duplicación
-                    try {
-                        const fd = new URLSearchParams();
-                        fd.append('accion', 'sincronizar_lote');
-                        fd.append('maestro', maestroId);
-                        fd.append('usuario', usActivo || 'Operador');
-                        fd.append('eventos', JSON.stringify(p));
-                        fetch('https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec', {
-                            method: 'POST',
-                            body: fd,
-                            mode: 'no-cors'
-                        }).catch(() => {});
-                    } catch(exGAS) {}
-                    
-                    window.lsSet('tc_pendientes', []);
-                    window.setEstadoRed(true, '🟢 Conectado');
-                    window.mostrarToast('✅ Sincronizados ' + p.length + ' registros locales con la nube.');
-                } catch(e) {
-                    console.warn('[Taurus Sync] Error al confirmar lote en Firestore:', e);
-                    window.setEstadoRed(false, '💾 ' + p.length + ' pendientes');
                 }
+
+                const colaActual = window.lsGet('tc_pendientes', []);
+                const nuevaCola = colaActual.filter(item => !idsSincronizados.has(item.id));
+                window.lsSet('tc_pendientes', nuevaCola);
+
+                window.setEstadoRed(true, '🟢 Conectado');
+                window.mostrarToast(`✅ ${idsSincronizados.size} registros sincronizados.`);
+            } catch(e) {
+                console.warn('[Taurus Sync Error]:', e);
+                window.setEstadoRed(false, '💾 ' + p.length + ' pendientes');
+            } finally {
+                syncEnCurso = false;
             }
         };
 
@@ -2714,7 +2669,7 @@
             } catch(e) { console.error("Error al visualizar ficha", e); }
         }
 
-                window.ejecutarAccion = function(tipo, val, det, modalId) {
+        window.ejecutarAccion = function(tipo, val, det, modalId) {
             if ('vibrate' in navigator) { try { navigator.vibrate(50); } catch(e){} }
             let car = rpActivo;
             if (tipo.includes('Operador') || tipo === 'Alta Operador' || tipo === 'Edición Operador' || tipo === 'Baja Operador') {
@@ -2731,25 +2686,17 @@
             }
 
             const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
-            const docId = colRef.doc().id;
-            const nowIso = new Date().toISOString();
-            const obj = { id: docId, fecha: nowIso, accion: tipo, caravana: car, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
-
-            // 1. Actualización inmediata local (Cero latencia de UI)
+            const docRef = colRef.doc();
+            const obj = { id: docRef.id, fecha: new Date().toISOString(), accion: tipo, caravana: car, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
             dbCache.unshift(obj); historiaCache = null; activosCache = null; window.buscarCaravanaBtn(rpActivo); window.procesarDatosDashboard();
             if(modalId) window.cerrarModal(modalId);
-
-            // 2. Encolar para escritura atómica
-            let p = window.lsGet('tc_pendientes', []); 
-            p.push(obj); 
-            window.lsSet('tc_pendientes', p);
-
-            // 3. Escritura por lotes agrupados (Anti-agotamiento de escrituras en Spark)
-            window.programarSyncPorLotes();
-
             if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador' && tipo !== 'Alta Operador' && tipo !== 'Baja Operador') {
                 window.notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
             }
+            
+            // Encolar y programar escritura por lotes agrupados (Anti-límites Spark)
+            let p = window.lsGet('tc_pendientes', []); p.push(obj); window.lsSet('tc_pendientes', p);
+            window.programarSyncPorLotes();
         };
 
         window.prepararGuardado = function(mId, t) {
@@ -3498,18 +3445,6 @@
             };
         };
 
-                // =========================================================================
-        // REPORTEADOR ESTRICTO TAURUS TRACK PRO (REGLAS DE SEPARACIÓN TOTAL)
-        // =========================================================================
-        let infPaginaActual = 1;
-        const INF_ITEMS_POR_PAGINA = 50;
-
-        window.cambiarPaginaInforme = function(delta) {
-            infPaginaActual += delta;
-            if (infPaginaActual < 1) infPaginaActual = 1;
-            window.actualizarInformeAvanzado();
-        };
-
         window.actualizarInformeAvanzado = function() {
             const modoEl = document.getElementById('f-inf-modo');
             const modo = modoEl ? modoEl.value : 'inventario';
@@ -3546,14 +3481,12 @@
             const btnPrint = document.getElementById('btn-print-magico');
             const elInfTotal = document.getElementById('inf-total');
             const elInfPrenadas = document.getElementById('inf-prenadas');
-            const paginacionEl = document.getElementById('paginacion-informe');
 
             // ---------------------------------------------------------------------
             // CASO A: BÚSQUEDA POR RP INDIVIDUAL (APLICACIÓN DE REGLAS DE SEPARACIÓN ESTRICTA)
             // ---------------------------------------------------------------------
             if (fRp !== "") {
                 rpPrint = fRp;
-                if (paginacionEl) paginacionEl.style.display = 'none';
                 const regsAnimalRaw = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(fRp) : [];
                 pdfExportData = [];
 
@@ -3749,7 +3682,6 @@
             // ---------------------------------------------------------------------
             rpPrint = "";
             if (btnPrint) btnPrint.innerHTML = `🖨️ Descargar Informe PDF`;
-            if (paginacionEl) paginacionEl.style.display = 'flex';
 
             if(modo === 'inventario') {
                 if(tMasiva) tMasiva.classList.remove('oculto');
@@ -3762,11 +3694,11 @@
                 const fCarimbo = document.getElementById('f-inf-carimbo') ? document.getElementById('f-inf-carimbo').value : "ALL";
 
                 let vivas = unicas.filter(car => window.esAnimalVivo(window.obtenerHistorial(car)));
-                let listaFiltrada = [];
                 let countPre = 0;
+                let bufferHTML = "";
                 pdfExportData = [];
 
-                vivas.forEach(car => {
+                vivas.slice(0, 100).forEach(car => {
                     const regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(car) : [];
                     let cat = "-", peso = "-", dx = "-", lote = "-", carimbo = "-";
                     const uP = regs.find(d => d.accion === 'Perfil Master');
@@ -3800,69 +3732,37 @@
 
                     if(pasa) {
                         if(esPre) countPre++;
-                        listaFiltrada.push({ car, carimbo, catLegible, lote, peso, dx });
                         pdfExportData.push([`${car} - Cb:${carimbo}`, catLegible, lote, peso, dx]);
+                        bufferHTML += `<tr><td><strong>${window.escapeHTML(car)}</strong><br><span style="font-size:10px; color:var(--muted);">Cb: ${window.escapeHTML(carimbo)}</span></td><td>${window.escapeHTML(catLegible)}</td><td>${window.escapeHTML(lote)}</td><td><strong>${window.escapeHTML(peso)}</strong></td><td>${window.escapeHTML(dx)}</td></tr>`;
                     }
                 });
 
-                const totalItems = listaFiltrada.length;
-                const totalPaginas = Math.max(1, Math.ceil(totalItems / INF_ITEMS_POR_PAGINA));
-                if (infPaginaActual > totalPaginas) infPaginaActual = totalPaginas;
-
-                const inicio = (infPaginaActual - 1) * INF_ITEMS_POR_PAGINA;
-                const itemsPagina = listaFiltrada.slice(inicio, inicio + INF_ITEMS_POR_PAGINA);
-
-                let bufferHTML = "";
-                itemsPagina.forEach(it => {
-                    bufferHTML += `<tr><td><strong>${window.escapeHTML(it.car)}</strong><br><span style="font-size:10px; color:var(--muted);">Cb: ${window.escapeHTML(it.carimbo)}</span></td><td>${window.escapeHTML(it.catLegible)}</td><td>${window.escapeHTML(it.lote)}</td><td><strong>${window.escapeHTML(it.peso)}</strong></td><td>${window.escapeHTML(it.dx)}</td></tr>`;
-                });
-
                 if(tbodyMasivo) tbodyMasivo.innerHTML = bufferHTML || '<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--muted);">No se encontraron animales con los filtros indicados.</td></tr>';
-                if(elInfTotal) elInfTotal.innerText = totalItems;
+                if(elInfTotal) elInfTotal.innerText = vivas.length;
                 if(elInfPrenadas) elInfPrenadas.innerText = countPre;
-                const lblPag = document.getElementById('lbl-inf-pagina');
-                if (lblPag) lblPag.innerText = `Página ${infPaginaActual} de ${totalPaginas} (${totalItems} cabezas)`;
 
             } else if(modo === 'bajas') {
                 if(tBajas) tBajas.classList.remove('oculto');
                 if (cajaKpiPre) cajaKpiPre.style.display = 'none';
                 if (lblTotal) lblTotal.innerText = "Bajas por Mortandad";
 
-                const fCausa = document.getElementById('f-inf-baja-causa') ? document.getElementById('f-inf-baja-causa').value : "ALL";
-                const fDesde = document.getElementById('f-inf-baja-desde') ? document.getElementById('f-inf-baja-desde').value : "";
-                const fHasta = document.getElementById('f-inf-baja-hasta') ? document.getElementById('f-inf-baja-hasta').value : "";
-
-                let listaBajas = [];
+                let bufferBajas = "";
                 pdfExportData = [];
 
                 unicas.forEach(car => {
                     const regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(car) : [];
                     if(!window.esAnimalMuerto(regs)) return;
-
                     const bajaEvt = regs.find(r => r.accion === 'Baja' || r.accion === 'Muerte');
                     if(bajaEvt) {
                         let causa = bajaEvt.valor || "No especificada";
                         let fDate = bajaEvt.fecha ? String(bajaEvt.fecha).split('T')[0] : "";
                         let obs = bajaEvt.detalles || "-";
-
-                        let pasa = true;
-                        if(fCausa !== "ALL" && !causa.toLowerCase().includes(fCausa.toLowerCase())) pasa = false;
-                        if(fDesde && fDate && fDate < fDesde) pasa = false;
-                        if(fHasta && fDate && fDate > fHasta) pasa = false;
-
-                        if(pasa) {
-                            listaBajas.push({ car, fDate, causa, obs });
-                            pdfExportData.push([fDate, car, causa, obs]);
-                        }
+                        pdfExportData.push([fDate, car, causa, obs]);
+                        bufferBajas += `<tr><td>${window.escapeHTML(fDate)}</td><td><strong>${window.escapeHTML(car)}</strong></td><td><span class="badge" style="background:var(--peligro); color:white; padding:2px 8px; border-radius:4px; font-weight:bold;">${window.escapeHTML(causa)}</span></td><td>${window.escapeHTML(obs)}</td></tr>`;
                     }
                 });
-
-                let bufferBajas = "";
-                listaBajas.slice(0, 100).forEach(b => {
-                    bufferBajas += `<tr><td>${window.escapeHTML(b.fDate)}</td><td><strong>${window.escapeHTML(b.car)}</strong></td><td><span class="badge" style="background:var(--peligro); color:white; padding:2px 8px; border-radius:4px; font-weight:bold;">${window.escapeHTML(b.causa)}</span></td><td>${window.escapeHTML(b.obs)}</td></tr>`;
-                });
                 if(tbodyBajas) tbodyBajas.innerHTML = bufferBajas || '<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--muted);">No hay bajas por mortandad registradas.</td></tr>';
-                if(elInfTotal) elInfTotal.innerText = listaBajas.length;
+                if(elInfTotal) elInfTotal.innerText = pdfExportData.length;
                 if(elInfPrenadas) elInfPrenadas.innerText = "-";
 
             } else if(modo === 'ventas') {
@@ -3870,29 +3770,23 @@
                 if (cajaKpiPre) cajaKpiPre.style.display = 'none';
                 if (lblTotal) lblTotal.innerText = "Cabezas Despachadas / Vendidas";
 
-                let listaVentas = [];
+                let bufferVentas = "";
                 pdfExportData = [];
 
                 unicas.forEach(car => {
                     const regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(car) : [];
                     if(!window.esAnimalVendido(regs)) return;
-
                     const salidaEvt = regs.find(r => r.accion === 'Venta' || (r.accion === 'Baja' && window.esAnimalVendido([r])));
                     if(salidaEvt) {
                         let tipoSalida = salidaEvt.valor || "Venta Comercial";
                         let fDate = salidaEvt.fecha ? String(salidaEvt.fecha).split('T')[0] : "";
                         let obsTxt = salidaEvt.detalles || "-";
-                        listaVentas.push({ car, fDate, tipoSalida, obsTxt });
                         pdfExportData.push([fDate, car, tipoSalida, "-", obsTxt]);
+                        bufferVentas += `<tr><td>${window.escapeHTML(fDate)}</td><td><strong>${window.escapeHTML(car)}</strong></td><td><span class="badge" style="background:#2563eb; color:white; font-weight:bold; padding:2px 8px; border-radius:4px;">${window.escapeHTML(tipoSalida)}</span></td><td>-</td><td>${window.escapeHTML(obsTxt)}</td></tr>`;
                     }
                 });
-
-                let bufferVentas = "";
-                listaVentas.slice(0, 100).forEach(v => {
-                    bufferVentas += `<tr><td>${window.escapeHTML(v.fDate)}</td><td><strong>${window.escapeHTML(v.car)}</strong></td><td><span class="badge" style="background:#2563eb; color:white; font-weight:bold; padding:2px 8px; border-radius:4px;">${window.escapeHTML(v.tipoSalida)}</span></td><td>-</td><td>${window.escapeHTML(v.obsTxt)}</td></tr>`;
-                });
                 if(tbodyVentas) tbodyVentas.innerHTML = bufferVentas || '<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--muted);">No hay ventas registradas.</td></tr>';
-                if(elInfTotal) elInfTotal.innerText = listaVentas.length;
+                if(elInfTotal) elInfTotal.innerText = pdfExportData.length;
                 if(elInfPrenadas) elInfPrenadas.innerText = "-";
 
             } else if(modo === 'pesajes') {
@@ -3900,7 +3794,7 @@
                 if (cajaKpiPre) cajaKpiPre.style.display = 'none';
                 if (lblTotal) lblTotal.innerText = "Cabezas Evaluadas";
 
-                let analisis = window.obtenerAnalisisCompletoPesajes("ALL", "ALL", "ALL", "todo", "", "");
+                let analisis = typeof window.obtenerAnalisisCompletoPesajes === 'function' ? window.obtenerAnalisisCompletoPesajes("ALL", "ALL", "ALL", "todo", "", "") : { animales: [] };
                 let bufferPes = "";
                 pdfExportData = [];
 
@@ -3909,9 +3803,7 @@
                     let colAct = `${a.pesoActual.toFixed(1)} Kg`;
                     let pdfDiff = a.diffKg !== null ? `${a.diffKg > 0 ? "+" : ""}${a.diffKg.toFixed(1)} Kg` : "-";
                     let pdfGDP = a.gdp !== null ? `${a.gdp >= 0 ? "+" : ""}${a.gdp.toFixed(1)} Kg/d` : "-";
-
                     pdfExportData.push([a.caravana, a.catLote, colAnt, colAct, pdfDiff, pdfGDP, a.estado]);
-
                     bufferPes += `<tr><td><strong>${window.escapeHTML(a.caravana)}</strong></td><td>${window.escapeHTML(a.catLote)}</td><td>${colAnt}</td><td><strong>${colAct}</strong></td><td>${pdfDiff}</td><td>${pdfGDP}</td><td>${window.escapeHTML(a.estado)}</td></tr>`;
                 });
 
@@ -3976,7 +3868,7 @@
             return str.trim();
         }
 
-                window.ejecutarDescargaPDF = function() {
+        window.ejecutarDescargaPDF = function() {
             const btn = document.getElementById('btn-print-magico');
             const textoOriginal = btn.innerText; 
             btn.innerText = "⏳ Generando PDF...";
@@ -4010,12 +3902,10 @@
                         doc.setLineWidth(0.5); doc.line(14, 35, 196, 35);
                     };
 
-                    // SEPARACIÓN ESTRICTA EN PDF PARA RP INDIVIDUAL
                     if (rpPrint !== "") {
                         const rpLimpio = rpPrint.toUpperCase();
                         
                         if (modo === 'inventario') {
-                            // 1. INVENTARIO: DOSSIER CLÍNICO INTEGRAL
                             addMembrete(`Dossier Clínico Integral - RP: ${rpLimpio}`);
                             doc.autoTable({
                                 startY: 42,
@@ -4025,7 +3915,6 @@
                                 headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' }
                             });
                         } else if (modo === 'pesajes') {
-                            // 2. PESAJES: HISTORIAL EXCLUSIVO DE PESAJE
                             addMembrete(`Historial Exclusivo de Pesaje - RP: ${rpLimpio}`);
                             doc.autoTable({
                                 startY: 42,
@@ -4035,7 +3924,6 @@
                                 headStyles: { fillColor: [5, 150, 105], textColor: 255, fontStyle: 'bold' }
                             });
                         } else if (modo === 'bajas') {
-                            // 3. MORTANDAD: CERTIFICADO DE BAJA
                             addMembrete(`Certificado Oficial de Mortandad - RP: ${rpLimpio}`);
                             doc.autoTable({
                                 startY: 42,
@@ -4045,7 +3933,6 @@
                                 headStyles: { fillColor: [220, 38, 38], textColor: 255, fontStyle: 'bold' }
                             });
                         } else if (modo === 'ventas') {
-                            // 4. VENTAS: COMPROBANTE DE DESPACHO
                             addMembrete(`Registro de Venta y Despacho - RP: ${rpLimpio}`);
                             doc.autoTable({
                                 startY: 42,
@@ -4055,7 +3942,6 @@
                                 headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' }
                             });
                         } else if (modo === 'eventos') {
-                            // 5. SANIDAD: HISTORIAL MÉDICO
                             addMembrete(`Historial de Tratamientos y Sanidad - RP: ${rpLimpio}`);
                             doc.autoTable({
                                 startY: 42,
@@ -4065,7 +3951,6 @@
                                 headStyles: { fillColor: [124, 58, 237], textColor: 255, fontStyle: 'bold' }
                             });
                         } else if (modo === 'confinamiento') {
-                            // 6. CONFINAMIENTO: FICHA DE ENGORDE
                             addMembrete(`Ficha de Confinamiento y Feedlot - RP: ${rpLimpio}`);
                             doc.autoTable({
                                 startY: 42,
@@ -4076,7 +3961,6 @@
                             });
                         }
                     } else {
-                        // REPORTE MASIVO
                         const titulos = {
                             'inventario': 'Inventario General Consolidado',
                             'pesajes': 'Informe de Pesajes y Ganancia de Peso',
@@ -4104,6 +3988,248 @@
             }, 100);
         };
 
+        window.verificarLimiteGraficos = function(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { alert('Solo puede fijar 3 gráficas simultáneas.'); checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); window.lsSet('tc_prefs', prefs); if(dbCache.length > 0) window.procesarDatosDashboard(); } }
+
+        window.filtrarDesdeDashboard = function(tipo, valor) {
+            window.cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]);
+            document.getElementById('buscador-lista').value = "";
+
+            if(tipo === 'estado') {
+                document.getElementById('filtro-reg-estado').value = valor;
+                document.getElementById('filtro-reg-dx').value = 'ALL';
+                document.getElementById('filtro-reg-lote').value = 'ALL';
+                document.getElementById('filtro-reg-cat').value = 'ALL';
+            } else if(tipo === 'lote') {
+                document.getElementById('filtro-reg-estado').value = 'vivos';
+                document.getElementById('filtro-reg-lote').value = valor;
+                document.getElementById('filtro-reg-cat').value = 'ALL';
+                document.getElementById('filtro-reg-dx').value = 'ALL';
+            } else if(tipo === 'categoria') {
+                document.getElementById('filtro-reg-estado').value = 'vivos';
+                document.getElementById('filtro-reg-cat').value = valor;
+                document.getElementById('filtro-reg-lote').value = 'ALL';
+                document.getElementById('filtro-reg-dx').value = 'ALL';
+            } else if(tipo === 'dx') {
+                document.getElementById('filtro-reg-estado').value = 'vivos';
+                document.getElementById('filtro-reg-dx').value = valor;
+                document.getElementById('filtro-reg-lote').value = 'ALL';
+                document.getElementById('filtro-reg-cat').value = 'ALL';
+            }
+            window.cargarListaRegistro();
+        }
+
+        window.procesarDatosDashboard = function() {
+            const datosActivos = window.obtenerRegistrosActivos().filter(d => window.esEventoGanaderoValido(d)); 
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => window.esCaravanaValida(c)))];
+            let vivas = unicas.filter(car => window.esAnimalVivo(window.obtenerHistorial(car)));
+            let cantMuertes = unicas.filter(car => window.esAnimalMuerto(window.obtenerHistorial(car))).length;
+            let cantVentas = unicas.filter(car => window.esAnimalVendido(window.obtenerHistorial(car))).length;
+            let cantBajas = cantMuertes;
+            unicas = vivas;
+            
+            document.getElementById('dash-cabezas').innerText = vivas.length; 
+            document.getElementById('dash-acciones').innerText = datosActivos.length;
+            let elBajas = document.getElementById('dash-bajas'); if(elBajas) elBajas.innerText = cantMuertes;
+            let elVentas = document.getElementById('dash-ventas'); if(elVentas) elVentas.innerText = cantVentas;
+
+            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos-dinamicos').innerHTML = "<p style='color:var(--muted); text-align:center; padding:20px;'>Inventario vacío.</p>"; return; }
+            
+            let g1={p:0,v:0}, g2={}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}, g11={}; let alertasHTML = "";
+            datosActivos.forEach(r => { if(String(r.accion).includes('Peso')) g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; if(r.accion === 'Baja') { let causa = String(r.valor).trim(); g11[causa] = (g11[causa] || 0) + 1; } });
+            
+            unicas.forEach(car => {
+                const regs = window.obtenerHistorial(car); let catRaw = "Sin Categoría", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                if(uC) { let v=String(uC.valor||"").split('|'); catRaw = v[0] ? v[0].replace('Cat:','').trim() : "Sin Categoría"; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; }
+                else {
+                    const uP = regs.find(d => d.accion === 'Perfil Master');
+                    if(uP && uP.detalles) { catRaw = String(uP.detalles).split('|')[0] || "Sin Categoría"; }
+                }
+
+                let catLegible = window.obtenerNombreCategoriaLegible(catRaw);
+                g2[catLegible] = (g2[catLegible] || 0) + 1;
+                g3[lote] = (g3[lote] || 0) + 1;
+
+                const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => String(d.accion).includes('Peso')); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
+                let esVaca = catLegible.toLowerCase().includes('vaca');
+
+                let loteLow = lote.toLowerCase();
+                let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
+                let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
+                let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
+
+                if (esPre) {
+                    g1.p++;
+                    if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++;
+                    if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; }
+                } else if (esVacia) {
+                    g1.v++;
+                    alertasHTML += `<div class="alerta-item peligro" onclick="window.filtrarDesdeDashboard('dx', 'Vacía')"><span>🔴</span><div><strong style="color:var(--texto);">${car}</strong> diagnosticada Vacía.</div></div>`;
+                    if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++;
+                    if(String(uDx ? uDx.valor : "").includes('Sangre')) g5.san++; else g5.norm++;
+                    if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; }
+                }
+                
+                if(uPeso) {
+                    if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="window.navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--texto);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; }
+                    else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++;
+                    else g4.opt++;
+                    let pVal = parseFloat(String(uPeso.valor).replace(/[^\d.-]/g, ''));
+                    if(!isNaN(pVal)) {
+                        if(esVaca) { g9.vw += pVal; g9.vc++; }
+                        else { g9.tw += pVal; g9.tc++; }
+                    }
+                }
+                if(uSan) g6.con++; else g6.sin++;
+            });
+
+            const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
+            const prefs = window.lsGet('tc_prefs', ['1', '3']); let htmlGraficos = "";
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#38bdf8'];
+
+            const makePieAndBars = (title, dataObj, totalCount, tipoAccion) => {
+                let keys = Object.keys(dataObj).filter(k => dataObj[k] > 0).sort((a,b)=>dataObj[b]-dataObj[a]);
+                if (keys.length === 0) {
+                    return `<div class="tarjeta">
+                        <div class="tarjeta-titulo">${title}</div>
+                        <p style="text-align:center; color:var(--muted); font-size:12px; padding:15px; margin:0;">Sin registros para esta métrica aún.</p>
+                    </div>`;
+                }
+                let currentAngle = 0; let gradientStops = [];
+                let sumValores = keys.reduce((acc, k) => acc + dataObj[k], 0);
+                let divisor = totalCount > 0 ? totalCount : sumValores;
+                keys.forEach((k, idx) => {
+                    let pct = divisor > 0 ? (dataObj[k] / divisor) * 100 : 0;
+                    let nextAngle = currentAngle + pct;
+                    gradientStops.push(`${colors[idx % colors.length]} ${currentAngle}% ${nextAngle}%`);
+                    currentAngle = nextAngle;
+                });
+                let conicStyle = gradientStops.length > 0 ? `background: conic-gradient(${gradientStops.join(', ')});` : 'background: var(--borde);';
+                
+                let barsHTML = "";
+                keys.forEach((k, idx) => {
+                    let col = colors[idx % colors.length];
+                    let val = dataObj[k];
+                    let p = divisor > 0 ? Math.round((val / divisor) * 100) : 0;
+                    barsHTML += `<div class="barra-categoria" onclick="window.filtrarDesdeDashboard('${tipoAccion}', '${k}')">
+                        <div class="barra-header"><span><span class="punto" style="background:${col};"></span>${k} (${val})</span><span>${p}%</span></div>
+                        <div class="barra-fondo"><div class="barra-relleno" style="background:${col}; width:${p}%;"></div></div>
+                    </div>`;
+                });
+
+                return `<div class="tarjeta">
+                    <div class="tarjeta-titulo">${title}</div>
+                    <div class="grafico-flex">
+                        <div class="torta-container" onclick="window.filtrarDesdeDashboard('${tipoAccion}', '${keys[0]||''}')">
+                            <div class="torta" style="${conicStyle}"></div>
+                            <div class="torta-centro">${divisor}</div>
+                        </div>
+                        <div class="contenedor-scroll-analitica">${barsHTML}</div>
+                    </div>
+                </div>`;
+            };
+
+            prefs.forEach(g => {
+                let html = "";
+                if(g === '1') {
+                    let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0;
+                    let conicBg = t > 0 ? `conic-gradient(var(--exito) 0% ${pp}%, var(--peligro) ${pp}% 100%)` : 'var(--borde)';
+                    html += `<div class="tarjeta">
+                        <div class="tarjeta-titulo">Tasa de Preñez Dinámica</div>
+                        <div class="grafico-flex" style="justify-content:space-around;">
+                            <div class="torta-container" onclick="window.filtrarDesdeDashboard('dx', 'Preñada')">
+                                <div class="torta" style="background: ${conicBg};"></div>
+                                <div class="torta-centro">${t > 0 ? pp + '%' : '0%'}</div>
+                            </div>
+                            <div class="leyenda-torta">
+                                <div style="cursor:pointer;" onclick="window.filtrarDesdeDashboard('dx', 'Preñada')"><span class="punto" style="background: var(--exito);"></span> Preñadas (${g1.p})</div>
+                                <div style="cursor:pointer;" onclick="window.filtrarDesdeDashboard('dx', 'Vacía')"><span class="punto" style="background: var(--peligro);"></span> Vacías (${g1.v})</div>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+                else if(g === '2') { html += makePieAndBars("Composición de Hacienda", g2, unicas.length, 'categoria'); }
+                else if(g === '3') { html += makePieAndBars("Distribución por Lotes", g3, unicas.length, 'lote'); }
+                else if(g === '4') {
+                    let t = g4.opt + g4.bp + g4.sp || 1;
+                    let d4 = { "Óptima": g4.opt, "Bajo Peso": g4.bp, "Sobrepeso": g4.sp };
+                    html += makePieAndBars("Condición Corporal", d4, t, 'estado');
+                }
+                else if(g === '5') {
+                    let t = g5.norm + g5.san || 1;
+                    let d5 = { "Normal": g5.norm, "Sangre/Problema": g5.san };
+                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'estado');
+                }
+                else if(g === '6') {
+                    let t = unicas.length;
+                    let d6 = { "Con Registro": g6.con, "Sin Registros": g6.sin };
+                    html += makePieAndBars("Sanidad Global", d6, t, 'estado');
+                }
+                else if(g === '7') {
+                    let d7 = {}; Object.keys(g7).forEach(k => d7[k] = g7[k].p);
+                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote');
+                }
+                else if(g === '8') {
+                    let d8 = {}; Object.keys(g8).forEach(k => d8[k] = g8[k].p);
+                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'estado');
+                }
+                else if(g === '9') {
+                    let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0;
+                    html += `<div class="tarjeta"><div class="tarjeta-titulo">Promedio de Pesos</div><div class="grid-kpis"><div class="kpi-caja" onclick="window.filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" style="font-size:20px;">${pv} Kg</div><div class="kpi-label">Vacas</div></div><div class="kpi-caja" onclick="window.filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" style="font-size:20px;">${pt} Kg</div><div class="kpi-label">Terneros</div></div></div></div>`;
+                }
+                else if(g === '10') {
+                    let d10 = { "Pesajes": g10.peso, "Diagnósticos": g10.dx, "Nutrición": g10.nut, "Sanidad": g10.san };
+                    let t10 = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1;
+                    html += makePieAndBars("Volumen Clínico", d10, t10, 'estado');
+                }
+                else if(g === '11') {
+                    let sumG11 = Object.values(g11).reduce((acc, curr) => acc + curr, 0);
+                    let t11 = (cantMuertes > 0 ? cantMuertes : sumG11) || 1;
+                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'estado');
+                }
+                htmlGraficos += html;
+            }); const contGraf = document.getElementById('contenedor-graficos-dinamicos') || document.getElementById('contenedor-graficos');
+            if(contGraf) contGraf.innerHTML = htmlGraficos;
+        }
+
+        window.cambiarVista = function(v, b) { 
+            document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); 
+            const target = document.getElementById(v);
+            if(target) target.classList.remove('oculto'); 
+            document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('activo')); 
+            if(b) b.classList.add('activo'); 
+            if(v === 'vista-dashboard' && typeof window.procesarDatosDashboard === 'function') {
+                window.procesarDatosDashboard();
+            }
+        };
+        window.abrirModal = function(id) { 
+            const m = document.getElementById(id);
+            if (m) m.style.display = 'flex'; 
+            if (id === 'modal-confinamiento') {
+                const fIngEl = document.getElementById('i-conf-fecha-ingreso');
+                if (fIngEl && !fIngEl.value) {
+                    fIngEl.value = new Date().toISOString().split('T')[0];
+                }
+                const pIngEl = document.getElementById('i-conf-peso-ingreso');
+                if (pIngEl && (!pIngEl.value || pIngEl.value === '0')) {
+                    const elPeso = document.getElementById('val-peso');
+                    if (elPeso && elPeso.innerText && elPeso.innerText !== '-') {
+                        let pNum = parseFloat(elPeso.innerText.replace(/[^\d.-]/g, ''));
+                        if (!isNaN(pNum) && pNum > 0) {
+                            pIngEl.value = pNum;
+                        }
+                    }
+                }
+            }
+        } 
+        window.cerrarModal = function(id) { document.getElementById(id).style.display = 'none'; }
+
+        let timeoutBuscadorRegistro = null;
+        window.filtrarListaRegistroDebounced = function() {
+            clearTimeout(timeoutBuscadorRegistro);
+            timeoutBuscadorRegistro = setTimeout(() => { window.cargarListaRegistro(); }, 400);
+        }
+
+        let timeoutBuscadorInforme = null;
         window.filtrarInformeDebounced = function() {
             clearTimeout(timeoutBuscadorInforme);
             timeoutBuscadorInforme = setTimeout(() => { window.actualizarInformeAvanzado(); }, 400);
@@ -4294,7 +4420,7 @@
                 await secondaryApp.delete(); 
                 let alertasParaOmitir = alertaGlobalIdActual ? [alertaGlobalIdActual] : [];
                 await db.collection('usuarios').doc(email).set({
-                    nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', fecha_alta: new Date().toISOString(), alertas_leidas: alertasParaOmitir
+                    nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', alertas_leidas: alertasParaOmitir
                 });
                 // Operador registrado solo en usuarios - no en eventos de ganado
                 document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 
@@ -4363,10 +4489,12 @@
                 const btn = document.getElementById('btn-eliminar-op'); const btnOriginal = btn.innerHTML;
                 btn.innerHTML = "⏳ Eliminando..."; btn.disabled = true;
                 try {
+                    const doc = await db.collection('usuarios').doc(u).get();
+                    if(doc.exists && doc.data().password) { await window.gestionarAuthGhostParaBorrado(u, doc.data().password); }
                     await db.collection('usuarios').doc(u).delete();
-                    window.mostrarToast(`El acceso de ${u} ha sido revocado.`);
-                    selectEl.value = ''; 
-                    if (typeof window.cargarListaOperadores === 'function') window.cargarListaOperadores(); 
+                    // Operador eliminado solo de usuarios - no en eventos de ganado
+                    alert(`El usuario ha sido eliminado con éxito.`);
+                    selectEl.value = ''; window.cargarListaOperadores(); 
                     btn.innerHTML = btnOriginal; btn.disabled = false;
                 } catch(e) { alert("Hubo un error de conexión."); btn.innerHTML = btnOriginal; btn.disabled = false; } 
             }
@@ -4624,8 +4752,7 @@
                             window.emitirBeepHardware('peso');
                         }
                     } else {
-                        window.emitirBeepHardware('error');
-                        window.mostrarToast("⚖️ Balanza detectó: " + pNum + " Kg. Identifique primero la caravana del animal.", true);
+                        window.emitirBeepHardware("error"); window.mostrarToast("⚖️ Balanza detectó: " + pNum + " Kg. Identifique primero la caravana del animal.", true);
                     }
                     return;
                 }
