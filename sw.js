@@ -3,14 +3,12 @@
  * Desarrollado por Fernando Rodriguez 2026
  */
 
-const CACHE_NAME = 'taurus-track-pro-v6';
+const CACHE_NAME = 'taurus-track-pro-v7';
 
 const STATIC_ASSETS = [
   './',
   'index.html',
   'pc.html',
-  'taurusadmin.html',
-  'taurusadminmobile.html',
   'gemini-svg.png',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js',

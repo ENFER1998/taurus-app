@@ -1795,7 +1795,8 @@
 
         try {
             db.settings({
-                cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
+                cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
+                merge: true
             });
         } catch(e) {}
 
@@ -1808,6 +1809,167 @@
         var dbCache = []; var historiaCache = null; var activosCache = null; var rpActivo = null; var usActivo = ""; var maestroId = ""; var usRol = ""; var rpPrint = ""; var pdfExportData = [];
         var usNombre = ""; var usHacienda = ""; var rfidPendiente = ""; var alertaGlobalIdActual = "";
         var unsubscribeEventos = null; var unsubscribeConfig = null;
+
+        // =========================================================================
+        // MOTOR DE PROCESAMIENTO GANADERO Y EVENTOS CLÍNICOS
+        // =========================================================================
+                // =========================================================================
+        // HELPERS UNIVERSALES: ESTADOS DE GANADO (VIVOS, MUERTES Y VENTAS)
+        // =========================================================================
+        window.esAnimalArchivado = function(car) {
+            if (!car) return false;
+            let s = String(car).toUpperCase();
+            return s.includes('-BAJA-') || s.includes('-VENTA-');
+        };
+
+        window.esAnimalVendido = function(arg1, arg2) {
+            let regs = Array.isArray(arg1) ? arg1 : (Array.isArray(arg2) ? arg2 : (typeof window.obtenerHistorial === 'function' && typeof arg1 === 'string' ? window.obtenerHistorial(arg1) : []));
+            let car = typeof arg1 === 'string' ? arg1 : (typeof arg2 === 'string' ? arg2 : '');
+            if (car && String(car).toUpperCase().includes('-VENTA-')) return true;
+            if (!regs || !Array.isArray(regs) || regs.length === 0) return false;
+            let evtVenta = regs.find(r => r && (r.accion === 'Venta' || r.accion === 'Despacho'));
+            if (evtVenta) return true;
+            let evtBaja = regs.find(r => r && r.accion === 'Baja');
+            if (!evtBaja) return false;
+            let v = String(evtBaja.valor || "").toLowerCase();
+            let d = String(evtBaja.detalles || "").toLowerCase();
+            return v.includes('venta') || v.includes('faena') || v.includes('frigorífico') || v.includes('frigorifico') || v.includes('consumo') || v.includes('abigeato') || v.includes('despacho') || d.includes('venta') || d.includes('destino/guía') || d.includes('destino');
+        };
+
+        window.esAnimalMuerto = function(arg1, arg2) {
+            let regs = Array.isArray(arg1) ? arg1 : (Array.isArray(arg2) ? arg2 : (typeof window.obtenerHistorial === 'function' && typeof arg1 === 'string' ? window.obtenerHistorial(arg1) : []));
+            let car = typeof arg1 === 'string' ? arg1 : (typeof arg2 === 'string' ? arg2 : '');
+            if (car && String(car).toUpperCase().includes('-BAJA-')) return true;
+            if (!regs || !Array.isArray(regs) || regs.length === 0) return false;
+            let evtMuerte = regs.find(r => r && (r.accion === 'Baja' || r.accion === 'Muerte'));
+            if (!evtMuerte) return false;
+            return !window.esAnimalVendido(regs, car);
+        };
+
+        window.esAnimalVivo = function(arg1, arg2) {
+            let car = typeof arg1 === 'string' ? arg1 : (typeof arg2 === 'string' ? arg2 : '');
+            if (car && window.esAnimalArchivado(car)) return false;
+            return !window.esAnimalMuerto(arg1, arg2) && !window.esAnimalVendido(arg1, arg2);
+        };
+
+window.esCaravanaValida = function(car) {
+            if (car === null || car === undefined) return false;
+            let s = String(car).trim();
+            if (!s || s === "" || s === "---") return false;
+            let low = s.toLowerCase();
+            if (low === "null" || low === "undefined" || low === "nan" || low === "[object object]") return false;
+            if (low.includes("@")) return false; // email de operario
+            if (low.startsWith("op-") || low.startsWith("operador") || low === "operador" || low === "propietario" || low === "dueño") return false;
+            return true;
+        };
+
+        window.esEventoGanaderoValido = function(d) {
+            if (!d) return false;
+            let accion = String(d.accion || "").toLowerCase();
+            if (accion.includes("operador") || accion.startsWith("alta op") || accion.startsWith("edicion op") || accion.startsWith("edición op") || accion.startsWith("baja op") || accion.startsWith("eliminacion op") || accion.startsWith("eliminación op")) return false;
+            let car = String(d.caravana || "").trim().toLowerCase();
+            if (car.includes("@")) return false;
+            return true;
+        };
+
+        window.purgarEventosOperadoresEnFirestore = async function(snapshotDocs) {
+            if (!snapshotDocs || !Array.isArray(snapshotDocs) || snapshotDocs.length === 0) return;
+            try {
+                const batch = db.batch();
+                let hayPurgas = false;
+                snapshotDocs.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const accion = String(data.accion || "").toLowerCase();
+                    const car = String(data.caravana || "").trim().toLowerCase();
+                    const esOpAccion = accion.includes("operador") || accion.startsWith("alta op") || accion.startsWith("edicion op") || accion.startsWith("edición op") || accion.startsWith("baja op");
+                    const esCarInvalida = car.includes("@") || car === "null" || car === "undefined" || car === "---" || car === "";
+                    if (esOpAccion || esCarInvalida) {
+                        batch.delete(docSnap.ref);
+                        hayPurgas = true;
+                    }
+                });
+                if (hayPurgas) {
+                    await batch.commit();
+                    console.log("Se purgaron eventos residuales de operadores en Firestore.");
+                }
+            } catch(e) {
+                console.warn("Aviso en purga de eventos:", e);
+            }
+        };
+
+        window.procesarEventos = function() {
+            if (historiaCache) return historiaCache;
+            let dbAsc = [...dbCache].filter(d => window.esEventoGanaderoValido(d)).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+            let historiaPorRP = {};
+            dbAsc.forEach(evt => {
+                let rp = String(evt.caravana || "").trim();
+                if(!window.esCaravanaValida(rp)) return;
+                
+                if(!historiaPorRP[rp]) historiaPorRP[rp] = [];
+                if(evt.accion === 'Borrar_Caravana') {
+                    historiaPorRP[rp] = [];
+                } else if(evt.accion === 'Cambio de Caravana') {
+                    let nuevoRP = String(evt.valor || "").trim();
+                    if(!window.esCaravanaValida(nuevoRP)) return;
+                    if(!historiaPorRP[nuevoRP]) historiaPorRP[nuevoRP] = [];
+                    let eventosTraspasados = historiaPorRP[rp].map(e => ({...e, caravana: nuevoRP}));
+                    historiaPorRP[nuevoRP].push(...eventosTraspasados);
+                    historiaPorRP[nuevoRP].push({...evt, caravana: nuevoRP});
+                    historiaPorRP[rp] = [];
+                } else {
+                    historiaPorRP[rp].push(evt);
+                }
+            });
+            for(let rp in historiaPorRP) {
+                historiaPorRP[rp].reverse();
+            }
+            historiaCache = historiaPorRP;
+            return historiaPorRP;
+        };
+
+        window.obtenerRegistrosActivos = function() {
+            if (activosCache) return activosCache;
+            let historia = window.procesarEventos();
+            let validos = [];
+            for(let rp in historia) {
+                if (window.esCaravanaValida(rp)) {
+                    validos.push(...historia[rp]); 
+                }
+            }
+            activosCache = validos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            return activosCache;
+        };
+
+        window.obtenerHistorial = function(caravana) {
+            if (!caravana || caravana === "null" || caravana === "---" || String(caravana).toLowerCase() === "null") return [];
+            let carStr = String(caravana).trim();
+            let carLow = carStr.toLowerCase();
+            
+            // 1. Buscar en historia procesada
+            let historia = window.procesarEventos();
+            if (historia && historia[carStr] && historia[carStr].length > 0) {
+                return historia[carStr];
+            }
+            // 2. Búsqueda insensible a mayúsculas/minúsculas
+            if (historia) {
+                for (let k in historia) {
+                    if (k.toLowerCase() === carLow && historia[k].length > 0) return historia[k];
+                }
+            }
+            // 3. Fallback directo sobre dbCache
+            if (Array.isArray(dbCache) && dbCache.length > 0) {
+                let directos = dbCache.filter(d => {
+                    if (!d || !d.caravana) return false;
+                    let c = String(d.caravana).trim().toLowerCase();
+                    return c === carLow && window.esEventoGanaderoValido(d);
+                });
+                if (directos.length > 0) {
+                    return directos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+                }
+            }
+            return [];
+        };
+
 
         window.lsSet = function(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} };
         window.lsGet = function(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } };
