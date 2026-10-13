@@ -379,8 +379,8 @@
             <button type="button" id="btn-ingreso" class="btn-primary" onclick="procesarIngreso()">Ingresar al Sistema</button>
             
             <div style="margin-top: 25px; line-height: 1.6;">
-                <span style="color: var(--text-muted); font-size: 13px;">Taurus Track Pro</span><br>
-                <strong style="color: var(--text-main); font-size: 14px;">desarrollado Por Fernando Rodriguez 2026</strong>
+                <span style="color: var(--text-muted); font-size: 13px;">Taurus Track Pro &copy; 2026</span><br>
+                <strong style="color: var(--text-main); font-size: 14px;">desarrollado Por Fernando Rodriguez</strong>
             </div>
         </div>
     </div>
@@ -418,7 +418,7 @@
         </ul>
         <div class="sidebar-footer">
             <strong id="lbl-sidebar-user">USUARIO</strong>
-            Taurus Track Pro © 2026<br>desarrollado Por Fernando Rodriguez 2026
+            Taurus Track Pro © 2026<br>desarrollado Por Fernando Rodriguez
         </div>
     </div>
 
@@ -1504,76 +1504,6 @@
         window.programarSyncPorLotes = programarSyncPorLotes;
 
 
-        // =========================================================================
-        // MOTOR DE SINCRONIZACIÓN DELTA Y ESCRITURA POR LOTES (ANTI-CUOTAS SPARK)
-        // =========================================================================
-        let syncDeltasEnProgreso = false;
-        window.sincronizarDeltasServidor = async function() {
-            if (syncDeltasEnProgreso || !navigator.onLine || !maestroId) return;
-            syncDeltasEnProgreso = true;
-
-            try {
-                let ultimaSync = window.lsGet('tc_last_sync_timestamp', null);
-                let colRef = db.collection('estancias').doc(maestroId).collection('eventos');
-                let snapshot;
-
-                if (ultimaSync) {
-                    // Consulta de deltas: SOLO documentos nuevos posteriores a la última sincronización
-                    snapshot = await colRef.where('fecha', '>', ultimaSync).orderBy('fecha', 'asc').limit(400).get();
-                } else {
-                    // Primer arranque en dispositivo nuevo: Descargar lote inicial acotado
-                    snapshot = await colRef.orderBy('fecha', 'desc').limit(500).get();
-                }
-
-                if (!snapshot.empty) {
-                    let deltas = [];
-                    let maxFecha = ultimaSync || '';
-
-                    snapshot.forEach(doc => {
-                        let d = doc.data();
-                        d.id = doc.id;
-                        if (window.esEventoGanaderoValido(d)) {
-                            deltas.push(d);
-                            if (d.fecha && d.fecha > maxFecha) {
-                                maxFecha = d.fecha;
-                            }
-                        }
-                    });
-
-                    if (deltas.length > 0) {
-                        window.fusionarDatos(deltas);
-                        if (maxFecha) window.lsSet('tc_last_sync_timestamp', maxFecha);
-
-                        if(rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) { window.buscarCaravanaBtn(rpActivo); }
-                        window.procesarDatosDashboard();
-                        if(!document.getElementById('vista-registro').classList.contains('oculto')) window.cargarListaRegistro();
-                        if(!document.getElementById('vista-informe').classList.contains('oculto')) window.actualizarInformeAvanzado();
-                        window.cargarListasFiltrosSelects();
-                    }
-                }
-                window.setEstadoRed(true, '🟢 Conectado (Delta Sync)');
-            } catch (err) {
-                console.warn("[Delta Sync Fallo]: Operando 100% offline con caché local:", err);
-                window.setEstadoRed(false, '🔴 Red Local');
-            } finally {
-                syncDeltasEnProgreso = false;
-            }
-        };
-
-        // BATCHING: Encolado con sincronización por lotes agrupados
-        let debounceBatchSync = null;
-        window.programarSyncPorLotes = function() {
-            clearTimeout(debounceBatchSync);
-            let p = window.lsGet('tc_pendientes', []);
-            let delay = p.length >= 15 ? 400 : 3500;
-            debounceBatchSync = setTimeout(() => {
-                if (navigator.onLine) {
-                    window.sincronizarPendientesAuto();
-                }
-            }, delay);
-        };
-
-
         // ==========================================
         // SANITIZADOR XSS UNIVERSAL
         // ==========================================
@@ -1638,28 +1568,84 @@
         let unsubscribeEventos = null;
         let unsubscribeConfig = null;
 
-        firebase.auth().onAuthStateChanged((user) => {
+                /* MANEJO OFFLINE Y ROBUSTO DEL ARRANQUE DE SESIÓN */
+        firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
-                db.collection('usuarios').doc(user.email).get().then(doc => {
-                    if (doc.exists) {
-                        const userData = doc.data();
-                        lsSet('tc_user_profile', userData);
-                        if(userData.alertas_leidas) lsSet('tc_alertas_leidas', userData.alertas_leidas);
-                        
-                        if(userData.vencimiento) {
-                            let fLimit = new Date(userData.vencimiento.includes('T') ? userData.vencimiento : userData.vencimiento + "T23:59:59");
-                            if(new Date() > fLimit) {
-                                cerrarSesion(); alert("Su licencia ha vencido."); return;
-                            }
-                        }
-                        arrancarSistemaFirebase(user.email, userData.maestroId, userData.rol, userData.nombre, userData.hacienda, userData.features);
+                console.log("[Taurus PC Auth] Sesión activa detectada para:", user.email);
+                const emailClean = (user.email || "").toLowerCase().trim();
+                let cachedProfile = lsGet('tc_user_profile', null);
+
+                // Ocultar login de inmediato
+                {
+                    let elL = document.getElementById('pantalla-login'); if (elL) elL.classList.add('oculto');
+                    let elA = document.getElementById('pantalla-app'); if (elA) elA.classList.remove('oculto');
+                }
+
+                if (cachedProfile && (cachedProfile.email || "").toLowerCase() === emailClean) {
+                    arrancarSistemaFirebase(
+                        emailClean,
+                        cachedProfile.maestroId || emailClean,
+                        cachedProfile.rol || 'Propietario',
+                        cachedProfile.nombre || emailClean.split('@')[0],
+                        cachedProfile.hacienda || 'Hacienda',
+                        cachedProfile.features || 'cora'
+                    );
+                }
+
+                let userData = null;
+                try {
+                    let docSnap = await db.collection('usuarios').doc(emailClean).get();
+                    if (!docSnap.exists && user.email !== emailClean) {
+                        docSnap = await db.collection('usuarios').doc(user.email).get();
                     }
-                }).catch(e => {
-                    let cachedProfile = lsGet('tc_user_profile', null);
-                    if (cachedProfile) {
-                        arrancarSistemaFirebase(user.email, cachedProfile.maestroId, cachedProfile.rol, cachedProfile.nombre, cachedProfile.hacienda, cachedProfile.features);
+                    if (docSnap.exists) {
+                        userData = docSnap.data();
+                        userData.email = emailClean;
                     }
-                });
+                } catch(errFirestore) {
+                    console.warn("[Taurus PC Auth] Fallo al leer /usuarios/ de Firestore:", errFirestore.message);
+                }
+
+                if (!userData) {
+                    userData = {
+                        email: emailClean,
+                        maestroId: emailClean,
+                        rol: 'Propietario',
+                        nombre: user.displayName || emailClean.split('@')[0],
+                        hacienda: 'Hacienda',
+                        features: 'cora'
+                    };
+                }
+
+                lsSet('tc_user_profile', userData);
+                if (userData.alertas_leidas) lsSet('tc_alertas_leidas', userData.alertas_leidas);
+
+                if (userData.vencimiento && userData.vencimiento !== 'Heredado' && userData.vencimiento !== 'Perpetua') {
+                    let fLimit = new Date(userData.vencimiento.includes('T') ? userData.vencimiento : userData.vencimiento + "T23:59:59");
+                    if (!isNaN(fLimit.getTime()) && new Date() > fLimit) { 
+                        cerrarSesion(); 
+                        alert("Su licencia ha vencido."); 
+                        return; 
+                    }
+                }
+
+                arrancarSistemaFirebase(
+                    userData.email,
+                    userData.maestroId || emailClean,
+                    userData.rol || 'Propietario',
+                    userData.nombre || emailClean.split('@')[0],
+                    userData.hacienda || 'Hacienda',
+                    userData.features || 'cora'
+                );
+
+            } else {
+                console.log("[Taurus PC Auth] Sin usuario autenticado.");
+                const elLogin = document.getElementById('pantalla-login');
+                if (elLogin) elLogin.classList.remove('oculto');
+                const elApp = document.getElementById('pantalla-app');
+                if (elApp) elApp.classList.add('oculto');
+                const btn = document.getElementById('btn-ingreso');
+                if (btn) { btn.disabled = false; btn.innerText = "Ingresar al Sistema"; }
             }
         });
 
@@ -1954,23 +1940,38 @@
         });
  window.addEventListener('offline', () => setEstadoRed(false));
 
-        async function procesarIngreso() {
-            let u = document.getElementById('usuario').value.trim(); 
+                async function procesarIngreso() {
+            let u = document.getElementById('usuario').value.trim();
             const p = document.getElementById('password').value.trim();
             const btn = document.getElementById('btn-ingreso');
             const err = document.getElementById('error-login');
-            if(!u || !p) return; 
-            btn.disabled = true; btn.innerText = "Verificando Credenciales..."; err.style.display = 'none';
+            
+            if (!u || !p) {
+                if (err) { err.innerText = "Complete usuario y contraseña."; err.style.display = 'block'; }
+                return;
+            }
+
+            if (!navigator.onLine) {
+                if (err) { err.innerText = "❌ Sin conexión a Internet para autenticar."; err.style.display = 'block'; }
+                return;
+            }
+
+            if (btn) { btn.disabled = true; btn.innerText = "Verificando..."; }
+            if (err) err.style.display = 'none';
+
             let email = u.includes('@') ? u.toLowerCase() : u.toLowerCase() + '@taurus.com';
             try {
                 await firebase.auth().signInWithEmailAndPassword(email, p);
-                solicitarPermisoNotificaciones();
             } catch(error) {
-                err.innerText = "Credenciales incorrectas o error de red."; 
-                err.style.display = 'block';
-                btn.disabled = false; btn.innerText = "Ingresar al Sistema";
+                console.error("[Login Error]:", error);
+                let msg = "Usuario no registrado o contraseña incorrecta.";
+                if (error.code === 'auth/network-request-failed') msg = "Fallo de conexión con el servidor.";
+                if (error.code === 'auth/too-many-requests') msg = "Demasiados intentos fallidos. Espere un momento.";
+                if (err) { err.innerText = msg; err.style.display = 'block'; }
+                if (btn) { btn.disabled = false; btn.innerText = "Ingresar al Sistema"; }
             }
         }
+        window.procesarIngreso = procesarIngreso;
 
         function notificarPropietario(mensaje) {
             if(!navigator.onLine) return;
@@ -1980,6 +1981,11 @@
 
         function arrancarSistemaFirebase(u, m, r, nombreCompleto, hacienda, featuresStr) {
             try {
+                {
+                    let elL = document.getElementById('pantalla-login'); if (elL) elL.classList.add('oculto');
+                    let elA = document.getElementById('pantalla-app'); if (elA) elA.classList.remove('oculto');
+                }
+
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
                 window.estanciaFeatures = String(featuresStr || "");
                 let profInit = lsGet('tc_user_profile', {});

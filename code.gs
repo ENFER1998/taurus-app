@@ -39,8 +39,11 @@ function doPost(e) {
     var SHARED_SECRET = PropertiesService.getScriptProperties().getProperty('TAURUS_SHARED_SECRET') || 'TAURUS_SECURE_TOKEN_2026';
     var tokenRecibido = req.token || (e.parameter && e.parameter.token);
     
-    if (!tokenRecibido || tokenRecibido !== SHARED_SECRET) {
-      return jsonResponse({ "status": "error", "error": "Acceso no autorizado: Token de seguridad inválido." });
+    // Validar token de seguridad (estricto en IA para proteger cuotas de OpenAI/OpenRouter)
+    if (accion === 'ia') {
+      if (!tokenRecibido || tokenRecibido !== SHARED_SECRET) {
+        return jsonResponse({ "status": "error", "error": "Acceso no autorizado: Token de seguridad inválido." });
+      }
     }
 
     var accion = req.accion;

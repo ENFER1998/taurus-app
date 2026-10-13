@@ -363,7 +363,7 @@
             <input type="password" id="password" class="form-control-login" placeholder="Contraseña">
             <div id="error-login" class="error-msj"></div>
             <button id="btn-ingreso" class="btn-ingresar" onclick="procesarIngreso()">Iniciar Sesión</button>
-            <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">Taurus Track Pro &copy; 2026<br><strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">desarrollado Por Fernando Rodriguez 2026</strong></div>
+            <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">Taurus Track Pro &copy; 2026<br><strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">desarrollado Por Fernando Rodriguez</strong></div>
         </div>
     </div>
 
@@ -1534,37 +1534,88 @@
         })();
 
         /* MANEJO OFFLINE ROBUSTO DEL ARRANQUE DE SESIÓN */
-        firebase.auth().onAuthStateChanged((user) => {
+                /* MANEJO OFFLINE Y ROBUSTO DEL ARRANQUE DE SESIÓN */
+        firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
+                console.log("[Taurus Auth] Sesión activa detectada para:", user.email);
+                const emailClean = (user.email || "").toLowerCase().trim();
                 let cachedProfile = window.lsGet('tc_user_profile', null);
-                let bootConCache = false;
 
-                if (cachedProfile && cachedProfile.email === user.email) {
-                    window.arrancarSistemaFirebase(user.email, cachedProfile.maestroId, cachedProfile.rol, cachedProfile.nombre, cachedProfile.hacienda, cachedProfile.features);
-                    bootConCache = true;
+                // Forzar ocultación inmediata de pantalla de login y apertura de app
+                {
+                    let elL = document.getElementById('pantalla-login'); if (elL) elL.classList.add('oculto');
+                    let elA = document.getElementById('pantalla-app'); if (elA) elA.classList.remove('oculto');
                 }
 
-                db.collection('usuarios').doc(user.email).get().then(doc => {
-                    if (doc.exists) {
-                        const userData = doc.data();
-                        userData.email = user.email;
-                        window.lsSet('tc_user_profile', userData);
-                        if(userData.alertas_leidas) window.lsSet('tc_alertas_leidas', userData.alertas_leidas);
+                // Si hay perfil en caché que coincide, arrancar de inmediato
+                if (cachedProfile && (cachedProfile.email || "").toLowerCase() === emailClean) {
+                    window.arrancarSistemaFirebase(
+                        emailClean,
+                        cachedProfile.maestroId || emailClean,
+                        cachedProfile.rol || 'Propietario',
+                        cachedProfile.nombre || emailClean.split('@')[0],
+                        cachedProfile.hacienda || 'Hacienda',
+                        cachedProfile.features || 'cora'
+                    );
+                }
 
-                        if(userData.vencimiento && userData.vencimiento !== 'Heredado' && userData.vencimiento !== 'Perpetua') {
-                            let fLimit = new Date(userData.vencimiento.includes('T') ? userData.vencimiento : userData.vencimiento + "T23:59:59");
-                            if(!isNaN(fLimit.getTime()) && new Date() > fLimit) { window.cerrarSesion(); alert("Su licencia ha vencido."); return; }
-                        }
-                        if (!bootConCache) {
-                            window.arrancarSistemaFirebase(user.email, userData.maestroId, userData.rol, userData.nombre, userData.hacienda, userData.features);
-                        }
+                // Obtener datos frescos desde Firestore con fallback automático
+                let userData = null;
+                try {
+                    let docSnap = await db.collection('usuarios').doc(emailClean).get();
+                    if (!docSnap.exists && user.email !== emailClean) {
+                        docSnap = await db.collection('usuarios').doc(user.email).get();
                     }
-                }).catch(e => {
-                    console.warn("Fallo de red al obtener perfil de usuario, operando con caché.");
-                });
+                    if (docSnap.exists) {
+                        userData = docSnap.data();
+                        userData.email = emailClean;
+                    }
+                } catch(errFirestore) {
+                    console.warn("[Taurus Auth] Fallo al leer /usuarios/ de Firestore:", errFirestore.message);
+                }
+
+                // Si el usuario no tiene documento en /usuarios/ (ej: cuenta creada directamente en Firebase Auth),
+                // se inicializa como Propietario independiente para que pueda entrar y usar la app inmediatamente.
+                if (!userData) {
+                    userData = {
+                        email: emailClean,
+                        maestroId: emailClean,
+                        rol: 'Propietario',
+                        nombre: user.displayName || emailClean.split('@')[0],
+                        hacienda: 'Hacienda',
+                        features: 'cora'
+                    };
+                }
+
+                window.lsSet('tc_user_profile', userData);
+                if (userData.alertas_leidas) window.lsSet('tc_alertas_leidas', userData.alertas_leidas);
+
+                if (userData.vencimiento && userData.vencimiento !== 'Heredado' && userData.vencimiento !== 'Perpetua') {
+                    let fLimit = new Date(userData.vencimiento.includes('T') ? userData.vencimiento : userData.vencimiento + "T23:59:59");
+                    if (!isNaN(fLimit.getTime()) && new Date() > fLimit) { 
+                        window.cerrarSesion(); 
+                        alert("Su licencia ha vencido."); 
+                        return; 
+                    }
+                }
+
+                window.arrancarSistemaFirebase(
+                    userData.email,
+                    userData.maestroId || emailClean,
+                    userData.rol || 'Propietario',
+                    userData.nombre || emailClean.split('@')[0],
+                    userData.hacienda || 'Hacienda',
+                    userData.features || 'cora'
+                );
+
             } else {
-                document.getElementById('pantalla-login').classList.remove('oculto');
-                document.getElementById('pantalla-app').classList.add('oculto');
+                console.log("[Taurus Auth] Sin usuario autenticado. Mostrando pantalla de login.");
+                const elLogin = document.getElementById('pantalla-login');
+                if (elLogin) elLogin.classList.remove('oculto');
+                const elApp = document.getElementById('pantalla-app');
+                if (elApp) elApp.classList.add('oculto');
+                const btn = document.getElementById('btn-ingreso');
+                if (btn) { btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
             }
         });
 
@@ -1872,30 +1923,38 @@
  
         window.addEventListener('offline', () => window.setEstadoRed(false));
 
-        window.procesarIngreso = async function() {
+                window.procesarIngreso = async function() {
             let u = document.getElementById('usuario').value.trim();
             const p = document.getElementById('password').value.trim();
             const btn = document.getElementById('btn-ingreso');
             const err = document.getElementById('error-login');
             
-            if(!u || !p) return;
-
-            if (!navigator.onLine) {
-                err.innerText = "❌ No hay red. Debes tener conexión para iniciar una sesión nueva.";
-                err.style.display = 'block';
+            if (!u || !p) {
+                if (err) { err.innerText = "Complete usuario y contraseña."; err.style.display = 'block'; }
                 return;
             }
 
-            btn.disabled = true; btn.innerText = "Verificando..."; err.style.display = 'none';
+            if (!navigator.onLine) {
+                if (err) { err.innerText = "❌ Sin conexión a Internet para autenticar."; err.style.display = 'block'; }
+                return;
+            }
+
+            if (btn) { btn.disabled = true; btn.innerText = "Verificando..."; }
+            if (err) err.style.display = 'none';
+
             let email = u.includes('@') ? u.toLowerCase() : u.toLowerCase() + '@taurus.com';
             try {
                 await firebase.auth().signInWithEmailAndPassword(email, p);
+                // onAuthStateChanged se activa y arranca la aplicación
             } catch(error) {
-                err.innerText = "Usuario no registrado o clave incorrecta.";
-                err.style.display = 'block';
-                btn.disabled = false; btn.innerText = "Iniciar Sesión";
+                console.error("[Login Error]:", error);
+                let msg = "Usuario no registrado o contraseña incorrecta.";
+                if (error.code === 'auth/network-request-failed') msg = "Fallo de conexión con el servidor.";
+                if (error.code === 'auth/too-many-requests') msg = "Demasiados intentos fallidos. Espere un momento.";
+                if (err) { err.innerText = msg; err.style.display = 'block'; }
+                if (btn) { btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
             }
-        }
+        };
 
         window.notificarPropietario = function(mensaje) {
             if(!navigator.onLine) return;
@@ -1906,6 +1965,12 @@
 
                 window.arrancarSistemaFirebase = function(u, m, r, nombreCompleto, hacienda, featuresStr) {
             try {
+                // Forzar visualización de la app y ocultar login inmediatamente
+                {
+                    let elL = document.getElementById('pantalla-login'); if (elL) elL.classList.add('oculto');
+                    let elA = document.getElementById('pantalla-app'); if (elA) elA.classList.remove('oculto');
+                }
+
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
 
                 window.estanciaFeatures = String(featuresStr || "");
@@ -1947,7 +2012,6 @@
                 document.querySelectorAll('.vista').forEach(e => e.classList.add('oculto'));
                 document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('activo'));
 
-                let tabSeleccionado = null; let vistaInicial = 'vista-dashboard';
                 let tabSeleccionado = null; let vistaInicial = 'vista-dashboard';
 
                 if (isPropietario) {
