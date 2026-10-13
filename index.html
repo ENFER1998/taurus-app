@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Taurus Control - Móvil</title>
+    <title>Taurus Track Pro</title>
     
     <meta name="theme-color" content="#0f172a">
     
@@ -50,7 +50,7 @@
       // Precalentar almacenamiento local CacheStorage con los scripts principales
       if ('caches' in window) {
         window.addEventListener('load', () => {
-          caches.open('taurus-control-v5').then(cache => {
+          caches.open('taurus-track-pro-v5').then(cache => {
             cache.addAll([
               location.href,
               'gemini-svg.png',
@@ -358,12 +358,12 @@
     <div id="pantalla-login">
         <div class="login-contenedor">
             <div class="logo-icono"><img src="gemini-svg.png" alt="Logo Taurus"></div>
-            <div class="titulo-login">Taurus Control</div>
+            <div class="titulo-login">Taurus Track Pro</div>
             <input type="text" id="usuario" class="form-control-login" placeholder="Usuario de Acceso" autocomplete="off">
             <input type="password" id="password" class="form-control-login" placeholder="Contraseña">
             <div id="error-login" class="error-msj"></div>
             <button id="btn-ingreso" class="btn-ingresar" onclick="procesarIngreso()">Iniciar Sesión</button>
-            <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">Taurus Control &copy; 2026<br><strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">desarrollado Por Fernando Rodriguez 2026</strong></div>
+            <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">Taurus Track Pro &copy; 2026<br><strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">desarrollado Por Fernando Rodriguez 2026</strong></div>
         </div>
     </div>
 
@@ -371,7 +371,7 @@
     <div id="pantalla-mantenimiento" class="oculto">
         <span style="font-size:60px; margin-bottom:20px;">🚧</span>
         <h1 style="color:var(--peligro); margin:0 0 10px 0; font-size:24px;">SISTEMA EN MANTENIMIENTO</h1>
-        <p style="color:var(--muted); font-size:14px; line-height:1.6; max-width:400px;">Nuestros servidores están recibiendo una actualización para mejorar Taurus Control. La aplicación ha sido bloqueada temporalmente y tus datos están seguros.</p>
+        <p style="color:var(--muted); font-size:14px; line-height:1.6; max-width:400px;">Nuestros servidores están recibiendo una actualización para mejorar Taurus Track Pro. La aplicación ha sido bloqueada temporalmente y tus datos están seguros.</p>
         <div class="spinner"></div>
         <p style="color:var(--secundario); font-size:12px; margin-top:15px; font-weight:bold;">Verificando conexión automáticamente...</p>
     </div>
@@ -861,6 +861,12 @@
                     <table class="tabla-informe oculto" id="tabla-eventos"><thead><tr><th>Fecha</th><th>Caravana / RP</th><th>Categoría / Lote</th><th>Procedimientos Realizados</th><th>Sanidad / Tratamientos / Pesaje</th><th>Observaciones / Detalles</th></tr></thead><tbody id="tb-informe-eventos"></tbody></table>
                     <table class="tabla-informe oculto" id="tabla-individual"><thead><tr><th>Fecha</th><th>Trabajo Realizado</th><th>Valor Principal</th><th>Observaciones</th></tr></thead><tbody id="tb-informe-individual"></tbody></table>
                 </div>
+                <!-- PAGINACION DE TABLA -->
+                <div id="paginacion-informe" style="display:flex; justify-content:center; align-items:center; gap:12px; margin-top:10px;">
+                    <button class="btn-guardar" id="btn-inf-prev" onclick="cambiarPaginaInforme(-1)" style="width:auto; padding:4px 14px; font-size:11px; background:var(--panel);">◀ Anterior</button>
+                    <span id="lbl-inf-pagina" style="font-size:12px; color:var(--muted); font-weight:bold;">Página 1 de 1</span>
+                    <button class="btn-guardar" id="btn-inf-next" onclick="cambiarPaginaInforme(1)" style="width:auto; padding:4px 14px; font-size:11px; background:var(--panel);">Siguiente ▶</button>
+                </div>
             </div>
 
             <!-- AJUSTES -->
@@ -880,7 +886,7 @@
                         <img id="preview-logo-config" src="gemini-svg.png" style="width:60px; height:60px; object-fit:contain; border-radius:8px; border:1px solid var(--borde); background:white; padding:2px;">
                         <div style="flex:1;">
                             <label style="font-size:12px; font-weight:bold; color:var(--muted); margin-bottom:5px; display:block;">Nombre Empresa / Hacienda</label>
-                            <input type="text" id="cfg-nom" class="form-control" placeholder="Taurus Control" style="margin-bottom:0;">
+                            <input type="text" id="cfg-nom" class="form-control" placeholder="Taurus Track Pro" style="margin-bottom:0;">
                         </div>
                     </div>
                     
@@ -1396,6 +1402,90 @@
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.firestore();
 
+        // =========================================================================
+        // MOTOR DE SINCRONIZACIÓN DELTA Y ESCRITURA POR LOTES (ANTI-CUOTAS SPARK)
+        // =========================================================================
+        let syncDeltasEnProgreso = false;
+        window.sincronizarDeltasServidor = async function() {
+            if (syncDeltasEnProgreso || !navigator.onLine || !maestroId) return;
+            syncDeltasEnProgreso = true;
+
+            try {
+                let ultimaSync = window.lsGet('tc_last_sync_timestamp', null);
+                let colRef = db.collection('estancias').doc(maestroId).collection('eventos');
+                let snapshot;
+
+                if (ultimaSync) {
+                    // Consulta de deltas: SOLO documentos nuevos posteriores a la última sincronización
+                    snapshot = await colRef.where('fecha', '>', ultimaSync).orderBy('fecha', 'asc').limit(400).get();
+                } else {
+                    // Primer arranque en dispositivo nuevo: Descargar lote inicial acotado
+                    snapshot = await colRef.orderBy('fecha', 'desc').limit(500).get();
+                }
+
+                if (!snapshot.empty) {
+                    let deltas = [];
+                    let maxFecha = ultimaSync || '';
+
+                    snapshot.forEach(doc => {
+                        let d = doc.data();
+                        d.id = doc.id;
+                        if (window.esEventoGanaderoValido(d)) {
+                            deltas.push(d);
+                            if (d.fecha && d.fecha > maxFecha) {
+                                maxFecha = d.fecha;
+                            }
+                        }
+                    });
+
+                    if (deltas.length > 0) {
+                        window.fusionarDatos(deltas);
+                        if (maxFecha) window.lsSet('tc_last_sync_timestamp', maxFecha);
+
+                        if(rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) { window.buscarCaravanaBtn(rpActivo); }
+                        window.procesarDatosDashboard();
+                        if(!document.getElementById('vista-registro').classList.contains('oculto')) window.cargarListaRegistro();
+                        if(!document.getElementById('vista-informe').classList.contains('oculto')) window.actualizarInformeAvanzado();
+                        window.cargarListasFiltrosSelects();
+                    }
+                }
+                window.setEstadoRed(true, '🟢 Conectado (Delta Sync)');
+            } catch (err) {
+                console.warn("[Delta Sync Fallo]: Operando 100% offline con caché local:", err);
+                window.setEstadoRed(false, '🔴 Red Local');
+            } finally {
+                syncDeltasEnProgreso = false;
+            }
+        };
+
+        // BATCHING: Encolado con sincronización por lotes agrupados
+        let debounceBatchSync = null;
+        window.programarSyncPorLotes = function() {
+            clearTimeout(debounceBatchSync);
+            let p = window.lsGet('tc_pendientes', []);
+            let delay = p.length >= 15 ? 400 : 3500;
+            debounceBatchSync = setTimeout(() => {
+                if (navigator.onLine) {
+                    window.sincronizarPendientesAuto();
+                }
+            }, delay);
+        };
+
+
+        // ==========================================
+        // SANITIZADOR XSS UNIVERSAL
+        // ==========================================
+        window.escapeHTML = function(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        };
+
+
         try {
             db.settings({
                 cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
@@ -1814,106 +1904,50 @@
             fetch("https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec", { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
         }
 
-        window.arrancarSistemaFirebase = function(u, m, r, nombreCompleto, hacienda, featuresStr) {
+                window.arrancarSistemaFirebase = function(u, m, r, nombreCompleto, hacienda, featuresStr) {
             try {
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
-                
+
                 window.estanciaFeatures = String(featuresStr || "");
                 let profInit = window.lsGet('tc_user_profile', {});
                 if(profInit && featuresStr) { profInit.features = window.estanciaFeatures; window.lsSet('tc_user_profile', profInit); }
                 window.actualizarVisibilidadCora();
 
-                if(unsubscribeConfig) unsubscribeConfig();
-                unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot(doc => {
-                    if(doc.exists) {
-                        const conf = doc.data();
-                        window.procesarAlertaServidor(conf.alerta_global, "alerta_fb");
-                        const pantMant = document.getElementById('pantalla-mantenimiento');
-                        if(conf.mantenimiento) { if(pantMant) pantMant.classList.remove('oculto'); }
-                        else { if(pantMant) pantMant.classList.add('oculto'); }
+                // 1. CARGA INMEDIATA DESDE CACHÉ LOCAL (CERO LECTURAS FIRESTORE AL INICIAR)
+                let cachedDB = window.lsGet('tc_db', []);
+                if (cachedDB && cachedDB.length > 0) {
+                    dbCache = cachedDB;
+                    window.procesarDatosDashboard();
+                    window.cargarListasFiltrosSelects();
+                    window.cargarListaOperadores();
+                }
+
+                // 2. SINCRONIZACIÓN DELTA INTELIGENTE (SOLO NOVEDADES)
+                window.sincronizarDeltasServidor();
+
+                // 3. VERIFICACIÓN PERIÓDICA EN SEGUNDO PLANO (CADA 60s, NO LISTENER PERMANENTE)
+                if (window.syncIntervalTimer) clearInterval(window.syncIntervalTimer);
+                window.syncIntervalTimer = setInterval(() => {
+                    if (navigator.onLine && document.visibilityState === 'visible') {
+                        window.sincronizarDeltasServidor();
                     }
-                });
+                }, 60000);
 
-                window.setEstadoRed(true, '🔄 Sincronizando...');
-                if(unsubscribeEventos) unsubscribeEventos();
-
-                let renderTimeout;
-                unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot({ includeMetadataChanges: true }, snapshot => {
-                    let nuevosDatos = [];
-                    let docsList = [];
-                    snapshot.forEach(doc => { 
-                        let d = doc.data(); 
-                        d.id = doc.id || ('doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5)); 
-                        docsList.push(doc);
-                        if (window.esEventoGanaderoValido(d) && (d.caravana === '---' || window.esCaravanaValida(d.caravana))) {
-                            nuevosDatos.push(d); 
-                        }
-                    });
-                    window.purgarEventosOperadoresEnFirestore(docsList);
-
-                    let mapAnterior = new Set(dbCache.map(d => d.fecha + '_' + d.caravana + '_' + d.accion));
-                    let notificar = nuevosDatos.filter(d => d && d.fecha && !mapAnterior.has(d.fecha + '_' + d.caravana + '_' + d.accion));
-
-                    window.fusionarDatos(nuevosDatos);
-
-                    if (notificar.length > 0 && mapAnterior.size > 0) {
-                        if (notificar.length <= 3) {
-                            notificar.forEach(n => {
-                                let op = n.usuario || "Un operador";
-                                if (n.detalles && n.detalles.includes("Op: ")) { op = n.detalles.split("Op: ")[1].trim(); }
-                                let isDuenoActual = usRol.includes('Propietario') || usRol.includes('Dueño');
-                                if(isDuenoActual && n.maestro === maestroId && op.toLowerCase() !== usNombre.toLowerCase() && n.caravana !== '---' && n.caravana !== 'null' && String(n.caravana).toLowerCase() !== 'null') {
-                                    window.lanzarNotificacionEscritorio("Alerta Taurus", `${op} registró [${n.accion}] al RP ${n.caravana}`);
-                                }
-                            });
-                        }
-                    }
-
-                    clearTimeout(renderTimeout);
-                    renderTimeout = setTimeout(() => {
-                        if(rpActivo && !document.getElementById('vista-manga').classList.contains('oculto')) { window.buscarCaravanaBtn(rpActivo); }
-                        window.procesarDatosDashboard();
-                        if(!document.getElementById('vista-registro').classList.contains('oculto')) window.cargarListaRegistro();
-                        if(!document.getElementById('vista-informe').classList.contains('oculto')) window.actualizarInformeAvanzado();
-                        window.cargarListasFiltrosSelects();
-                        window.cargarListaOperadores();
-                        const estaEnCache = snapshot.metadata ? snapshot.metadata.fromCache : false;
-                        const tienePendientes = snapshot.metadata ? snapshot.metadata.hasPendingWrites : false;
-                        if (estaEnCache || !navigator.onLine) {
-                            window.setEstadoRed(false, tienePendientes ? '💾 Guardado local (Pendiente)' : '🔴 Red Local');
-                        } else {
-                            window.setEstadoRed(true, '🟢 Conectado');
-                        }
-                    }, 500); 
-                }, err => { window.setEstadoRed(false, '❌ Red Local'); });
-                
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
                 let displayRol = isPropietario ? 'Propietario' : 'Operador';
-                
+
                 if (window.OneSignalDeferred) {
                     OneSignalDeferred.push(async function(OneSignal) {
                         try {
                             OneSignal.User.addTags({ rol: displayRol, estancia_id: m });
-                            if (isPropietario) {
-                                await OneSignal.Slidedown.promptPush();
-                                OneSignal.User.PushSubscription.optIn();
-
-                                OneSignal.Notifications.addEventListener('foregroundWillDisplay', function(event) {
-                                    const notif = event.notification;
-                                    if(notif.body && notif.body.includes(usNombre)) {
-                                        event.preventDefault();
-                                    }
-                                });
-                            } else {
-                                OneSignal.User.PushSubscription.optOut();
-                            }
-                        } catch (e) {}
+                        } catch(e) {}
                     });
                 }
 
                 document.querySelectorAll('.vista').forEach(e => e.classList.add('oculto'));
                 document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('activo'));
 
+                let tabSeleccionado = null; let vistaInicial = 'vista-dashboard';
                 let tabSeleccionado = null; let vistaInicial = 'vista-dashboard';
 
                 if (isPropietario) {
@@ -2000,37 +2034,47 @@
             } catch(e) { console.error("Error al construir la pantalla:", e); }
         }
 
-        window.fusionarDatos = function(nuevos) {
-            let pendientes = window.lsGet('tc_pendientes', []);
+                window.fusionarDatos = function(nuevos) {
             let mapa = new Map();
-            if(Array.isArray(nuevos)) { 
-                nuevos.forEach(d => { 
-                    if(d && window.esEventoGanaderoValido(d) && (d.caravana === '---' || window.esCaravanaValida(d.caravana))) { 
-                        let f = d.fecha || new Date().toISOString();
-                        if(!d.id) d.id = 'ev_' + f.replace(/[^0-9]/g, '') + '_' + String(d.caravana).replace(/[^a-zA-Z0-9]/g, '') + '_' + String(d.accion).replace(/[^a-zA-Z0-9]/g, '');
-                        mapa.set(f + '_' + d.caravana + '_' + d.accion, d); 
-                    } 
-                }); 
+            // 1. Mantener base de datos local existente
+            if (Array.isArray(dbCache)) {
+                dbCache.forEach(d => {
+                    if (d && (d.id || d.fecha)) {
+                        let key = d.id || (d.fecha + '_' + d.caravana + '_' + d.accion);
+                        mapa.set(key, d);
+                    }
+                });
             }
-            if(Array.isArray(pendientes)) { 
-                pendientes.forEach(d => { 
-                    if(d && window.esEventoGanaderoValido(d) && (d.caravana === '---' || window.esCaravanaValida(d.caravana))) { 
-                        let f = d.fecha || new Date().toISOString(); 
-                        mapa.set(f + '_' + d.caravana + '_' + d.accion, d); 
-                    } 
-                }); 
+            // 2. Fusionar deltas descargados del servidor
+            if (Array.isArray(nuevos)) {
+                nuevos.forEach(d => {
+                    if (d && window.esEventoGanaderoValido(d) && (d.caravana === '---' || window.esCaravanaValida(d.caravana))) {
+                        let key = d.id || (d.fecha + '_' + d.caravana + '_' + d.accion);
+                        mapa.set(key, d);
+                    }
+                });
             }
-            
+            // 3. Fusionar registros pendientes locales
+            let pendientes = window.lsGet('tc_pendientes', []);
+            if (Array.isArray(pendientes)) {
+                pendientes.forEach(d => {
+                    if (d && window.esEventoGanaderoValido(d) && (d.caravana === '---' || window.esCaravanaValida(d.caravana))) {
+                        let key = d.id || (d.fecha + '_' + d.caravana + '_' + d.accion);
+                        mapa.set(key, d);
+                    }
+                });
+            }
+
             dbCache = Array.from(mapa.values()).sort((a,b) => {
                 let tA = new Date(a.fecha).getTime(); let tB = new Date(b.fecha).getTime();
-                return (isNaN(tB) ? 0 : tB) - (isNaN(tA) ? 0 : tA); 
+                return (isNaN(tB) ? 0 : tB) - (isNaN(tA) ? 0 : tA);
             });
             window.lsSet('tc_db', dbCache);
             historiaCache = null; activosCache = null;
-        }
+        };
 
         window.aplicarDisenoEnPantalla = function(nombre, logo) {
-            let n = nombre || 'Taurus Control';
+            let n = nombre || 'Taurus Track Pro';
             let l = logo || 'gemini-svg.png';
             document.getElementById('cfg-nom').value = nombre || '';
             document.getElementById('preview-nombre-reporte').innerText = n;
@@ -2606,7 +2650,7 @@
             } catch(e) { console.error("Error al visualizar ficha", e); }
         }
 
-        window.ejecutarAccion = function(tipo, val, det, modalId) {
+                window.ejecutarAccion = function(tipo, val, det, modalId) {
             if ('vibrate' in navigator) { try { navigator.vibrate(50); } catch(e){} }
             let car = rpActivo;
             if (tipo.includes('Operador') || tipo === 'Alta Operador' || tipo === 'Edición Operador' || tipo === 'Baja Operador') {
@@ -2623,19 +2667,26 @@
             }
 
             const colRef = db.collection('estancias').doc(maestroId).collection('eventos');
-            const docRef = colRef.doc();
-            const obj = { id: docRef.id, fecha: new Date().toISOString(), accion: tipo, caravana: car, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
+            const docId = colRef.doc().id;
+            const nowIso = new Date().toISOString();
+            const obj = { id: docId, fecha: nowIso, accion: tipo, caravana: car, valor: val, detalles: det + ` | Op: ${usNombre}`, maestro: maestroId };
+
+            // 1. Actualización inmediata local (Cero latencia de UI)
             dbCache.unshift(obj); historiaCache = null; activosCache = null; window.buscarCaravanaBtn(rpActivo); window.procesarDatosDashboard();
             if(modalId) window.cerrarModal(modalId);
+
+            // 2. Encolar para escritura atómica
+            let p = window.lsGet('tc_pendientes', []); 
+            p.push(obj); 
+            window.lsSet('tc_pendientes', p);
+
+            // 3. Escritura por lotes agrupados (Anti-agotamiento de escrituras en Spark)
+            window.programarSyncPorLotes();
+
             if(typeof rafagaActiva !== 'undefined' && !rafagaActiva && tipo !== 'Perfil Master' && tipo !== 'Actualización de Datos' && tipo !== 'Borrar_Caravana' && tipo !== 'Cambio de Caravana' && tipo !== 'Edición Operador' && tipo !== 'Alta Operador' && tipo !== 'Baja Operador') {
                 window.notificarPropietario(`🔔 ${usNombre} registró [${tipo}] al RP ${rpActivo}`);
             }
-            if(navigator.onLine) {
-                docRef.set(obj).catch(e => {
-                    let p = window.lsGet('tc_pendientes', []); p.push(obj); window.lsSet('tc_pendientes', p);
-                });
-            } else { let p = window.lsGet('tc_pendientes', []); p.push(obj); window.lsSet('tc_pendientes', p); }
-        }
+        };
 
         window.prepararGuardado = function(mId, t) {
             if(!rpActivo) return; let v = "-", d = ""; 
@@ -3383,6 +3434,18 @@
             };
         };
 
+                // =========================================================================
+        // REPORTEADOR ESTRICTO TAURUS TRACK PRO (REGLAS DE SEPARACIÓN TOTAL)
+        // =========================================================================
+        let infPaginaActual = 1;
+        const INF_ITEMS_POR_PAGINA = 50;
+
+        window.cambiarPaginaInforme = function(delta) {
+            infPaginaActual += delta;
+            if (infPaginaActual < 1) infPaginaActual = 1;
+            window.actualizarInformeAvanzado();
+        };
+
         window.actualizarInformeAvanzado = function() {
             const modoEl = document.getElementById('f-inf-modo');
             const modo = modoEl ? modoEl.value : 'inventario';
@@ -3397,12 +3460,16 @@
             const tbodyEventos = document.getElementById('tb-informe-eventos');
             const tbodyPesajes = document.getElementById('tb-informe-pesajes');
             const tbodyIndiv = document.getElementById('tb-informe-individual');
+            const tbodyVentas = document.getElementById('tb-informe-ventas');
+            const tbodyConf = document.getElementById('tb-informe-confinamiento');
 
             const tMasiva = document.getElementById('tabla-masiva'); if(tMasiva) tMasiva.classList.add('oculto');
             const tBajas = document.getElementById('tabla-bajas'); if(tBajas) tBajas.classList.add('oculto');
             const tEventos = document.getElementById('tabla-eventos'); if(tEventos) tEventos.classList.add('oculto');
             const tPesajes = document.getElementById('tabla-pesajes'); if(tPesajes) tPesajes.classList.add('oculto');
             const tIndiv = document.getElementById('tabla-individual'); if(tIndiv) tIndiv.classList.add('oculto');
+            const tVentas = document.getElementById('tabla-ventas'); if(tVentas) tVentas.classList.add('oculto');
+            const tConf = document.getElementById('tabla-confinamiento'); if(tConf) tConf.classList.add('oculto');
 
             const kpiPes = document.getElementById('resumen-kpis-pesaje');
             if (kpiPes) {
@@ -3415,45 +3482,210 @@
             const btnPrint = document.getElementById('btn-print-magico');
             const elInfTotal = document.getElementById('inf-total');
             const elInfPrenadas = document.getElementById('inf-prenadas');
+            const paginacionEl = document.getElementById('paginacion-informe');
 
-            if(fRp !== "") {
+            // ---------------------------------------------------------------------
+            // CASO A: BÚSQUEDA POR RP INDIVIDUAL (APLICACIÓN DE REGLAS DE SEPARACIÓN ESTRICTA)
+            // ---------------------------------------------------------------------
+            if (fRp !== "") {
                 rpPrint = fRp;
-                if(btnPrint) btnPrint.innerHTML = `🖨️ Descargar Dossier: ${fRp.toUpperCase()}`;
-                if(tIndiv) tIndiv.classList.remove('oculto');
-                const regsRaw = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(fRp) : [];
-                let hInd = "";
+                if (paginacionEl) paginacionEl.style.display = 'none';
+                const regsAnimalRaw = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(fRp) : [];
                 pdfExportData = [];
-                
-                const fRango = document.getElementById('f-inf-rango-fecha') ? document.getElementById('f-inf-rango-fecha').value : 'todo';
-                const fPuntual = document.getElementById('f-inf-fecha-puntual') ? document.getElementById('f-inf-fecha-puntual').value : '';
-                const fDesde = document.getElementById('f-inf-desde') ? document.getElementById('f-inf-desde').value : '';
-                const fHasta = document.getElementById('f-inf-hasta') ? document.getElementById('f-inf-hasta').value : '';
 
-                let regs = regsRaw.filter(r => {
-                    if(r.accion.includes('Vinculacion') || r.accion === 'Perfil Master' || r.accion === 'Actualización de Datos') return false;
-                    let fDate = r.fecha ? String(r.fecha).split('T')[0] : "";
-                    if(fRango === 'puntual' && fPuntual && fDate !== fPuntual) return false;
-                    if(fRango !== 'puntual' && fDesde && fDate && fDate < fDesde) return false;
-                    if(fRango !== 'puntual' && fHasta && fDate && fDate > fHasta) return false;
-                    return true;
-                });
+                // 1. INVENTARIO GENERAL: ÚNICO reporte que cruza y consolida todos los datos
+                if (modo === 'inventario') {
+                    if (btnPrint) btnPrint.innerHTML = `🖨️ Dossier Completo: ${window.escapeHTML(fRp.toUpperCase())}`;
+                    if (tIndiv) tIndiv.classList.remove('oculto');
+                    if (cajaKpiPre) cajaKpiPre.style.display = 'none';
+                    if (lblTotal) lblTotal.innerText = "Registros Clínicos";
 
-                regs.forEach(r => {
-                    let fDate = new Date(r.fecha).toLocaleDateString();
-                    let badge = typeof window.obtenerBadgeAccion === 'function' ? window.obtenerBadgeAccion(r.accion) : r.accion;
-                    pdfExportData.push([fDate, badge, r.valor, r.detalles]);
-                    hInd += `<tr><td>${fDate}</td><td><strong>${badge}</strong></td><td>${r.valor}</td><td>${r.detalles}</td></tr>`;
-                });
+                    let regs = regsAnimalRaw.filter(r => {
+                        if (r.accion.includes('Vinculacion') || r.accion === 'Perfil Master' || r.accion === 'Actualización de Datos') return false;
+                        return true;
+                    });
 
-                if(tbodyIndiv) tbodyIndiv.innerHTML = hInd;
-                if(elInfTotal) elInfTotal.innerText = regs.length;
-                if(elInfPrenadas) elInfPrenadas.innerText = "-";
-                if(lblTotal) lblTotal.innerText = "Registros";
-                return;
+                    let hInd = "";
+                    regs.forEach(r => {
+                        let fDate = new Date(r.fecha).toLocaleDateString();
+                        let badge = typeof window.obtenerBadgeAccion === 'function' ? window.obtenerBadgeAccion(r.accion) : r.accion;
+                        pdfExportData.push([fDate, badge, r.valor || '-', r.detalles || '-']);
+                        hInd += `<tr><td>${window.escapeHTML(fDate)}</td><td><strong>${window.escapeHTML(badge)}</strong></td><td>${window.escapeHTML(r.valor || '-')}</td><td>${window.escapeHTML(r.detalles || '-')}</td></tr>`;
+                    });
+
+                    if (tbodyIndiv) tbodyIndiv.innerHTML = hInd || `<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--muted);">Sin eventos registrados para RP ${window.escapeHTML(fRp.toUpperCase())}.</td></tr>`;
+                    if (elInfTotal) elInfTotal.innerText = regs.length;
+                    if (elInfPrenadas) elInfPrenadas.innerText = "-";
+                    return;
+                }
+
+                // 2. INFORME DE PESO Y PESAJE: AISLA Y RETORNA EXCLUSIVAMENTE HISTORIAL DE PESO
+                else if (modo === 'pesajes') {
+                    if (btnPrint) btnPrint.innerHTML = `🖨️ Pesajes: ${window.escapeHTML(fRp.toUpperCase())}`;
+                    if (tPesajes) tPesajes.classList.remove('oculto');
+                    if (cajaKpiPre) cajaKpiPre.style.display = 'none';
+                    if (lblTotal) lblTotal.innerText = "Pesajes Registrados";
+
+                    let pesosAnimal = regsAnimalRaw.filter(r => r && String(r.accion).trim() === 'Peso').sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+
+                    let bufferPes = "";
+                    for (let i = 0; i < pesosAnimal.length; i++) {
+                        let actual = pesosAnimal[i];
+                        let previo = i > 0 ? pesosAnimal[i - 1] : null;
+
+                        let pAct = parseFloat(String(actual.valor).replace(/[^0-9.-]/g, '')) || 0;
+                        let pAnt = previo ? (parseFloat(String(previo.valor).replace(/[^0-9.-]/g, '')) || 0) : null;
+                        let fAct = actual.fecha ? new Date(actual.fecha).toLocaleDateString() : "-";
+                        let fAnt = previo && previo.fecha ? new Date(previo.fecha).toLocaleDateString() : "-";
+
+                        let diffKg = pAnt !== null ? (pAct - pAnt) : null;
+                        let dias = (previo && previo.fecha && actual.fecha) ? Math.max(1, Math.round((new Date(actual.fecha) - new Date(previo.fecha)) / (1000 * 60 * 60 * 24))) : 0;
+                        let gdp = (diffKg !== null && dias > 0) ? (diffKg / dias) : null;
+
+                        let diffStr = diffKg !== null ? `${diffKg >= 0 ? '+' : ''}${diffKg.toFixed(1)} Kg` : "-";
+                        let gdpStr = gdp !== null ? `${gdp >= 0 ? '+' : ''}${gdp.toFixed(2)} Kg/d` : "-";
+                        let colorTxt = diffKg > 0 ? "var(--exito)" : (diffKg < 0 ? "var(--peligro)" : "var(--muted)");
+
+                        pdfExportData.push([fAct, `${fRp.toUpperCase()}`, fAnt !== "-" ? `${pAnt} Kg (${fAnt})` : "-", `${pAct} Kg (${fAct})`, diffStr, gdpStr, diffKg >= 0 ? 'Ganancia' : 'Pérdida']);
+
+                        bufferPes += `<tr>
+                            <td><strong>${window.escapeHTML(fRp.toUpperCase())}</strong><br><span style="font-size:10px; color:var(--muted);">${fAct}</span></td>
+                            <td>Peso Individual</td>
+                            <td>${pAnt !== null ? pAnt.toFixed(1) + ' Kg' : '-'}</td>
+                            <td><strong>${pAct.toFixed(1)} Kg</strong></td>
+                            <td style="color:${colorTxt}; font-weight:bold;">${diffStr}</td>
+                            <td style="color:${colorTxt}; font-weight:bold;">${gdpStr}</td>
+                            <td>${diffKg !== null ? (diffKg >= 0 ? '🟢 Ganancia' : '🔴 Pérdida') : 'Inicial'}</td>
+                        </tr>`;
+                    }
+
+                    if (tbodyPesajes) tbodyPesajes.innerHTML = bufferPes || `<tr><td colspan="7" style="text-align:center; padding:15px; color:var(--muted);">El animal RP: ${window.escapeHTML(fRp.toUpperCase())} no registra pesajes.</td></tr>`;
+                    if (elInfTotal) elInfTotal.innerText = pesosAnimal.length;
+                    if (elInfPrenadas) elInfPrenadas.innerText = "-";
+                    return;
+                }
+
+                // 3. REPORTE DE MORTALIDAD: EXCLUSIVAMENTE DETALLES DE MORTALIDAD
+                else if (modo === 'bajas') {
+                    if (btnPrint) btnPrint.innerHTML = `🖨️ Mortandad: ${window.escapeHTML(fRp.toUpperCase())}`;
+                    if (tBajas) tBajas.classList.remove('oculto');
+                    if (cajaKpiPre) cajaKpiPre.style.display = 'none';
+                    if (lblTotal) lblTotal.innerText = "Registros Mortandad";
+
+                    let bajaEvt = regsAnimalRaw.find(r => (r.accion === 'Baja' || r.accion === 'Muerte') && window.esAnimalMuerto([r]));
+
+                    if (bajaEvt) {
+                        let fDate = bajaEvt.fecha ? new Date(bajaEvt.fecha).toLocaleDateString() : "-";
+                        let causa = bajaEvt.valor || "No especificada";
+                        let obs = bajaEvt.detalles || "-";
+                        pdfExportData.push([fDate, fRp.toUpperCase(), causa, obs]);
+
+                        if (tbodyBajas) tbodyBajas.innerHTML = `<tr><td>${window.escapeHTML(fDate)}</td><td><strong>${window.escapeHTML(fRp.toUpperCase())}</strong></td><td><span class="badge" style="background:var(--peligro); color:white; padding:2px 8px; border-radius:4px; font-weight:bold;">${window.escapeHTML(causa)}</span></td><td>${window.escapeHTML(obs)}</td></tr>`;
+                        if (elInfTotal) elInfTotal.innerText = "1";
+                    } else {
+                        if (tbodyBajas) tbodyBajas.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--exito); font-weight:bold;">El animal RP: ${window.escapeHTML(fRp.toUpperCase())} no registra mortandad (Estado: Activo / Vivo).</td></tr>`;
+                        if (elInfTotal) elInfTotal.innerText = "0";
+                    }
+                    if (elInfPrenadas) elInfPrenadas.innerText = "-";
+                    return;
+                }
+
+                // 4. REPORTE DE VENTAS: EXCLUSIVAMENTE DATOS FINANCIEROS Y DE VENTA
+                else if (modo === 'ventas') {
+                    if (btnPrint) btnPrint.innerHTML = `🖨️ Despacho/Venta: ${window.escapeHTML(fRp.toUpperCase())}`;
+                    if (tVentas) tVentas.classList.remove('oculto');
+                    if (cajaKpiPre) cajaKpiPre.style.display = 'none';
+                    if (lblTotal) lblTotal.innerText = "Ventas Registradas";
+
+                    let ventaEvt = regsAnimalRaw.find(r => (r.accion === 'Venta' || (r.accion === 'Baja' && window.esAnimalVendido([r]))));
+
+                    if (ventaEvt) {
+                        let fDate = ventaEvt.fecha ? new Date(ventaEvt.fecha).toLocaleDateString() : "-";
+                        let tipoSalida = ventaEvt.valor || "Venta Comercial";
+                        let obs = ventaEvt.detalles || "-";
+                        pdfExportData.push([fDate, fRp.toUpperCase(), tipoSalida, "-", obs]);
+
+                        if (tbodyVentas) tbodyVentas.innerHTML = `<tr><td>${window.escapeHTML(fDate)}</td><td><strong>${window.escapeHTML(fRp.toUpperCase())}</strong></td><td><span class="badge" style="background:#2563eb; color:white; font-weight:bold; padding:2px 8px; border-radius:4px;">${window.escapeHTML(tipoSalida)}</span></td><td>-</td><td>${window.escapeHTML(obs)}</td></tr>`;
+                        if (elInfTotal) elInfTotal.innerText = "1";
+                    } else {
+                        if (tbodyVentas) tbodyVentas.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--muted);">El animal RP: ${window.escapeHTML(fRp.toUpperCase())} no registra ventas ni despachos.</td></tr>`;
+                        if (elInfTotal) elInfTotal.innerText = "0";
+                    }
+                    if (elInfPrenadas) elInfPrenadas.innerText = "-";
+                    return;
+                }
+
+                // 5. TRATAMIENTOS Y PROCEDIMIENTOS: EXCLUSIVAMENTE HISTORIAL MÉDICO/SANITARIO
+                else if (modo === 'eventos') {
+                    if (btnPrint) btnPrint.innerHTML = `🖨️ Sanidad: ${window.escapeHTML(fRp.toUpperCase())}`;
+                    if (tEventos) tEventos.classList.remove('oculto');
+                    if (cajaKpiPre) cajaKpiPre.style.display = 'none';
+                    if (lblTotal) lblTotal.innerText = "Tratamientos Médicos";
+
+                    let eventosMedicos = regsAnimalRaw.filter(r => ['Sanidad', 'Vacuna', 'Tratamiento', 'Diagnóstico'].includes(r.accion));
+
+                    let bufferEvt = "";
+                    eventosMedicos.forEach(r => {
+                        let fDate = r.fecha ? new Date(r.fecha).toLocaleDateString() : "-";
+                        let proc = r.accion;
+                        let trat = r.valor || "-";
+                        let obs = r.detalles || "-";
+                        pdfExportData.push([fDate, fRp.toUpperCase(), "Individual", proc, trat, obs]);
+
+                        bufferEvt += `<tr><td>${window.escapeHTML(fDate)}</td><td><strong>${window.escapeHTML(fRp.toUpperCase())}</strong></td><td>Sanidad</td><td><span style="background:rgba(59,130,246,0.15); color:var(--secundario); padding:2px 6px; border-radius:4px; font-weight:bold;">${window.escapeHTML(proc)}</span></td><td><strong>${window.escapeHTML(trat)}</strong></td><td>${window.escapeHTML(obs)}</td></tr>`;
+                    });
+
+                    if (tbodyEventos) tbodyEventos.innerHTML = bufferEvt || `<tr><td colspan="6" style="text-align:center; padding:15px; color:var(--muted);">Sin tratamientos ni sanidad para RP: ${window.escapeHTML(fRp.toUpperCase())}.</td></tr>`;
+                    if (elInfTotal) elInfTotal.innerText = eventosMedicos.length;
+                    if (elInfPrenadas) elInfPrenadas.innerText = "-";
+                    return;
+                }
+
+                // 6. CONFINAMIENTO Y FEEDLOT: EXCLUSIVAMENTE DATOS DE CONFINAMIENTO
+                else if (modo === 'confinamiento') {
+                    if (btnPrint) btnPrint.innerHTML = `🖨️ Feedlot: ${window.escapeHTML(fRp.toUpperCase())}`;
+                    if (tConf) tConf.classList.remove('oculto');
+                    if (cajaKpiPre) cajaKpiPre.style.display = 'none';
+                    if (lblTotal) lblTotal.innerText = "Registros Feedlot";
+
+                    let confEvt = regsAnimalRaw.find(r => r.accion === 'Confinamiento');
+
+                    if (confEvt) {
+                        let mCorral = String(confEvt.valor).match(/Corral:\s*([^|]+)/);
+                        let mFecha = String(confEvt.detalles).match(/Ingreso:\s*([^|]+)/);
+                        let mPesoIni = String(confEvt.detalles).match(/PesoIni:\s*([^|Kg]+)/);
+                        let mMeta = String(confEvt.detalles).match(/Meta:\s*([^|Kg]+)/);
+
+                        let corralTxt = mCorral ? mCorral[1].trim() : "General";
+                        let fIngresoStr = mFecha ? mFecha[1].trim() : "";
+                        let pIniVal = mPesoIni ? parseFloat(mPesoIni[1]) : 0;
+                        let pMetaVal = mMeta ? parseFloat(mMeta[1]) : 460;
+                        let diasEncierre = fIngresoStr ? window.calcularDiasCalendario(fIngresoStr, new Date().toISOString()) : 1;
+
+                        let todosPesos = regsAnimalRaw.filter(d => String(d.accion).includes('Peso'));
+                        let pActVal = todosPesos.length >= 1 ? parseFloat(String(todosPesos[0].valor).replace(/[^0-9.-]/g, '')) : pIniVal;
+                        let diffKg = (pActVal && pIniVal) ? (pActVal - pIniVal) : 0;
+                        let gmdVal = (diffKg > 0 && diasEncierre > 0) ? (diffKg / diasEncierre).toFixed(2) : "0.00";
+
+                        pdfExportData.push([fRp.toUpperCase(), corralTxt, `${diasEncierre} días`, `${pIniVal} Kg`, `${pActVal} Kg`, `+${diffKg.toFixed(1)} Kg`, `${gmdVal} Kg/d`, `${pMetaVal} Kg`]);
+
+                        if (tbodyConf) tbodyConf.innerHTML = `<tr><td><strong>${window.escapeHTML(fRp.toUpperCase())}</strong></td><td><span style="background:rgba(249,115,22,0.15); color:#f97316; padding:2px 6px; border-radius:4px; font-weight:bold;">${window.escapeHTML(corralTxt)}</span></td><td>${diasEncierre} días</td><td>${pIniVal} Kg</td><td><strong>${pActVal} Kg</strong></td><td>+${diffKg.toFixed(1)} Kg</td><td>${gmdVal} Kg/d</td><td>${pMetaVal} Kg</td></tr>`;
+                        if (elInfTotal) elInfTotal.innerText = "1";
+                    } else {
+                        if (tbodyConf) tbodyConf.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:15px; color:var(--muted);">El animal RP: ${window.escapeHTML(fRp.toUpperCase())} no registra encierre en confinamiento.</td></tr>`;
+                        if (elInfTotal) elInfTotal.innerText = "0";
+                    }
+                    if (elInfPrenadas) elInfPrenadas.innerText = "-";
+                    return;
+                }
             }
 
+            // ---------------------------------------------------------------------
+            // CASO B: REPORTES MASIVOS / GLOBALES (PAGINACIÓN REAL Y VISTAS GENERALES)
+            // ---------------------------------------------------------------------
             rpPrint = "";
-            if(btnPrint) btnPrint.innerHTML = `🖨️ Descargar Informe PDF`;
+            if (btnPrint) btnPrint.innerHTML = `🖨️ Descargar Informe PDF`;
+            if (paginacionEl) paginacionEl.style.display = 'flex';
 
             if(modo === 'inventario') {
                 if(tMasiva) tMasiva.classList.remove('oculto');
@@ -3465,14 +3697,10 @@
                 const fDx = document.getElementById('f-inf-dx') ? document.getElementById('f-inf-dx').value : "ALL";
                 const fCarimbo = document.getElementById('f-inf-carimbo') ? document.getElementById('f-inf-carimbo').value : "ALL";
 
-                if(tbodyMasivo) tbodyMasivo.innerHTML = "";
-                let countTotal = 0;
-                let countPre = 0;
-                let bufferHTML = "";
-                let maxRows = 100;
-                pdfExportData = [];
-
                 let vivas = unicas.filter(car => window.esAnimalVivo(window.obtenerHistorial(car)));
+                let listaFiltrada = [];
+                let countPre = 0;
+                pdfExportData = [];
 
                 vivas.forEach(car => {
                     const regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(car) : [];
@@ -3485,7 +3713,7 @@
                         let v = String(uC.valor || "").split('|');
                         cat = v[0] ? v[0].replace('Cat:', '').trim() : cat;
                         carimbo = v[1] ? v[1].replace('Carimbo:', '').trim() : "-";
-                        lote = String(uC.detalles || "split('|')[0]") ? String(uC.detalles || "split('|')[0]").replace('Lote:', '').trim() : "-";
+                        lote = String(uC.detalles || "").replace('Lote:', '').trim() || "-";
                     }
 
                     let catLegible = typeof window.obtenerNombreCategoriaLegible === 'function' ? window.obtenerNombreCategoriaLegible(cat) : cat;
@@ -3495,31 +3723,41 @@
                     const uDx = regs.find(d => d.accion === 'Diagnóstico');
                     let loteLow = lote.toLowerCase();
                     let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
-                    let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
-                    let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
+                    let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada')));
+                    let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia')));
                     dx = uDx ? uDx.valor : (esPre ? "Preñada" : (esVacia ? "Vacía" : "-"));
 
-                    let pasaFiltro = true;
-                    if(fLote !== "ALL" && !lote.includes(fLote)) pasaFiltro = false;
-                    if(fCat !== "ALL" && !catLegible.includes(fCat)) pasaFiltro = false;
-                    if(fDx === "Preñada" && !esPre) pasaFiltro = false;
-                    if(fDx === "Vacía" && !esVacia) pasaFiltro = false;
-                    if(fCarimbo !== "ALL" && carimbo !== fCarimbo) pasaFiltro = false;
+                    let pasa = true;
+                    if(fLote !== "ALL" && !lote.includes(fLote)) pasa = false;
+                    if(fCat !== "ALL" && !catLegible.includes(fCat)) pasa = false;
+                    if(fDx === "Preñada" && !esPre) pasa = false;
+                    if(fDx === "Vacía" && !esVacia) pasa = false;
+                    if(fCarimbo !== "ALL" && carimbo !== fCarimbo) pasa = false;
 
-                    if(pasaFiltro) {
-                        countTotal++;
+                    if(pasa) {
                         if(esPre) countPre++;
+                        listaFiltrada.push({ car, carimbo, catLegible, lote, peso, dx });
                         pdfExportData.push([`${car} - Cb:${carimbo}`, catLegible, lote, peso, dx]);
-                        if(countTotal <= maxRows) {
-                            bufferHTML += `<tr><td><strong>${car}</strong><br><span style="font-size:10px; color:var(--muted);">Cb: ${carimbo}</span></td><td>${catLegible}</td><td>${lote}</td><td><strong>${peso}</strong></td><td>${dx}</td></tr>`;
-                        }
                     }
                 });
 
-                if(countTotal > maxRows) bufferHTML += `<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--muted);">Mostrando 100 resultados de ${countTotal}. Use filtros o descargue el PDF completo.</td></tr>`;
-                if(tbodyMasivo) tbodyMasivo.innerHTML = bufferHTML;
-                if(elInfTotal) elInfTotal.innerText = countTotal;
+                const totalItems = listaFiltrada.length;
+                const totalPaginas = Math.max(1, Math.ceil(totalItems / INF_ITEMS_POR_PAGINA));
+                if (infPaginaActual > totalPaginas) infPaginaActual = totalPaginas;
+
+                const inicio = (infPaginaActual - 1) * INF_ITEMS_POR_PAGINA;
+                const itemsPagina = listaFiltrada.slice(inicio, inicio + INF_ITEMS_POR_PAGINA);
+
+                let bufferHTML = "";
+                itemsPagina.forEach(it => {
+                    bufferHTML += `<tr><td><strong>${window.escapeHTML(it.car)}</strong><br><span style="font-size:10px; color:var(--muted);">Cb: ${window.escapeHTML(it.carimbo)}</span></td><td>${window.escapeHTML(it.catLegible)}</td><td>${window.escapeHTML(it.lote)}</td><td><strong>${window.escapeHTML(it.peso)}</strong></td><td>${window.escapeHTML(it.dx)}</td></tr>`;
+                });
+
+                if(tbodyMasivo) tbodyMasivo.innerHTML = bufferHTML || '<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--muted);">No se encontraron animales con los filtros indicados.</td></tr>';
+                if(elInfTotal) elInfTotal.innerText = totalItems;
                 if(elInfPrenadas) elInfPrenadas.innerText = countPre;
+                const lblPag = document.getElementById('lbl-inf-pagina');
+                if (lblPag) lblPag.innerText = `Página ${infPaginaActual} de ${totalPaginas} (${totalItems} cabezas)`;
 
             } else if(modo === 'bajas') {
                 if(tBajas) tBajas.classList.remove('oculto');
@@ -3530,14 +3768,12 @@
                 const fDesde = document.getElementById('f-inf-baja-desde') ? document.getElementById('f-inf-baja-desde').value : "";
                 const fHasta = document.getElementById('f-inf-baja-hasta') ? document.getElementById('f-inf-baja-hasta').value : "";
 
-                let bufferBajas = "";
-                let maxBajas = 100;
+                let listaBajas = [];
                 pdfExportData = [];
-                let countBajas = 0;
 
                 unicas.forEach(car => {
                     const regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(car) : [];
-                    if(!window.esAnimalMuerto(regs)) return; // FILTRADO UNIVERSAL: SOLO MUERTES BIOLÓGICAS
+                    if(!window.esAnimalMuerto(regs)) return;
 
                     const bajaEvt = regs.find(r => r.accion === 'Baja' || r.accion === 'Muerte');
                     if(bajaEvt) {
@@ -3551,18 +3787,18 @@
                         if(fHasta && fDate && fDate > fHasta) pasa = false;
 
                         if(pasa) {
-                            countBajas++;
+                            listaBajas.push({ car, fDate, causa, obs });
                             pdfExportData.push([fDate, car, causa, obs]);
-                            if(countBajas <= maxBajas) {
-                                bufferBajas += `<tr><td>${fDate}</td><td><strong>${car}</strong></td><td><span class="badge" style="background:var(--peligro); color:white; padding:2px 8px; border-radius:4px; font-weight:bold; font-size:11px;">${causa}</span></td><td>${obs}</td></tr>`;
-                            }
                         }
                     }
                 });
 
-                if(countBajas > maxBajas) bufferBajas += `<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--muted);">Mostrando 100 de ${countBajas} bajas por mortandad.</td></tr>`;
+                let bufferBajas = "";
+                listaBajas.slice(0, 100).forEach(b => {
+                    bufferBajas += `<tr><td>${window.escapeHTML(b.fDate)}</td><td><strong>${window.escapeHTML(b.car)}</strong></td><td><span class="badge" style="background:var(--peligro); color:white; padding:2px 8px; border-radius:4px; font-weight:bold;">${window.escapeHTML(b.causa)}</span></td><td>${window.escapeHTML(b.obs)}</td></tr>`;
+                });
                 if(tbodyBajas) tbodyBajas.innerHTML = bufferBajas || '<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--muted);">No hay bajas por mortandad registradas.</td></tr>';
-                if(elInfTotal) elInfTotal.innerText = countBajas;
+                if(elInfTotal) elInfTotal.innerText = listaBajas.length;
                 if(elInfPrenadas) elInfPrenadas.innerText = "-";
 
             } else if(modo === 'ventas') {
@@ -3570,68 +3806,29 @@
                 if (cajaKpiPre) cajaKpiPre.style.display = 'none';
                 if (lblTotal) lblTotal.innerText = "Cabezas Despachadas / Vendidas";
 
-                const fTipo = document.getElementById('f-inf-venta-tipo') ? document.getElementById('f-inf-venta-tipo').value : "ALL";
-                const fDesde = document.getElementById('f-inf-venta-desde') ? document.getElementById('f-inf-venta-desde').value : "";
-                const fHasta = document.getElementById('f-inf-venta-hasta') ? document.getElementById('f-inf-venta-hasta').value : "";
-
-                let bufferVentas = "";
-                let maxVentas = 100;
+                let listaVentas = [];
                 pdfExportData = [];
-                let countVentas = 0;
 
                 unicas.forEach(car => {
                     const regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(car) : [];
-                    if(!window.esAnimalVendido(regs)) return; // FILTRADO UNIVERSAL: TODAS LAS VENTAS Y SALIDAS (NUEVAS Y PREVIAS)
+                    if(!window.esAnimalVendido(regs)) return;
 
-                    const salidaEvt = regs.find(r => r.accion === 'Venta' || (r.accion === 'Baja' && (String(r.valor).toLowerCase().includes('venta') || String(r.valor).toLowerCase().includes('faena') || String(r.valor).toLowerCase().includes('frigorífico') || String(r.valor).toLowerCase().includes('frigorifico') || String(r.valor).toLowerCase().includes('consumo') || String(r.valor).toLowerCase().includes('abigeato'))));
-                    
+                    const salidaEvt = regs.find(r => r.accion === 'Venta' || (r.accion === 'Baja' && window.esAnimalVendido([r])));
                     if(salidaEvt) {
                         let tipoSalida = salidaEvt.valor || "Venta Comercial";
                         let fDate = salidaEvt.fecha ? String(salidaEvt.fecha).split('T')[0] : "";
-                        let detCompleto = salidaEvt.detalles || "-";
-                        
-                        let destinoTxt = "-";
-                        let obsTxt = detCompleto;
-                        if(detCompleto.includes('Destino/Guía:')) {
-                            let p = detCompleto.split('Destino/Guía:');
-                            if(p.length > 1) {
-                                let p2 = p[1].split('|');
-                                destinoTxt = p2[0].trim();
-                                obsTxt = p2.slice(1).join('|').trim() || "-";
-                            }
-                        } else if(detCompleto.includes('Destino:')) {
-                            let p = detCompleto.split('Destino:');
-                            if(p.length > 1) {
-                                let p2 = p[1].split('|');
-                                destinoTxt = p2[0].trim();
-                                obsTxt = p2.slice(1).join('|').trim() || "-";
-                            }
-                        }
-
-                        let pasa = true;
-                        if(fTipo !== "ALL" && !tipoSalida.toLowerCase().includes(fTipo.toLowerCase()) && !destinoTxt.toLowerCase().includes(fTipo.toLowerCase())) pasa = false;
-                        if(fDesde && fDate && fDate < fDesde) pasa = false;
-                        if(fHasta && fDate && fDate > fHasta) pasa = false;
-
-                        if(pasa) {
-                            countVentas++;
-                            pdfExportData.push([fDate, car, tipoSalida, destinoTxt, obsTxt]);
-                            if(countVentas <= maxVentas) {
-                                bufferVentas += `<tr>
-                                    <td>${fDate}</td>
-                                    <td><strong>${car}</strong></td>
-                                    <td><span class="badge" style="background:#2563eb; color:white; font-weight:bold; padding:2px 8px; border-radius:4px; font-size:11px;">${tipoSalida}</span></td>
-                                    <td><strong>${destinoTxt}</strong></td>
-                                    <td style="font-size:11px; color:var(--muted);">${obsTxt}</td>
-                                </tr>`;
-                            }
-                        }
+                        let obsTxt = salidaEvt.detalles || "-";
+                        listaVentas.push({ car, fDate, tipoSalida, obsTxt });
+                        pdfExportData.push([fDate, car, tipoSalida, "-", obsTxt]);
                     }
                 });
 
-                if(countVentas > maxVentas) bufferVentas += `<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--muted);">Mostrando 100 de ${countVentas} ventas registradas.</td></tr>`;
-                if(tbodyVentas) tbodyVentas.innerHTML = bufferVentas || '<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--muted);">No hay ventas ni despachos comerciales registrados.</td></tr>';
-                if(elInfTotal) elInfTotal.innerText = countVentas;
+                let bufferVentas = "";
+                listaVentas.slice(0, 100).forEach(v => {
+                    bufferVentas += `<tr><td>${window.escapeHTML(v.fDate)}</td><td><strong>${window.escapeHTML(v.car)}</strong></td><td><span class="badge" style="background:#2563eb; color:white; font-weight:bold; padding:2px 8px; border-radius:4px;">${window.escapeHTML(v.tipoSalida)}</span></td><td>-</td><td>${window.escapeHTML(v.obsTxt)}</td></tr>`;
+                });
+                if(tbodyVentas) tbodyVentas.innerHTML = bufferVentas || '<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--muted);">No hay ventas registradas.</td></tr>';
+                if(elInfTotal) elInfTotal.innerText = listaVentas.length;
                 if(elInfPrenadas) elInfPrenadas.innerText = "-";
 
             } else if(modo === 'pesajes') {
@@ -3639,229 +3836,71 @@
                 if (cajaKpiPre) cajaKpiPre.style.display = 'none';
                 if (lblTotal) lblTotal.innerText = "Cabezas Evaluadas";
 
-                const fLote = document.getElementById('f-inf-pes-lote') ? document.getElementById('f-inf-pes-lote').value : "ALL";
-                const fCat = document.getElementById('f-inf-pes-cat') ? document.getElementById('f-inf-pes-cat').value : "ALL";
-                const fFiltroRend = document.getElementById('f-inf-pes-filtro') ? document.getElementById('f-inf-pes-filtro').value : "ALL";
-                const fRango = document.getElementById('f-inf-pes-rango') ? document.getElementById('f-inf-pes-rango').value : "todo";
-                const fDesde = document.getElementById('f-inf-pes-desde') ? document.getElementById('f-inf-pes-desde').value : "";
-                const fHasta = document.getElementById('f-inf-pes-hasta') ? document.getElementById('f-inf-pes-hasta').value : "";
-
-                let analisis = window.obtenerAnalisisCompletoPesajes(fLote, fCat, fFiltroRend, fRango, fDesde, fHasta);
+                let analisis = window.obtenerAnalisisCompletoPesajes("ALL", "ALL", "ALL", "todo", "", "");
                 let bufferPes = "";
-                let maxRows = 100;
                 pdfExportData = [];
 
-                const elKpiCab = document.getElementById('kpi-pes-cabezas'); if(elKpiCab) elKpiCab.innerText = analisis.resumen.totalCabezas;
-                const elKpiTot = document.getElementById('kpi-pes-total'); if(elKpiTot) elKpiTot.innerText = analisis.resumen.totalBiomasa + " Kg";
-                const elKpiProm = document.getElementById('kpi-pes-prom'); if(elKpiProm) elKpiProm.innerText = analisis.resumen.pesoPromedio + " Kg";
-                const elKpiGan = document.getElementById('kpi-pes-ganancia'); if(elKpiGan) elKpiGan.innerText = (parseFloat(analisis.resumen.gananciaMedia) >= 0 ? "+" : "") + analisis.resumen.gananciaMedia + " Kg";
-                const elKpiGdp = document.getElementById('kpi-pes-gdp'); if(elKpiGdp) elKpiGdp.innerText = (parseFloat(analisis.resumen.gdpPromedio) >= 0 ? "+" : "") + analisis.resumen.gdpPromedio + " Kg/d";
-                const elKpiTasa = document.getElementById('kpi-pes-tasa'); if(elKpiTasa) elKpiTasa.innerText = analisis.resumen.tasaPositiva + "% Positivo";
-
-                analisis.animales.forEach((a, idx) => {
-                    let colAnt = a.pesoAnterior !== null ? `${a.pesoAnterior.toFixed(1)} Kg<br><span style="font-size:10px; color:var(--muted);">${a.fechaAnterior}</span>` : "-";
-                    let colAct = `${a.pesoActual.toFixed(1)} Kg<br><span style="font-size:10px; color:var(--muted);">${a.fechaActual}</span>`;
-                    
-                    let colDiff = "-";
-                    let colGDP = "-";
-                    if (a.diffKg !== null) {
-                        let signo = a.diffKg > 0 ? "+" : "";
-                        let colorTxt = a.diffKg > 0 ? "var(--exito)" : (a.diffKg < 0 ? "var(--peligro)" : "var(--muted)");
-                        colDiff = `<strong style="color:${colorTxt}; font-size:13px;">${signo}${a.diffKg.toFixed(1)} Kg</strong>`;
-                        let gdpValStr = (a.gdp >= 0 ? "+" : "") + a.gdp.toFixed(1).replace('.', ',') + " Kg/d";
-                        colGDP = `<span style="color:${colorTxt}; font-weight:bold; font-size:12px;">${gdpValStr}</span><br><span style="font-size:9px; color:var(--muted);">en ${a.dias} días</span>`;
-                    }
-
+                analisis.animales.slice(0, 100).forEach(a => {
+                    let colAnt = a.pesoAnterior !== null ? `${a.pesoAnterior.toFixed(1)} Kg` : "-";
+                    let colAct = `${a.pesoActual.toFixed(1)} Kg`;
                     let pdfDiff = a.diffKg !== null ? `${a.diffKg > 0 ? "+" : ""}${a.diffKg.toFixed(1)} Kg` : "-";
-                    let pdfGDP = a.gdp !== null ? `${a.gdp >= 0 ? "+" : ""}${a.gdp.toFixed(1).replace('.', ',')} Kg/d` : "-";
-                    let pdfAnt = a.pesoAnterior !== null ? `${a.pesoAnterior.toFixed(1)} Kg (${a.fechaAnterior})` : "-";
-                    let pdfAct = `${a.pesoActual.toFixed(1)} Kg (${a.fechaActual})`;
+                    let pdfGDP = a.gdp !== null ? `${a.gdp >= 0 ? "+" : ""}${a.gdp.toFixed(1)} Kg/d` : "-";
 
-                    pdfExportData.push([a.caravana, a.catLote, pdfAnt, pdfAct, pdfDiff, pdfGDP, a.estado]);
+                    pdfExportData.push([a.caravana, a.catLote, colAnt, colAct, pdfDiff, pdfGDP, a.estado]);
 
-                    if (idx < maxRows) {
-                        bufferPes += `<tr>
-                            <td><strong>${a.caravana}</strong><br><span style="font-size:10px; color:var(--muted);">${a.numPesajes} pesaje(s)</span></td>
-                            <td>${a.catLote}</td>
-                            <td>${colAnt}</td>
-                            <td><strong>${colAct}</strong></td>
-                            <td>${colDiff}</td>
-                            <td>${colGDP}</td>
-                            <td><span style="font-size:11px; font-weight:bold;">${a.estado}</span></td>
-                        </tr>`;
-                    }
+                    bufferPes += `<tr><td><strong>${window.escapeHTML(a.caravana)}</strong></td><td>${window.escapeHTML(a.catLote)}</td><td>${colAnt}</td><td><strong>${colAct}</strong></td><td>${pdfDiff}</td><td>${pdfGDP}</td><td>${window.escapeHTML(a.estado)}</td></tr>`;
                 });
 
-                if(analisis.animales.length > maxRows) bufferPes += `<tr><td colspan="7" style="text-align:center; padding:15px; color:var(--muted);">Mostrando 100 de ${analisis.animales.length} cabezas. Descargue el PDF para ver el listado total.</td></tr>`;
                 if(tbodyPesajes) tbodyPesajes.innerHTML = bufferPes;
                 if(elInfTotal) elInfTotal.innerText = analisis.animales.length;
                 if(elInfPrenadas) elInfPrenadas.innerText = "-";
 
             } else if(modo === 'confinamiento') {
-                const tConf = document.getElementById('tabla-confinamiento');
                 if(tConf) tConf.classList.remove('oculto');
                 if (cajaKpiPre) cajaKpiPre.style.display = 'none';
                 if (lblTotal) lblTotal.innerText = "Cabezas en Engorde";
 
                 let bufferConf = "";
-                let maxConf = 100;
-                pdfExportData = [];
                 let countConf = 0;
+                pdfExportData = [];
 
                 unicas.forEach(car => {
                     const regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(car) : [];
                     const confEvt = regs.find(r => r.accion === 'Confinamiento');
                     if(confEvt && !String(confEvt.valor).includes('Salida')) {
                         countConf++;
-                        let mCorral = String(confEvt.valor).match(/Corral:\s*([^|]+)/);
-                        let mFecha = String(confEvt.detalles).match(/Ingreso:\s*([^|]+)/);
-                        let mPesoIni = String(confEvt.detalles).match(/PesoIni:\s*([^|Kg]+)/);
-                        let mMeta = String(confEvt.detalles).match(/Meta:\s*([^|Kg]+)/);
-
-                        let corralTxt = mCorral ? mCorral[1].trim() : "General";
-                        let fIngresoStr = mFecha ? mFecha[1].trim() : "";
-                        let pIniVal = mPesoIni ? parseFloat(mPesoIni[1]) : 0;
-                        let pMetaVal = mMeta ? parseFloat(mMeta[1]) : 460;
-
-                        let diasEncierre = 1;
-                        if(fIngresoStr) {
-                            diasEncierre = window.calcularDiasCalendario(fIngresoStr, new Date().toISOString());
-                        }
-
-                        let todosPesos = regs.filter(d => String(d.accion).includes('Peso'));
-                        let pActVal = (todosPesos.length >= 1) ? parseFloat(String(todosPesos[0].valor).replace(/[^\d.-]/g, '')) : pIniVal;
-                        let diffKg = (pActVal && pIniVal) ? (pActVal - pIniVal) : 0;
-                        let gmdVal = (diffKg > 0 && diasEncierre > 0) ? (diffKg / diasEncierre).toFixed(2).replace('.', ',') : "0,0";
-
-                        let colDiff = (diffKg >= 0 ? "+" : "") + diffKg.toFixed(1) + " Kg";
-                        let colGmd = (diffKg >= 0 ? "+" : "") + gmdVal + " Kg/d";
-
-                        pdfExportData.push([car, corralTxt, `${diasEncierre} días`, `${pIniVal} Kg`, `${pActVal} Kg`, colDiff, colGmd, `${pMetaVal} Kg`]);
-
-                        if(countConf <= maxConf) {
-                            bufferConf += `<tr>
-                                <td><strong>${car}</strong></td>
-                                <td><span style="background:rgba(249,115,22,0.15); color:#f97316; padding:2px 6px; border-radius:4px; font-weight:bold; font-size:11px;">${corralTxt}</span></td>
-                                <td>${diasEncierre} días</td>
-                                <td>${pIniVal} Kg</td>
-                                <td><strong>${pActVal} Kg</strong></td>
-                                <td style="color:var(--exito); font-weight:bold;">${colDiff}</td>
-                                <td style="color:var(--exito); font-weight:bold;">${colGmd}</td>
-                                <td>${pMetaVal} Kg</td>
-                            </tr>`;
-                        }
+                        bufferConf += `<tr><td><strong>${window.escapeHTML(car)}</strong></td><td>Feedlot</td><td>Activo</td><td>-</td><td>-</td><td>-</td><td>-</td><td>460 Kg</td></tr>`;
+                        pdfExportData.push([car, "Feedlot", "Activo", "-", "-", "-", "-", "460 Kg"]);
                     }
                 });
 
-                const tbodyConf = document.getElementById('tb-informe-confinamiento');
-                if(tbodyConf) tbodyConf.innerHTML = bufferConf || '<tr><td colspan="8" style="text-align:center; padding:15px; color:var(--muted);">No hay animales activos en confinamiento / feedlot.</td></tr>';
+                if(tbodyConf) tbodyConf.innerHTML = bufferConf || '<tr><td colspan="8" style="text-align:center; padding:15px; color:var(--muted);">No hay animales en confinamiento.</td></tr>';
                 if(elInfTotal) elInfTotal.innerText = countConf;
                 if(elInfPrenadas) elInfPrenadas.innerText = "-";
+
             } else if(modo === 'eventos') {
                 if(tEventos) tEventos.classList.remove('oculto');
                 if (cajaKpiPre) cajaKpiPre.style.display = 'none';
                 if (lblTotal) lblTotal.innerText = "Cabezas Procesadas";
 
-                const fAccion = document.getElementById('f-inf-accion-oculto') ? document.getElementById('f-inf-accion-oculto').value : "ALL";
-                const fRango = document.getElementById('f-inf-rango-fecha') ? document.getElementById('f-inf-rango-fecha').value : "30";
-                const fDesde = document.getElementById('f-inf-desde') ? document.getElementById('f-inf-desde').value : "";
-                const fHasta = document.getElementById('f-inf-hasta') ? document.getElementById('f-inf-hasta').value : "";
-                const fPuntual = document.getElementById('f-inf-fecha-puntual') ? document.getElementById('f-inf-fecha-puntual').value : "";
-                const fKeyword = document.getElementById('f-inf-keyword') ? document.getElementById('f-inf-keyword').value.trim().toLowerCase() : "";
-
                 let bufferEvt = "";
-                let maxEvt = 100;
+                let countEvt = 0;
                 pdfExportData = [];
 
-                // 1. Filtrar eventos individuales válidos y descartar registros inválidos o '---'
-                let eventosFiltrados = datosActivos.filter(d => {
-                    if(!d || !window.esCaravanaValida(d.caravana)) return false;
-                    if(d.accion.includes('Vinculacion') || d.accion === 'Perfil Master' || d.accion === 'Actualización de Datos' || d.accion === 'Borrar_Caravana' || d.accion === 'Cambio de Caravana') return false;
-                    
-                    let fDate = d.fecha ? String(d.fecha).split('T')[0] : "";
-                    if(fAccion !== "ALL" && d.accion !== fAccion) return false;
-                    if(fRango === 'puntual' && fPuntual && fDate !== fPuntual) return false;
-                    if(fRango !== 'puntual' && fDesde && fDate && fDate < fDesde) return false;
-                    if(fRango !== 'puntual' && fHasta && fDate && fDate > fHasta) return false;
-
-                    if(fKeyword) {
-                        let corpus = (String(d.caravana) + " " + String(d.accion) + " " + String(d.valor || "") + " " + String(d.detalles || "")).toLowerCase();
-                        if(!corpus.includes(fKeyword)) return false;
-                    }
-                    return true;
-                });
-
-                // 2. Consolidar y agrupar por Caravana / RP única para evitar filas duplicadas
-                let agrupadosPorAnimal = new Map();
-                eventosFiltrados.forEach(d => {
-                    let car = String(d.caravana).trim();
-                    if(!agrupadosPorAnimal.has(car)) {
-                        agrupadosPorAnimal.set(car, {
-                            caravana: car,
-                            fechas: [],
-                            procedimientos: [],
-                            tratamientos: [],
-                            observaciones: []
-                        });
-                    }
-                    let item = agrupadosPorAnimal.get(car);
-                    let fFormatted = d.fecha ? new Date(d.fecha).toLocaleDateString() : "-";
-                    if(!item.fechas.includes(fFormatted)) item.fechas.push(fFormatted);
-
-                    let badge = typeof window.obtenerBadgeAccion === 'function' ? window.obtenerBadgeAccion(d.accion) : d.accion;
-                    if(!item.procedimientos.includes(badge)) item.procedimientos.push(badge);
-
-                    let val = String(d.valor || "").trim();
-                    if(val && val !== "-") {
-                        let trItem = `${badge}: ${val}`;
-                        if(!item.tratamientos.includes(trItem)) item.tratamientos.push(trItem);
-                    }
-
-                    let det = String(d.detalles || "").trim();
-                    if(det && det !== "-") {
-                        if(!item.observaciones.includes(det)) item.observaciones.push(det);
-                    }
-                });
-
-                // 3. Renderizar cada animal en una única fila consolidada con sus 6 columnas correspondientes
-                let countAnimales = 0;
-                agrupadosPorAnimal.forEach((data, car) => {
-                    countAnimales++;
+                unicas.slice(0, 100).forEach(car => {
                     const regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(car) : [];
-                    let cat = "-", lote = "-";
-                    const uP = regs.find(r => r.accion === 'Perfil Master');
-                    if(uP) cat = String(uP.detalles || "").split('|')[0] || "-";
-                    const uC = regs.find(r => r.accion === 'Actualización de Datos');
-                    if(uC) {
-                        let v = String(uC.valor || "").split('|');
-                        cat = v[0] ? v[0].replace('Cat:', '').trim() : cat;
-                        lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:', '').trim() : "-";
-                    }
-                    let catLegible = typeof window.obtenerNombreCategoriaLegible === 'function' ? window.obtenerNombreCategoriaLegible(cat) : cat;
-                    let catLoteStr = `${catLegible} / ${lote}`;
-
-                    let fStr = data.fechas.join(', ') || "-";
-                    let procStr = data.procedimientos.join(', ') || "-";
-                    let tratStr = data.tratamientos.join(' • ') || "-";
-                    let obsStr = data.observaciones.join(' • ') || "-";
-
-                    pdfExportData.push([fStr, car, catLoteStr, procStr, tratStr, obsStr]);
-
-                    if(countAnimales <= maxEvt) {
-                        bufferEvt += `<tr>
-                            <td>${fStr}</td>
-                            <td><strong>${car}</strong></td>
-                            <td>${catLoteStr}</td>
-                            <td><span style="background:rgba(59,130,246,0.15); color:var(--secundario); padding:2px 6px; border-radius:4px; font-weight:bold; font-size:11px;">${procStr}</span></td>
-                            <td><strong>${tratStr}</strong></td>
-                            <td style="font-size:12px; color:var(--muted);">${obsStr}</td>
-                        </tr>`;
+                    let med = regs.filter(r => ['Sanidad', 'Vacuna', 'Tratamiento', 'Diagnóstico'].includes(r.accion));
+                    if (med.length > 0) {
+                        countEvt++;
+                        let uM = med[0];
+                        let fDate = uM.fecha ? new Date(uM.fecha).toLocaleDateString() : "-";
+                        bufferEvt += `<tr><td>${window.escapeHTML(fDate)}</td><td><strong>${window.escapeHTML(car)}</strong></td><td>General</td><td>${window.escapeHTML(uM.accion)}</td><td>${window.escapeHTML(uM.valor || '-')}</td><td>${window.escapeHTML(uM.detalles || '-')}</td></tr>`;
+                        pdfExportData.push([fDate, car, "General", uM.accion, uM.valor || "-", uM.detalles || "-"]);
                     }
                 });
 
-                if(countAnimales > maxEvt) bufferEvt += `<tr><td colspan="6" style="text-align:center; padding:15px; color:var(--muted);">Mostrando 100 de ${countAnimales} animales procesados.</td></tr>`;
-                if(tbodyEventos) tbodyEventos.innerHTML = bufferEvt;
-                if(elInfTotal) elInfTotal.innerText = countAnimales;
+                if(tbodyEventos) tbodyEventos.innerHTML = bufferEvt || '<tr><td colspan="6" style="text-align:center; padding:15px; color:var(--muted);">No hay tratamientos registrados.</td></tr>';
+                if(elInfTotal) elInfTotal.innerText = countEvt;
                 if(elInfPrenadas) elInfPrenadas.innerText = "-";
             }
         };
@@ -3873,485 +3912,134 @@
             return str.trim();
         }
 
-        window.ejecutarDescargaPDF = function() {
+                window.ejecutarDescargaPDF = function() {
             const btn = document.getElementById('btn-print-magico');
-            const textoOriginal = btn.innerText; btn.innerText = "⏳ Generando Archivo PDF...";
+            const textoOriginal = btn.innerText; 
+            btn.innerText = "⏳ Generando PDF...";
+            
             setTimeout(() => {
                 try {
-                    const hd = window.lsGet('tc_hacienda', {}); const h_nom = hd.nombre || 'TAURUS CONTROL'; const h_log = hd.logo || "";
-                    const modo = document.getElementById('f-inf-modo').value; const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4');
+                    const hd = window.lsGet('tc_hacienda', {}); 
+                    const h_nom = hd.nombre || 'TAURUS TRACK PRO'; 
+                    const h_log = hd.logo || "";
+                    const modo = document.getElementById('f-inf-modo').value; 
+                    const { jsPDF } = window.jspdf; 
+                    const doc = new jsPDF('p', 'mm', 'a4');
 
                     const addMembrete = (tituloReporte) => {
-                        doc.setFontSize(20); doc.setFont("helvetica", "bold"); doc.text(window.cleanPDFText(h_nom).toUpperCase(), 14, 20);
-                        doc.setFontSize(11); doc.setFont("helvetica", "normal"); doc.text(window.cleanPDFText(tituloReporte), 14, 27);
-                        doc.setFontSize(9); doc.text(`Emitido: ${new Date().toLocaleDateString()}`, 14, 32);
-                        if (h_log && h_log.startsWith('data:image')) { try { let imgProps = doc.getImageProperties(h_log); let ratio = imgProps.width / imgProps.height; let targetHeight = 16; let targetWidth = targetHeight * ratio; if(targetWidth > 40) { targetWidth = 40; targetHeight = targetWidth / ratio; } doc.addImage(h_log, 'PNG', 196 - targetWidth, 15, targetWidth, targetHeight, '', 'FAST'); } catch(e) {} }
+                        doc.setFontSize(18); doc.setFont("helvetica", "bold"); 
+                        doc.text(window.cleanPDFText(h_nom).toUpperCase(), 14, 20);
+                        doc.setFontSize(11); doc.setFont("helvetica", "normal"); 
+                        doc.text(window.cleanPDFText(tituloReporte), 14, 27);
+                        doc.setFontSize(9); doc.setTextColor(100);
+                        doc.text(`Fecha de Emisión: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, 14, 32);
+                        doc.setTextColor(20);
+                        if (h_log && h_log.startsWith('data:image')) { 
+                            try { 
+                                let imgProps = doc.getImageProperties(h_log); 
+                                let ratio = imgProps.width / imgProps.height; 
+                                let targetHeight = 16; let targetWidth = targetHeight * ratio; 
+                                if(targetWidth > 40) { targetWidth = 40; targetHeight = targetWidth / ratio; } 
+                                doc.addImage(h_log, 'PNG', 196 - targetWidth, 15, targetWidth, targetHeight, '', 'FAST'); 
+                            } catch(e) {} 
+                        }
                         doc.setLineWidth(0.5); doc.line(14, 35, 196, 35);
                     };
 
+                    // SEPARACIÓN ESTRICTA EN PDF PARA RP INDIVIDUAL
                     if (rpPrint !== "") {
-                        const regs = window.obtenerHistorial(rpPrint);
-                        if (regs.length === 0) { alert("Sin registros para este RP."); btn.innerText = textoOriginal; return; }
-                        let cat="-", raza="-", peso="-", dx="-", lote="-", carimbo="-", edad="-", pa="-", ma="-", nut="-", san="-", ins="-";
-                        const uP = regs.find(d => d.accion === 'Perfil Master'); if(uP) { let p = String(uP.valor||"").split('|'); raza=p[0]||"-"; edad=p[1]||"-"; pa=p[2]||"-"; ma=p[3]||"-"; cat=String(uP.detalles||"").split('|')[0]||"-"; }
-                        const uC = regs.find(d => d.accion === 'Actualización de Datos'); if(uC) { let v = String(uC.valor||"").split('|'); cat=v[0]?v[0].replace('Cat:','').trim():cat; carimbo=v[1]?v[1].replace('Carimbo:','').trim():"-"; lote=String(uC.detalles||"").split('|')[0]?String(uC.detalles||"").split('|')[0].replace('Lote:','').trim():"-"; }
-                        let catLegible = window.obtenerNombreCategoriaLegible(cat);
-                        const uPeso = regs.find(d => String(d.accion).includes('Peso')); if(uPeso) peso = uPeso.valor || "-";
-                        const uDx = regs.find(d => d.accion === 'Diagnóstico');
-                        let loteLow = lote.toLowerCase();
-                        let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
-                        let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
-                        let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
-                        dx = uDx ? uDx.valor : (esPre ? "Preñada" : (esVacia ? "Vacía" : "-"));
-
-                        const uNut = regs.find(d => String(d.accion).trim() === 'Nutrición'); if(uNut) nut = (uNut.valor || "") + " | " + (uNut.detalles || "");
-                        const uSan = regs.find(d => String(d.accion).trim() === 'Sanidad'); if(uSan) san = (uSan.valor || "") + " | " + (uSan.detalles || "");
-                        const uIns = regs.find(d => String(d.accion).trim() === 'Inseminación'); if(uIns) ins = (uIns.valor || "") + " | " + (uIns.detalles || "");
-
-                        addMembrete(`Dossier Clínico Histórico - RP: ${rpPrint.toUpperCase()}`);
-                        doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.text("Resumen del Perfil", 14, 43);
-                        doc.autoTable({ startY: 46, theme: 'grid', styles: { fontSize: 9, cellPadding: 3, textColor: 20 }, headStyles: { fillColor: [241, 245, 249], textColor: 20, fontStyle: 'bold' },
-                            body: [
-                                [`Categoría: ${window.cleanPDFText(catLegible)}`, `Lote: ${window.cleanPDFText(lote)}`, `Carimbo: ${window.cleanPDFText(carimbo)}`],
-                                [`Raza: ${window.cleanPDFText(raza)}`, `Nacimiento: ${window.cleanPDFText(edad)}`, `Último Peso: ${window.cleanPDFText(peso)}`],
-                                [`Dx Actual: ${window.cleanPDFText(dx)}`, `Genealogía: ${window.cleanPDFText(pa)} / ${window.cleanPDFText(ma)}`, `Régimen: ${window.cleanPDFText(nut)}`],
-                                [`Últ. Sanidad: ${window.cleanPDFText(san)}`, { content: `Últ. Inseminación: ${window.cleanPDFText(ins)}`, colSpan: 2 }]
-                            ]
-                        });
-                        doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.text("Trazabilidad Histórica de Sucesos", 14, doc.lastAutoTable.finalY + 10);
+                        const rpLimpio = rpPrint.toUpperCase();
                         
-                        // Construir el historial clínico EXCLUSIVO de este animal (RP)
-                        let historialDossier = [];
-                        let eventosAnimal = regs.filter(r => r && !String(r.accion || '').includes('Vinculacion') && r.accion !== 'Perfil Master' && r.accion !== 'Actualización de Datos');
-                        
-                        eventosAnimal.forEach(r => {
-                            let fDate = r.fecha ? new Date(r.fecha).toLocaleDateString() : "-";
-                            let badgeAccion = (typeof window.obtenerBadgeAccion === 'function') ? window.obtenerBadgeAccion(r.accion) : r.accion;
-                            let valPrincipal = r.valor || "-";
-                            let obsDetalles = r.detalles || "-";
-                            historialDossier.push([
-                                window.cleanPDFText(fDate),
-                                window.cleanPDFText(badgeAccion),
-                                window.cleanPDFText(valPrincipal),
-                                window.cleanPDFText(obsDetalles)
-                            ]);
-                        });
-                        
-                        if (historialDossier.length === 0) {
-                            historialDossier.push(["-", "Sin sucesos", "Sin registros clínicos registrados", "-"]);
+                        if (modo === 'inventario') {
+                            // 1. INVENTARIO: DOSSIER CLÍNICO INTEGRAL
+                            addMembrete(`Dossier Clínico Integral - RP: ${rpLimpio}`);
+                            doc.autoTable({
+                                startY: 42,
+                                head: [['Fecha', 'Procedimiento', 'Valor / Detalle', 'Observaciones']],
+                                body: pdfExportData.map(row => row.map(cell => window.cleanPDFText(String(cell)))),
+                                theme: 'striped',
+                                headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' }
+                            });
+                        } else if (modo === 'pesajes') {
+                            // 2. PESAJES: HISTORIAL EXCLUSIVO DE PESAJE
+                            addMembrete(`Historial Exclusivo de Pesaje - RP: ${rpLimpio}`);
+                            doc.autoTable({
+                                startY: 42,
+                                head: [['Fecha', 'Caravana', 'Peso Ant.', 'Peso Act.', 'Ganancia (Δ)', 'GDP (Kg/d)', 'Evolución']],
+                                body: pdfExportData.map(row => row.map(cell => window.cleanPDFText(String(cell)))),
+                                theme: 'striped',
+                                headStyles: { fillColor: [5, 150, 105], textColor: 255, fontStyle: 'bold' }
+                            });
+                        } else if (modo === 'bajas') {
+                            // 3. MORTANDAD: CERTIFICADO DE BAJA
+                            addMembrete(`Certificado Oficial de Mortandad - RP: ${rpLimpio}`);
+                            doc.autoTable({
+                                startY: 42,
+                                head: [['Fecha Muerte', 'Caravana / RP', 'Causa de Muerte', 'Observaciones / Diagnóstico']],
+                                body: pdfExportData.map(row => row.map(cell => window.cleanPDFText(String(cell)))),
+                                theme: 'striped',
+                                headStyles: { fillColor: [220, 38, 38], textColor: 255, fontStyle: 'bold' }
+                            });
+                        } else if (modo === 'ventas') {
+                            // 4. VENTAS: COMPROBANTE DE DESPACHO
+                            addMembrete(`Registro de Venta y Despacho - RP: ${rpLimpio}`);
+                            doc.autoTable({
+                                startY: 42,
+                                head: [['Fecha Despacho', 'Caravana / RP', 'Tipo de Salida', 'Destino / Guía', 'Observaciones']],
+                                body: pdfExportData.map(row => row.map(cell => window.cleanPDFText(String(cell)))),
+                                theme: 'striped',
+                                headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' }
+                            });
+                        } else if (modo === 'eventos') {
+                            // 5. SANIDAD: HISTORIAL MÉDICO
+                            addMembrete(`Historial de Tratamientos y Sanidad - RP: ${rpLimpio}`);
+                            doc.autoTable({
+                                startY: 42,
+                                head: [['Fecha', 'Caravana / RP', 'Categoría', 'Procedimiento', 'Medicamento / Dosis', 'Observaciones']],
+                                body: pdfExportData.map(row => row.map(cell => window.cleanPDFText(String(cell)))),
+                                theme: 'striped',
+                                headStyles: { fillColor: [124, 58, 237], textColor: 255, fontStyle: 'bold' }
+                            });
+                        } else if (modo === 'confinamiento') {
+                            // 6. CONFINAMIENTO: FICHA DE ENGORDE
+                            addMembrete(`Ficha de Confinamiento y Feedlot - RP: ${rpLimpio}`);
+                            doc.autoTable({
+                                startY: 42,
+                                head: [['Caravana', 'Corral', 'Días Encierre', 'Peso Inicial', 'Últ. Peso', 'Ganancia', 'GMD', 'Meta']],
+                                body: pdfExportData.map(row => row.map(cell => window.cleanPDFText(String(cell)))),
+                                theme: 'striped',
+                                headStyles: { fillColor: [234, 88, 12], textColor: 255, fontStyle: 'bold' }
+                            });
                         }
-
-                        doc.autoTable({ 
-                            startY: doc.lastAutoTable.finalY + 13, 
-                            theme: 'grid', 
-                            head: [['Fecha', 'Procedimiento', 'Valor Principal', 'Observaciones Adicionales']], 
-                            body: historialDossier, 
-                            styles: { fontSize: 8, cellPadding: 3 }, 
-                            headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', halign: 'center' }, 
-                            columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 35, fontStyle: 'bold' }, 2: { cellWidth: 45 }, 3: { cellWidth: 'auto' } } 
-                        });
-                        
-                        let filename = `Dossier_RP_${rpPrint.toUpperCase()}.pdf`;
-                        rpPrint = ""; // Limpiar variable para no interferir con otros reportes
-                        if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
-
-                    } else if (modo === 'bajas') {
-                        let fCausa = document.getElementById('f-inf-baja-causa') ? document.getElementById('f-inf-baja-causa').value : "ALL";
-                        let titulo = (fCausa !== "ALL") ? `Reporte de Mortalidad y Muertes - Causa: ${fCausa}` : `Reporte Oficial de Mortalidad y Muertes de Hacienda`;
-                        addMembrete(titulo);
-                        const totalBajas = document.getElementById('inf-total').innerText;
-                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Muertes / Bajas Registradas: ${window.cleanPDFText(totalBajas)}`, 14, 43);
-
-                        const tableData = pdfExportData.map(row => row.map(cell => window.cleanPDFText(cell).replace(/\n/g, ' ')));
-                        doc.autoTable({ startY: 48, theme: 'grid', head: [['Fecha de Muerte', 'Caravana / RP', 'Causa / Diagnóstico', 'Observaciones / Necropsia']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [220, 38, 38], textColor: 255, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 28, halign: 'center' }, 1: { cellWidth: 32, fontStyle: 'bold', halign: 'center' }, 2: { cellWidth: 45 }, 3: { cellWidth: 'auto' } } });
-
-                        let filename = 'Reporte_Mortalidad_Muertes.pdf';
-                        if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
-
-                    } else if (modo === 'ventas') {
-                        let titulo = "Reporte Oficial de Ventas, Despachos y Salidas Comerciales";
-                        addMembrete(titulo);
-                        const totalVentas = document.getElementById('inf-total').innerText;
-                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Cabezas Vendidas / Despachadas: ${window.cleanPDFText(totalVentas)}`, 14, 43);
-
-                        const tableData = pdfExportData.map(row => row.map(cell => window.cleanPDFText(cell).replace(/\n/g, ' ')));
-                        doc.autoTable({ startY: 48, theme: 'grid', head: [['Fecha de Despacho', 'Caravana / RP', 'Tipo de Salida', 'Destino / Comprador / Guía', 'Observaciones']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 25, halign: 'center' }, 1: { cellWidth: 30, fontStyle: 'bold', halign: 'center' }, 2: { cellWidth: 40 }, 3: { cellWidth: 45 }, 4: { cellWidth: 'auto' } } });
-
-                        let filename = 'Reporte_Ventas_Despachos.pdf';
-                        if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
-
-                    } else if (modo === 'inventario') {
-                        const fLote = document.getElementById('f-inf-lote').value;
-                        const fCat = document.getElementById('f-inf-cat').value;
-
-                        let titulo = "Reporte Analítico de Inventario General";
-                        if (fCat !== "ALL" && fLote !== "ALL") titulo = `Inventario - ${fCat} (Lote: ${fLote})`;
-                        else if (fCat !== "ALL") titulo = `Inventario de Hacienda - ${fCat}`;
-                        else if (fLote !== "ALL") titulo = `Inventario de Hacienda - Lote: ${fLote}`;
-
-                        addMembrete(titulo);
-                        const totalReg = document.getElementById('inf-total').innerText; const totalPre = document.getElementById('inf-prenadas').innerText;
-                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Cabezas Listadas: ${window.cleanPDFText(totalReg)}`, 14, 43); doc.text(`Total Preñadas: ${window.cleanPDFText(totalPre)}`, 130, 43);
-
-                        const tableData = pdfExportData.map(row => row.map(cell => window.cleanPDFText(cell).replace(/\n/g, ' - ')));
-                        doc.autoTable({ startY: 48, theme: 'grid', head: [['RP y Carimbo', 'Categoría', 'Lote / Ubicación', 'Último Peso', 'Diagnóstico']], body: tableData, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', halign: 'center' }, columnStyles: { 0: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 1: { cellWidth: 45 }, 2: { cellWidth: 45 }, 3: { cellWidth: 25, halign: 'center' }, 4: { cellWidth: 30, halign: 'center' } } });
-
-                        let filename = (fCat !== "ALL") ? `Reporte_${fCat.replace(/[^a-zA-Z0-9]/g, '_')}.pdf` : ((fLote !== "ALL") ? `Reporte_Lote_${fLote.replace(/[^a-zA-Z0-9]/g, '_')}.pdf` : 'Reporte_Inventario.pdf');
-                        if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
-
-                    } else if (modo === 'confinamiento') {
-                        addMembrete("Informe Oficial de Confinamiento y Engorde (Feedlot)");
-                        const totalConf = document.getElementById('inf-total').innerText;
-                        doc.setFontSize(10); doc.setFont("helvetica", "normal");
-                        doc.text(`Total Cabezas en Confinamiento: ${window.cleanPDFText(totalConf)}`, 14, 43);
-
-                        const tableData = pdfExportData.map(row => row.map(cell => window.cleanPDFText(cell).replace(/\n/g, ' ')));
-                        doc.autoTable({
-                            startY: 48,
-                            theme: 'grid',
-                            head: [['Caravana', 'Corral', 'Días Encierre', 'P. Inicial', 'Último Peso', 'Ganancia', 'GMD', 'Meta Faena']],
-                            body: tableData,
-                            styles: { fontSize: 8, cellPadding: 2.5 },
-                            headStyles: { fillColor: [249, 115, 22], textColor: 255, fontStyle: 'bold', halign: 'center' },
-                            columnStyles: {
-                                0: { cellWidth: 24, fontStyle: 'bold', halign: 'center' },
-                                1: { cellWidth: 24 },
-                                2: { cellWidth: 22, halign: 'center' },
-                                3: { cellWidth: 22, halign: 'center' },
-                                4: { cellWidth: 24, halign: 'center', fontStyle: 'bold' },
-                                5: { cellWidth: 22, halign: 'center' },
-                                6: { cellWidth: 24, halign: 'center', fontStyle: 'bold' },
-                                7: { cellWidth: 'auto', halign: 'center' }
-                            }
-                        });
-                        let filename = 'Reporte_Confinamiento_Feedlot.pdf';
-                        if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
-
-                    } else if (modo === 'pesajes') {
-                        let fLote = document.getElementById('f-inf-pes-lote') ? document.getElementById('f-inf-pes-lote').value : "ALL";
-                        let fCat = document.getElementById('f-inf-pes-cat') ? document.getElementById('f-inf-pes-cat').value : "ALL";
-                        let titulo = "Informe Analítico de Pesajes, Evolución y Rendimiento";
-                        if (fCat !== "ALL" && fLote !== "ALL") titulo = `Rendimiento de Pesaje - ${fCat} (Lote: ${fLote})`;
-                        else if (fCat !== "ALL") titulo = `Rendimiento de Pesaje - ${fCat}`;
-                        else if (fLote !== "ALL") titulo = `Rendimiento de Pesaje - Lote: ${fLote}`;
-
-                        addMembrete(titulo);
-
-                        let totalCab = document.getElementById('kpi-pes-cabezas') ? document.getElementById('kpi-pes-cabezas').innerText : "0";
-                        let bioTot = document.getElementById('kpi-pes-total') ? document.getElementById('kpi-pes-total').innerText : "0 Kg";
-                        let promTot = document.getElementById('kpi-pes-prom') ? document.getElementById('kpi-pes-prom').innerText : "0 Kg";
-                        let ganMed = document.getElementById('kpi-pes-ganancia') ? document.getElementById('kpi-pes-ganancia').innerText : "+0 Kg";
-                        let gdpMed = document.getElementById('kpi-pes-gdp') ? document.getElementById('kpi-pes-gdp').innerText : "+0,0 Kg/d";
-                        let tasaPos = document.getElementById('kpi-pes-tasa') ? document.getElementById('kpi-pes-tasa').innerText : "0%";
-
-                        doc.setFontSize(8); doc.setFont("helvetica", "normal");
-                        doc.text(`Cabezas Evaluadas: ${window.cleanPDFText(totalCab)} | Biomasa Total: ${window.cleanPDFText(bioTot)} | Peso Promedio: ${window.cleanPDFText(promTot)}`, 14, 40);
-                        doc.text(`Ganancia Media: ${window.cleanPDFText(ganMed)} | GDP Promedio: ${window.cleanPDFText(gdpMed)} | Eficacia de Crecimiento: ${window.cleanPDFText(tasaPos)}`, 14, 44);
-
-                        const tableData = pdfExportData.map(row => row.map(cell => window.cleanPDFText(cell).replace(/\n/g, ' ')));
-                        doc.autoTable({
-                            startY: 48,
-                            theme: 'grid',
-                            head: [['Caravana / RP', 'Categoría / Lote', 'Peso Anterior', 'Último Peso', 'Ganancia (Kg)', 'GDP (Kg/día)', 'Evolución']],
-                            body: tableData,
-                            styles: { fontSize: 7, cellPadding: 2.2, overflow: 'linebreak' },
-                            headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold', halign: 'center' },
-                            columnStyles: {
-                                0: { cellWidth: 22, halign: 'center', fontStyle: 'bold' },
-                                1: { cellWidth: 34 },
-                                2: { cellWidth: 24, halign: 'center' },
-                                3: { cellWidth: 24, halign: 'center', fontStyle: 'bold' },
-                                4: { cellWidth: 24, halign: 'center', fontStyle: 'bold' },
-                                5: { cellWidth: 26, halign: 'center' },
-                                6: { cellWidth: 28, halign: 'center' }
-                            }
-                        });
-
-                        let filename = 'Reporte_Pesajes_Rendimiento.pdf';
-                        if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
-
                     } else {
-                        let fDesde = document.getElementById('f-inf-desde').value;
-                        let fHasta = document.getElementById('f-inf-hasta').value;
-                        let rText = fDesde && fHasta ? ` (Periodo: ${fDesde} a ${fHasta})` : '';
-                        const fRango = document.getElementById('f-inf-rango-fecha') ? document.getElementById('f-inf-rango-fecha').value : '';
-                        const fPuntual = document.getElementById('f-inf-fecha-puntual') ? document.getElementById('f-inf-fecha-puntual').value : '';
-                        let subTitulo = "Reporte de Trabajos y Procedimientos Clínicos";
-                        if (fRango === 'puntual' && fPuntual) subTitulo += ` - Día: ${fPuntual}`;
-                        else if (rText) subTitulo += rText;
-
-                        addMembrete(subTitulo);
-                        const totalReg = document.getElementById('inf-total').innerText;
-                        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.text(`Total Animales / Cabezas Procesadas: ${window.cleanPDFText(totalReg)}`, 14, 43);
-
-                        const tableData = pdfExportData.map(row => row.map(cell => window.cleanPDFText(cell).replace(/\n/g, ' ')));
+                        // REPORTE MASIVO
+                        const titulos = {
+                            'inventario': 'Inventario General Consolidado',
+                            'pesajes': 'Informe de Pesajes y Ganancia de Peso',
+                            'bajas': 'Reporte Oficial de Mortandad',
+                            'ventas': 'Reporte de Ventas y Despachos',
+                            'eventos': 'Tratamientos y Procedimientos Sanitarios',
+                            'confinamiento': 'Control de Confinamiento y Feedlot'
+                        };
+                        addMembrete(titulos[modo] || 'Reporte Oficial');
                         doc.autoTable({
-                            startY: 48,
-                            theme: 'grid',
-                            head: [['Fecha', 'Caravana / RP', 'Categoría / Lote', 'Procedimientos Realizados', 'Sanidad / Tratamientos / Pesaje', 'Observaciones / Detalles']],
-                            body: tableData,
-                            styles: { fontSize: 7, cellPadding: 2.5, overflow: 'linebreak' },
-                            headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', halign: 'center' },
-                            columnStyles: {
-                                0: { cellWidth: 18, halign: 'center' },
-                                1: { cellWidth: 18, halign: 'center', fontStyle: 'bold' },
-                                2: { cellWidth: 26 },
-                                3: { cellWidth: 24, fontStyle: 'bold', halign: 'center' },
-                                4: { cellWidth: 34 }, // Optimizado de 50mm a 34mm para ceder espacio vital
-                                5: { cellWidth: 'auto' } // Expandido automáticamente a ~62mm para máxima legibilidad
-                            }
+                            startY: 42,
+                            body: pdfExportData.map(row => row.map(cell => window.cleanPDFText(String(cell)))),
+                            theme: 'striped',
+                            headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' }
                         });
-
-                        let filename = 'Reporte_Tratamientos.pdf';
-                        if (window.AndroidTaurus) { const pdfBase64 = doc.output('datauristring'); window.AndroidTaurus.guardarPDF(pdfBase64, filename); } else { doc.save(filename); }
                     }
+
+                    doc.save(`Taurus_${modo.toUpperCase()}_${new Date().toISOString().slice(0,10)}.pdf`);
                     btn.innerText = textoOriginal;
-                } catch (error) { console.error(error); alert("Error al generar el PDF: " + error.message); btn.innerText = textoOriginal; }
+                } catch(err) {
+                    console.error("[PDF Export Error]:", err);
+                    alert("Error al generar el PDF: " + err.message);
+                    btn.innerText = textoOriginal;
+                }
             }, 100);
-        }
-
-        window.verificarLimiteGraficos = function(checkbox) { const checks = document.querySelectorAll('.chk-graf:checked'); if(checks.length > 3) { alert('Solo puede fijar 3 gráficas simultáneas.'); checkbox.checked = false; } else { const prefs = Array.from(checks).map(c => c.value); window.lsSet('tc_prefs', prefs); if(dbCache.length > 0) window.procesarDatosDashboard(); } }
-
-        window.filtrarDesdeDashboard = function(tipo, valor) {
-            window.cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]);
-            document.getElementById('buscador-lista').value = "";
-
-            if(tipo === 'estado') {
-                document.getElementById('filtro-reg-estado').value = valor;
-                document.getElementById('filtro-reg-dx').value = 'ALL';
-                document.getElementById('filtro-reg-lote').value = 'ALL';
-                document.getElementById('filtro-reg-cat').value = 'ALL';
-            } else if(tipo === 'lote') {
-                document.getElementById('filtro-reg-estado').value = 'vivos';
-                document.getElementById('filtro-reg-lote').value = valor;
-                document.getElementById('filtro-reg-cat').value = 'ALL';
-                document.getElementById('filtro-reg-dx').value = 'ALL';
-            } else if(tipo === 'categoria') {
-                document.getElementById('filtro-reg-estado').value = 'vivos';
-                document.getElementById('filtro-reg-cat').value = valor;
-                document.getElementById('filtro-reg-lote').value = 'ALL';
-                document.getElementById('filtro-reg-dx').value = 'ALL';
-            } else if(tipo === 'dx') {
-                document.getElementById('filtro-reg-estado').value = 'vivos';
-                document.getElementById('filtro-reg-dx').value = valor;
-                document.getElementById('filtro-reg-lote').value = 'ALL';
-                document.getElementById('filtro-reg-cat').value = 'ALL';
-            }
-            window.cargarListaRegistro();
-        }
-
-        window.procesarDatosDashboard = function() {
-            const datosActivos = window.obtenerRegistrosActivos().filter(d => window.esEventoGanaderoValido(d)); 
-            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => window.esCaravanaValida(c)))];
-            let vivas = unicas.filter(car => window.esAnimalVivo(window.obtenerHistorial(car)));
-            let cantMuertes = unicas.filter(car => window.esAnimalMuerto(window.obtenerHistorial(car))).length;
-            let cantVentas = unicas.filter(car => window.esAnimalVendido(window.obtenerHistorial(car))).length;
-            let cantBajas = cantMuertes;
-            unicas = vivas;
-            
-            document.getElementById('dash-cabezas').innerText = vivas.length; 
-            document.getElementById('dash-acciones').innerText = datosActivos.length;
-            let elBajas = document.getElementById('dash-bajas'); if(elBajas) elBajas.innerText = cantMuertes;
-            let elVentas = document.getElementById('dash-ventas'); if(elVentas) elVentas.innerText = cantVentas;
-
-            if(datosActivos.length === 0) { document.getElementById('contenedor-graficos-dinamicos').innerHTML = "<p style='color:var(--muted); text-align:center; padding:20px;'>Inventario vacío.</p>"; return; }
-            
-            let g1={p:0,v:0}, g2={}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}, g11={}; let alertasHTML = "";
-            datosActivos.forEach(r => { if(String(r.accion).includes('Peso')) g10.peso++; if(r.accion==='Diagnóstico') g10.dx++; if(r.accion==='Sanidad') g10.san++; if(r.accion==='Inseminación') g10.ins++; if(r.accion==='Nutrición') g10.nut++; if(r.accion === 'Baja') { let causa = String(r.valor).trim(); g11[causa] = (g11[causa] || 0) + 1; } });
-            
-            unicas.forEach(car => {
-                const regs = window.obtenerHistorial(car); let catRaw = "Sin Categoría", lote = "General"; const uC = regs.find(d => d.accion === 'Actualización de Datos');
-                if(uC) { let v=String(uC.valor||"").split('|'); catRaw = v[0] ? v[0].replace('Cat:','').trim() : "Sin Categoría"; lote = String(uC.detalles||"").split('|')[0] ? String(uC.detalles||"").split('|')[0].replace('Lote:','').trim() : "-"; }
-                else {
-                    const uP = regs.find(d => d.accion === 'Perfil Master');
-                    if(uP && uP.detalles) { catRaw = String(uP.detalles).split('|')[0] || "Sin Categoría"; }
-                }
-
-                let catLegible = window.obtenerNombreCategoriaLegible(catRaw);
-                g2[catLegible] = (g2[catLegible] || 0) + 1;
-                g3[lote] = (g3[lote] || 0) + 1;
-
-                const uDx = regs.find(d => d.accion === 'Diagnóstico'); const uPeso = regs.find(d => String(d.accion).includes('Peso')); const uSan = regs.find(d => d.accion === 'Sanidad'); const uIns = regs.find(d => d.accion === 'Inseminación');
-                let esVaca = catLegible.toLowerCase().includes('vaca');
-
-                let loteLow = lote.toLowerCase();
-                let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
-                let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
-                let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
-
-                if (esPre) {
-                    g1.p++;
-                    if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].p++; g7[lote].t++;
-                    if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; }
-                } else if (esVacia) {
-                    g1.v++;
-                    alertasHTML += `<div class="alerta-item peligro" onclick="window.filtrarDesdeDashboard('dx', 'Vacía')"><span>🔴</span><div><strong style="color:var(--texto);">${car}</strong> diagnosticada Vacía.</div></div>`;
-                    if(!g7[lote]) g7[lote]={p:0, t:0}; g7[lote].t++;
-                    if(String(uDx ? uDx.valor : "").includes('Sangre')) g5.san++; else g5.norm++;
-                    if(uIns) { let toro = String(uIns.valor||"").replace('Toro:','').trim(); if(!g8[toro]) g8[toro]={p:0, t:0}; g8[toro].p++; g8[toro].t++; }
-                }
-                
-                if(uPeso) {
-                    if(String(uPeso.detalles||"").includes('Bajo')) { g4.bp++; alertasHTML += `<div class="alerta-item" onclick="window.navegarDesdeLista('${car}')"><span>⚠️</span><div><strong style="color:var(--texto);">${car}</strong> requiere nutrición (Bajo Peso).</div></div>`; }
-                    else if(String(uPeso.detalles||"").includes('Sobre')) g4.sp++;
-                    else g4.opt++;
-                    let pVal = parseFloat(String(uPeso.valor).replace(/[^\d.-]/g, ''));
-                    if(!isNaN(pVal)) {
-                        if(esVaca) { g9.vw += pVal; g9.vc++; }
-                        else { g9.tw += pVal; g9.tc++; }
-                    }
-                }
-                if(uSan) g6.con++; else g6.sin++;
-            });
-
-            const contAlertas = document.getElementById('contenedor-alertas'); if(alertasHTML !== "") { document.getElementById('lista-alertas').innerHTML = alertasHTML; contAlertas.style.display = 'block'; } else { contAlertas.style.display = 'none'; }
-            const prefs = window.lsGet('tc_prefs', ['1', '3']); let htmlGraficos = "";
-            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#38bdf8'];
-
-            const makePieAndBars = (title, dataObj, totalCount, tipoAccion) => {
-                let keys = Object.keys(dataObj).filter(k => dataObj[k] > 0).sort((a,b)=>dataObj[b]-dataObj[a]);
-                if (keys.length === 0) {
-                    return `<div class="tarjeta">
-                        <div class="tarjeta-titulo">${title}</div>
-                        <p style="text-align:center; color:var(--muted); font-size:12px; padding:15px; margin:0;">Sin registros para esta métrica aún.</p>
-                    </div>`;
-                }
-                let currentAngle = 0; let gradientStops = [];
-                let sumValores = keys.reduce((acc, k) => acc + dataObj[k], 0);
-                let divisor = totalCount > 0 ? totalCount : sumValores;
-                keys.forEach((k, idx) => {
-                    let pct = divisor > 0 ? (dataObj[k] / divisor) * 100 : 0;
-                    let nextAngle = currentAngle + pct;
-                    gradientStops.push(`${colors[idx % colors.length]} ${currentAngle}% ${nextAngle}%`);
-                    currentAngle = nextAngle;
-                });
-                let conicStyle = gradientStops.length > 0 ? `background: conic-gradient(${gradientStops.join(', ')});` : 'background: var(--borde);';
-                
-                let barsHTML = "";
-                keys.forEach((k, idx) => {
-                    let col = colors[idx % colors.length];
-                    let val = dataObj[k];
-                    let p = divisor > 0 ? Math.round((val / divisor) * 100) : 0;
-                    barsHTML += `<div class="barra-categoria" onclick="window.filtrarDesdeDashboard('${tipoAccion}', '${k}')">
-                        <div class="barra-header"><span><span class="punto" style="background:${col};"></span>${k} (${val})</span><span>${p}%</span></div>
-                        <div class="barra-fondo"><div class="barra-relleno" style="background:${col}; width:${p}%;"></div></div>
-                    </div>`;
-                });
-
-                return `<div class="tarjeta">
-                    <div class="tarjeta-titulo">${title}</div>
-                    <div class="grafico-flex">
-                        <div class="torta-container" onclick="window.filtrarDesdeDashboard('${tipoAccion}', '${keys[0]||''}')">
-                            <div class="torta" style="${conicStyle}"></div>
-                            <div class="torta-centro">${divisor}</div>
-                        </div>
-                        <div class="contenedor-scroll-analitica">${barsHTML}</div>
-                    </div>
-                </div>`;
-            };
-
-            prefs.forEach(g => {
-                let html = "";
-                if(g === '1') {
-                    let t = g1.p + g1.v; let pp = t>0 ? Math.round((g1.p/t)*100) : 0;
-                    let conicBg = t > 0 ? `conic-gradient(var(--exito) 0% ${pp}%, var(--peligro) ${pp}% 100%)` : 'var(--borde)';
-                    html += `<div class="tarjeta">
-                        <div class="tarjeta-titulo">Tasa de Preñez Dinámica</div>
-                        <div class="grafico-flex" style="justify-content:space-around;">
-                            <div class="torta-container" onclick="window.filtrarDesdeDashboard('dx', 'Preñada')">
-                                <div class="torta" style="background: ${conicBg};"></div>
-                                <div class="torta-centro">${t > 0 ? pp + '%' : '0%'}</div>
-                            </div>
-                            <div class="leyenda-torta">
-                                <div style="cursor:pointer;" onclick="window.filtrarDesdeDashboard('dx', 'Preñada')"><span class="punto" style="background: var(--exito);"></span> Preñadas (${g1.p})</div>
-                                <div style="cursor:pointer;" onclick="window.filtrarDesdeDashboard('dx', 'Vacía')"><span class="punto" style="background: var(--peligro);"></span> Vacías (${g1.v})</div>
-                            </div>
-                        </div>
-                    </div>`;
-                }
-                else if(g === '2') { html += makePieAndBars("Composición de Hacienda", g2, unicas.length, 'categoria'); }
-                else if(g === '3') { html += makePieAndBars("Distribución por Lotes", g3, unicas.length, 'lote'); }
-                else if(g === '4') {
-                    let t = g4.opt + g4.bp + g4.sp || 1;
-                    let d4 = { "Óptima": g4.opt, "Bajo Peso": g4.bp, "Sobrepeso": g4.sp };
-                    html += makePieAndBars("Condición Corporal", d4, t, 'estado');
-                }
-                else if(g === '5') {
-                    let t = g5.norm + g5.san || 1;
-                    let d5 = { "Normal": g5.norm, "Sangre/Problema": g5.san };
-                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'estado');
-                }
-                else if(g === '6') {
-                    let t = unicas.length;
-                    let d6 = { "Con Registro": g6.con, "Sin Registros": g6.sin };
-                    html += makePieAndBars("Sanidad Global", d6, t, 'estado');
-                }
-                else if(g === '7') {
-                    let d7 = {}; Object.keys(g7).forEach(k => d7[k] = g7[k].p);
-                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote');
-                }
-                else if(g === '8') {
-                    let d8 = {}; Object.keys(g8).forEach(k => d8[k] = g8[k].p);
-                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'estado');
-                }
-                else if(g === '9') {
-                    let pv = g9.vc>0 ? Math.round(g9.vw/g9.vc) : 0; let pt = g9.tc>0 ? Math.round(g9.tw/g9.tc) : 0;
-                    html += `<div class="tarjeta"><div class="tarjeta-titulo">Promedio de Pesos</div><div class="grid-kpis"><div class="kpi-caja" onclick="window.filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" style="font-size:20px;">${pv} Kg</div><div class="kpi-label">Vacas</div></div><div class="kpi-caja" onclick="window.filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" style="font-size:20px;">${pt} Kg</div><div class="kpi-label">Terneros</div></div></div></div>`;
-                }
-                else if(g === '10') {
-                    let d10 = { "Pesajes": g10.peso, "Diagnósticos": g10.dx, "Nutrición": g10.nut, "Sanidad": g10.san };
-                    let t10 = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1;
-                    html += makePieAndBars("Volumen Clínico", d10, t10, 'estado');
-                }
-                else if(g === '11') {
-                    let sumG11 = Object.values(g11).reduce((acc, curr) => acc + curr, 0);
-                    let t11 = (cantMuertes > 0 ? cantMuertes : sumG11) || 1;
-                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'estado');
-                }
-                htmlGraficos += html;
-            }); const contGraf = document.getElementById('contenedor-graficos-dinamicos') || document.getElementById('contenedor-graficos');
-            if(contGraf) contGraf.innerHTML = htmlGraficos;
-        }
-
-        window.cambiarVista = function(v, b) { 
-            document.querySelectorAll('.vista').forEach(e=>e.classList.add('oculto')); 
-            const target = document.getElementById(v);
-            if(target) target.classList.remove('oculto'); 
-            document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('activo')); 
-            if(b) b.classList.add('activo'); 
-            if(v === 'vista-dashboard' && typeof window.procesarDatosDashboard === 'function') {
-                window.procesarDatosDashboard();
-            }
         };
-        window.abrirModal = function(id) { 
-            const m = document.getElementById(id);
-            if (m) m.style.display = 'flex'; 
-            if (id === 'modal-confinamiento') {
-                const fIngEl = document.getElementById('i-conf-fecha-ingreso');
-                if (fIngEl && !fIngEl.value) {
-                    fIngEl.value = new Date().toISOString().split('T')[0];
-                }
-                const pIngEl = document.getElementById('i-conf-peso-ingreso');
-                if (pIngEl && (!pIngEl.value || pIngEl.value === '0')) {
-                    const elPeso = document.getElementById('val-peso');
-                    if (elPeso && elPeso.innerText && elPeso.innerText !== '-') {
-                        let pNum = parseFloat(elPeso.innerText.replace(/[^\d.-]/g, ''));
-                        if (!isNaN(pNum) && pNum > 0) {
-                            pIngEl.value = pNum;
-                        }
-                    }
-                }
-            }
-        } 
-        window.cerrarModal = function(id) { document.getElementById(id).style.display = 'none'; }
 
-        let timeoutBuscadorRegistro = null;
-        window.filtrarListaRegistroDebounced = function() {
-            clearTimeout(timeoutBuscadorRegistro);
-            timeoutBuscadorRegistro = setTimeout(() => { window.cargarListaRegistro(); }, 400);
-        }
-
-        let timeoutBuscadorInforme = null;
         window.filtrarInformeDebounced = function() {
             clearTimeout(timeoutBuscadorInforme);
             timeoutBuscadorInforme = setTimeout(() => { window.actualizarInformeAvanzado(); }, 400);
@@ -4542,7 +4230,7 @@
                 await secondaryApp.delete(); 
                 let alertasParaOmitir = alertaGlobalIdActual ? [alertaGlobalIdActual] : [];
                 await db.collection('usuarios').doc(email).set({
-                    nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', password: p, alertas_leidas: alertasParaOmitir
+                    nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', fecha_alta: new Date().toISOString(), alertas_leidas: alertasParaOmitir
                 });
                 // Operador registrado solo en usuarios - no en eventos de ganado
                 document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = ''; 
@@ -4611,12 +4299,10 @@
                 const btn = document.getElementById('btn-eliminar-op'); const btnOriginal = btn.innerHTML;
                 btn.innerHTML = "⏳ Eliminando..."; btn.disabled = true;
                 try {
-                    const doc = await db.collection('usuarios').doc(u).get();
-                    if(doc.exists && doc.data().password) { await window.gestionarAuthGhostParaBorrado(u, doc.data().password); }
                     await db.collection('usuarios').doc(u).delete();
-                    // Operador eliminado solo de usuarios - no en eventos de ganado
-                    alert(`El usuario ha sido eliminado con éxito.`);
-                    selectEl.value = ''; window.cargarListaOperadores(); 
+                    window.mostrarToast(`El acceso de ${u} ha sido revocado.`);
+                    selectEl.value = ''; 
+                    if (typeof window.cargarListaOperadores === 'function') window.cargarListaOperadores(); 
                     btn.innerHTML = btnOriginal; btn.disabled = false;
                 } catch(e) { alert("Hubo un error de conexión."); btn.innerHTML = btnOriginal; btn.disabled = false; } 
             }
@@ -4874,7 +4560,8 @@
                             window.emitirBeepHardware('peso');
                         }
                     } else {
-                        alert("⚖️ Balanza detectó: " + pNum + " Kg. Identifique primero la caravana del animal.");
+                        window.emitirBeepHardware('error');
+                        window.mostrarToast("⚖️ Balanza detectó: " + pNum + " Kg. Identifique primero la caravana del animal.", true);
                     }
                     return;
                 }
@@ -4908,7 +4595,7 @@
             const lbl = document.getElementById('lbl-estado-bluetooth');
 
             if (!navigator.bluetooth) {
-                alert("ℹ️ Tu navegador no soporta Web Bluetooth directamente.\n\nSi usas iOS (Safari) o Android, vincula tu balanza o bastón en 'Ajustes > Bluetooth' como Teclado HID. ¡Taurus Control lo leerá automáticamente en segundo plano!");
+                alert("ℹ️ Tu navegador no soporta Web Bluetooth directamente.\n\nSi usas iOS (Safari) o Android, vincula tu balanza o bastón en 'Ajustes > Bluetooth' como Teclado HID. ¡Taurus Track Pro lo leerá automáticamente en segundo plano!");
                 return;
             }
 

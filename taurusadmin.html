@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taurus Control - Master Admin PC</title>
+    <title>Taurus Track Pro - Administrador</title>
     
     <link rel="icon" href="gemini-svg.png">
     <link rel="apple-touch-icon" href="gemini-svg.png">
@@ -123,7 +123,7 @@
       }
       if ('caches' in window) {
         window.addEventListener('load', () => {
-          caches.open('taurus-control-v6').then(cache => {
+          caches.open('taurus-track-pro-v6').then(cache => {
             cache.addAll([
               location.href,
               'gemini-svg.png',
@@ -145,14 +145,14 @@
     <div id="pantalla-login">
         <div class="login-box">
             <img src="gemini-svg.png" alt="Logo Taurus">
-            <h1>Taurus Control</h1>
+            <h1>Taurus Track Pro</h1>
             <div class="form-grupo" style="margin-top: 20px;">
                 <input type="email" id="admin-email" class="form-control" placeholder="Correo del Administrador" style="text-align: center; margin-bottom: 10px;" autocomplete="off">
                 <input type="password" id="admin-pass" class="form-control" placeholder="Clave de Acceso Maestro" style="text-align: center; font-size: 16px; letter-spacing: 2px;" autocomplete="off">
             </div>
             <button class="btn" id="btn-login" style="width: 100%; padding: 15px; background: var(--primary);" onclick="ingresarAdmin()">Iniciar Sesión</button>
             <div style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
-                <span style="color: var(--text-muted); font-size: 12px;">Taurus Control &copy; 2026</span><br>
+                <span style="color: var(--text-muted); font-size: 12px;">Taurus Track Pro &copy; 2026</span><br>
                 <strong style="color: var(--text-main); font-size: 13px;">desarrollado Por Fernando Rodriguez 2026</strong>
             </div>
         </div>
@@ -323,7 +323,7 @@
             <li onclick="cerrarSesion()" style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px; color: var(--danger);"><span>🚪</span> Cerrar Sesión</li>
         </ul>
         <div class="sidebar-footer">
-            <strong>Taurus Control &copy; 2026</strong>
+            <strong>Taurus Track Pro &copy; 2026</strong>
             desarrollado Por Fernando Rodriguez 2026
         </div>
     </div>
@@ -688,15 +688,25 @@
 
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
-                lsSet("tc_admin_session", { email: user.email, time: Date.now() });
-                document.getElementById('pantalla-login').classList.add('oculto');
-                let sidebar = document.getElementById('sidebar');
-                if(sidebar) sidebar.classList.remove('oculto');
-                let mainContent = document.getElementById('main-content');
-                if(mainContent) mainContent.classList.remove('oculto');
+                db.collection('usuarios').doc(user.email).get().then(doc => {
+                    if (!doc.exists || (doc.data().rol !== 'SuperAdmin' && doc.data().rol !== 'Admin')) {
+                        alert("⛔ ACCESO DENEGADO: La cuenta '" + user.email + "' no posee privilegios de Administrador.");
+                        firebase.auth().signOut();
+                        return;
+                    }
+                    lsSet("tc_admin_session", { email: user.email, time: Date.now() });
+                    document.getElementById('pantalla-login').classList.add('oculto');
+                    let sidebar = document.getElementById('sidebar');
+                    if(sidebar) sidebar.classList.remove('oculto');
+                    let mainContent = document.getElementById('main-content');
+                    if(mainContent) mainContent.classList.remove('oculto');
 
-                checkStatusInicial();
-                cargarClientes();
+                    checkStatusInicial();
+                    cargarClientes();
+                }).catch(err => {
+                    alert("Error al verificar credenciales de administrador.");
+                    firebase.auth().signOut();
+                });
             }
         });
 

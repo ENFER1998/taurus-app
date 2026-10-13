@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null && request.auth.token.email != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.token.email)).data;
+    }
+
+    function isSystemAdmin() {
+      return isAuthenticated() && (
+        getUserData().rol == 'SuperAdmin' ||
+        getUserData().rol == 'Admin' ||
+        request.auth.token.admin == true
+      );
+    }
+
+    function belongsToEstancia(maestroId) {
+      return isAuthenticated() && (
+        request.auth.token.email.lower() == maestroId.lower() ||
+        (getUserData().maestroId != null && getUserData().maestroId.lower() == maestroId.lower())
+      );
+    }
+
+    function hasPermission(permiso) {
+      let rol = getUserData().rol;
+      return rol == 'Propietario' || (rol != null && rol.matches('.*' + permiso + '.*'));
+    }
+
+    match /usuarios/{userEmail} {
+      allow read: if isAuthenticated() && (
+        request.auth.token.email.lower() == userEmail.lower() ||
+        isSystemAdmin() ||
+        (getUserData().rol == 'Propietario' && resource.data.maestroId.lower() == request.auth.token.email.lower())
+      );
+      
+      allow create, update: if isAuthenticated() && (
+        isSystemAdmin() ||
+        (getUserData().rol == 'Propietario' && request.resource.data.maestroId.lower() == request.auth.token.email.lower())
+      ) && !request.resource.data.keys().hasAny(['password']);
+
+      allow delete: if isAuthenticated() && (
+        isSystemAdmin() ||
+        (getUserData().rol == 'Propietario' && resource.data.maestroId.lower() == request.auth.token.email.lower())
+      );
+    }
+
+    match /estancias/{maestroId} {
+      allow read: if belongsToEstancia(maestroId);
+      allow write: if isSystemAdmin() || (
+        isAuthenticated() && 
+        request.auth.token.email.lower() == maestroId.lower()
+      );
+
+      match /eventos/{eventoId} {
+        allow read: if belongsToEstancia(maestroId);
+        
+        allow create: if belongsToEstancia(maestroId) 
+          && request.resource.data.maestro == maestroId
+          && request.resource.data.caravana is string
+          && request.resource.data.accion is string;
+
+        allow update: if belongsToEstancia(maestroId) && (
+          getUserData().rol == 'Propietario' || hasPermission('base')
+        );
+
+        allow delete: if belongsToEstancia(maestroId) && (
+          getUserData().rol == 'Propietario'
+        );
+      }
+    }
+
+    match /sistema/{documentId} {
+      allow read: if isAuthenticated();
+      allow write: if isSystemAdmin();
+    }
+  }
+}

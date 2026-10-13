@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Taurus Control - Admin Móvil</title>
+    <title>Taurus Track Pro - Administrador</title>
     
     <meta name="theme-color" content="#0f172a">
     <link rel="icon" href="gemini-svg.png">
@@ -123,7 +123,7 @@
     <script>
       if ('caches' in window) {
         window.addEventListener('load', () => {
-          caches.open('taurus-control-v6').then(cache => {
+          caches.open('taurus-track-pro-v6').then(cache => {
             cache.addAll([
               location.href,
               'gemini-svg.png',
@@ -150,7 +150,7 @@
             <input type="password" id="admin-pass" class="form-control-login" placeholder="Clave de Acceso Maestro" autocomplete="off">
             <button class="btn btn-ingresar" id="btn-login" onclick="ingresarAdmin()">Iniciar Sesión</button>
             <div style="margin-top:25px; line-height:1.6; font-size:12px; color:var(--muted);">
-                Taurus Control &copy; 2026<br>
+                Taurus Track Pro &copy; 2026<br>
                 <strong style="color:var(--texto); font-size:14px; display:inline-block; margin-top:5px;">desarrollado Por Fernando Rodriguez 2026</strong>
             </div>
         </div>
@@ -509,11 +509,21 @@
 
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
-                lsSet("tc_admin_mob_session", { email: user.email, time: Date.now() });
-                document.getElementById('pantalla-login').classList.add('oculto');
-                document.getElementById('pantalla-app').classList.remove('oculto');
-                checkStatusInicial();
-                cargarClientes();
+                db.collection('usuarios').doc(user.email).get().then(doc => {
+                    if (!doc.exists || (doc.data().rol !== 'SuperAdmin' && doc.data().rol !== 'Admin')) {
+                        alert("⛔ ACCESO DENEGADO: La cuenta '" + user.email + "' no posee privilegios de Administrador.");
+                        firebase.auth().signOut();
+                        return;
+                    }
+                    lsSet("tc_admin_mob_session", { email: user.email, time: Date.now() });
+                    document.getElementById('pantalla-login').classList.add('oculto');
+                    document.getElementById('pantalla-app').classList.remove('oculto');
+                    checkStatusInicial();
+                    cargarClientes();
+                }).catch(err => {
+                    alert("Error al verificar credenciales de administrador.");
+                    firebase.auth().signOut();
+                });
             }
         });
 

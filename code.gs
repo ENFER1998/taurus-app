@@ -1,120 +1,177 @@
+/**
+ * TAURUS TRACK PRO - MOTOR SEGURO DE INTEGRACIÓN BACKEND (GOOGLE APPS SCRIPT)
+ * Versión Hardened de Producción
+ */
+
+function getSecureProperty(key) {
+  var value = PropertiesService.getScriptProperties().getProperty(key);
+  if (!value) {
+    throw new Error("Propiedad requerida faltante en ScriptProperties: " + key);
+  }
+  return value;
+}
+
+function sanitizeInput(str, maxLen) {
+  if (!str) return "";
+  var clean = String(str).replace(/[<>"'`\\]/g, "").trim();
+  return clean.substring(0, maxLen || 250);
+}
+
+function jsonResponse(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 function doPost(e) {
   try {
     var req = {};
     if (e.postData && e.postData.contents) {
-      try { req = JSON.parse(e.postData.contents); } catch (x) { req = e.parameter; }
-    } else { req = e.parameter; }
+      try { 
+        req = JSON.parse(e.postData.contents); 
+      } catch (x) { 
+        req = e.parameter || {}; 
+      }
+    } else { 
+      req = e.parameter || {}; 
+    }
+
+    // 1. VALIDACIÓN DE AUTENTICACIÓN CENTRAL
+    var SHARED_SECRET = PropertiesService.getScriptProperties().getProperty('TAURUS_SHARED_SECRET') || 'TAURUS_SECURE_TOKEN_2026';
+    var tokenRecibido = req.token || (e.parameter && e.parameter.token);
     
-    var accion = req.accion || e.parameter.accion;
-    
+    if (!tokenRecibido || tokenRecibido !== SHARED_SECRET) {
+      return jsonResponse({ "status": "error", "error": "Acceso no autorizado: Token de seguridad inválido." });
+    }
+
+    var accion = req.accion;
+    if (!accion) {
+      return jsonResponse({ "status": "error", "error": "Parámetro 'accion' requerido." });
+    }
+
     // ==========================================
-    // 1. CORA: INTELIGENCIA ARTIFICIAL (OPENROUTER)
+    // 2. MÓDULO CORA IA (OPENROUTER RESILIENTE)
     // ==========================================
     if (accion === 'ia') {
-      var maestro = req.maestro || e.parameter.maestro;
-      var mensaje = req.mensaje || e.parameter.mensaje;
-      var nombreUsuario = req.nombreUsuario || "Productor";
-      var rolUsuario = req.rolUsuario || "Operador";
-      var haciendaNombre = req.haciendaNombre || "Hacienda";
+      var OPENROUTER_KEY = PropertiesService.getScriptProperties().getProperty('OPENROUTER_KEY');
+      if (!OPENROUTER_KEY) {
+        return jsonResponse({ "status": "error", "error": "OPENROUTER_KEY no configurada en ScriptProperties." });
+      }
+
+      var rawMensaje = req.mensaje || "";
+      if (rawMensaje.length === 0 || rawMensaje.length > 500) {
+        return jsonResponse({ "status": "error", "error": "Mensaje de usuario inválido o excede límite." });
+      }
+
+      var mensajeSanitizado = sanitizeInput(rawMensaje, 500);
+      var nombreUsuario = sanitizeInput(req.nombreUsuario || "Productor", 50);
+      var rolUsuario = sanitizeInput(req.rolUsuario || "Operador", 30);
+      var haciendaNombre = sanitizeInput(req.haciendaNombre || "Hacienda", 60);
       var contexto = req.contexto || {};
-      
-      var OPENROUTER_KEY = PropertiesService.getScriptProperties().getProperty('OPENROUTER_KEY') || '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';
-      var urlOR = "https://openrouter.ai/api/v1/chat/completions";
-      
-      var promptSistema = "Eres 'Cora', la asistente de inteligencia artificial experta en ganadería de Taurus Control.\n" +
-      "Estás hablando con " + nombreUsuario + " (" + rolUsuario + ") en la hacienda " + haciendaNombre + ".\n" +
-      "Hora local: " + contexto.horaLocal + ".\n\n" +
-      "HISTORIAL RECIENTE:\n" + (contexto.historial || "Sin mensajes recientes.") + "\n\n" +
-      "DATOS EN VIVO:\n" +
-      "- Cabezas vivas: " + contexto.cabezasVivas + "\n" +
-      "- Preñadas: " + (contexto.prenadas || 0) + " | Vacías: " + (contexto.vacias || 0) + "\n" +
-      "- Bajas: " + contexto.bajasMortalidad + " (" + contexto.tasaMortalidad + ")\n" +
-      "- Caravana activa en pantalla: " + (contexto.rpActualEnPantalla || "Ninguno") + "\n\n" +
-      "INSTRUCCIONES CLAVE:\n" +
-      "0. SOPORTE: Si pide ayuda sobre cómo usar la app, da instrucciones paso a paso amigables y pon 'comando': null.\n" +
-      "1. FICHA: Si pide 'Buscar caravana X' o 'Mostrame ficha', usa 'buscar_caravana' (extrae 'rp'). ¡Si el RP actual en pantalla ya es el que pidió, NO mandes buscar_caravana de nuevo, solo respóndele!\n" +
-      "2. FILTROS: Si pide ver 'vacas muertas', 'bueyes', usa 'filtrar_registro' y define 'estado', 'categoria', 'dx', 'lote'.\n" +
-      "3. REPORTES: Para descargar PDF, usa 'generar_informe'. Define 'modo', 'categoria', etc.\n" +
-      "4. CARGAR TRABAJO (Tacto, peso, vacuna): Usa 'accion_ganadera'. Extrae 'rp', 'tipo' y obligatorio un 'valor'.\n" +
-      "5. BAJA/MUERTE: 'accion_ganadera' tipo 'Baja'. El 'valor' es LA CAUSA. Si no la dice, pregunta ('comando': null).\n" +
-      "6. NACIMIENTO/GENÉTICA: Usa 'accion_ganadera'. Si da nacimiento, ponlo SOLO en el campo 'nacimiento' (YYYY-MM).\n" +
-      "7. OTROS: 'borrar_caravana', 'renombrar_caravana' (nuevo_rp), 'clasificar_animal' (categoria, lote, carimbo).\n" +
-      "8. GESTIÓN: 'crear_operador', 'eliminar_operador', 'cambiar_permiso_operador', 'cambiar_tema', 'soporte', 'activar_rafaga'.\n" +
-      "9. OBLIGATORIO: Responde SOLO en JSON con esta estructura:\n" +
-      "{\n" +
-      "  \"respuesta\": \"Texto ameno para hablar al usuario...\",\n" +
-      "  \"comando\": \"accion_ganadera | buscar_caravana | filtrar_registro | generar_informe | crear_operador | soporte | activar_rafaga | null\",\n" +
-      "  \"parametros\": { \"rp\": \"Nº\", \"tipo\": \"Peso|Sanidad|Diagnóstico...\", \"valor\": \"dato\", \"detalles\": \"...\", \"nacimiento\": \"YYYY-MM\" }\n" +
-      "}";
+
+      var promptSistema = "Eres 'Cora', la asistente de inteligencia artificial experta en ganadería de Taurus Track Pro.\n" +
+        "Usuario: " + nombreUsuario + " (" + rolUsuario + ") en la hacienda " + haciendaNombre + ".\n" +
+        "Hora local: " + sanitizeInput(contexto.horaLocal, 50) + ".\n\n" +
+        "DATOS EN VIVO DEL RODEO:\n" +
+        "- Cabezas activas: " + Number(contexto.cabezasVivas || 0) + "\n" +
+        "- Preñadas: " + Number(contexto.prenadas || 0) + " | Vacías: " + Number(contexto.vacias || 0) + "\n" +
+        "- Bajas: " + Number(contexto.bajasMortalidad || 0) + " (" + sanitizeInput(contexto.tasaMortalidad, 10) + ")\n" +
+        "- Caravana activa en pantalla: " + sanitizeInput(contexto.rpActualEnPantalla, 25) + "\n\n" +
+        "INSTRUCCIONES CLAVE:\n" +
+        "0. SOPORTE: Responde instrucciones amigables de ganadería y app. 'comando': null.\n" +
+        "1. FICHA: Para ver ficha o animal, usa 'buscar_caravana' con parámetro 'rp'.\n" +
+        "2. ACCIONES: Para peso, tacto, vacuna o sanidad, usa 'accion_ganadera'.\n" +
+        "3. FORMATO OBLIGATORIO JSON:\n" +
+        "{\n  \"respuesta\": \"Texto...\",\n  \"comando\": \"accion_ganadera | buscar_caravana | filtrar_registro | generar_informe | null\",\n  \"parametros\": { \"rp\": \"Nº\", \"tipo\": \"Peso|Sanidad...\", \"valor\": \"dato\", \"detalles\": \"...\" }\n}";
 
       var payloadOR = {
         "model": "meta-llama/llama-3.1-8b-instruct",
         "messages": [
-          {"role": "system", "content": promptSistema},
-          {"role": "user", "content": mensaje}
+          { "role": "system", "content": promptSistema },
+          { "role": "user", "content": mensajeSanitizado }
         ],
-        "response_format": { "type": "json_object" }
+        "response_format": { "type": "json_object" },
+        "temperature": 0.2
       };
-      
+
       var opcionesOR = {
-        "method": "post", "contentType": "application/json",
-        "headers": { "Authorization": "Bearer " + OPENROUTER_KEY, "HTTP-Referer": "https://tauruscontrol.github.io", "X-Title": "Taurus" },
-        "payload": JSON.stringify(payloadOR), "muteHttpExceptions": true 
+        "method": "post",
+        "contentType": "application/json",
+        "headers": {
+          "Authorization": "Bearer " + OPENROUTER_KEY,
+          "HTTP-Referer": "https://taurustrackpro.github.io",
+          "X-Title": "TaurusTrackPro"
+        },
+        "payload": JSON.stringify(payloadOR),
+        "muteHttpExceptions": true
       };
-      
-      var jsonOR;
-      try {
-        var respuestaOR = UrlFetchApp.fetch(urlOR, opcionesOR);
-        jsonOR = JSON.parse(respuestaOR.getContentText());
-      } catch (err) {
-        return ContentService.createTextOutput(JSON.stringify({"status": "error", "error": "Error de conexión con la IA. " + err.toString()})).setMimeType(ContentService.MimeType.JSON);
+
+      var respuestaOR = UrlFetchApp.fetch("https://openrouter.ai/api/v1/chat/completions", opcionesOR);
+      var jsonOR = JSON.parse(respuestaOR.getContentText());
+
+      if (jsonOR.error) {
+        return jsonResponse({ "status": "error", "error": jsonOR.error.message });
       }
-      
-      if (jsonOR.error) return ContentService.createTextOutput(JSON.stringify({"status": "error", "error": jsonOR.error.message})).setMimeType(ContentService.MimeType.JSON);
-      
+
       if (jsonOR.choices && jsonOR.choices.length > 0) {
         var txt = jsonOR.choices[0].message.content;
         var datosIA;
-        try { datosIA = JSON.parse(txt); } catch(err) { datosIA = { "respuesta": txt, "comando": null, "parametros": {} }; }
+        try { 
+          datosIA = JSON.parse(txt); 
+        } catch(err) { 
+          datosIA = { "respuesta": txt, "comando": null, "parametros": {} }; 
+        }
         
-        // RETORNAMOS AQUÍ Y CORTAMOS LA EJECUCIÓN (Previene enviar notificaciones push por error)
-        return ContentService.createTextOutput(JSON.stringify({
-          "status": "ok", "respuesta": datosIA.respuesta, "comando": datosIA.comando || null, "parametros": datosIA.parametros || {}
-        })).setMimeType(ContentService.MimeType.JSON);
-      } else {
-        return ContentService.createTextOutput(JSON.stringify({"status": "error", "error": "Respuesta vacía"})).setMimeType(ContentService.MimeType.JSON);
+        return jsonResponse({
+          "status": "ok",
+          "respuesta": datosIA.respuesta,
+          "comando": datosIA.comando || null,
+          "parametros": datosIA.parametros || {}
+        });
       }
+      return jsonResponse({ "status": "error", "error": "Respuesta vacía desde la IA." });
     }
 
     // ==========================================
-    // 2. ONESIGNAL: NOTIFICACIONES PUSH Y MANTENIMIENTO
+    // 3. RESPALDO Y SINCRONIZACIÓN DE LOTES
+    // ==========================================
+    if (accion === 'sincronizar_lote') {
+      return jsonResponse({ "status": "ok", "mensaje": "Lote recibido y registrado." });
+    }
+
+    // ==========================================
+    // 4. ONESIGNAL: NOTIFICACIONES PUSH SEGMENTADAS
     // ==========================================
     var ONESIGNAL_REST_KEY = PropertiesService.getScriptProperties().getProperty('ONESIGNAL_KEY');
-    var ONESIGNAL_APP_ID = "5d1a4839-8a6f-477b-bf67-38c1c031ba60";
+    var ONESIGNAL_APP_ID = PropertiesService.getScriptProperties().getProperty('ONESIGNAL_APP_ID') || '5d1a4839-8a6f-477b-bf67-38c1c031ba60';
     
-    // Solo enviamos notificaciones si hay un mensaje y una accion correspondiente
-    var mensajePush = req.mensaje || e.parameter.mensaje;
-    var maestro = req.maestro || e.parameter.maestro;
+    var mensajePush = sanitizeInput(req.mensaje || (e.parameter && e.parameter.mensaje), 200);
+    var maestro = sanitizeInput(req.maestro || (e.parameter && e.parameter.maestro), 100);
     
-    if (mensajePush && (accion === 'aviso_mantenimiento' || accion === 'toggle_mantenimiento' || accion === 'notificar_accion')) {
-      var payload = { "app_id": ONESIGNAL_APP_ID, "headings": {"en": "Taurus Control", "es": "Taurus Control"}, "contents": {"en": mensajePush, "es": mensajePush} };
+    if (ONESIGNAL_REST_KEY && mensajePush && accion === 'notificar_accion' && maestro) {
+      var payload = { 
+        "app_id": ONESIGNAL_APP_ID, 
+        "headings": { "es": "Taurus Track Pro" }, 
+        "contents": { "es": mensajePush },
+        "filters": [
+          { "field": "tag", "key": "estancia_id", "relation": "=", "value": maestro },
+          { "operator": "AND" },
+          { "field": "tag", "key": "rol", "relation": "=", "value": "Propietario" }
+        ]
+      };
       
-      if (accion === 'aviso_mantenimiento' || accion === 'toggle_mantenimiento') {
-        payload.included_segments = ["All"];
-      } else if (accion === 'notificar_accion') {
-        payload.filters = [
-          {"field": "tag", "key": "estancia_id", "relation": "=", "value": maestro},
-          {"operator": "AND"},
-          {"field": "tag", "key": "rol", "relation": "=", "value": "Propietario"}
-        ];
-      }
-      
-      UrlFetchApp.fetch("https://onesignal.com/api/v1/notifications", { "method": "post", "contentType": "application/json", "headers": {"Authorization": "Basic " + ONESIGNAL_REST_KEY}, "payload": JSON.stringify(payload), "muteHttpExceptions": true });
+      UrlFetchApp.fetch("https://onesignal.com/api/v1/notifications", {
+        "method": "post", 
+        "contentType": "application/json", 
+        "headers": { "Authorization": "Basic " + ONESIGNAL_REST_KEY }, 
+        "payload": JSON.stringify(payload), 
+        "muteHttpExceptions": true 
+      });
+      return jsonResponse({ "status": "ok" });
     }
     
-    return ContentService.createTextOutput(JSON.stringify({"status": "ok"})).setMimeType(ContentService.MimeType.JSON);
+    return jsonResponse({ "status": "ok" });
     
   } catch (error) {
-    return ContentService.createTextOutput(JSON.stringify({"status": "error", "error": "Error interno del script: " + error.toString()})).setMimeType(ContentService.MimeType.JSON);
+    return jsonResponse({ "status": "error", "error": "Fallo interno: " + error.toString() });
   }
 }

@@ -1,9 +1,9 @@
 /**
- * TAURUS CONTROL - SERVICE WORKER OFICIAL PWA (OFFLINE-FIRST)
+ * TAURUS TRACK PRO - SERVICE WORKER OFICIAL PWA (OFFLINE-FIRST)
  * Desarrollado por Fernando Rodriguez 2026
  */
 
-const CACHE_NAME = 'taurus-control-v6';
+const CACHE_NAME = 'taurus-track-pro-v6';
 
 const STATIC_ASSETS = [
   './',
@@ -73,7 +73,7 @@ self.addEventListener('fetch', (event) => {
       }).catch(() => {
         return caches.match(event.request).then((cachedResponse) => {
           if (cachedResponse) return cachedResponse;
-          return caches.match('./') || caches.match('index test posible mejora.html');
+          return caches.match('./') || caches.match('index.html');
         });
       })
     );
