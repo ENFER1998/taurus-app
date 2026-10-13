@@ -4962,8 +4962,9 @@
             if (rpActivo) {
               const originalConfirm = window.confirm;
               window.confirm = () => true;
-              borrarCaravana();
-              window.confirm = originalConfirm;
+              Promise.resolve(borrarCaravana()).finally(() => {
+                window.confirm = originalConfirm;
+              });
             } else {
               alert("No se especificó ninguna caravana para borrar.");
             }

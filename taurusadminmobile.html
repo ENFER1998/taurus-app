@@ -493,6 +493,75 @@
         let datosArchivoCrudo = [];
         let unsubscribeConfig = null;
 
+        function esCaravanaValida(car) {
+            if (car === null || car === undefined) return false;
+            let s = String(car).trim();
+            if (!s || s === "" || s === "---") return false;
+            let low = s.toLowerCase();
+            if (low === "null" || low === "undefined" || low === "nan" || low === "[object object]") return false;
+            if (low.includes("@")) return false; // email de operario
+            if (low.startsWith("op-") || low.startsWith("operador") || low === "operador" || low === "propietario" || low === "dueño") return false;
+            return true;
+        }
+
+        function esEventoGanaderoValido(d) {
+            if (!d) return false;
+            let accion = String(d.accion || "").toLowerCase();
+            if (accion.includes("operador") || accion.startsWith("alta op") || accion.startsWith("edicion op") || accion.startsWith("edición op") || accion.startsWith("baja op") || accion.startsWith("eliminacion op") || accion.startsWith("eliminación op")) return false;
+            let car = String(d.caravana || "").trim().toLowerCase();
+            if (car.includes("@")) return false;
+            return true;
+        }
+
+        function esAnimalVivo(historia) {
+            if (!historia || historia.length === 0) return true;
+            return !historia.some(e => e.accion === 'Baja' || e.accion === 'Muerte' || e.accion === 'Venta' || (e.accion === 'Baja' && String(e.valor).toLowerCase().includes('venta')));
+        }
+
+        function esAnimalMuerto(historia) {
+            if (!historia || historia.length === 0) return false;
+            return historia.some(e => e.accion === 'Baja' || e.accion === 'Muerte');
+        }
+
+        function esAnimalVendido(historia) {
+            if (!historia || historia.length === 0) return false;
+            return historia.some(e => e.accion === 'Venta' || (e.accion === 'Baja' && (String(e.valor).toLowerCase().includes('venta') || String(e.valor).toLowerCase().includes('faena') || String(e.valor).toLowerCase().includes('frigorífico') || String(e.valor).toLowerCase().includes('frigorifico') || String(e.valor).toLowerCase().includes('consumo') || String(e.valor).toLowerCase().includes('abigeato'))));
+        }
+
+        function obtenerNombreCategoriaLegible(cat) {
+            if(cat.includes(':')) return cat.split(':')[1].trim();
+            if(cat === 'TH') return 'Ternera Hembra';
+            if(cat === 'TM') return 'Ternero Macho';
+            if(cat === 'DH') return 'Desmamante Hembra';
+            if(cat === 'DM') return 'Desmamante Macho';
+            if(cat === 'V') return 'Vaca / Vaquilla';
+            if(cat === 'VV') return 'Vaca Vieja';
+            return cat;
+        }
+
+        function obtenerRegistrosActivos() {
+            return dbCache.filter(d => d.accion !== 'Borrar_Caravana' && d.accion !== 'Cambio de Caravana');
+        }
+
+        function obtenerHistorial(rp) {
+            if (historiaCache && historiaCache[rp]) return historiaCache[rp];
+            if (!historiaCache) historiaCache = {};
+            let h = dbCache.filter(d => d.caravana === rp).sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+            historiaCache[rp] = h;
+            return h;
+        }
+
+        function calcularDiasCalendario(fechaDesde, fechaHasta) {
+            try {
+                let d1 = new Date(fechaDesde);
+                let d2 = new Date(fechaHasta);
+                if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return 0;
+                let diffTime = Math.abs(d2 - d1);
+                return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            } catch(e) { return 0; }
+        }
+
+
         function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
         function lsGet(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
         // Arranque offline automático para Admin Mobile

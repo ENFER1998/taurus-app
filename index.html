@@ -5255,23 +5255,284 @@
       }
 
       function ejecutarComandoEnApp(cmd, params) {
-        params = params || {};
-        if (cmd === 'soporte') { window.open('https://wa.me/595976139617', '_blank'); }
-        else if (cmd === 'navegar') {
-          if (typeof window.cambiarVista !== 'function') return;
-          if (params.vista === 'dashboard') window.cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]);
-          if (params.vista === 'manga') window.cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
-          if (params.vista === 'registro' || params.vista === 'base') { window.cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]); if(typeof window.cargarListaRegistro==='function') window.cargarListaRegistro(); }
-          if (params.vista === 'informe') { window.cambiarVista('vista-informe', document.querySelectorAll('.nav-item')[3]); if(typeof window.actualizarInformeAvanzado==='function') window.actualizarInformeAvanzado(); }
-          if (params.vista === 'sistema' || params.vista === 'config') { window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
-        }
-        else if (cmd === 'configurar_hacienda') {
-          if (params.nombre && document.getElementById('cfg-nom')) {
-            document.getElementById('cfg-nom').value = params.nombre;
-            if (params.autoguardar && typeof window.guardarDisenoServidor === 'function') window.guardarDisenoServidor();
+          params = params || {};
+
+          if (cmd === 'soporte') {
+            window.open('https://wa.me/595976139617', '_blank');
+          }
+          else if (cmd === 'navegar') {
+            if (typeof window.cambiarVista !== 'function') return;
+            if (params.vista === 'dashboard') window.cambiarVista('vista-dashboard', document.querySelectorAll('.nav-item')[0]);
+            if (params.vista === 'manga') window.cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+            if (params.vista === 'registro' || params.vista === 'base') { window.cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]); if(typeof window.cargarListaRegistro==='function') window.cargarListaRegistro(); }
+            if (params.vista === 'informe') { window.cambiarVista('vista-informe', document.querySelectorAll('.nav-item')[3]); if(typeof window.actualizarInformeAvanzado==='function') window.actualizarInformeAvanzado(); }
+            if (params.vista === 'sistema' || params.vista === 'config') { window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
+            if (params.vista === 'clave' || params.vista === 'password' || params.vista === 'contraseña') {
+               window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+               setTimeout(() => { document.getElementById('nueva-clave').focus(); }, 500);
+            }
+          }
+          else if (cmd === 'cambiar_permiso_operador') {
+             if(params.usuario) {
+                 window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+                 const selEdit = document.getElementById('op-edit-usu-sel');
+                 if(selEdit) {
+                     selEdit.value = params.usuario;
+                     if(typeof window.cargarPermisosEdicion === 'function') window.cargarPermisosEdicion();
+
+                     if (params.permiso) {
+                         setTimeout(() => {
+                             document.querySelectorAll('.chk-edit-permiso').forEach(chk => {
+                                 if (chk.value === params.permiso || chk.nextElementSibling.innerText.toLowerCase().includes(params.permiso.toLowerCase())) {
+                                     chk.checked = (params.estado === 'activar');
+                                 }
+                             });
+                             if (params.autoguardar && typeof window.guardarEdicionOperador === 'function') {
+                                 window.guardarEdicionOperador();
+                             }
+                         }, 600);
+                     }
+                 }
+             }
+          }
+          else if (cmd === 'buscar_caravana') {
+            if (params.rp) {
+              document.getElementById('buscador-caravana').value = params.rp;
+              window.cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+              if(typeof window.buscarCaravanaBtn === 'function') window.buscarCaravanaBtn(params.rp);
+            }
+          }
+          else if (cmd === 'filtrar_estado') {
+            if(typeof window.filtrarDesdeDashboard === 'function') window.filtrarDesdeDashboard('estado', params.estado || 'vivos');
+          }
+          else if (cmd === 'descargar_pdf' || cmd === 'generar_informe') {
+            window.cambiarVista('vista-informe', document.querySelectorAll('.nav-item')[3]);
+            if (params.modo) {
+                document.getElementById('f-inf-modo').value = params.modo;
+                if(typeof window.cambiarModoReporte === 'function') window.cambiarModoReporte();
+            }
+            if (params.modo === 'inventario') {
+                if (params.lote) document.getElementById('f-inf-lote').value = params.lote;
+                if (params.categoria) document.getElementById('f-inf-cat').value = params.categoria;
+                if (params.dx) document.getElementById('f-inf-dx').value = params.dx;
+                if (params.carimbo) document.getElementById('f-inf-carimbo').value = params.carimbo;
+            } else if (params.modo === 'bajas') {
+                if (params.causa) document.getElementById('f-inf-baja-causa').value = params.causa;
+                if (params.rango) { document.getElementById('f-inf-baja-rango').value = params.rango; if(typeof window.manejarRangoFechasBajas === 'function') window.manejarRangoFechasBajas(); }
+            } else if (params.modo === 'eventos') {
+                if (params.rango) { document.getElementById('f-inf-rango-fecha').value = params.rango; if(typeof window.manejarRangoFechas === 'function') window.manejarRangoFechas(); }
+                if (params.accion) document.getElementById('f-inf-accion-oculto').value = params.accion;
+            }
+            if(typeof window.actualizarInformeAvanzado === 'function') window.actualizarInformeAvanzado();
+            if (params.autoguardar || cmd === 'descargar_pdf' || cmd === 'generar_informe') {
+               setTimeout(() => { if(typeof window.ejecutarDescargaPDF === 'function') window.ejecutarDescargaPDF(); }, 800);
+               if(typeof window.mostrarToast === 'function') window.mostrarToast("✅ Generando reporte PDF...");
+            }
+          }
+          else if (cmd === 'activar_rafaga') {
+            window.cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+            if (typeof rafagaActiva !== 'undefined' && !rafagaActiva) {
+                if(typeof window.toggleRafaga === 'function') window.toggleRafaga();
+            }
+            if (params.modo) {
+              document.getElementById('rafaga-accion').value = params.modo;
+              if(typeof window.verificarRafagaCustom === 'function') window.verificarRafagaCustom();
+            }
+          }
+          else if (cmd === 'crear_operador') {
+            window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+            if (params.nombre) document.getElementById('op-nombre').value = params.nombre;
+            if (params.usuario) document.getElementById('op-usu').value = params.usuario;
+            if (params.password) document.getElementById('op-pass').value = params.password;
+            if (params.rol) {
+              document.getElementById('op-rol').value = params.rol;
+              if (typeof window.togglePermisos === 'function') window.togglePermisos();
+            }
+            if (params.permisos && Array.isArray(params.permisos)) {
+              document.querySelectorAll('.chk-permiso').forEach(chk => {
+                chk.checked = params.permisos.includes(chk.value) || params.permisos.some(p => chk.nextElementSibling.innerText.toLowerCase().includes(p.toLowerCase()));
+              });
+            }
+            if (params.autoguardar && typeof window.crearOperador === 'function') window.crearOperador();
+          }
+          else if (cmd === 'eliminar_operador') {
+            if (params.usuario) {
+              window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+              const selDel = document.getElementById('op-del-usu-sel');
+              if (selDel) {
+                selDel.value = params.usuario;
+                if (params.autoguardar && typeof window.eliminarOperador === 'function') {
+                  const originalConfirm = window.confirm;
+                  window.confirm = () => true;
+                  Promise.resolve(window.eliminarOperador()).finally(() => {
+                    window.confirm = originalConfirm;
+                  });
+                }
+              }
+            }
+          }
+          else if (cmd === 'cambiar_tema') {
+            window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+            if(typeof window.toggleTema === 'function') window.toggleTema();
+          }
+          else if (cmd === 'configurar_hacienda') {
+            window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+            if (params.nombre) {
+              document.getElementById('cfg-nom').value = params.nombre;
+              if (params.autoguardar && typeof window.guardarDisenoServidor === 'function') window.guardarDisenoServidor();
+            }
+          }
+          else if (cmd === 'seleccionar_graficos') {
+            window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]);
+            if (params.graficos && Array.isArray(params.graficos)) {
+              const checkboxes = document.querySelectorAll('.chk-graf');
+              checkboxes.forEach(chk => {
+                chk.checked = params.graficos.includes(chk.value) || params.graficos.includes(parseInt(chk.value));
+              });
+              const checkedBoxes = document.querySelectorAll('.chk-graf:checked');
+              if (checkedBoxes.length > 0 && typeof window.verificarLimiteGraficos === 'function') window.verificarLimiteGraficos(checkedBoxes[0]);
+            }
+          }
+          else if (cmd === 'borrar_caravana') {
+            if (params.rp) {
+              document.getElementById('buscador-caravana').value = params.rp;
+              window.cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+              if(typeof window.buscarCaravanaBtn === 'function') window.buscarCaravanaBtn(params.rp);
+            }
+            if (typeof rpActivo !== 'undefined' && rpActivo) {
+              const originalConfirm = window.confirm;
+              window.confirm = () => true;
+              Promise.resolve(typeof window.borrarCaravana === 'function' ? window.borrarCaravana() : null).finally(() => {
+                  window.confirm = originalConfirm;
+              });
+            } else {
+              alert("No se especificó ninguna caravana para borrar.");
+            }
+          }
+          else if (cmd === 'renombrar_caravana') {
+            if (params.rp) {
+              document.getElementById('buscador-caravana').value = params.rp;
+              window.cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+              if(typeof window.buscarCaravanaBtn === 'function') window.buscarCaravanaBtn(params.rp);
+            }
+            if (typeof rpActivo !== 'undefined' && rpActivo && params.nuevo_rp) {
+              document.getElementById('f-nueva-caravana').value = params.nuevo_rp;
+              if (params.autoguardar && typeof window.guardarCambioCaravana === 'function') window.guardarCambioCaravana();
+            }
+          }
+          else if (cmd === 'clasificar_animal') {
+            if (params.rp) {
+              document.getElementById('buscador-caravana').value = params.rp;
+              window.cambiarVista('vista-manga', document.querySelectorAll('.nav-item')[1]);
+              if(typeof window.buscarCaravanaBtn === 'function') window.buscarCaravanaBtn(params.rp);
+            }
+            if (typeof rpActivo !== 'undefined' && rpActivo) {
+              if (params.categoria) {
+                const catSel = document.getElementById('input-cat-rapida');
+                for (let i = 0; i < catSel.options.length; i++) {
+                  if (catSel.options[i].value.includes(params.categoria) || catSel.options[i].text.toLowerCase().includes(params.categoria.toLowerCase())) {
+                    catSel.selectedIndex = i;
+                    break;
+                  }
+                }
+              }
+              if (params.lote) document.getElementById('input-lote-rapido').value = params.lote;
+              if (params.carimbo) document.getElementById('input-carimbo-rapido').value = params.carimbo;
+              if (params.autoguardar && typeof window.guardarClasificacion === 'function') window.guardarClasificacion();
+            }
+          }
+          else if (cmd === 'filtrar_registro') {
+            window.cambiarVista('vista-registro', document.querySelectorAll('.nav-item')[2]);
+            if (params.estado) document.getElementById('filtro-reg-estado').value = params.estado;
+
+            if (params.categoria && params.categoria !== 'ALL') {
+              const catSel = document.getElementById('filtro-reg-cat');
+              for (let i = 0; i < catSel.options.length; i++) {
+                if (catSel.options[i].value.toLowerCase().includes(params.categoria.toLowerCase()) || catSel.options[i].text.toLowerCase().includes(params.categoria.toLowerCase())) {
+                  catSel.selectedIndex = i;
+                  break;
+                }
+              }
+            } else {
+              document.getElementById('filtro-reg-cat').value = 'ALL';
+            }
+
+            if (params.lote && params.lote !== 'ALL') {
+              const loteSel = document.getElementById('filtro-reg-lote');
+              for (let i = 0; i < loteSel.options.length; i++) {
+                if (loteSel.options[i].value.toLowerCase().includes(params.lote.toLowerCase())) {
+                  loteSel.selectedIndex = i;
+                  break;
+                }
+              }
+            } else {
+              document.getElementById('filtro-reg-lote').value = 'ALL';
+            }
+
+            if (params.dx) document.getElementById('filtro-reg-dx').value = params.dx;
+
+            if(typeof window.cargarListaRegistro === 'function') window.cargarListaRegistro();
+          }
+          else if (cmd === 'accion_ganadera') {
+            let rpObjetivo = params.rp ? String(params.rp).trim() : (typeof rpActivo !== 'undefined' ? rpActivo : null);
+
+            if (params.tipo === 'Nacimiento' || params.tipo === 'Crear') {
+                 if (params.rp) {
+                     document.getElementById('f-nueva-caravana').value = params.rp;
+                     rpActivo = params.rp;
+                     rpObjetivo = params.rp;
+
+                     if (!params.raza && !params.nacimiento && !params.padre && !params.madre) {
+                         if(typeof window.ejecutarAccion === 'function') window.ejecutarAccion('Actualización de Datos', "Cat: Ternero | Carimbo: -", "Lote: Nacimientos", null);
+                     }
+                 }
+            }
+
+            if (params.raza || params.nacimiento || params.padre || params.madre) {
+                 rpActivo = rpObjetivo;
+                 if (params.raza) document.getElementById('f-raza').value = params.raza;
+                 if (params.nacimiento) document.getElementById('f-nacimiento').value = params.nacimiento;
+                 if (params.padre) document.getElementById('f-padre').value = params.padre;
+                 if (params.madre) document.getElementById('f-madre').value = params.madre;
+                 if(typeof window.guardarPerfilCompleto === 'function') window.guardarPerfilCompleto();
+                 if (params.tipo === 'Nacimiento' || params.tipo === 'Crear') return;
+            }
+
+            if (!rpObjetivo || rpObjetivo === "---") {
+              alert("No se especificó ninguna caravana.");
+              return;
+            }
+
+            rpActivo = rpObjetivo;
+            document.getElementById('buscador-caravana').value = rpObjetivo;
+            if(typeof window.forzarSaltoAFicha === 'function') window.forzarSaltoAFicha();
+            if(typeof window.buscarCaravanaBtn === 'function') window.buscarCaravanaBtn(rpObjetivo);
+
+            let tipoAccion = params.tipo;
+            let valorAccion = params.valor || "-";
+            let detallesAccion = params.detalles || "Registrado por Cora";
+
+            if (tipoAccion === 'Baja') {
+              const originalConfirm = window.confirm;
+              window.confirm = () => true;
+              Promise.resolve().then(() => {
+                  if(typeof window.ejecutarAccion === 'function') window.ejecutarAccion('Baja', valorAccion, detallesAccion, null);
+                  let rpArchivado = rpActivo + "-BAJA-" + Math.floor(Math.random() * 10000);
+                  setTimeout(() => {
+                      if(typeof window.ejecutarAccion === 'function') window.ejecutarAccion('Cambio de Caravana', rpArchivado, 'RP archivado por Baja/Muerte', null);
+                      rpActivo = rpArchivado;
+                      if(typeof window.buscarCaravanaBtn === 'function') window.buscarCaravanaBtn(rpArchivado);
+                  }, 400);
+                  if(typeof window.mostrarToast === 'function') window.mostrarToast("Baja registrada para RP " + rpObjetivo);
+              }).finally(() => {
+                  window.confirm = originalConfirm;
+              });
+            } else {
+              if(typeof window.ejecutarAccion === 'function') window.ejecutarAccion(tipoAccion, valorAccion, detallesAccion, null);
+              if(typeof window.mostrarToast === 'function') window.mostrarToast("[" + tipoAccion + "] guardado: " + valorAccion);
+            }
           }
         }
-      }
-    </script>
+</script>
 </body>
 </html>
