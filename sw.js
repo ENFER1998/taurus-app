@@ -3,7 +3,7 @@
  * Desarrollado por Fernando Rodriguez 2026 - Versión Blindada v9
  */
 
-const CACHE_NAME = 'taurus-track-pro-v9';
+const CACHE_NAME = 'taurus-track-pro-v13';
 
 const STATIC_ASSETS = [
   './',
