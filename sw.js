@@ -4,7 +4,7 @@ try {
   importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 } catch (e) {}
 
-const CACHE_NAME = 'taurus-track-pro-v27';
+const CACHE_NAME = 'taurus-track-pro-v28';
 
 const STATIC_ASSETS = [
   './',

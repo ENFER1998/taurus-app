@@ -1029,7 +1029,7 @@ if ('serviceWorker' in navigator) {
     <script>
 if ('caches' in window) {
         window.addEventListener('load', () =>{
-          caches.open('taurus-track-pro-v27').then(cache =>{
+          caches.open('taurus-track-pro-v28').then(cache =>{
             cache.addAll([
               location.href,
               'gemini-svg.png',
@@ -2805,9 +2805,7 @@ const APPS_SCRIPT_NOTIFICACIONES = "https://script.google.com/macros/s/AKfycbyt8
         let debounceBatchSync = null;
         function programarSyncPorLotes() {
             clearTimeout(debounceBatchSync);
-            let pendKey = maestroId ? ('tc_pendientes_' + maestroId) : 'tc_pendientes';
-            let p = lsGet(pendKey, []);
-            let delay = p.length >= 15 ? 400 : 2500;
+            let delay = (typeof rafagaActiva !== 'undefined' && rafagaActiva) ? 600 : 100;
             debounceBatchSync = setTimeout(() =>{
                 if (navigator.onLine) sincronizarPendientesAuto();
             }, delay);
@@ -3254,16 +3252,18 @@ function procesarEventos() {
 
                 try {
                     let fetchUserDoc = async () => {
-                        let opts = !navigator.onLine ? { source: 'cache' } : undefined;
-                        let docSnap = await (opts ? db.collection('usuarios').doc(emailClean).get(opts) : db.collection('usuarios').doc(emailClean).get());
-                        if (!docSnap.exists && user.email !== emailClean) {
-                            docSnap = await (opts ? db.collection('usuarios').doc(user.email).get(opts) : db.collection('usuarios').doc(user.email).get());
+                        if (!navigator.onLine) {
+                            return await db.collection('usuarios').doc(emailClean).get({ source: 'cache' });
+                        }
+                        let docSnap = await db.collection('usuarios').doc(emailClean).get();
+                        if (!docSnap.exists && user.email && user.email !== emailClean) {
+                            docSnap = await db.collection('usuarios').doc(user.email).get();
                         }
                         return docSnap;
                     };
                     let docSnap = await Promise.race([
                         fetchUserDoc(),
-                        new Promise((_, rej) => setTimeout(() => rej(new Error("Timeout Firestore Auth")), 2500))
+                        new Promise((_, rej) => setTimeout(() => rej(new Error("Timeout Firestore Auth")), 12000))
                     ]);
                     if (docSnap && docSnap.exists) {
                         userData = docSnap.data();
@@ -3342,21 +3342,6 @@ function procesarEventos() {
                     );
                 }
             } else {
-                localStorage.setItem('tc_sesion_activa', '0');
-                if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-                    try { navigator.serviceWorker.controller.postMessage({ accion: 'estado_sesion', activa: false }); } catch(e) {}
-                }
-                if (window.OneSignalDeferred) {
-                    OneSignalDeferred.push(async function(OneSignal) {
-                        try {
-                            OneSignal.User.addTags({ rol: "logged_out", es_dueno: "false", estancia_id: "none", usuario_email: "none", sesion_activa: "false" });
-                            if (OneSignal.User && OneSignal.User.PushSubscription && typeof OneSignal.User.PushSubscription.optOut === 'function') {
-                                await OneSignal.User.PushSubscription.optOut();
-                            }
-                            if (typeof OneSignal.logout === 'function') await OneSignal.logout();
-                        } catch(e) {}
-                    });
-                }
                 let pLogin = document.getElementById('pantalla-login'); if (pLogin) pLogin.classList.remove('oculto');
                 let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.add('oculto');
                 let pAdmin = document.getElementById('pantalla-admin'); if (pAdmin) pAdmin.classList.add('oculto');
@@ -3396,32 +3381,72 @@ function procesarEventos() {
             try {
                 const osEl = document.getElementById('onesignal-slidedown-container');
                 if (osEl) osEl.remove();
+                if ("Notification" in window && Notification.permission === "default" && !window._permListenerAdded) {
+                    window._permListenerAdded = true;
+                    const pedirNativo = () => {
+                        try { Notification.requestPermission().catch(() => {}); } catch(e) {}
+                        document.removeEventListener('click', pedirNativo);
+                    };
+                    document.addEventListener('click', pedirNativo, { once: true });
+                }
             } catch (e) {}
         }
         window.solicitarPermisoNotificaciones = solicitarPermisoNotificaciones;
 
+        function mostrarBannerActividadEnVivo(titulo, mensaje) {
+            try {
+                let cont = document.getElementById('taurus-live-notif-container');
+                if (!cont) {
+                    cont = document.createElement('div');
+                    cont.id = 'taurus-live-notif-container';
+                    cont.style.cssText = 'position:fixed;top:18px;right:18px;z-index:99999;display:flex;flex-direction:column;gap:10px;max-width:360px;width:calc(100% - 36px);pointer-events:none;';
+                    document.body.appendChild(cont);
+                }
+                const card = document.createElement('div');
+                card.style.cssText = 'background:#0f172a;border-left:5px solid #10b981;border-top:1px solid #334155;border-right:1px solid #334155;border-bottom:1px solid #334155;color:#f8fafc;padding:14px 16px;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,0.55);pointer-events:auto;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;transition:opacity 0.4s,transform 0.4s;';
+                card.innerHTML = `
+                    <div style="flex:1;">
+                        <div style="font-size:11px;font-weight:800;color:#10b981;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">${titulo}</div>
+                        <div style="font-size:13px;font-weight:700;color:#f8fafc;line-height:1.35;">${mensaje}</div>
+                    </div>
+                    <button type="button" style="background:transparent;border:none;color:#94a3b8;font-size:18px;cursor:pointer;line-height:1;padding:0 2px;">&times;</button>
+                `;
+                card.querySelector('button').onclick = () => card.remove();
+                cont.appendChild(card);
+                if (typeof window.reproducirBeepHardware === 'function') {
+                    try { window.reproducirBeepHardware('ok'); } catch(e) {}
+                }
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(-8px)';
+                    setTimeout(() => card.remove(), 400);
+                }, 6000);
+            } catch(e) {}
+        }
+        window.mostrarBannerActividadEnVivo = mostrarBannerActividadEnVivo;
+
         function lanzarNotificacionEscritorio(titulo, mensaje) {
             if (localStorage.getItem('tc_sesion_activa') === '0' || !usActivo) return;
-            if (!("Notification" in window) || Notification.permission !== "granted") return;
-            if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
-                navigator.serviceWorker.getRegistration().then(reg => {
-                    if (reg && typeof reg.showNotification === 'function') {
-                        reg.showNotification(titulo, {
-                            body: mensaje,
-                            icon: 'gemini-svg.png',
-                            badge: 'gemini-svg.png',
-                            vibrate: [200, 100, 200]
-                        }).catch(() => {
-                            try { new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' }); } catch (e) {}
-                        });
-                    } else {
-                        try { new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' }); } catch (e) {}
+            mostrarBannerActividadEnVivo(titulo, mensaje);
+            if (!("Notification" in window)) return;
+            const disparar = () => {
+                try { new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' }); } catch (e) {
+                    if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+                        navigator.serviceWorker.getRegistration().then(reg => {
+                            if (reg && typeof reg.showNotification === 'function') {
+                                reg.showNotification(titulo, {
+                                    body: mensaje,
+                                    icon: 'gemini-svg.png',
+                                    badge: 'gemini-svg.png',
+                                    vibrate: [200, 100, 200]
+                                }).catch(() => {});
+                            }
+                        }).catch(() => {});
                     }
-                }).catch(() => {
-                    try { new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' }); } catch (e) {}
-                });
-            } else {
-                try { new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' }); } catch (e) {}
+                }
+            };
+            if (Notification.permission === "granted") {
+                disparar();
             }
         }
         window.lanzarNotificacionEscritorio = lanzarNotificacionEscritorio;
@@ -3830,6 +3855,10 @@ function procesarEventos() {
                 if (unsubscribeEventos) unsubscribeEventos();
 
                 let renderTimeout;
+                let snapshotInicialRecibido = (Array.isArray(dbCache) && dbCache.length > 0);
+                let idsEventosConocidos = new Set((dbCache || []).map(d => d.id || (d.fecha + '_' + d.caravana + '_' + d.accion)));
+                let firmasEventosConocidas = new Set((dbCache || []).map(d => (d.fecha || '') + '_' + (d.caravana || '') + '_' + (d.accion || '')));
+
                 unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot(snapshot =>{
                     let nuevosDatos = [];
                     let docsList = [];
@@ -3837,38 +3866,52 @@ function procesarEventos() {
                         let d = doc.data();
                         d.id = doc.id || ('doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5));
                         docsList.push(doc);
-                        if (esEventoGanaderoValido(d) && (d.caravana === '---' || esCaravanaValida(d.caravana))) {
+                        if (window.esEventoGanaderoValido(d) && (d.caravana === '---' || window.esCaravanaValida(d.caravana))) {
                             nuevosDatos.push(d);
                         }
                     });
-                    if (typeof purgarEventosOperadoresEnFirestore === 'function') purgarEventosOperadoresEnFirestore(docsList);
+                    if (typeof window.purgarEventosOperadoresEnFirestore === 'function') window.purgarEventosOperadoresEnFirestore(docsList);
 
-                    let mapAnterior = new Set(dbCache.map(d =>d.fecha + '_' + d.caravana + '_' + d.accion));
-                    let notificar = nuevosDatos.filter(d =>d && d.fecha && !mapAnterior.has(d.fecha + '_' + d.caravana + '_' + d.accion));
-
-                    fusionarDatos(nuevosDatos);
-
-                    if (notificar.length >0 && mapAnterior.size >0) {
-                        if (notificar.length <= 3) {
-                            notificar.forEach(n =>{
-                                let autorEmail = String(n.usuario || "").toLowerCase().trim();
-                                let miEmail = String(usActivo || "").toLowerCase().trim();
-                                let masterEmail = String(maestroId || "").toLowerCase().trim();
-                                if (!autorEmail || autorEmail === miEmail || autorEmail === masterEmail || n.rol_autor === 'DuenoPrimario') return;
-                                let soyDuenoPrimario = (miEmail === masterEmail);
-                                let soyDuenoSecundario = !soyDuenoPrimario && (usRol.includes('Propietario') || usRol.includes('Dueño'));
-                                if (!soyDuenoPrimario && !soyDuenoSecundario) return;
-                                if (n.rol_autor === 'DuenoSecundario' && !soyDuenoPrimario) return;
-                                let op = n.nombre_autor || n.usuario || "Un operador";
-                                if (n.detalles && n.detalles.includes("Op: ")) { op = n.detalles.split("Op: ")[1].trim(); }
-                                let txtNotif = op + " registró: " + n.accion + " en " + n.caravana;
-                                if (typeof window.mostrarToast === 'function') window.mostrarToast(" " + txtNotif);
-                                else if (typeof mostrarToast === 'function') mostrarToast(" " + txtNotif);
-                                if (typeof window.lanzarNotificacionEscritorio === 'function') window.lanzarNotificacionEscritorio("Actividad en Estancia", txtNotif);
-                            });
-                        } else {
-                            if (typeof mostrarToast === 'function') mostrarToast(" Sincronizados " + notificar.length + " nuevos registros");
+                    let notificar = [];
+                    if (snapshotInicialRecibido) {
+                        notificar = nuevosDatos.filter(d => {
+                            if (!d) return false;
+                            let firma = (d.fecha || '') + '_' + (d.caravana || '') + '_' + (d.accion || '');
+                            return !idsEventosConocidos.has(d.id) && !firmasEventosConocidas.has(firma);
+                        });
+                    }
+                    snapshotInicialRecibido = true;
+                    nuevosDatos.forEach(d => {
+                        if (d) {
+                            idsEventosConocidos.add(d.id);
+                            firmasEventosConocidas.add((d.fecha || '') + '_' + (d.caravana || '') + '_' + (d.accion || ''));
                         }
+                    });
+
+                    window.fusionarDatos(nuevosDatos);
+
+                    if (notificar.length > 0) {
+                        let relevantes = notificar.filter(n => {
+                            if (!n || n.accion === 'Perfil Master' || n.accion === 'Actualización de Datos') return false;
+                            let autorEmail = String(n.usuario || "").toLowerCase().trim();
+                            let miEmail = String(usActivo || "").toLowerCase().trim();
+                            let masterEmail = String(maestroId || "").toLowerCase().trim();
+                            if (autorEmail && (autorEmail === miEmail || autorEmail === masterEmail)) return false;
+                            if (n.rol_autor === 'DuenoPrimario') return false;
+                            let soyDuenoPrimario = (miEmail === masterEmail);
+                            let soyDuenoSecundario = !soyDuenoPrimario && (usRol.includes('Propietario') || usRol.includes('Dueño'));
+                            if (!soyDuenoPrimario && !soyDuenoSecundario) return false;
+                            if (n.rol_autor === 'DuenoSecundario' && !soyDuenoPrimario) return false;
+                            return true;
+                        });
+                        relevantes.slice(0, 5).forEach(n => {
+                            let op = n.nombre_autor || n.usuario || "Un operador";
+                            if (n.detalles && n.detalles.includes("Op: ")) { op = n.detalles.split("Op: ")[1].trim(); }
+                            let txtNotif = op + " registró: " + n.accion + " en " + n.caravana + (n.valor ? " (" + n.valor + ")" : "");
+                            if (typeof window.mostrarToast === 'function') window.mostrarToast(" " + txtNotif);
+                            else if (typeof mostrarToast === 'function') mostrarToast(" " + txtNotif);
+                            if (typeof window.lanzarNotificacionEscritorio === 'function') window.lanzarNotificacionEscritorio("Actividad en Estancia", txtNotif);
+                        });
                     }
 
                     clearTimeout(renderTimeout);
@@ -3898,7 +3941,7 @@ function procesarEventos() {
 
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
                 let esDuenoPrimario = String(u || "").toLowerCase().trim() === String(m || "").toLowerCase().trim();
-                let rolTag = esDuenoPrimario ? 'DuenoPrimario' : (isPropietario ? 'DuenoSecundario' : 'Operador');
+                let rolTag = esDuenoPrimario ? 'Propietario' : (isPropietario ? 'DuenoSecundario' : 'Operador');
 
                 if (window.OneSignalDeferred) {
                     OneSignalDeferred.push(async function(OneSignal) {
@@ -6367,7 +6410,7 @@ window.cerrarModal = cerrarModal; window.toggleTema = toggleTema;
                 await secondaryApp.delete();
                 let alertasParaOmitir = alertaGlobalIdActual ? [alertaGlobalIdActual] : [];
                 await db.collection('usuarios').doc(email).set({
-                    nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', alertas_leidas: alertasParaOmitir
+                    email: email, nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', alertas_leidas: alertasParaOmitir
                 });
 
                 document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = '';
@@ -6578,14 +6621,17 @@ window.cerrarModal = cerrarModal; window.toggleTema = toggleTema;
         };
 
         try {
-            if (localStorage.getItem('taurus_v27_purged') !== '1') {
-                localStorage.setItem('taurus_v27_purged', '1');
+            if (localStorage.getItem('taurus_v28_purged') !== '1') {
+                localStorage.setItem('taurus_v28_purged', '1');
                 localStorage.removeItem('tc_hacienda');
+                localStorage.removeItem('tc_perfiles_locales');
+                localStorage.removeItem('tc_user_profile');
                 if ('caches' in window) {
-                    caches.keys().then(function(ks) { ks.forEach(function(k) { caches.delete(k); }); }).catch(function(){});
-                }
-                if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
-                    navigator.serviceWorker.getRegistrations().then(function(rs) { rs.forEach(function(r) { r.unregister(); }); }).catch(function(){});
+                    caches.keys().then(function(ks) {
+                        ks.forEach(function(k) {
+                            if (k !== 'taurus-track-pro-v28') caches.delete(k);
+                        });
+                    }).catch(function(){});
                 }
             }
         } catch(e) {}

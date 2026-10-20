@@ -63,7 +63,7 @@ function doPost(e) {
 
         if (remitenteRol === 'DuenoSecundario') {
           filters.push({ "operator": "AND" });
-          filters.push({ "field": "tag", "key": "rol", "relation": "=", "value": "DuenoPrimario" });
+          filters.push({ "field": "tag", "key": "rol", "relation": "=", "value": "Propietario" });
         } else {
           filters.push({ "operator": "AND" });
           filters.push({ "field": "tag", "key": "es_dueno", "relation": "=", "value": "true" });
