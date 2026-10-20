@@ -22,7 +22,9 @@ window.OneSignalDeferred = window.OneSignalDeferred || [];
             appId: "5d1a4839-8a6f-477b-bf67-38c1c031ba60",
             serviceWorkerParam: { scope: "./" },
             serviceWorkerPath: "OneSignalSDKWorker.js",
-            allowLocalhostAsSecureOrigin: true
+            allowLocalhostAsSecureOrigin: true,
+            notifyButton: { enable: false },
+            promptOptions: { autoPrompt: false, slidedown: { prompts: [] } }
           });
         } catch (error) {}
       });
@@ -45,7 +47,7 @@ if ('serviceWorker' in navigator) {
 
       if ('caches' in window) {
         window.addEventListener('load', () =>{
-          caches.open('taurus-track-pro-v26').then(cache =>{
+          caches.open('taurus-track-pro-v27').then(cache =>{
             cache.addAll([
               location.href,
               'gemini-svg.png',
@@ -70,7 +72,7 @@ if ('serviceWorker' in navigator) {
         body.tema-claro .nav-item.activo { color: var(--secundario); }
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; color: var(--texto); background: #1e293b; min-height: 100vh; transition: background 0.3s, color 0.3s; -webkit-tap-highlight-color: transparent; }
-        .oculto { display: none !important; }
+        .oculto, #onesignal-slidedown-container, #onesignal-slidedown-dialog, #onesignal-bell-container, #onesignal-bell-launcher, .onesignal-slidedown-container, .onesignal-bell-container, .onesignal-customlink-container, .onesignal-reset { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
         #pantalla-login { display: flex; align-items: center; justify-content: center; height: 100vh; width: 100%; flex-direction: column; background: var(--primario); position: fixed; top:0; left:0; z-index:9999;}
         .login-contenedor { background: #1e293b; border-radius: 16px; padding: 40px 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 90%; max-width: 360px; text-align: center; border: 1px solid var(--borde);}
         .logo-icono img { width: 90px; height: 90px; margin-bottom: 10px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); object-fit: contain; }
@@ -3104,7 +3106,7 @@ window.esCaravanaValida = function(car) {
 
                     let esPropietario = (userData.rol || '').includes('Propietario') || (userData.rol || '').includes('Dueño');
 
-                    let estanciaIdFinal = esPropietario ? emailClean : (userData.maestroId || emailClean);
+                    let estanciaIdFinal = (userData.maestroId || emailClean).toLowerCase().trim();
 
                     window.arrancarSistemaFirebase(
                         userData.email,
@@ -3116,6 +3118,21 @@ window.esCaravanaValida = function(car) {
                     );
                 }
             } else {
+                localStorage.setItem('tc_sesion_activa', '0');
+                if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                    try { navigator.serviceWorker.controller.postMessage({ accion: 'estado_sesion', activa: false }); } catch(e) {}
+                }
+                if (window.OneSignalDeferred) {
+                    OneSignalDeferred.push(async function(OneSignal) {
+                        try {
+                            OneSignal.User.addTags({ rol: "logged_out", es_dueno: "false", estancia_id: "none", usuario_email: "none", sesion_activa: "false" });
+                            if (OneSignal.User && OneSignal.User.PushSubscription && typeof OneSignal.User.PushSubscription.optOut === 'function') {
+                                await OneSignal.User.PushSubscription.optOut();
+                            }
+                            if (typeof OneSignal.logout === 'function') await OneSignal.logout();
+                        } catch(e) {}
+                    });
+                }
                 let pLogin = document.getElementById('pantalla-login'); if (pLogin) pLogin.classList.remove('oculto');
                 let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.add('oculto');
                 let pAdmin = document.getElementById('pantalla-admin'); if (pAdmin) pAdmin.classList.add('oculto');
@@ -3146,125 +3163,139 @@ window.esCaravanaValida = function(car) {
             setTimeout(() =>{ t.style.opacity = '0'; t.style.transition = 'opacity 0.5s'; setTimeout(() =>t.remove(), 500); }, 3000);
         }
 
-        window.solicitarPermisoNotificaciones = function() {
+        function solicitarPermisoNotificaciones() {
             try {
-                if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
-                    Notification.requestPermission().catch(() => {});
-                }
-                if (window.OneSignalDeferred) {
-                    OneSignalDeferred.push(async function(OneSignal) {
-                        try {
-                            if (OneSignal.Notifications && typeof OneSignal.Notifications.requestPermission === 'function') {
-                                await OneSignal.Notifications.requestPermission();
-                            }
-                        } catch (e) {}
-                    });
-                }
+                const osEl = document.getElementById('onesignal-slidedown-container');
+                if (osEl) osEl.remove();
             } catch (e) {}
-        };
+        }
+        window.solicitarPermisoNotificaciones = solicitarPermisoNotificaciones;
 
-        window.lanzarNotificacionEscritorio = function(titulo, mensaje) {
-            if (!("Notification" in window)) return;
-            const disparar = () => {
-                if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
-                    navigator.serviceWorker.getRegistration().then(reg => {
-                        if (reg && typeof reg.showNotification === 'function') {
-                            reg.showNotification(titulo, {
-                                body: mensaje,
-                                icon: 'gemini-svg.png',
-                                badge: 'gemini-svg.png',
-                                vibrate: [200, 100, 200]
-                            }).catch(() => {
-                                try { new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' }); } catch (e) {}
-                            });
-                        } else {
+        function lanzarNotificacionEscritorio(titulo, mensaje) {
+            if (localStorage.getItem('tc_sesion_activa') === '0' || !usActivo) return;
+            if (!("Notification" in window) || Notification.permission !== "granted") return;
+            if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+                navigator.serviceWorker.getRegistration().then(reg => {
+                    if (reg && typeof reg.showNotification === 'function') {
+                        reg.showNotification(titulo, {
+                            body: mensaje,
+                            icon: 'gemini-svg.png',
+                            badge: 'gemini-svg.png',
+                            vibrate: [200, 100, 200]
+                        }).catch(() => {
                             try { new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' }); } catch (e) {}
-                        }
-                    }).catch(() => {
+                        });
+                    } else {
                         try { new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' }); } catch (e) {}
-                    });
-                } else {
+                    }
+                }).catch(() => {
                     try { new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' }); } catch (e) {}
-                }
-            };
-            if (Notification.permission === "granted") {
-                disparar();
-            } else if (Notification.permission !== "denied") {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") disparar();
-                }).catch(() => {});
+                });
+            } else {
+                try { new Notification(titulo, { body: mensaje, icon: 'gemini-svg.png' }); } catch (e) {}
             }
-        };
+        }
+        window.lanzarNotificacionEscritorio = lanzarNotificacionEscritorio;
 
-        window.procesarAlertaServidor = function(msg, id) {
+        function registrarAlertaComoVista(idAlerta, msgTexto) {
+            if (!idAlerta) return;
+            let perm = window.lsGet('tc_alertas_vistas_permanente', []);
+            if (!perm.includes(idAlerta)) { perm.push(idAlerta); }
+            if (msgTexto && !perm.includes('msg_' + msgTexto)) { perm.push('msg_' + msgTexto); }
+            window.lsSet('tc_alertas_vistas_permanente', perm);
+
+            let leidas = window.lsGet('tc_alertas_leidas', []);
+            if (!leidas.includes(idAlerta)) {
+                leidas.push(idAlerta);
+                window.lsSet('tc_alertas_leidas', leidas);
+            }
+            if (usActivo) {
+                let uKey = 'tc_alertas_leidas_' + String(usActivo).toLowerCase().trim();
+                let uLeidas = window.lsGet(uKey, []);
+                if (!uLeidas.includes(idAlerta)) {
+                    uLeidas.push(idAlerta);
+                    window.lsSet(uKey, uLeidas);
+                }
+                if (navigator.onLine) {
+                    try {
+                        db.collection('usuarios').doc(usActivo).update({
+                            alertas_leidas: firebase.firestore.FieldValue.arrayUnion(idAlerta)
+                        }).catch(() => {});
+                    } catch(e) {}
+                }
+            }
+        }
+
+        function procesarAlertaServidor(msg, id, expira) {
             const banner = document.getElementById('banner-alerta-global');
             const modal = document.getElementById('modal-alerta-global');
             const cleanMsg = String(msg || "").trim();
-            if (!cleanMsg) {
+            const lowMsg = cleanMsg.toLowerCase();
+
+            let expiraNum = Number(expira || 0);
+            if (!expiraNum && id && String(id).startsWith('alerta_1')) {
+                let ts = parseInt(String(id).replace('alerta_', ''), 10);
+                if (!isNaN(ts) && ts > 1700000000000) expiraNum = ts + (2 * 60 * 60 * 1000);
+            }
+
+            if (!cleanMsg || lowMsg === 'hola' || lowMsg === 'aviso: hola' || !id || id === 'alerta_fb' || !expiraNum || Date.now() > expiraNum) {
                 if (banner) banner.classList.add('oculto');
                 if (modal) modal.style.display = 'none';
                 return;
             }
-            const realId = (id && id !== 'alerta_fb') ? String(id) : ('alerta_' + cleanMsg);
-            let leidas = window.lsGet('tc_alertas_leidas', []);
-            let mostradas = window.lsGet('tc_alertas_mostradas', []);
-            if (!leidas.includes(realId)) {
-                alertaGlobalIdActual = realId;
-                const elTxtModal = document.getElementById('txt-alerta-global');
-                const elTxtBanner = document.getElementById('txt-banner-alerta');
-                if (elTxtModal) elTxtModal.innerText = cleanMsg;
-                if (elTxtBanner) elTxtBanner.innerText = cleanMsg;
-                if (!mostradas.includes(realId)) {
-                    mostradas.push(realId);
-                    window.lsSet('tc_alertas_mostradas', mostradas);
-                    if (modal) { modal.classList.remove('oculto'); modal.style.display = 'flex'; }
-                    window.lanzarNotificacionEscritorio("Aviso Importante - Taurus Track Pro", cleanMsg);
-                }
-                if (banner) banner.classList.remove('oculto');
-            } else {
-                if (banner) banner.classList.add('oculto');
-            }
-        };
 
-        window.cerrarPopUpAlerta = function() {
-            if (alertaGlobalIdActual) {
-                let mostradas = window.lsGet('tc_alertas_mostradas', []);
-                if (!mostradas.includes(alertaGlobalIdActual)) { mostradas.push(alertaGlobalIdActual); window.lsSet('tc_alertas_mostradas', mostradas); }
-                let leidas = window.lsGet('tc_alertas_leidas', []);
-                if (!leidas.includes(alertaGlobalIdActual)) {
-                    leidas.push(alertaGlobalIdActual);
-                    window.lsSet('tc_alertas_leidas', leidas);
-                    if(navigator.onLine && usActivo) {
-                        try {
-                            db.collection('usuarios').doc(usActivo).update({
-                                alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
-                            });
-                        } catch(e) {}
-                    }
-                }
+            const realId = String(id);
+            let perm = window.lsGet('tc_alertas_vistas_permanente', []);
+            let leidas = window.lsGet('tc_alertas_leidas', []);
+            let uLeidas = usActivo ? window.lsGet('tc_alertas_leidas_' + String(usActivo).toLowerCase().trim(), []) : [];
+
+            if (perm.includes(realId) || perm.includes('msg_' + cleanMsg) || leidas.includes(realId) || uLeidas.includes(realId)) {
+                if (banner) banner.classList.add('oculto');
+                if (modal) modal.style.display = 'none';
+                return;
             }
-            document.getElementById('modal-alerta-global').style.display = 'none';
-            document.getElementById('banner-alerta-global').classList.add('oculto');
+
+            alertaGlobalIdActual = realId;
+            const elTxtModal = document.getElementById('txt-alerta-global');
+            const elTxtBanner = document.getElementById('txt-banner-alerta');
+            if (elTxtModal) elTxtModal.innerText = cleanMsg;
+            if (elTxtBanner) elTxtBanner.innerText = cleanMsg;
+
+            let mostradas = window.lsGet('tc_alertas_mostradas', []);
+            if (!mostradas.includes(realId)) {
+                mostradas.push(realId);
+                window.lsSet('tc_alertas_mostradas', mostradas);
+                if (modal) { modal.classList.remove('oculto'); modal.style.display = 'flex'; }
+                lanzarNotificacionEscritorio("Aviso Importante - Taurus Track Pro", cleanMsg);
+            }
+            if (banner) banner.classList.remove('oculto');
         }
+        window.procesarAlertaServidor = procesarAlertaServidor;
+
+        function cerrarPopUpAlerta() {
+            const elTxtModal = document.getElementById('txt-alerta-global');
+            const txtActual = elTxtModal ? elTxtModal.innerText.trim() : '';
+            if (alertaGlobalIdActual) {
+                registrarAlertaComoVista(alertaGlobalIdActual, txtActual);
+            }
+            const modal = document.getElementById('modal-alerta-global');
+            const banner = document.getElementById('banner-alerta-global');
+            if (modal) modal.style.display = 'none';
+            if (banner) banner.classList.add('oculto');
+        }
+        window.cerrarPopUpAlerta = cerrarPopUpAlerta;
 
         window.marcarAlertaLeida = function() {
+            const elTxtBanner = document.getElementById('txt-banner-alerta');
+            const txtActual = elTxtBanner ? elTxtBanner.innerText.trim() : '';
             if (alertaGlobalIdActual) {
-                let leidas = window.lsGet('tc_alertas_leidas', []);
-                if(!leidas.includes(alertaGlobalIdActual)) {
-                    leidas.push(alertaGlobalIdActual);
-                    window.lsSet('tc_alertas_leidas', leidas);
-                    if(navigator.onLine && usActivo) {
-                        try {
-                            db.collection('usuarios').doc(usActivo).update({
-                                alertas_leidas: firebase.firestore.FieldValue.arrayUnion(alertaGlobalIdActual)
-                            });
-                        } catch(e) {}
-                    }
-                }
+                registrarAlertaComoVista(alertaGlobalIdActual, txtActual);
             }
-            document.getElementById('modal-alerta-global').style.display = 'none';
-            document.getElementById('banner-alerta-global').classList.add('oculto');
-        }
+            const modal = document.getElementById('modal-alerta-global');
+            const banner = document.getElementById('banner-alerta-global');
+            if (modal) modal.style.display = 'none';
+            if (banner) banner.classList.add('oculto');
+        };
 
         let rafagaActiva = false;
         window.toggleRafaga = function() {
@@ -3457,7 +3488,7 @@ window.esCaravanaValida = function(car) {
                     if (typeof window.inicializarAdminMobile === 'function') window.inicializarAdminMobile(emailClean, prof);
                 } else {
                     let esPropietario = rol.includes('Propietario') || rol.includes('Dueño');
-                    let estanciaIdFinal = esPropietario ? emailClean : (prof.maestroId || emailClean);
+                    let estanciaIdFinal = (prof.maestroId || emailClean).toLowerCase().trim();
                     window.arrancarSistemaFirebase(
                         emailClean,
                         estanciaIdFinal,
@@ -3520,12 +3551,22 @@ window.esCaravanaValida = function(car) {
             }
         };
 
-        window.notificarPropietario = function(mensaje) {
-            if(!navigator.onLine) return;
-            let isDueno = usRol.includes('Propietario') || usRol.includes('Dueño');
-            const fd = new URLSearchParams(); fd.append('accion', 'notificar_accion'); fd.append('maestro', maestroId); fd.append('mensaje', mensaje); fd.append('remitente_es_dueno', isDueno);
+        function notificarPropietario(mensaje) {
+            if (!navigator.onLine || !usActivo || !maestroId) return;
+            let miEmail = String(usActivo).toLowerCase().trim();
+            let masterEmail = String(maestroId).toLowerCase().trim();
+            if (miEmail === masterEmail) return;
+            let esDuenoSecundario = (usRol.includes('Propietario') || usRol.includes('Dueño')) && miEmail !== masterEmail;
+            let rolRemitente = esDuenoSecundario ? 'DuenoSecundario' : 'Operador';
+            const fd = new URLSearchParams();
+            fd.append('accion', 'notificar_accion');
+            fd.append('maestro', masterEmail);
+            fd.append('mensaje', mensaje);
+            fd.append('remitente_email', miEmail);
+            fd.append('remitente_rol', rolRemitente);
             fetch("https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec", { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
         }
+        window.notificarPropietario = notificarPropietario;
 
         window.arrancarSistemaFirebase = function(u, m, r, nombreCompleto, hacienda, featuresStr) {
             try {
@@ -3555,11 +3596,14 @@ window.esCaravanaValida = function(car) {
 
                 if (unsubscribeConfig) unsubscribeConfig();
                 window.solicitarPermisoNotificaciones();
+                localStorage.setItem('tc_sesion_activa', '1');
+                if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                    try { navigator.serviceWorker.controller.postMessage({ accion: 'estado_sesion', activa: true }); } catch(e) {}
+                }
                 unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot(doc =>{
                     if (doc.exists) {
                         const conf = doc.data();
-                        const alertId = conf.alerta_id || (conf.alerta_global ? ('alerta_' + String(conf.alerta_global).trim()) : '');
-                        if (typeof window.procesarAlertaServidor === 'function') window.procesarAlertaServidor(conf.alerta_global, alertId);
+                        if (typeof window.procesarAlertaServidor === 'function') window.procesarAlertaServidor(conf.alerta_global, conf.alerta_id, conf.alerta_expira);
                         const pantMant = document.getElementById('pantalla-mantenimiento');
                         if (conf.mantenimiento) { if (pantMant) pantMant.classList.remove('oculto'); }
                         else { if (pantMant) pantMant.classList.add('oculto'); }
@@ -3591,14 +3635,20 @@ window.esCaravanaValida = function(car) {
                     if (notificar.length >0 && mapAnterior.size >0) {
                         if (notificar.length <= 3) {
                             notificar.forEach(n =>{
-                                let op = n.usuario || "Un operador";
+                                let autorEmail = String(n.usuario || "").toLowerCase().trim();
+                                let miEmail = String(usActivo || "").toLowerCase().trim();
+                                let masterEmail = String(maestroId || "").toLowerCase().trim();
+                                if (!autorEmail || autorEmail === miEmail || autorEmail === masterEmail || n.rol_autor === 'DuenoPrimario') return;
+                                let soyDuenoPrimario = (miEmail === masterEmail);
+                                let soyDuenoSecundario = !soyDuenoPrimario && (usRol.includes('Propietario') || usRol.includes('Dueño'));
+                                if (!soyDuenoPrimario && !soyDuenoSecundario) return;
+                                if (n.rol_autor === 'DuenoSecundario' && !soyDuenoPrimario) return;
+                                let op = n.nombre_autor || n.usuario || "Un operador";
                                 if (n.detalles && n.detalles.includes("Op: ")) { op = n.detalles.split("Op: ")[1].trim(); }
-                                let isDuenoActual = usRol.includes('Propietario') || usRol.includes('Dueño');
-                                if (isDuenoActual && n.usuario !== usActivo) {
-                                    let txtNotif = op + " registró: " + n.accion + " en " + n.caravana;
-                                    if (typeof window.mostrarToast === 'function') window.mostrarToast(" " + txtNotif);
-                                    if (typeof window.lanzarNotificacionEscritorio === 'function') window.lanzarNotificacionEscritorio("Actividad en Estancia", txtNotif);
-                                }
+                                let txtNotif = op + " registró: " + n.accion + " en " + n.caravana;
+                                if (typeof window.mostrarToast === 'function') window.mostrarToast(" " + txtNotif);
+                                else if (typeof mostrarToast === 'function') mostrarToast(" " + txtNotif);
+                                if (typeof window.lanzarNotificacionEscritorio === 'function') window.lanzarNotificacionEscritorio("Actividad en Estancia", txtNotif);
                             });
                         } else {
                             if (typeof window.mostrarToast === 'function') window.mostrarToast(" Sincronizados " + notificar.length + " nuevos registros");
@@ -3630,16 +3680,23 @@ window.esCaravanaValida = function(car) {
                 });
 
                 let isPropietario = usRol.includes('Propietario') || usRol.includes('Dueño');
-                let displayRol = isPropietario ? 'Propietario' : 'Operador';
+                let esDuenoPrimario = String(u || "").toLowerCase().trim() === String(m || "").toLowerCase().trim();
+                let rolTag = esDuenoPrimario ? 'DuenoPrimario' : (isPropietario ? 'DuenoSecundario' : 'Operador');
 
                 if (window.OneSignalDeferred) {
                     OneSignalDeferred.push(async function(OneSignal) {
                         try {
-                            if (typeof OneSignal.login === 'function') await OneSignal.login(u);
-                            OneSignal.User.addTags({ rol: displayRol, estancia_id: m, email: u });
-                            if (OneSignal.Notifications && typeof OneSignal.Notifications.requestPermission === 'function') {
-                                await OneSignal.Notifications.requestPermission();
+                            if (typeof OneSignal.login === 'function') await OneSignal.login(String(u).toLowerCase().trim());
+                            if (OneSignal.User && OneSignal.User.PushSubscription && typeof OneSignal.User.PushSubscription.optIn === 'function') {
+                                await OneSignal.User.PushSubscription.optIn();
                             }
+                            OneSignal.User.addTags({
+                                rol: rolTag,
+                                es_dueno: isPropietario ? "true" : "false",
+                                estancia_id: String(m).toLowerCase().trim(),
+                                usuario_email: String(u).toLowerCase().trim(),
+                                sesion_activa: "true"
+                            });
                         } catch(e) {}
                     });
                 }
@@ -3794,6 +3851,8 @@ window.esCaravanaValida = function(car) {
                 valor: valor || '',
                 detalles: detalles || '',
                 usuario: usActivo,
+                nombre_autor: usNombre || usActivo,
+                rol_autor: (String(usActivo || '').toLowerCase().trim() === String(maestroId || '').toLowerCase().trim()) ? 'DuenoPrimario' : ((usRol.includes('Propietario') || usRol.includes('Dueño')) ? 'DuenoSecundario' : 'Operador'),
                 estancia: maestroId,
                 maestro: maestroId
             };
@@ -6266,7 +6325,11 @@ window.esCaravanaValida = function(car) {
             }
         }
 
-        window.cerrarSesion = function() {
+        function cerrarSesion() {
+            localStorage.setItem('tc_sesion_activa', '0');
+            if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                try { navigator.serviceWorker.controller.postMessage({ accion: 'estado_sesion', activa: false }); } catch(e) {}
+            }
             if (unsubscribeEventos) { try { unsubscribeEventos(); } catch(e){} unsubscribeEventos = null; }
             if (unsubscribeConfig) { try { unsubscribeConfig(); } catch(e){} unsubscribeConfig = null; }
             if (unsubscribeEstancia) { try { unsubscribeEstancia(); } catch(e){} unsubscribeEstancia = null; }
@@ -6275,20 +6338,45 @@ window.esCaravanaValida = function(car) {
             localStorage.removeItem('tc_hacienda');
             localStorage.removeItem('tc_user_profile');
             localStorage.removeItem('tc_ultimo_usuario');
-            localStorage.removeItem('tc_admin_mob_session');
             localStorage.removeItem('tc_admin_session');
+            localStorage.removeItem('tc_admin_mob_session');
             const elCfgLogo = document.getElementById('cfg-logo');
             if (elCfgLogo) elCfgLogo.value = '';
             window.aplicarDisenoEnPantalla('Estancia', 'gemini-svg.png');
             let pLogin = document.getElementById('pantalla-login'); if (pLogin) pLogin.classList.remove('oculto');
             let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.add('oculto');
             let pAdmin = document.getElementById('pantalla-admin'); if (pAdmin) pAdmin.classList.add('oculto');
-            firebase.auth().signOut().then(() =>{
-                window.location.reload();
-            }).catch(() => {
+
+            const desactivarPushProm = new Promise((resolve) => {
+                if (window.OneSignalDeferred) {
+                    OneSignalDeferred.push(async function(OneSignal) {
+                        try {
+                            OneSignal.User.addTags({ rol: "logged_out", es_dueno: "false", estancia_id: "none", usuario_email: "none", sesion_activa: "false" });
+                            if (typeof OneSignal.User.removeTags === 'function') {
+                                OneSignal.User.removeTags(["rol", "es_dueno", "estancia_id", "email", "usuario_email"]);
+                            }
+                            if (OneSignal.User && OneSignal.User.PushSubscription && typeof OneSignal.User.PushSubscription.optOut === 'function') {
+                                await OneSignal.User.PushSubscription.optOut();
+                            }
+                            if (typeof OneSignal.logout === 'function') {
+                                await OneSignal.logout();
+                            }
+                        } catch(e) {}
+                        resolve();
+                    });
+                } else {
+                    resolve();
+                }
+            });
+
+            Promise.race([
+                Promise.all([desactivarPushProm, firebase.auth().signOut().catch(() => {})]),
+                new Promise(res => setTimeout(res, 450))
+            ]).then(() => {
                 window.location.reload();
             });
         }
+        window.cerrarSesion = cerrarSesion;
 
         window.forzarSaltoAFicha = function() {
             let tabFicha = document.querySelectorAll('.nav-item')[1];
@@ -6340,8 +6428,8 @@ window.esCaravanaValida = function(car) {
         };
 
         try {
-            if (localStorage.getItem('taurus_v26_purged') !== '1') {
-                localStorage.setItem('taurus_v26_purged', '1');
+            if (localStorage.getItem('taurus_v27_purged') !== '1') {
+                localStorage.setItem('taurus_v27_purged', '1');
                 localStorage.removeItem('tc_hacienda');
                 if ('caches' in window) {
                     caches.keys().then(function(ks) { ks.forEach(function(k) { caches.delete(k); }); }).catch(function(){});
@@ -7480,8 +7568,15 @@ var mapaEstancias = {};
             if(!confirm(" ¿Enviar notificación push a TODOS ahora mismo?")) return;
             toggleLoading(true, "Enviando anuncio...");
             try {
-                const nuevoId = "alerta_" + Date.now();
-                await db.collection('sistema').doc('config').set({ alerta_global: "AVISO: " + msg, alerta_id: nuevoId }, { merge: true });
+                const ahora = Date.now();
+                const nuevoId = "alerta_" + ahora;
+                const expiraMs = ahora + (2 * 60 * 60 * 1000);
+                await db.collection('sistema').doc('config').set({
+                    alerta_global: "AVISO: " + msg,
+                    alerta_id: nuevoId,
+                    alerta_fecha: ahora,
+                    alerta_expira: expiraMs
+                }, { merge: true });
                 const fd = new URLSearchParams(); fd.append('accion', 'aviso_mantenimiento'); fd.append('mensaje', "AVISO: " + msg);
                 fetch('https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec', { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
                 toggleLoading(false); mostrarToastAdmin(" Aviso enviado"); document.getElementById('txt-aviso-mant').value = '';

@@ -43,28 +43,51 @@ function doPost(e) {
     var ONESIGNAL_APP_ID = PropertiesService.getScriptProperties().getProperty('ONESIGNAL_APP_ID') || '5d1a4839-8a6f-477b-bf67-38c1c031ba60';
 
     var mensajePush = sanitizeInput(req.mensaje || (e && e.parameter && e.parameter.mensaje), 240);
-    var maestro = sanitizeInput(req.maestro || (e && e.parameter && e.parameter.maestro), 120);
+    var maestro = sanitizeInput(req.maestro || (e && e.parameter && e.parameter.maestro), 120).toLowerCase();
+    var remitenteEmail = sanitizeInput(req.remitente_email || (e && e.parameter && e.parameter.remitente_email), 120).toLowerCase();
+    var remitenteRol = sanitizeInput(req.remitente_rol || (e && e.parameter && e.parameter.remitente_rol), 40);
 
     if (ONESIGNAL_REST_KEY && mensajePush) {
       var payload = null;
 
       if (accion === 'notificar_accion' && maestro) {
+        if (remitenteRol === 'DuenoPrimario' || (remitenteEmail && remitenteEmail === maestro)) {
+          return jsonResponse({ "status": "ok", "skipped": "primary_owner_action" });
+        }
+
+        var filters = [
+          { "field": "tag", "key": "estancia_id", "relation": "=", "value": maestro },
+          { "operator": "AND" },
+          { "field": "tag", "key": "sesion_activa", "relation": "=", "value": "true" }
+        ];
+
+        if (remitenteRol === 'DuenoSecundario') {
+          filters.push({ "operator": "AND" });
+          filters.push({ "field": "tag", "key": "rol", "relation": "=", "value": "DuenoPrimario" });
+        } else {
+          filters.push({ "operator": "AND" });
+          filters.push({ "field": "tag", "key": "es_dueno", "relation": "=", "value": "true" });
+        }
+
+        if (remitenteEmail) {
+          filters.push({ "operator": "AND" });
+          filters.push({ "field": "tag", "key": "usuario_email", "relation": "!=", "value": remitenteEmail });
+        }
+
         payload = {
           "app_id": ONESIGNAL_APP_ID,
           "headings": { "en": "Taurus Track Pro", "es": "Taurus Track Pro" },
           "contents": { "en": mensajePush, "es": mensajePush },
-          "filters": [
-            { "field": "tag", "key": "estancia_id", "relation": "=", "value": maestro },
-            { "operator": "AND" },
-            { "field": "tag", "key": "rol", "relation": "=", "value": "Propietario" }
-          ]
+          "filters": filters
         };
       } else if (accion === 'aviso_mantenimiento' || accion === 'toggle_mantenimiento') {
         payload = {
           "app_id": ONESIGNAL_APP_ID,
           "headings": { "en": "Taurus Track Pro - Aviso Oficial", "es": "Taurus Track Pro - Aviso Oficial" },
           "contents": { "en": mensajePush, "es": mensajePush },
-          "included_segments": ["Total Subscriptions", "Subscribed Users"]
+          "filters": [
+            { "field": "tag", "key": "sesion_activa", "relation": "=", "value": "true" }
+          ]
         };
       }
 

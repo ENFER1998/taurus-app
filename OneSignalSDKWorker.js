@@ -1,8 +1,10 @@
+let taurusSesionActiva = true;
+
 try {
   importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 } catch (e) {}
 
-const CACHE_NAME = 'taurus-track-pro-v26';
+const CACHE_NAME = 'taurus-track-pro-v27';
 
 const STATIC_ASSETS = [
   './',
@@ -39,7 +41,17 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.accion === 'estado_sesion') {
+    taurusSesionActiva = Boolean(event.data.activa);
+  }
+});
+
 self.addEventListener('push', (event) => {
+  if (!taurusSesionActiva) {
+    event.stopImmediatePropagation();
+    return;
+  }
   if (!event.data) return;
   try {
     const data = event.data.json();
