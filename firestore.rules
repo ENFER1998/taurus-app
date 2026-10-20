@@ -2,12 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Función: Usuario autenticado
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Función: Es el correo raíz del propietario o tiene rol SuperAdmin verificado en base de datos
     function isSuperAdmin() {
       return isAuthenticated() && (
         request.auth.token.email == 'enfer.ro.98@gmail.com' ||
@@ -15,33 +13,25 @@ service cloud.firestore {
       );
     }
 
-    // REGLAS PARA LA COLECCIÓN 'usuarios'
     match /usuarios/{userEmail} {
-      // Lectura: Cualquier usuario autenticado puede leer perfiles (necesario para validar licencias y miembros)
+
       allow read: if isAuthenticated();
 
-      // Creación/Edición/Eliminación:
-      // 1. El SuperAdmin tiene control total.
-      // 2. Un usuario común SOLO puede crear/editar su propio perfil si NO intenta auto-asignarse rol SuperAdmin ni Admin.
-      // 3. Un Propietario puede crear o editar peones/operadores vinculados a su estancia (maestroId).
-      // 4. Un Propietario puede eliminar peones pertenecientes a su estancia.
       allow write: if isSuperAdmin() || (
         isAuthenticated() && (
-          // Caso A: El usuario edita su propia cuenta
+
           (
             request.auth.token.email == userEmail &&
-            (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['rol']) || 
-             (request.resource.data.rol != 'SuperAdmin' && request.resource.data.rol != 'Admin')) &&
-            !request.resource.data.keys().hasAny(['password'])
+            (resource == null || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['rol']) ||
+             (request.resource.data.rol != 'SuperAdmin' && request.resource.data.rol != 'Admin'))
           ) ||
-          // Caso B: El Propietario crea o edita un peón subordinado a su estancia
+
           (
             request.resource.data.maestroId == request.auth.token.email &&
-            request.resource.data.rol != 'SuperAdmin' && 
-            request.resource.data.rol != 'Admin' &&
-            request.resource.data.rol != 'Propietario'
+            request.resource.data.rol != 'SuperAdmin' &&
+            request.resource.data.rol != 'Admin'
           ) ||
-          // Caso C: El Propietario elimina un peón de su estancia
+
           (
             resource != null &&
             resource.data.maestroId == request.auth.token.email
@@ -50,9 +40,8 @@ service cloud.firestore {
       );
     }
 
-    // REGLAS PARA 'estancias' Y 'eventos'
     match /estancias/{maestroId} {
-      // El SuperAdmin puede auditar todo. Un usuario normal solo accede a los datos de su estancia.
+
       allow read, write: if isSuperAdmin() || (
         isAuthenticated() && (
           request.auth.token.email == maestroId ||
@@ -70,11 +59,10 @@ service cloud.firestore {
       }
     }
 
-    // CONFIGURACIÓN GLOBAL DEL SISTEMA (Kill Switch / Alertas)
     match /sistema/{documentId} {
-      // Todos leen para saber si hay mantenimiento activo
+
       allow read: if isAuthenticated();
-      // Solo el SuperAdmin puede activar el bloqueo o mandar avisos globales
+
       allow write: if isSuperAdmin();
     }
   }

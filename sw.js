@@ -1,9 +1,8 @@
-/**
- * TAURUS TRACK PRO - SERVICE WORKER OFICIAL PWA (OFFLINE-FIRST)
- * Desarrollado por Fernando Rodriguez 2026 - Versión Blindada v9
- */
+try {
+  importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
+} catch (e) {}
 
-const CACHE_NAME = 'taurus-track-pro-v13';
+const CACHE_NAME = 'taurus-track-pro-v26';
 
 const STATIC_ASSETS = [
   './',
@@ -21,10 +20,7 @@ const STATIC_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Taurus SW] Precalentando caché offline con recursos estáticos...');
-      return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.warn('[Taurus SW] Advertencia al precachear algunos recursos:', err);
-      });
+      return cache.addAll(STATIC_ASSETS).catch(() => {});
     }).then(() => self.skipWaiting())
   );
 });
@@ -35,7 +31,6 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cache) => {
           if (cache !== CACHE_NAME) {
-            console.log('[Taurus SW] Purgando caché obsoleta:', cache);
             return caches.delete(cache);
           }
         })
@@ -44,25 +39,66 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  try {
+    const data = event.data.json();
+    if (data && data.custom && data.custom.i) return;
+    const title = data.title || (data.headings && (data.headings.es || data.headings.en)) || 'Taurus Track Pro';
+    const body = data.body || data.alert || (data.contents && (data.contents.es || data.contents.en)) || '';
+    if (body) {
+      event.waitUntil(
+        self.registration.showNotification(title, {
+          body: body,
+          icon: 'gemini-svg.png',
+          badge: 'gemini-svg.png',
+          vibrate: [200, 100, 200]
+        })
+      );
+    }
+  } catch (err) {
+    const text = event.data.text();
+    if (text) {
+      event.waitUntil(
+        self.registration.showNotification('Taurus Track Pro', {
+          body: text,
+          icon: 'gemini-svg.png',
+          badge: 'gemini-svg.png'
+        })
+      );
+    }
+  }
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow('./');
+    })
+  );
+});
+
 self.addEventListener('fetch', (event) => {
-  // 1. Filtrado riguroso de métodos y esquemas soportados
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith('http://') && !event.request.url.startsWith('https://')) return;
 
   const url = new URL(event.request.url);
 
-  // 2. Excluir explícitamente túneles de comunicación en vivo y APIs en streaming
   if (
     url.origin.includes('firestore.googleapis.com') ||
-    url.origin.includes('openrouter.ai') ||
     url.origin.includes('onesignal.com') ||
+    url.origin.includes('script.google.com') ||
+    url.origin.includes('script.googleusercontent.com') ||
     url.pathname.includes('/channel') ||
     url.pathname.includes('/google.firestore.v1.')
   ) {
     return;
   }
 
-  // 3. Estrategia Network-First con fallback resiliente para navegación HTML
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
@@ -84,11 +120,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 4. Estrategia Cache-First con actualización en segundo plano y respuesta de fallback segura
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Revalidar en segundo plano si hay red disponible
         fetch(event.request).then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             caches.open(CACHE_NAME).then((cache) => {
@@ -125,7 +159,6 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Soporte de sincronización en segundo plano si el navegador lo admite
 self.addEventListener('sync', (event) => {
   if (event.tag === 'taurus-sync-pendientes') {
     event.waitUntil(
