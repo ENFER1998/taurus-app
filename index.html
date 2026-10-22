@@ -7,11 +7,52 @@
 
     <meta name="theme-color" content="#0f172a">
 
+    <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="gemini-svg.png">
     <link rel="icon" type="image/png" href="gemini-svg.png">
+    <script>
+    (function() {
+        try {
+            var sesionActiva = localStorage.getItem('tc_sesion_activa');
+            var ultimoUsu = (localStorage.getItem('tc_ultimo_usuario') || '').trim();
+            var rawProf = localStorage.getItem('tc_user_profile');
+            var rawAdminMob = localStorage.getItem('tc_admin_mob_session');
+            var rawAdminPC = localStorage.getItem('tc_admin_session');
+            var tieneSesion = (sesionActiva !== '0') && Boolean(ultimoUsu || rawProf || rawAdminMob || rawAdminPC);
+            if (tieneSesion) {
+                localStorage.setItem('tc_sesion_activa', '1');
+                document.documentElement.classList.add('sesion-preactiva');
+                var esAdmin = false;
+                try {
+                    if (rawProf) {
+                        var p = JSON.parse(rawProf);
+                        if (p && (p.rol === 'SuperAdmin' || p.rol === 'Admin')) esAdmin = true;
+                    }
+                    if (!esAdmin && (rawAdminMob || rawAdminPC)) {
+                        var a = JSON.parse(rawAdminMob || rawAdminPC);
+                        if (a && a.email && (!ultimoUsu || a.email.toLowerCase() === ultimoUsu.toLowerCase())) {
+                            var mapRaw = localStorage.getItem('tc_perfiles_locales');
+                            var mapP = mapRaw ? JSON.parse(mapRaw) : {};
+                            var mp = mapP[a.email.toLowerCase()];
+                            if (!rawProf || (mp && (mp.rol === 'SuperAdmin' || mp.rol === 'Admin'))) esAdmin = true;
+                        }
+                    }
+                } catch (e) {}
+                if (esAdmin) {
+                    document.documentElement.classList.add('sesion-admin-preactiva');
+                }
+            }
+        } catch (e) {}
+    })();
+    </script>
+    <style>
+        html.sesion-preactiva #pantalla-login { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+        html.sesion-preactiva:not(.sesion-admin-preactiva) #pantalla-app { display: block !important; }
+        html.sesion-preactiva.sesion-admin-preactiva #pantalla-admin { display: block !important; }
+    </style>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js" defer></script>
 
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
@@ -37,17 +78,17 @@ window.OneSignalDeferred = window.OneSignalDeferred || [];
     <script>
 if ('serviceWorker' in navigator) {
         window.addEventListener('load', () =>{
-          navigator.serviceWorker.register('sw.js', { scope: './' }).then((registration) =>{
+          navigator.serviceWorker.register('OneSignalSDKWorker.js', { scope: './' }).then((registration) =>{
             console.log('[Taurus] ServiceWorker PWA activo con alcance:', registration.scope);
           }).catch((err) =>{
-            console.warn('[Taurus] No se pudo registrar sw.js (esperado en modo file:///):', err);
+            console.warn('[Taurus] No se pudo registrar ServiceWorker (esperado en modo file:///):', err);
           });
         });
       }
 
       if ('caches' in window) {
         window.addEventListener('load', () =>{
-          caches.open('taurus-track-pro-v28').then(cache =>{
+          caches.open('taurus-track-pro-v29').then(cache =>{
             cache.addAll([
               location.href,
               'gemini-svg.png',
@@ -73,7 +114,7 @@ if ('serviceWorker' in navigator) {
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; color: var(--texto); background: #1e293b; min-height: 100vh; transition: background 0.3s, color 0.3s; -webkit-tap-highlight-color: transparent; }
         .oculto, #onesignal-slidedown-container, #onesignal-slidedown-dialog, #onesignal-bell-container, #onesignal-bell-launcher, .onesignal-slidedown-container, .onesignal-bell-container, .onesignal-customlink-container, .onesignal-reset { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
-        #pantalla-login { display: flex; align-items: center; justify-content: center; height: 100vh; width: 100%; flex-direction: column; background: var(--primario); position: fixed; top:0; left:0; z-index:9999;}
+        #pantalla-login { display: flex; align-items: center; justify-content: center; height: 100vh; height: 100dvh; width: 100%; flex-direction: column; background: var(--primario); position: fixed; top:0; left:0; z-index:9999; overflow-y: auto; padding: 16px 0;}
         .login-contenedor { background: #1e293b; border-radius: 16px; padding: 40px 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 90%; max-width: 360px; text-align: center; border: 1px solid var(--borde);}
         .logo-icono img { width: 90px; height: 90px; margin-bottom: 10px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); object-fit: contain; }
         .titulo-login { font-size: 24px; font-weight: 900; margin-bottom: 30px; color: var(--texto); }
@@ -1007,7 +1048,7 @@ if ('serviceWorker' in navigator) {
             box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4) !important;
         }
     </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 </head>
 <body>
 
@@ -2535,6 +2576,11 @@ if (typeof window.firebase === 'undefined') {
         };
 
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        try {
+            if (firebase.auth && firebase.auth.Auth && firebase.auth.Auth.Persistence && typeof firebase.auth().setPersistence === 'function') {
+                firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+            }
+        } catch(e) {}
         const db = firebase.firestore();
 
         window.escapeHTML = function(str) {
@@ -3001,6 +3047,119 @@ window.esCaravanaValida = function(car) {
         window.lsSet = function(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} };
         window.lsGet = function(key, def) { try { let v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } };
 
+        window.obtenerSesionGuardadaLocal = function() {
+            try {
+                if (localStorage.getItem('tc_sesion_activa') === '0') return null;
+                let ultimoUsuario = (localStorage.getItem('tc_ultimo_usuario') || '').toLowerCase().trim();
+                let cachedProfile = window.lsGet('tc_user_profile', null);
+                let mapPerfiles = window.lsGet('tc_perfiles_locales', {});
+                let adminMob = window.lsGet('tc_admin_mob_session', null);
+                let adminPC = window.lsGet('tc_admin_session', null);
+
+                let email = ultimoUsuario
+                    || (cachedProfile && cachedProfile.email ? String(cachedProfile.email).toLowerCase().trim() : '')
+                    || (adminMob && adminMob.email ? String(adminMob.email).toLowerCase().trim() : '')
+                    || (adminPC && adminPC.email ? String(adminPC.email).toLowerCase().trim() : '');
+
+                if (!email) return null;
+
+                let userData = null;
+                if (cachedProfile && String(cachedProfile.email || '').toLowerCase().trim() === email) {
+                    userData = Object.assign({}, cachedProfile);
+                }
+                if (mapPerfiles && mapPerfiles[email]) {
+                    userData = Object.assign({}, mapPerfiles[email], userData || {});
+                }
+                if (!userData) {
+                    let esAdm = Boolean((adminMob && String(adminMob.email || '').toLowerCase().trim() === email) || (adminPC && String(adminPC.email || '').toLowerCase().trim() === email));
+                    userData = {
+                        email: email,
+                        maestroId: email,
+                        rol: esAdm ? 'SuperAdmin' : 'Propietario',
+                        nombre: email.split('@')[0],
+                        hacienda: 'Hacienda',
+                        features: ''
+                    };
+                } else {
+                    userData.email = email;
+                    if (!userData.maestroId) userData.maestroId = email;
+                    if (!userData.rol) {
+                        let esAdm = Boolean((adminMob && String(adminMob.email || '').toLowerCase().trim() === email) || (adminPC && String(adminPC.email || '').toLowerCase().trim() === email));
+                        userData.rol = esAdm ? 'SuperAdmin' : 'Propietario';
+                    }
+                }
+                return { email: email, userData: userData };
+            } catch (e) {
+                return null;
+            }
+        };
+
+        window.restaurarSesionLocalInmediata = function() {
+            const sesion = window.obtenerSesionGuardadaLocal();
+            if (!sesion || !sesion.email) {
+                document.documentElement.classList.remove('sesion-preactiva', 'sesion-admin-preactiva');
+                return false;
+            }
+            const emailClean = sesion.email;
+            const userData = sesion.userData;
+            localStorage.setItem('tc_sesion_activa', '1');
+            localStorage.setItem('tc_ultimo_usuario', emailClean);
+
+            let rol = userData ? (userData.rol || '') : '';
+            let esAdmin = (rol === 'SuperAdmin' || rol === 'Admin');
+
+            let pLogin = document.getElementById('pantalla-login');
+            if (pLogin) pLogin.classList.add('oculto');
+
+            if (esAdmin) {
+                document.documentElement.classList.add('sesion-preactiva', 'sesion-admin-preactiva');
+                let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.add('oculto');
+                let pAdmin = document.getElementById('pantalla-admin'); if (pAdmin) pAdmin.classList.remove('oculto');
+                window.lsSet("tc_admin_mob_session", { email: emailClean, time: Date.now() });
+                if (typeof window.inicializarAdminMobile === 'function') {
+                    window.inicializarAdminMobile(emailClean, userData);
+                }
+            } else {
+                document.documentElement.classList.add('sesion-preactiva');
+                document.documentElement.classList.remove('sesion-admin-preactiva');
+                let pAdmin = document.getElementById('pantalla-admin'); if (pAdmin) pAdmin.classList.add('oculto');
+                let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.remove('oculto');
+                window.lsSet('tc_user_profile', userData);
+                if (userData.alertas_leidas) window.lsSet('tc_alertas_leidas', userData.alertas_leidas);
+                let estanciaIdFinal = (userData.maestroId || emailClean).toLowerCase().trim();
+                if (typeof window.arrancarSistemaFirebase === 'function') {
+                    window.arrancarSistemaFirebase(
+                        emailClean,
+                        estanciaIdFinal,
+                        userData.rol || 'Propietario',
+                        userData.nombre || emailClean.split('@')[0],
+                        userData.hacienda || 'Hacienda',
+                        userData.features || ''
+                    );
+                }
+            }
+            return true;
+        };
+
+        window.intentarReautenticacionSilenciosa = function() {
+            try {
+                if (!navigator.onLine || window._reauthSilenciosoEnCurso) return;
+                if (typeof firebase === 'undefined' || !firebase.auth || firebase.auth().currentUser) return;
+                const sesion = window.obtenerSesionGuardadaLocal();
+                if (!sesion || !sesion.email) return;
+                let mapPerfiles = window.lsGet('tc_perfiles_locales', {});
+                let passGuardada = (mapPerfiles && mapPerfiles[sesion.email] && mapPerfiles[sesion.email].password)
+                    || (sesion.userData && sesion.userData.password) || '';
+                if (!passGuardada) return;
+                window._reauthSilenciosoEnCurso = true;
+                firebase.auth().signInWithEmailAndPassword(sesion.email, passGuardada)
+                    .catch(() => {})
+                    .finally(() => { window._reauthSilenciosoEnCurso = false; });
+            } catch (e) {
+                window._reauthSilenciosoEnCurso = false;
+            }
+        };
+
         firebase.auth().onAuthStateChanged(async (user) =>{
             if (user) {
                 const emailClean = (user.email || "").toLowerCase().trim();
@@ -3011,11 +3170,22 @@ window.esCaravanaValida = function(car) {
                     localStorage.removeItem('tc_hacienda');
                     localStorage.removeItem('tc_db');
                     localStorage.removeItem('tc_pendientes');
+                    localStorage.removeItem('tc_vista_activa_mob');
+                    localStorage.removeItem('tc_vista_admin_mob');
+                    localStorage.removeItem('tc_rp_activo');
+                    try {
+                        sessionStorage.removeItem('tc_vista_activa_mob');
+                        sessionStorage.removeItem('tc_vista_admin_mob');
+                        sessionStorage.removeItem('tc_rp_activo');
+                    } catch(e) {}
+                    window._uiInicializadaPara = null;
+                    window._adminYaInicializadoPara = null;
                     dbCache = []; historiaCache = null; activosCache = null; rpActivo = null; usActivo = ""; maestroId = ""; usHacienda = "";
                     const elCfgLogo = document.getElementById('cfg-logo');
                     if (elCfgLogo) elCfgLogo.value = '';
                 }
                 localStorage.setItem('tc_ultimo_usuario', emailClean);
+                localStorage.setItem('tc_sesion_activa', '1');
 
                 localStorage.removeItem('tc_db');
                 localStorage.removeItem('tc_pendientes');
@@ -3023,6 +3193,20 @@ window.esCaravanaValida = function(car) {
 
                 let cachedProfile = window.lsGet('tc_user_profile', null);
                 let mapPerfiles = window.lsGet('tc_perfiles_locales', {});
+                if (window._pendingLoginCreds && window._pendingLoginCreds.email === emailClean && window._pendingLoginCreds.password) {
+                    mapPerfiles[emailClean] = Object.assign({}, mapPerfiles[emailClean] || {}, { email: emailClean, password: window._pendingLoginCreds.password });
+                    window.lsSet('tc_perfiles_locales', mapPerfiles);
+                    window._pendingLoginCreds = null;
+                }
+
+                // Si ya tenemos perfil en caché para este usuario y la UI aún no arrancó, arrancarla de inmediato sin esperar a la red
+                let preUserData = (cachedProfile && (cachedProfile.email || "").toLowerCase() === emailClean)
+                    ? cachedProfile
+                    : (mapPerfiles && mapPerfiles[emailClean] ? mapPerfiles[emailClean] : null);
+                if (preUserData && preUserData.rol && window._uiInicializadaPara !== emailClean && window._adminYaInicializadoPara !== emailClean) {
+                    window.restaurarSesionLocalInmediata();
+                }
+
                 let userData = null;
 
                 try {
@@ -3045,7 +3229,7 @@ window.esCaravanaValida = function(car) {
                     };
                     let docSnap = await Promise.race([
                         fetchUserDoc(),
-                        new Promise((_, rej) => setTimeout(() => rej(new Error("Timeout Firestore Auth")), 12000))
+                        new Promise((_, rej) => setTimeout(() => rej(new Error("Timeout Firestore Auth")), 6000))
                     ]);
                     if (docSnap && docSnap.exists) {
                         userData = docSnap.data();
@@ -3069,7 +3253,9 @@ window.esCaravanaValida = function(car) {
                     userData = mapPerfiles[emailClean];
                 }
                 if (userData) {
+                    let prevPass = (mapPerfiles[emailClean] && mapPerfiles[emailClean].password) || userData.password || undefined;
                     mapPerfiles[emailClean] = Object.assign({}, mapPerfiles[emailClean] || {}, userData, { email: emailClean });
+                    if (prevPass) mapPerfiles[emailClean].password = prevPass;
                     window.lsSet('tc_perfiles_locales', mapPerfiles);
                 }
 
@@ -3077,17 +3263,19 @@ window.esCaravanaValida = function(car) {
                 let esAdmin = (rol === 'SuperAdmin' || rol === 'Admin');
 
                 if (esAdmin) {
-
+                    document.documentElement.classList.add('sesion-preactiva', 'sesion-admin-preactiva');
                     let pLogin = document.getElementById('pantalla-login'); if (pLogin) pLogin.classList.add('oculto');
                     let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.add('oculto');
                     let pAdmin = document.getElementById('pantalla-admin'); if (pAdmin) pAdmin.classList.remove('oculto');
 
                     window.lsSet("tc_admin_mob_session", { email: emailClean, time: Date.now() });
+                    window.lsSet('tc_user_profile', userData);
                     if (typeof window.inicializarAdminMobile === 'function') {
                         window.inicializarAdminMobile(emailClean, userData);
                     }
                 } else {
-
+                    document.documentElement.classList.add('sesion-preactiva');
+                    document.documentElement.classList.remove('sesion-admin-preactiva');
                     let pLogin = document.getElementById('pantalla-login'); if (pLogin) pLogin.classList.add('oculto');
                     let pAdmin = document.getElementById('pantalla-admin'); if (pAdmin) pAdmin.classList.add('oculto');
                     let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.remove('oculto');
@@ -3111,8 +3299,6 @@ window.esCaravanaValida = function(car) {
                         if (!isNaN(fLimit.getTime()) && new Date() >fLimit) { window.cerrarSesion(); alert("Su licencia ha vencido."); return; }
                     }
 
-                    let esPropietario = (userData.rol || '').includes('Propietario') || (userData.rol || '').includes('Dueño');
-
                     let estanciaIdFinal = (userData.maestroId || emailClean).toLowerCase().trim();
 
                     window.arrancarSistemaFirebase(
@@ -3125,6 +3311,16 @@ window.esCaravanaValida = function(car) {
                     );
                 }
             } else {
+                const sesionGuardada = window.obtenerSesionGuardadaLocal();
+                if (sesionGuardada && sesionGuardada.email) {
+                    // Mantener la sesión abierta permanentemente mientras el usuario no haya presionado Cerrar Sesión
+                    if (window._uiInicializadaPara !== sesionGuardada.email && window._adminYaInicializadoPara !== sesionGuardada.email) {
+                        window.restaurarSesionLocalInmediata();
+                    }
+                    window.intentarReautenticacionSilenciosa();
+                    return;
+                }
+                document.documentElement.classList.remove('sesion-preactiva', 'sesion-admin-preactiva');
                 let pLogin = document.getElementById('pantalla-login'); if (pLogin) pLogin.classList.remove('oculto');
                 let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.add('oculto');
                 let pAdmin = document.getElementById('pantalla-admin'); if (pAdmin) pAdmin.classList.add('oculto');
@@ -3471,7 +3667,7 @@ window.esCaravanaValida = function(car) {
             }
         };
 
-        window.addEventListener('online', () =>{ window.setEstadoRed(true); window.sincronizarPendientesAuto(); });
+        window.addEventListener('online', () =>{ window.setEstadoRed(true); if (typeof window.intentarReautenticacionSilenciosa === 'function') window.intentarReautenticacionSilenciosa(); window.sincronizarPendientesAuto(); });
 
         window.addEventListener('storage', function(e) {
             if (maestroId && e.key === ('tc_db_' + maestroId) && e.newValue) {
@@ -3510,9 +3706,11 @@ window.esCaravanaValida = function(car) {
                     return { ok: false, motivo: "Contraseña incorrecta (Modo Offline)." };
                 }
                 localStorage.setItem('tc_ultimo_usuario', emailClean);
+                localStorage.setItem('tc_sesion_activa', '1');
                 window.lsSet('tc_user_profile', prof);
                 let rol = prof.rol || 'Propietario';
                 if (rol === 'SuperAdmin' || rol === 'Admin') {
+                    document.documentElement.classList.add('sesion-preactiva', 'sesion-admin-preactiva');
                     let pLogin = document.getElementById('pantalla-login'); if (pLogin) pLogin.classList.add('oculto');
                     let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.add('oculto');
                     let pAdmin = document.getElementById('pantalla-admin'); if (pAdmin) pAdmin.classList.remove('oculto');
@@ -3562,11 +3760,15 @@ window.esCaravanaValida = function(car) {
             if (err) err.style.display = 'none';
 
             try {
+                window._pendingLoginCreds = { email: email, password: p };
+                await firebase.auth().signInWithEmailAndPassword(email, p);
                 let mapPerfiles = window.lsGet('tc_perfiles_locales', {});
                 mapPerfiles[email] = Object.assign({}, mapPerfiles[email] || {}, { email: email, password: p });
                 window.lsSet('tc_perfiles_locales', mapPerfiles);
-                await firebase.auth().signInWithEmailAndPassword(email, p);
+                localStorage.setItem('tc_ultimo_usuario', email);
+                localStorage.setItem('tc_sesion_activa', '1');
             } catch(error) {
+                window._pendingLoginCreds = null;
                 console.error("[Login Error]:", error);
                 if (error && error.code === 'auth/network-request-failed') {
                     let resOff = window.intentarIngresoOffline(email, p);
@@ -3610,9 +3812,12 @@ window.esCaravanaValida = function(car) {
                 usActivo = u; maestroId = m; usRol = r; usNombre = nombreCompleto || u; usHacienda = hacienda || "HACIENDA";
 
                 window.estanciaFeatures = String(featuresStr || "");
-                let profInit = { email: u, maestroId: m, rol: r, nombre: usNombre, hacienda: usHacienda, features: window.estanciaFeatures };
+                let prevProf = window.lsGet('tc_user_profile', {}) || {};
+                let profInit = Object.assign({}, (prevProf.email === u ? prevProf : {}), { email: u, maestroId: m, rol: r, nombre: usNombre, hacienda: usHacienda, features: window.estanciaFeatures });
                 window.lsSet('tc_user_profile', profInit);
 
+                document.documentElement.classList.add('sesion-preactiva');
+                document.documentElement.classList.remove('sesion-admin-preactiva');
                 let pLogin = document.getElementById('pantalla-login'); if (pLogin) pLogin.classList.add('oculto');
                 let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.remove('oculto');
 
@@ -3751,21 +3956,26 @@ window.esCaravanaValida = function(car) {
                     });
                 }
 
-                document.querySelectorAll('.vista').forEach(e =>e.classList.add('oculto'));
-                document.querySelectorAll('.nav-item').forEach(e =>e.classList.remove('activo'));
+                const vistaActualAbierta = document.querySelector('#pantalla-app .vista:not(.oculto)');
+                const yaInicializadoMismoUsuario = Boolean(window._uiInicializadaPara === u && vistaActualAbierta);
+
+                if (!yaInicializadoMismoUsuario) {
+                    document.querySelectorAll('#pantalla-app .vista').forEach(e =>e.classList.add('oculto'));
+                    document.querySelectorAll('#pantalla-app .nav-item').forEach(e =>e.classList.remove('activo'));
+                }
 
                 let tabSeleccionado = null; let vistaInicial = 'vista-dashboard';
 
                 if (isPropietario) {
-                    document.querySelectorAll('.nav-item').forEach(li =>li.style.display = 'flex');
-                    tabSeleccionado = document.querySelectorAll('.nav-item')[0];
+                    document.querySelectorAll('#pantalla-app .nav-item').forEach(li =>li.style.display = 'flex');
+                    tabSeleccionado = document.querySelectorAll('#pantalla-app .nav-item')[0];
                 } else {
                     const p1 = document.getElementById('panel-crear-peones'); if(p1) p1.style.display = 'none';
                     const p2 = document.getElementById('panel-membrete'); if(p2) p2.style.display = 'none';
                     const p3 = document.getElementById('panel-licencia'); if(p3) p3.style.display = 'none';
                     let perms = usRol.includes('|') ? usRol.split('|')[1] : "dash,ficha,base,reporte";
                     let foundFirst = false;
-                    document.querySelectorAll('.nav-item').forEach(li =>{
+                    document.querySelectorAll('#pantalla-app .nav-item').forEach(li =>{
                         let target = li.getAttribute('onclick');
                         if(target && target.includes('cambiarVista')) {
                             let viewId = target.match(/'([^']+)'/)[1];
@@ -3783,6 +3993,23 @@ window.esCaravanaValida = function(car) {
                     });
                     if(!perms.includes('dash')) { let pAn = document.getElementById('panel-analiticas'); if(pAn) pAn.style.display = 'none'; }
                 }
+
+                try {
+                    let savedRp = sessionStorage.getItem('tc_rp_activo') || localStorage.getItem('tc_rp_activo');
+                    if (!rpActivo && savedRp && window.esCaravanaValida(savedRp)) {
+                        rpActivo = savedRp;
+                    }
+                    let vistaGuardada = sessionStorage.getItem('tc_vista_activa_mob') || localStorage.getItem('tc_vista_activa_mob');
+                    if (vistaGuardada) {
+                        document.querySelectorAll('#pantalla-app .nav-item').forEach(li => {
+                            let target = li.getAttribute('onclick') || '';
+                            if (target.includes("'" + vistaGuardada + "'") && li.style.display !== 'none') {
+                                vistaInicial = vistaGuardada;
+                                tabSeleccionado = li;
+                            }
+                        });
+                    }
+                } catch(e) {}
 
                 const elCfgLogoInput = document.getElementById('cfg-logo');
                 if (elCfgLogoInput) elCfgLogoInput.value = '';
@@ -3852,7 +4079,10 @@ window.esCaravanaValida = function(car) {
                 const elLogin = document.getElementById('pantalla-login'); if(elLogin) elLogin.classList.add('oculto');
                 const elApp = document.getElementById('pantalla-app'); if(elApp) elApp.classList.remove('oculto');
                 const elMantenimiento = document.getElementById('pantalla-mantenimiento'); if(elMantenimiento) elMantenimiento.classList.add('oculto');
-                if(tabSeleccionado) { window.cambiarVista(vistaInicial, tabSeleccionado); } else { window.cambiarVista('vista-config', document.querySelectorAll('.nav-item')[4]); }
+                window._uiInicializadaPara = u;
+                if (!yaInicializadoMismoUsuario) {
+                    if(tabSeleccionado) { window.cambiarVista(vistaInicial, tabSeleccionado); } else { window.cambiarVista('vista-config', document.querySelectorAll('#pantalla-app .nav-item')[4]); }
+                }
                 window.sincronizarPendientesAuto(); window.cargarListasFiltrosSelects(); window.cargarListaOperadores(); window.procesarDatosDashboard();
 
             } catch(e) { console.error("Error al construir la pantalla:", e); }
@@ -4049,6 +4279,7 @@ window.esCaravanaValida = function(car) {
                 }
                 if (typeof window.cerrarOpcionesFicha === 'function') window.cerrarOpcionesFicha();
                 rpActivo = null;
+                try { sessionStorage.removeItem('tc_rp_activo'); localStorage.removeItem('tc_rp_activo'); } catch(e) {}
                 const elBusc = document.getElementById('buscador-caravana');
                 if (elBusc) elBusc.value = '';
                 const elFicha = document.getElementById('ficha-animal');
@@ -4234,6 +4465,7 @@ window.esCaravanaValida = function(car) {
             }
             rp = rp.toUpperCase();
             rpActivo = rp;
+            try { sessionStorage.setItem('tc_rp_activo', rp); localStorage.setItem('tc_rp_activo', rp); } catch(e) {}
             const inputBuscador = document.getElementById('buscador-caravana');
             if (inputBuscador) inputBuscador.value = rp;
 
@@ -5978,14 +6210,14 @@ window.esCaravanaValida = function(car) {
         function cambiarVista(v, b) { window.cambiarVista = cambiarVista;
             if (!v) return;
             if (v && v.startsWith('v-')) {
-
+                try { sessionStorage.setItem('tc_vista_admin_mob', v); localStorage.setItem('tc_vista_admin_mob', v); } catch(e) {}
                 document.querySelectorAll('#pantalla-admin .vista').forEach(e =>e.classList.add('oculto'));
                 const target = document.getElementById(v);
                 if(target) target.classList.remove('oculto');
                 document.querySelectorAll('#pantalla-admin .nav-item').forEach(e =>e.classList.remove('activo'));
                 if(b && b.classList) b.classList.add('activo');
             } else {
-
+                try { sessionStorage.setItem('tc_vista_activa_mob', v); localStorage.setItem('tc_vista_activa_mob', v); } catch(e) {}
                 document.querySelectorAll('#pantalla-app .vista').forEach(e =>e.classList.add('oculto'));
                 const target = document.getElementById(v);
                 if(target) target.classList.remove('oculto');
@@ -6377,6 +6609,9 @@ window.esCaravanaValida = function(car) {
 
         function cerrarSesion() {
             localStorage.setItem('tc_sesion_activa', '0');
+            document.documentElement.classList.remove('sesion-preactiva', 'sesion-admin-preactiva');
+            window._uiInicializadaPara = null;
+            window._adminYaInicializadoPara = null;
             if (navigator.serviceWorker && navigator.serviceWorker.controller) {
                 try { navigator.serviceWorker.controller.postMessage({ accion: 'estado_sesion', activa: false }); } catch(e) {}
             }
@@ -6390,6 +6625,14 @@ window.esCaravanaValida = function(car) {
             localStorage.removeItem('tc_ultimo_usuario');
             localStorage.removeItem('tc_admin_session');
             localStorage.removeItem('tc_admin_mob_session');
+            localStorage.removeItem('tc_vista_activa_mob');
+            localStorage.removeItem('tc_vista_admin_mob');
+            localStorage.removeItem('tc_rp_activo');
+            try {
+                sessionStorage.removeItem('tc_vista_activa_mob');
+                sessionStorage.removeItem('tc_vista_admin_mob');
+                sessionStorage.removeItem('tc_rp_activo');
+            } catch(e) {}
             const elCfgLogo = document.getElementById('cfg-logo');
             if (elCfgLogo) elCfgLogo.value = '';
             window.aplicarDisenoEnPantalla('Estancia', 'gemini-svg.png');
@@ -6478,15 +6721,13 @@ window.esCaravanaValida = function(car) {
         };
 
         try {
-            if (localStorage.getItem('taurus_v28_purged') !== '1') {
-                localStorage.setItem('taurus_v28_purged', '1');
+            if (localStorage.getItem('taurus_v29_purged') !== '1') {
+                localStorage.setItem('taurus_v29_purged', '1');
                 localStorage.removeItem('tc_hacienda');
-                localStorage.removeItem('tc_perfiles_locales');
-                localStorage.removeItem('tc_user_profile');
                 if ('caches' in window) {
                     caches.keys().then(function(ks) {
                         ks.forEach(function(k) {
-                            if (k !== 'taurus-track-pro-v28') caches.delete(k);
+                            if (k !== 'taurus-track-pro-v29') caches.delete(k);
                         });
                     }).catch(function(){});
                 }
@@ -7477,7 +7718,7 @@ window.esCaravanaValida = function(car) {
 var clientesCache = [];
 var eventosMasivosCache = [];
 var eventosFiltrados = [];
-var unsubscribeConfig = null;
+if (typeof unsubscribeConfig === 'undefined') var unsubscribeConfig = null;
 var mapaEstancias = {};
 
     function toggleLoading(show, text="Procesando...") {
@@ -7499,9 +7740,17 @@ var mapaEstancias = {};
     }
 
     window.cerrarSesionAdmin = function() {
-        firebase.auth().signOut().then(() =>{
-            localStorage.removeItem("tc_admin_mob_session");
-            localStorage.removeItem("tc_admin_session");
+        localStorage.setItem('tc_sesion_activa', '0');
+        document.documentElement.classList.remove('sesion-preactiva', 'sesion-admin-preactiva');
+        window._uiInicializadaPara = null;
+        window._adminYaInicializadoPara = null;
+        localStorage.removeItem("tc_admin_mob_session");
+        localStorage.removeItem("tc_admin_session");
+        localStorage.removeItem("tc_user_profile");
+        localStorage.removeItem("tc_ultimo_usuario");
+        localStorage.removeItem("tc_vista_admin_mob");
+        try { sessionStorage.removeItem("tc_vista_admin_mob"); } catch(e) {}
+        firebase.auth().signOut().catch(() => {}).finally(() =>{
             let pLogin = document.getElementById('pantalla-login'); if (pLogin) pLogin.classList.remove('oculto');
             let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.add('oculto');
             let pAdmin = document.getElementById('pantalla-admin'); if (pAdmin) pAdmin.classList.add('oculto');
@@ -7511,9 +7760,26 @@ var mapaEstancias = {};
 
     window.inicializarAdminMobile = function(emailAdmin, userData) {
         console.log('[Taurus Unified] Iniciando interfaz de Administrador Master:', emailAdmin);
+        document.documentElement.classList.add('sesion-preactiva', 'sesion-admin-preactiva');
+        localStorage.setItem('tc_sesion_activa', '1');
         let pLogin = document.getElementById('pantalla-login'); if (pLogin) pLogin.classList.add('oculto');
         let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.add('oculto');
         let pAdmin = document.getElementById('pantalla-admin'); if (pAdmin) pAdmin.classList.remove('oculto');
+
+        if (window._adminYaInicializadoPara !== emailAdmin) {
+            window._adminYaInicializadoPara = emailAdmin;
+            try {
+                let vistaAdm = sessionStorage.getItem('tc_vista_admin_mob') || localStorage.getItem('tc_vista_admin_mob');
+                if (vistaAdm && document.getElementById(vistaAdm)) {
+                    let navBtn = null;
+                    document.querySelectorAll('#pantalla-admin .nav-item').forEach(li => {
+                        let oc = li.getAttribute('onclick') || '';
+                        if (oc.includes("'" + vistaAdm + "'")) navBtn = li;
+                    });
+                    window.cambiarVista(vistaAdm, navBtn);
+                }
+            } catch(e) {}
+        }
 
         try {
             checkStatusInicial();
@@ -7534,23 +7800,24 @@ var mapaEstancias = {};
             btn.innerText = "Autenticando..."; btn.disabled = true;
 
             try {
-                await firebase.auth().signInWithEmailAndPassword(email, pass);
+                let emailClean = email.toLowerCase().trim();
+                window._pendingLoginCreds = { email: emailClean, password: pass };
+                await firebase.auth().signInWithEmailAndPassword(emailClean, pass);
+                let mapPerfiles = window.lsGet('tc_perfiles_locales', {});
+                mapPerfiles[emailClean] = Object.assign({}, mapPerfiles[emailClean] || {}, { email: emailClean, password: pass });
+                window.lsSet('tc_perfiles_locales', mapPerfiles);
+                localStorage.setItem('tc_ultimo_usuario', emailClean);
+                localStorage.setItem('tc_sesion_activa', '1');
                 mostrarToastAdmin(" Sesión Iniciada.");
             } catch (error) {
+                window._pendingLoginCreds = null;
                 mostrarToastAdmin(" Credenciales Incorrectas", true);
                 btn.innerText = "Iniciar Sesión"; btn.disabled = false;
             }
         }
 
         function _cerrarSesionAdminInternal() {
-            firebase.auth().signOut().then(() =>{
-                document.getElementById('admin-email').value = '';
-                document.getElementById('admin-pass').value = '';
-                document.getElementById('pantalla-login').classList.remove('oculto');
-                document.getElementById('pantalla-app').classList.add('oculto');
-                clientesCache = [];
-                if(unsubscribeConfig) unsubscribeConfig();
-            });
+            window.cerrarSesionAdmin();
         }
 
         window.toggleLoading = toggleLoading;
@@ -10335,6 +10602,36 @@ Se encontraron ${matches.length} registro(s) de "${caravanaRP}".
             if (rafagaActiva && tarjeta && !tarjeta.classList.contains('oculto') && opciones && !opciones.classList.contains('oculto')) {
                 if (!tarjeta.contains(ev.target) && (!btn || !btn.contains(ev.target))) {
                     window.guardarYOcultarRafaga();
+                }
+            }
+        });
+
+        // Arranque instantáneo (0ms) sin pantalla de login si hay sesión activa guardada
+        try {
+            window.restaurarSesionLocalInmediata();
+        } catch(e) {}
+
+        // Protección contra cierre de sesión o parpadeo al rotar la pantalla o volver a segundo plano
+        var _mantenerSesionEnRotacion = function() {
+            try {
+                var sesion = typeof window.obtenerSesionGuardadaLocal === 'function' ? window.obtenerSesionGuardadaLocal() : null;
+                if (sesion && sesion.email) {
+                    var pLogin = document.getElementById('pantalla-login');
+                    if (pLogin && !pLogin.classList.contains('oculto')) {
+                        pLogin.classList.add('oculto');
+                    }
+                    document.documentElement.classList.add('sesion-preactiva');
+                }
+            } catch(e) {}
+        };
+        window.addEventListener('orientationchange', _mantenerSesionEnRotacion, { passive: true });
+        window.addEventListener('resize', _mantenerSesionEnRotacion, { passive: true });
+        window.addEventListener('pageshow', _mantenerSesionEnRotacion, { passive: true });
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                _mantenerSesionEnRotacion();
+                if (typeof window.intentarReautenticacionSilenciosa === 'function') {
+                    window.intentarReautenticacionSilenciosa();
                 }
             }
         });

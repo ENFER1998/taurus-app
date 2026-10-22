@@ -4,7 +4,7 @@ try {
   importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 } catch (e) {}
 
-const CACHE_NAME = 'taurus-track-pro-v28';
+const CACHE_NAME = 'taurus-track-pro-v29';
 
 const STATIC_ASSETS = [
   './',
@@ -22,7 +22,7 @@ const STATIC_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch(() => {});
+      return Promise.allSettled(STATIC_ASSETS.map((u) => cache.add(u).catch(() => {})));
     }).then(() => self.skipWaiting())
   );
 });
@@ -102,6 +102,8 @@ self.addEventListener('fetch', (event) => {
 
   if (
     url.origin.includes('firestore.googleapis.com') ||
+    url.origin.includes('identitytoolkit.googleapis.com') ||
+    url.origin.includes('securetoken.googleapis.com') ||
     url.origin.includes('onesignal.com') ||
     url.origin.includes('script.google.com') ||
     url.origin.includes('script.googleusercontent.com') ||
@@ -113,21 +115,33 @@ self.addEventListener('fetch', (event) => {
 
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(async () => {
-          const cached = await caches.match(event.request);
-          if (cached) return cached;
-          return (await caches.match('./')) || (await caches.match('index.html')) || (await caches.match('pc.html'));
-        })
+      caches.match(event.request).then(async (cachedNav) => {
+        const networkUpdate = fetch(event.request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              const responseClone = networkResponse.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(event.request, responseClone);
+              });
+            }
+            return networkResponse;
+          })
+          .catch(() => null);
+
+        if (cachedNav) {
+          return cachedNav;
+        }
+        const isPc = url.pathname.endsWith('pc.html');
+        const fallbackCached = isPc
+          ? ((await caches.match('pc.html')) || (await caches.match('index.html')) || (await caches.match('./')))
+          : ((await caches.match('./')) || (await caches.match('index.html')) || (await caches.match('pc.html')));
+        if (fallbackCached) {
+          return fallbackCached;
+        }
+        const netResp = await networkUpdate;
+        if (netResp) return netResp;
+        return new Response('', { status: 503, statusText: 'Offline' });
+      })
     );
     return;
   }
