@@ -2,68 +2,157 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // 1. Autenticación estricta con correo verificado en el token JWT de Firebase Auth
     function isAuthenticated() {
-      return request.auth != null;
+      return request.auth != null && request.auth.token.email != null;
     }
 
+    function authEmail() {
+      return request.auth.token.email;
+    }
+
+    function userDocPath(email) {
+      return /databases/$(database)/documents/usuarios/$(email);
+    }
+
+    function callerProfileExists() {
+      return isAuthenticated() && exists(userDocPath(authEmail()));
+    }
+
+    function callerProfile() {
+      return get(userDocPath(authEmail())).data;
+    }
+
+    // 2. Verificación estricta de SuperAdmin
     function isSuperAdmin() {
       return isAuthenticated() && (
-        request.auth.token.email == 'enfer.ro.98@gmail.com' ||
-        get(/databases/$(database)/documents/usuarios/$(request.auth.token.email)).data.rol == 'SuperAdmin'
+        authEmail() == 'enfer.ro.98@gmail.com' ||
+        (callerProfileExists() && callerProfile().rol == 'SuperAdmin')
       );
     }
 
+    // 3. Verificación de pertenencia legítima a una Estancia (Propietario Maestro o Miembro autorizado)
+    function belongsToEstancia(maestroId) {
+      return isAuthenticated() && (
+        authEmail() == maestroId ||
+        (callerProfileExists() && callerProfile().maestroId == maestroId)
+      );
+    }
+
+    // 4. Protección de la cuenta raíz SuperAdmin contra borrado o degradación
+    function isNotRootSuperAdminTarget(targetEmail) {
+      return targetEmail != 'enfer.ro.98@gmail.com';
+    }
+
+    // =========================================================================
+    // COLECCIÓN: /usuarios/{userEmail}
+    // Blindaje contra enumeración de clientes, robo de claves y escalada de rol
+    // =========================================================================
     match /usuarios/{userEmail} {
 
-      allow read: if isAuthenticated();
-
-      allow write: if isSuperAdmin() || (
+      // Solo puede leer: el propio usuario, el dueño maestro de ese operador,
+      // un operador leyendo el perfil maestro de su estancia, o el SuperAdmin.
+      allow read: if isSuperAdmin() || (
         isAuthenticated() && (
+          authEmail() == userEmail ||
+          (resource != null && resource.data.maestroId == authEmail()) ||
+          (callerProfileExists() && callerProfile().maestroId == userEmail)
+        )
+      );
 
+      // Creación de usuarios:
+      // - SuperAdmin puede crear cualquier cliente.
+      // - Un Propietario Maestro puede crear operadores/dueños secundarios SOLO para su propia estancia
+      //   y nunca con rol SuperAdmin/Admin ni sobrescribiendo la cuenta raíz.
+      allow create: if isSuperAdmin() || (
+        isAuthenticated() &&
+        isNotRootSuperAdminTarget(userEmail) &&
+        userEmail != authEmail() &&
+        request.resource.data.maestroId == authEmail() &&
+        request.resource.data.rol in ['Operador', 'Propietario', 'Dueño'] &&
+        request.resource.data.rol != 'SuperAdmin' &&
+        request.resource.data.rol != 'Admin'
+      );
+
+      // Actualización de usuarios:
+      // - SuperAdmin puede actualizar cualquier usuario (sin quitarse su propio rol SuperAdmin en la cuenta raíz).
+      // - El propio usuario SOLO puede actualizar campos personales seguros (password, alertas_leidas, nombre, ultimo_acceso)
+      //   y TIENE PROHIBIDO alterar maestroId, rol, vencimiento, features o email.
+      // - El Propietario Maestro puede actualizar a un miembro que YA pertenecía a su estancia (resource.data.maestroId == authEmail()),
+      //   manteniendo maestroId == authEmail() y sin otorgar rol SuperAdmin/Admin.
+      allow update: if (
+        isSuperAdmin() &&
+        (userEmail != 'enfer.ro.98@gmail.com' || request.resource.data.rol == 'SuperAdmin')
+      ) || (
+        isAuthenticated() &&
+        resource != null && (
           (
-            request.auth.token.email == userEmail &&
-            (resource == null || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['rol']) ||
-             (request.resource.data.rol != 'SuperAdmin' && request.resource.data.rol != 'Admin'))
+            authEmail() == userEmail &&
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['rol', 'maestroId', 'vencimiento', 'features', 'email'])
           ) ||
-
           (
-            request.resource.data.maestroId == request.auth.token.email &&
+            isNotRootSuperAdminTarget(userEmail) &&
+            userEmail != authEmail() &&
+            resource.data.maestroId == authEmail() &&
+            request.resource.data.maestroId == authEmail() &&
+            request.resource.data.rol in ['Operador', 'Propietario', 'Dueño'] &&
             request.resource.data.rol != 'SuperAdmin' &&
             request.resource.data.rol != 'Admin'
-          ) ||
-
-          (
-            resource != null &&
-            resource.data.maestroId == request.auth.token.email
           )
+        )
+      );
+
+      // Eliminación de usuarios:
+      // - SuperAdmin (excepto cuenta raíz) o el Propietario Maestro eliminando a un operador de su propia estancia.
+      allow delete: if isNotRootSuperAdminTarget(userEmail) && (
+        isSuperAdmin() || (
+          isAuthenticated() &&
+          resource != null &&
+          userEmail != authEmail() &&
+          resource.data.maestroId == authEmail()
         )
       );
     }
 
+    // =========================================================================
+    // COLECCIÓN: /estancias/{maestroId} y subcolección /eventos/{eventoId}
+    // Blindaje contra cruce de datos entre estancias y borrado no autorizado
+    // =========================================================================
     match /estancias/{maestroId} {
 
-      allow read, write: if isSuperAdmin() || (
-        isAuthenticated() && (
-          request.auth.token.email == maestroId ||
-          get(/databases/$(database)/documents/usuarios/$(request.auth.token.email)).data.maestroId == maestroId
-        )
-      );
+      allow read: if isSuperAdmin() || belongsToEstancia(maestroId);
+
+      // Crear/actualizar metadatos de estancia: miembros autorizados de la estancia o SuperAdmin
+      allow create, update: if isSuperAdmin() || belongsToEstancia(maestroId);
+
+      // Eliminar el documento raíz de la estancia: SOLO el dueño primario o SuperAdmin
+      allow delete: if isSuperAdmin() || (isAuthenticated() && authEmail() == maestroId);
 
       match /eventos/{eventoId} {
-        allow read, write: if isSuperAdmin() || (
-          isAuthenticated() && (
-            request.auth.token.email == maestroId ||
-            get(/databases/$(database)/documents/usuarios/$(request.auth.token.email)).data.maestroId == maestroId
-          )
-        );
+        allow read: if isSuperAdmin() || belongsToEstancia(maestroId);
+
+        // Validar que cualquier evento escrito pertenezca a la estancia correcta y tenga estructura válida
+        allow create, update: if (isSuperAdmin() || belongsToEstancia(maestroId)) &&
+          (!('maestro' in request.resource.data) || request.resource.data.maestro == maestroId) &&
+          request.resource.data.keys().size() <= 20;
+
+        allow delete: if isSuperAdmin() || belongsToEstancia(maestroId);
       }
     }
 
+    // =========================================================================
+    // COLECCIÓN: /sistema/{documentId}
+    // =========================================================================
     match /sistema/{documentId} {
-
       allow read: if isAuthenticated();
-
       allow write: if isSuperAdmin();
+    }
+
+    // =========================================================================
+    // REGLA DENY-BY-DEFAULT PARA CUALQUIER OTRA COLECCIÓN O RUTA
+    // =========================================================================
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

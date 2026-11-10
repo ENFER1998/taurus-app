@@ -1,29 +1,76 @@
-let taurusSesionActiva = true;
+importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 
-try {
-  importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
-} catch (e) {}
+let sesionActivaSW = true;
 
-const CACHE_NAME = 'taurus-track-pro-v29';
+self.addEventListener('message', (event) => {
+  if (!event || !event.data || typeof event.data !== 'object') return;
+  if (event.data.accion === 'estado_sesion') {
+    sesionActivaSW = Boolean(event.data.activa);
+  }
+  if (event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
-const STATIC_ASSETS = [
+self.addEventListener('push', function(event) {
+  if (!sesionActivaSW) {
+    event.stopImmediatePropagation();
+    return;
+  }
+}, true);
+
+const CACHE_NAME = 'taurus-track-pro-v30';
+const TRUSTED_CDN_HOSTS = new Set([
+  'cdnjs.cloudflare.com',
+  'www.gstatic.com',
+  'fonts.googleapis.com',
+  'fonts.gstatic.com',
+  'cdn.onesignal.com'
+]);
+
+const ASSETS_TO_CACHE = [
   './',
-  'index.html',
-  'pc.html',
-  'gemini-svg.png',
+  './index.html',
+  './pc.html',
+  './manifest.json',
+  './gemini-svg.png',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
   'https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js',
-  'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js'
+  'https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js',
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap'
 ];
 
+function isCacheableRequest(urlObj) {
+  if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') return false;
+  if (
+    urlObj.hostname.includes('firestore.googleapis.com') ||
+    urlObj.hostname.includes('identitytoolkit.googleapis.com') ||
+    urlObj.hostname.includes('securetoken.googleapis.com') ||
+    urlObj.hostname.includes('script.google.com') ||
+    urlObj.hostname.includes('onesignal.com/api')
+  ) {
+    return false;
+  }
+  return urlObj.origin === self.location.origin || TRUSTED_CDN_HOSTS.has(urlObj.hostname);
+}
+
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return Promise.allSettled(STATIC_ASSETS.map((u) => cache.add(u).catch(() => {})));
-    }).then(() => self.skipWaiting())
+      return Promise.allSettled(
+        ASSETS_TO_CACHE.map((url) =>
+          fetch(url, { mode: 'cors' })
+            .then((res) => {
+              if (res && res.ok) return cache.put(url, res);
+            })
+            .catch(() => {})
+        )
+      );
+    })
   );
 });
 
@@ -31,9 +78,9 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            return caches.delete(cache);
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
           }
         })
       );
@@ -41,158 +88,57 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.accion === 'estado_sesion') {
-    taurusSesionActiva = Boolean(event.data.activa);
-  }
-});
-
-self.addEventListener('push', (event) => {
-  if (!taurusSesionActiva) {
-    event.stopImmediatePropagation();
-    return;
-  }
-  if (!event.data) return;
-  try {
-    const data = event.data.json();
-    if (data && data.custom && data.custom.i) return;
-    const title = data.title || (data.headings && (data.headings.es || data.headings.en)) || 'Taurus Track Pro';
-    const body = data.body || data.alert || (data.contents && (data.contents.es || data.contents.en)) || '';
-    if (body) {
-      event.waitUntil(
-        self.registration.showNotification(title, {
-          body: body,
-          icon: 'gemini-svg.png',
-          badge: 'gemini-svg.png',
-          vibrate: [200, 100, 200]
-        })
-      );
-    }
-  } catch (err) {
-    const text = event.data.text();
-    if (text) {
-      event.waitUntil(
-        self.registration.showNotification('Taurus Track Pro', {
-          body: text,
-          icon: 'gemini-svg.png',
-          badge: 'gemini-svg.png'
-        })
-      );
-    }
-  }
-});
-
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if ('focus' in client) return client.focus();
-      }
-      if (self.clients.openWindow) return self.clients.openWindow('./');
-    })
-  );
-});
-
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
-  if (!event.request.url.startsWith('http://') && !event.request.url.startsWith('https://')) return;
 
-  const url = new URL(event.request.url);
-
-  if (
-    url.origin.includes('firestore.googleapis.com') ||
-    url.origin.includes('identitytoolkit.googleapis.com') ||
-    url.origin.includes('securetoken.googleapis.com') ||
-    url.origin.includes('onesignal.com') ||
-    url.origin.includes('script.google.com') ||
-    url.origin.includes('script.googleusercontent.com') ||
-    url.pathname.includes('/channel') ||
-    url.pathname.includes('/google.firestore.v1.')
-  ) {
+  let urlObj;
+  try {
+    urlObj = new URL(event.request.url);
+  } catch (e) {
     return;
   }
 
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      caches.match(event.request).then(async (cachedNav) => {
-        const networkUpdate = fetch(event.request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              const responseClone = networkResponse.clone();
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(event.request, responseClone);
-              });
-            }
-            return networkResponse;
-          })
-          .catch(() => null);
+  if (!isCacheableRequest(urlObj)) return;
 
-        if (cachedNav) {
-          return cachedNav;
-        }
-        const isPc = url.pathname.endsWith('pc.html');
-        const fallbackCached = isPc
-          ? ((await caches.match('pc.html')) || (await caches.match('index.html')) || (await caches.match('./')))
-          : ((await caches.match('./')) || (await caches.match('index.html')) || (await caches.match('pc.html')));
-        if (fallbackCached) {
-          return fallbackCached;
-        }
-        const netResp = await networkUpdate;
-        if (netResp) return netResp;
-        return new Response('', { status: 503, statusText: 'Offline' });
-      })
+  const isHTMLNavigation =
+    event.request.mode === 'navigate' ||
+    (event.request.headers.get('accept') || '').includes('text/html') ||
+    urlObj.pathname.endsWith('/index.html') ||
+    urlObj.pathname.endsWith('/pc.html') ||
+    urlObj.pathname === '/';
+
+  if (isHTMLNavigation) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(event.request).then((cached) => cached || caches.match('./index.html'));
+        })
     );
     return;
   }
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, networkResponse);
-            });
-          }
-        }).catch(() => {});
-        return cachedResponse;
-      }
-
-      return fetch(event.request)
+      const fetchPromise = fetch(event.request)
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
+            const responseToCache = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone);
+              cache.put(event.request, responseToCache);
             });
           }
           return networkResponse;
         })
-        .catch(async () => {
-          const reqUrl = event.request.url || '';
-          const isImage = event.request.destination === 'image' ||
-                          /\.(png|jpg|jpeg|gif|svg|ico|webp)$/i.test(reqUrl) ||
-                          reqUrl.includes('img.os-content.com');
+        .catch(() => cachedResponse);
 
-          if (isImage) {
-            const fallbackImg = await caches.match('gemini-svg.png');
-            return fallbackImg || new Response('', { status: 404, statusText: 'Imagen no disponible offline' });
-          }
-          return new Response('', { status: 503, statusText: 'Recurso no disponible offline' });
-        });
+      return cachedResponse || fetchPromise;
     })
   );
-});
-
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'taurus-sync-pendientes') {
-    event.waitUntil(
-      self.clients.matchAll().then((clients) => {
-        clients.forEach((client) => {
-          client.postMessage({ accion: 'sincronizar_pendientes' });
-        });
-      })
-    );
-  }
 });

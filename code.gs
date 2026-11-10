@@ -1,15 +1,21 @@
 function getSecureProperty(key) {
   var value = PropertiesService.getScriptProperties().getProperty(key);
   if (!value) {
-    throw new Error("Propiedad requerida faltante en ScriptProperties: " + key);
+    throw new Error("Propiedad requerida faltante en ScriptProperties");
   }
   return value;
 }
 
 function sanitizeInput(str, maxLen) {
   if (!str) return "";
-  var clean = String(str).replace(/[<>"'`\\]/g, "").trim();
+  var clean = String(str).replace(/[<>"'`\\\r\n\0]/g, "").trim();
   return clean.substring(0, maxLen || 250);
+}
+
+function isValidEmailFormat(email) {
+  if (!email) return false;
+  var clean = String(email).trim().toLowerCase();
+  return /^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$/.test(clean) && clean.length <= 120;
 }
 
 function jsonResponse(data) {
@@ -17,10 +23,25 @@ function jsonResponse(data) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+function isAuthorizedAdminRequest(req, e) {
+  var adminEmail = sanitizeInput(req.admin_email || (e && e.parameter && e.parameter.admin_email), 120).toLowerCase();
+  var configuredAdmin = (PropertiesService.getScriptProperties().getProperty('ADMIN_EMAIL') || 'enfer.ro.98@gmail.com').toLowerCase();
+  var configuredSecret = PropertiesService.getScriptProperties().getProperty('TAURUS_WEBHOOK_SECRET');
+  var providedSecret = sanitizeInput(req.webhook_secret || (e && e.parameter && e.parameter.webhook_secret), 120);
+
+  if (configuredSecret && providedSecret !== configuredSecret) {
+    return false;
+  }
+  return adminEmail === configuredAdmin;
+}
+
 function doPost(e) {
   try {
     var req = {};
     if (e && e.postData && e.postData.contents) {
+      if (e.postData.contents.length > 65536) {
+        return jsonResponse({ "status": "error", "error": "Payload excede el límite permitido." });
+      }
       try {
         req = JSON.parse(e.postData.contents);
       } catch (x) {
@@ -30,13 +51,30 @@ function doPost(e) {
       req = (e && e.parameter) ? e.parameter : {};
     }
 
-    var accion = req.accion || (e && e.parameter && e.parameter.accion);
-    if (!accion) {
-      return jsonResponse({ "status": "error", "error": "Parámetro 'accion' requerido." });
+    var accion = sanitizeInput(req.accion || (e && e.parameter && e.parameter.accion), 40);
+    var accionesPermitidas = {
+      'sincronizar_lote': true,
+      'notificar_accion': true,
+      'aviso_mantenimiento': true,
+      'toggle_mantenimiento': true,
+      'borrar_estancia_completa': true
+    };
+
+    if (!accion || !accionesPermitidas[accion]) {
+      return jsonResponse({ "status": "error", "error": "Acción no válida o no autorizada." });
     }
 
     if (accion === 'sincronizar_lote') {
       return jsonResponse({ "status": "ok", "mensaje": "Lote recibido y registrado." });
+    }
+
+    if (accion === 'aviso_mantenimiento' || accion === 'toggle_mantenimiento' || accion === 'borrar_estancia_completa') {
+      if (!isAuthorizedAdminRequest(req, e)) {
+        return jsonResponse({ "status": "error", "error": "No autorizado para ejecutar acciones administrativas." });
+      }
+      if (accion === 'borrar_estancia_completa') {
+        return jsonResponse({ "status": "ok", "mensaje": "Solicitud administrativa verificada." });
+      }
     }
 
     var ONESIGNAL_REST_KEY = PropertiesService.getScriptProperties().getProperty('ONESIGNAL_KEY');
@@ -50,8 +88,8 @@ function doPost(e) {
     if (ONESIGNAL_REST_KEY && mensajePush) {
       var payload = null;
 
-      if (accion === 'notificar_accion' && maestro) {
-        if (remitenteRol === 'DuenoPrimario' || (remitenteEmail && remitenteEmail === maestro)) {
+      if (accion === 'notificar_accion' && isValidEmailFormat(maestro) && isValidEmailFormat(remitenteEmail)) {
+        if (remitenteRol === 'DuenoPrimario' || remitenteEmail === maestro) {
           return jsonResponse({ "status": "ok", "skipped": "primary_owner_action" });
         }
 
@@ -69,10 +107,8 @@ function doPost(e) {
           filters.push({ "field": "tag", "key": "es_dueno", "relation": "=", "value": "true" });
         }
 
-        if (remitenteEmail) {
-          filters.push({ "operator": "AND" });
-          filters.push({ "field": "tag", "key": "usuario_email", "relation": "!=", "value": remitenteEmail });
-        }
+        filters.push({ "operator": "AND" });
+        filters.push({ "field": "tag", "key": "usuario_email", "relation": "!=", "value": remitenteEmail });
 
         payload = {
           "app_id": ONESIGNAL_APP_ID,
@@ -105,6 +141,6 @@ function doPost(e) {
 
     return jsonResponse({ "status": "ok" });
   } catch (error) {
-    return jsonResponse({ "status": "error", "error": "Fallo interno: " + error.toString() });
+    return jsonResponse({ "status": "error", "error": "Solicitud rechazada por política de seguridad." });
   }
 }

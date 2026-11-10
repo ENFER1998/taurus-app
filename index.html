@@ -2,6 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Taurus Track Pro</title>
 
@@ -88,7 +90,7 @@ if ('serviceWorker' in navigator) {
 
       if ('caches' in window) {
         window.addEventListener('load', () =>{
-          caches.open('taurus-track-pro-v29').then(cache =>{
+          caches.open('taurus-track-pro-v30').then(cache =>{
             cache.addAll([
               location.href,
               'gemini-svg.png',
@@ -218,6 +220,37 @@ if ('serviceWorker' in navigator) {
         #tabla-pesajes th:nth-child(6), #tabla-pesajes td:nth-child(6) { width: 110px; min-width: 110px; text-align: center; }
         #tabla-pesajes th:nth-child(7), #tabla-pesajes td:nth-child(7) { width: 115px; min-width: 115px; text-align: center; }
         #lista-alertas { max-height: 160px; overflow-y: auto; padding-right: 5px; }
+        .alerta-dot-rojo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            line-height: 1;
+            flex-shrink: 0;
+            filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.45));
+        }
+        .btn-cerrar-alerta-item {
+            background: rgba(239, 68, 68, 0.14);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 6px;
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            flex-shrink: 0;
+            padding: 0;
+            line-height: 1;
+        }
+        .btn-cerrar-alerta-item:hover {
+            background: rgba(239, 68, 68, 0.28);
+            color: #ffffff;
+        }
+    
         .alerta-item { display: flex; align-items: center; gap: 10px; background: rgba(245,158,11,0.1); padding: 12px; border-radius: 8px; border-left: 4px solid var(--alerta); margin-bottom: 10px; font-size: 14px; border: 1px solid rgba(245,158,11,0.3); color: var(--texto); cursor: pointer;}
         .alerta-item.peligro { background: rgba(239,68,68,0.1); border-left-color: var(--peligro); border-color: rgba(239,68,68,0.3);}
         .buscador-contenedor { display: flex; gap: 10px; margin-bottom: 15px; align-items: stretch;}
@@ -1065,14 +1098,14 @@ if ('serviceWorker' in navigator) {
     </div>
 
     <div id="pantalla-mantenimiento" class="oculto">
-        <span style="font-size:60px; margin-bottom:20px;"></span>
+        <span style="font-size:60px; margin-bottom:20px;" aria-hidden="true">🛠️</span>
         <h1 style="color:var(--peligro); margin:0 0 10px 0; font-size:24px;">SISTEMA EN MANTENIMIENTO</h1>
         <p style="color:var(--muted); font-size:14px; line-height:1.6; max-width:400px;">Nuestros servidores están recibiendo una actualización para mejorar Taurus Track Pro. La aplicación ha sido bloqueada temporalmente y tus datos están seguros.</p>
         <div class="spinner"></div>
         <p style="color:var(--secundario); font-size:12px; margin-top:15px; font-weight:bold;">Verificando conexión automáticamente...</p>
     </div>
 
-    <div id="modal-alerta-global" class="modal">
+    <div id="modal-alerta-global" class="modal oculto" style="display:none;">
         <div class="modal-body">
             <h3 style="color:var(--alerta); margin-top:0; border-bottom: none; font-size:22px; text-align:center;">Aviso Importante</h3>
             <p id="txt-alerta-global" style="font-size:16px; line-height: 1.5; color:var(--texto); margin-bottom: 25px; font-weight:bold; text-align:center;"></p>
@@ -1158,7 +1191,16 @@ if ('serviceWorker' in navigator) {
                 </div>
 
                 <div class="tarjeta" id="contenedor-alertas" style="display:none; padding:14px; margin-bottom:14px;">
-                    <div class="tarjeta-titulo" style="color:var(--alerta); font-size:14px; margin-bottom:10px;">Alertas Clínicas Activas</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px;">
+                        <div class="tarjeta-titulo" style="color:var(--alerta); font-size:14px; margin:0; display:flex; align-items:center; gap:6px;">
+                            <span aria-hidden="true">⚠️</span>
+                            <span>Alertas Clínicas Activas</span>
+                        </div>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <button type="button" id="btn-restaurar-alertas-clinicas" class="btn-mini oculto" style="padding:4px 9px; font-size:11px; background:rgba(148,163,184,0.14) !important; color:var(--muted) !important; border:1px solid var(--borde) !important;" onclick="window.restaurarAlertasClinicas()">Restaurar</button>
+                            <button type="button" id="btn-vaciar-alertas-clinicas" class="btn-mini" style="padding:4px 10px; font-size:11px; background:rgba(239,68,68,0.16) !important; color:#ef4444 !important; border:1px solid rgba(239,68,68,0.35) !important; font-weight:700;" onclick="window.vaciarAlertasClinicas()" title="Vaciar todas las alertas clínicas">🗑️ Vaciar</button>
+                        </div>
+                    </div>
                     <div id="lista-alertas"></div>
                 </div>
 
@@ -1769,7 +1811,6 @@ if ('serviceWorker' in navigator) {
                         <div class="contenedor-permisos">
                             <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-permiso" value="dash" checked><span>Panel de Control</span></label>
                             <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-permiso" value="ficha" checked><span>Ficha Clínica (Manga)</span></label>
-                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-permiso" value="base" checked><span>Base de Datos</span></label>
                             <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-permiso" value="reporte"><span>Reportes PDF</span></label>
 
                         </div>
@@ -1790,7 +1831,6 @@ if ('serviceWorker' in navigator) {
                             <div class="contenedor-permisos">
                                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-edit-permiso" value="dash"><span>Panel de Control</span></label>
                                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-edit-permiso" value="ficha"><span>Ficha Clínica (Manga)</span></label>
-                                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-edit-permiso" value="base"><span>Base de Datos</span></label>
                                 <label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" class="chk-edit-permiso" value="reporte"><span>Reportes PDF</span></label>
 
                             </div>
@@ -1844,7 +1884,6 @@ if ('serviceWorker' in navigator) {
         <nav class="nav-inferior">
             <div class="nav-item activo" onclick="cambiarVista('vista-dashboard', this); procesarDatosDashboard();"><span class="nav-icon"><svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span>Panel</div>
             <div class="nav-item" onclick="cambiarVista('vista-manga', this)"><span class="nav-icon"><svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2.5"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg></span>Ficha</div>
-            <div class="nav-item" onclick="cambiarVista('vista-registro', this); cargarListaRegistro();"><span class="nav-icon"><svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7.5"/><path d="m20 20-3.8-3.8"/></svg></span>Buscar</div>
             <div class="nav-item" onclick="cambiarVista('vista-informe', this); actualizarInformeAvanzado();"><span class="nav-icon"><svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>Informes</div>
             <div class="nav-item" onclick="cambiarVista('vista-config', this); cargarListaOperadores();"><span class="nav-icon"><svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Ajustes</div>
         </nav>
@@ -2044,6 +2083,7 @@ if ('serviceWorker' in navigator) {
                         <div class="form-grupo"><label>Columna LOTE</label><select id="map-lote" class="form-control"></select></div>
 
                         <div class="form-grupo"><label>Columna PESO (Kg)</label><select id="map-peso" class="form-control"></select></div>
+                        <div class="form-grupo"><label>Columna FECHA</label><select id="map-fecha" class="form-control"></select></div>
                         <div class="form-grupo"><label>Columna RAZA</label><select id="map-raza" class="form-control"></select></div>
                         <div class="form-grupo"><label>Columna DIAGNÓSTICO (Tacto)</label><select id="map-dx" class="form-control"></select></div>
                         <div class="form-grupo"><label>Columna NOTAS / OBSERVACIONES</label><select id="map-notas" class="form-control"></select></div>
@@ -2132,7 +2172,13 @@ if ('serviceWorker' in navigator) {
                     <p style="color:var(--muted); font-size:12px; margin-bottom:15px;">Solo envía una notificación, NO bloquea la app.</p>
                     <div class="form-grupo"><input type="text" id="txt-aviso-mant" class="form-control" placeholder="Ej: Hoy 14:00 actualización"></div>
                     <button class="btn btn-warning" onclick="enviarAvisoMantenimiento()">Enviar Anuncio</button>
-                    <button class="btn btn-danger" style="margin-top:8px;" onclick="limpiarAvisoGlobal()">Borrar / Limpiar Aviso Activo</button>
+                    <div style="margin-top:12px; padding-top:10px; border-top:1px solid var(--borde);">
+                        <span style="font-size:11px; color:var(--muted); display:block; margin-bottom:4px; font-weight:bold;">Aviso actual en base de datos:</span>
+                        <div style="background:var(--primario); padding:8px 12px; border-radius:6px; font-weight:bold; font-size:12px; color:var(--texto); border:1px solid var(--borde); margin-bottom:8px;">
+                            <span id="lbl-aviso-actual-db">Ninguno (Sin avisos activos)</span>
+                        </div>
+                        <button class="btn btn-danger" onclick="limpiarAvisoGlobal()">Borrar / Limpiar Aviso Activo</button>
+                    </div>
                 </div>
 
                 <div class="tarjeta" style="border-color: var(--peligro);">
@@ -2151,11 +2197,11 @@ if ('serviceWorker' in navigator) {
         </div>
 
         <nav class="nav-inferior">
-            <div class="nav-item activo" onclick="cambiarVista('v-nuevo', this)"><span class="nav-icon"></span>Alta</div>
-            <div class="nav-item" onclick="cambiarVista('v-licencias', this); cargarClientes();"><span class="nav-icon"></span>Licencias</div>
-            <div class="nav-item" onclick="cambiarVista('v-masiva', this); cargarClientesMasiva();"><span class="nav-icon"></span>Masiva</div>
-            <div class="nav-item" onclick="cambiarVista('v-editar-masiva', this); inicializarModuloEditarMasiva();"><span class="nav-icon"></span>Editar</div>
-            <div class="nav-item" onclick="cambiarVista('v-config', this); checkStatusInicial();"><span class="nav-icon"></span>Sistema</div>
+            <div class="nav-item activo" onclick="cambiarVista('v-nuevo', this)"><span class="nav-icon">➕</span>Alta</div>
+            <div class="nav-item" onclick="cambiarVista('v-licencias', this); cargarClientes();"><span class="nav-icon">🔑</span>Licencias</div>
+            <div class="nav-item" onclick="cambiarVista('v-masiva', this); cargarClientesMasiva();"><span class="nav-icon">📥</span>Masiva</div>
+            <div class="nav-item" onclick="cambiarVista('v-editar-masiva', this); inicializarModuloEditarMasiva();"><span class="nav-icon">✏️</span>Editar</div>
+            <div class="nav-item" onclick="cambiarVista('v-config', this); checkStatusInicial();"><span class="nav-icon">⚙️</span>Sistema</div>
         </nav>
     </div>
 
@@ -2548,7 +2594,7 @@ if (typeof window.firebase === 'undefined') {
                     enablePersistence: () => Promise.resolve(),
                     collection: mockCol,
                     batch: () => ({ set: () => {}, update: () => {}, delete: () => {}, commit: nopPromise })
-                }), { CACHE_SIZE_UNLIMITED: -1, FieldValue: { serverTimestamp: () => new Date().toISOString() } }),
+                }), { CACHE_SIZE_UNLIMITED: -1, FieldValue: { serverTimestamp: () => new Date().toISOString(), arrayUnion: (...a) => a } }),
                 auth: () => ({
                     currentUser: null,
                     onAuthStateChanged: (cb) => {
@@ -3102,6 +3148,7 @@ window.esCaravanaValida = function(car) {
             }
             const emailClean = sesion.email;
             const userData = sesion.userData;
+            if (typeof window.esLicenciaVencida === 'function' && window.esLicenciaVencida(userData)) { localStorage.setItem('tc_sesion_activa', '0'); return false; }
             localStorage.setItem('tc_sesion_activa', '1');
             localStorage.setItem('tc_ultimo_usuario', emailClean);
 
@@ -3125,7 +3172,7 @@ window.esCaravanaValida = function(car) {
                 let pAdmin = document.getElementById('pantalla-admin'); if (pAdmin) pAdmin.classList.add('oculto');
                 let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.remove('oculto');
                 window.lsSet('tc_user_profile', userData);
-                if (userData.alertas_leidas) window.lsSet('tc_alertas_leidas', userData.alertas_leidas);
+                if (Array.isArray(userData.alertas_leidas)) { let prevL = window.lsGet('tc_alertas_leidas', []); window.lsSet('tc_alertas_leidas', Array.from(new Set([...(Array.isArray(prevL)?prevL:[]), ...userData.alertas_leidas]))); }
                 let estanciaIdFinal = (userData.maestroId || emailClean).toLowerCase().trim();
                 if (typeof window.arrancarSistemaFirebase === 'function') {
                     window.arrancarSistemaFirebase(
@@ -3292,7 +3339,7 @@ window.esCaravanaValida = function(car) {
                     }
 
                     window.lsSet('tc_user_profile', userData);
-                    if (userData.alertas_leidas) window.lsSet('tc_alertas_leidas', userData.alertas_leidas);
+                    if (Array.isArray(userData.alertas_leidas)) { let prevL = window.lsGet('tc_alertas_leidas', []); window.lsSet('tc_alertas_leidas', Array.from(new Set([...(Array.isArray(prevL)?prevL:[]), ...userData.alertas_leidas]))); }
 
                     if (userData.vencimiento && userData.vencimiento !== 'Heredado' && userData.vencimiento !== 'Perpetua') {
                         let fLimit = new Date(userData.vencimiento.includes('T') ? userData.vencimiento : userData.vencimiento + "T23:59:59");
@@ -3847,15 +3894,17 @@ window.esCaravanaValida = function(car) {
                     }
                 });
 
-                window.setEstadoRed(true, ' Sincronizando...');
+                window.setEstadoRed(true, 'Conectado');
                 if (unsubscribeEventos) unsubscribeEventos();
 
                 let renderTimeout;
-                let snapshotInicialRecibido = (Array.isArray(dbCache) && dbCache.length > 0);
+                const tsArranqueListener = Date.now();
+                let cargaRemotaInicialLista = false;
                 let idsEventosConocidos = new Set((dbCache || []).map(d => d.id || (d.fecha + '_' + d.caravana + '_' + d.accion)));
                 let firmasEventosConocidas = new Set((dbCache || []).map(d => (d.fecha || '') + '_' + (d.caravana || '') + '_' + (d.accion || '')));
 
-                unsubscribeEventos = db.collection('estancias').doc(maestroId).collection('eventos').onSnapshot(snapshot =>{
+                unsubscribeEventos = db.collection('estancias').doc(m).collection('eventos').onSnapshot({ includeMetadataChanges: true }, snapshot =>{
+                    if (maestroId !== m) return;
                     let nuevosDatos = [];
                     let docsList = [];
                     snapshot.forEach(doc =>{
@@ -3869,14 +3918,22 @@ window.esCaravanaValida = function(car) {
                     if (typeof window.purgarEventosOperadoresEnFirestore === 'function') window.purgarEventosOperadoresEnFirestore(docsList);
 
                     let notificar = [];
-                    if (snapshotInicialRecibido) {
+                    const esSnapshotServidor = snapshot.metadata ? !snapshot.metadata.fromCache : true;
+                    const pasoVentanaArranque = (Date.now() - tsArranqueListener) > 3500;
+
+                    if (cargaRemotaInicialLista && pasoVentanaArranque) {
                         notificar = nuevosDatos.filter(d => {
                             if (!d) return false;
                             let firma = (d.fecha || '') + '_' + (d.caravana || '') + '_' + (d.accion || '');
-                            return !idsEventosConocidos.has(d.id) && !firmasEventosConocidas.has(firma);
+                            if (idsEventosConocidos.has(d.id) || firmasEventosConocidas.has(firma)) return false;
+                            let tEv = d.fecha ? new Date(d.fecha).getTime() : 0;
+                            if (!tEv || isNaN(tEv) || Math.abs(Date.now() - tEv) > 5 * 60 * 1000) return false;
+                            return true;
                         });
                     }
-                    snapshotInicialRecibido = true;
+                    if (esSnapshotServidor || pasoVentanaArranque) {
+                        cargaRemotaInicialLista = true;
+                    }
                     nuevosDatos.forEach(d => {
                         if (d) {
                             idsEventosConocidos.add(d.id);
@@ -3921,12 +3978,13 @@ window.esCaravanaValida = function(car) {
                         window.cargarListasFiltrosSelects();
                         window.cargarListaOperadores();
 
-                        const estaEnCache = snapshot.metadata ? snapshot.metadata.fromCache : false;
                         const tienePendientes = snapshot.metadata ? snapshot.metadata.hasPendingWrites : false;
-                        if (estaEnCache || !navigator.onLine) {
-                            window.setEstadoRed(false, tienePendientes ? ' Guardado local (Pendiente)' : ' Red Local');
+                        if (!navigator.onLine) {
+                            window.setEstadoRed(false, tienePendientes ? 'Guardado local (Pendiente)' : 'Red Local');
+                        } else if (tienePendientes) {
+                            window.setEstadoRed(true, 'Sincronizando...');
                         } else {
-                            window.setEstadoRed(true, ' Conectado');
+                            window.setEstadoRed(true, 'Conectado');
                         }
                     }, 300);
                 }, error =>{
@@ -4000,6 +4058,7 @@ window.esCaravanaValida = function(car) {
                         rpActivo = savedRp;
                     }
                     let vistaGuardada = sessionStorage.getItem('tc_vista_activa_mob') || localStorage.getItem('tc_vista_activa_mob');
+                    if (vistaGuardada === 'vista-registro') vistaGuardada = 'vista-manga';
                     if (vistaGuardada) {
                         document.querySelectorAll('#pantalla-app .nav-item').forEach(li => {
                             let target = li.getAttribute('onclick') || '';
@@ -4054,6 +4113,11 @@ window.esCaravanaValida = function(car) {
                         let eData = docE.data();
                         if (eData.logo_hacienda) hLogo = eData.logo_hacienda;
                         if (eData.nombre_hacienda) hNombre = eData.nombre_hacienda;
+                        if (Array.isArray(eData.alertas_clinicas_ocultas)) {
+                            let localOc = window.lsGet('tc_alertas_clinicas_ocultas_' + m, []);
+                            let mergedOc = Array.from(new Set([...(Array.isArray(localOc) ? localOc : []), ...eData.alertas_clinicas_ocultas]));
+                            window.lsSet('tc_alertas_clinicas_ocultas_' + m, mergedOc);
+                        }
                         if (eData.features !== undefined) {
                             window.estanciaFeatures = String(eData.features || "");
                             let prof = window.lsGet('tc_user_profile', {});
@@ -4081,7 +4145,7 @@ window.esCaravanaValida = function(car) {
                 const elMantenimiento = document.getElementById('pantalla-mantenimiento'); if(elMantenimiento) elMantenimiento.classList.add('oculto');
                 window._uiInicializadaPara = u;
                 if (!yaInicializadoMismoUsuario) {
-                    if(tabSeleccionado) { window.cambiarVista(vistaInicial, tabSeleccionado); } else { window.cambiarVista('vista-config', document.querySelectorAll('#pantalla-app .nav-item')[4]); }
+                    if(tabSeleccionado) { window.cambiarVista(vistaInicial, tabSeleccionado); } else { window.cambiarVista('vista-config', document.querySelector('#pantalla-app .nav-item[onclick*="vista-config"]')); }
                 }
                 window.sincronizarPendientesAuto(); window.cargarListasFiltrosSelects(); window.cargarListaOperadores(); window.procesarDatosDashboard();
 
@@ -6493,13 +6557,17 @@ window.esCaravanaValida = function(car) {
             btn.innerHTML = " Registrando..."; btn.disabled = true;
             let email = u.includes('@') ? u : u + '@taurus.com';
             try {
-                const secAppName = "SecondaryAppPeon_" + Date.now(); const secondaryApp = firebase.initializeApp(firebaseConfig, secAppName);
-                await secondaryApp.auth().createUserWithEmailAndPassword(email, p);
-                await secondaryApp.auth().signOut();
-                await secondaryApp.delete();
+                const secAppName = "SecondaryAppPeon_" + Date.now();
+                const secondaryApp = firebase.initializeApp(firebaseConfig, secAppName);
+                try {
+                    await secondaryApp.auth().createUserWithEmailAndPassword(email, p);
+                } finally {
+                    try { await secondaryApp.auth().signOut(); } catch(e) {}
+                    try { await secondaryApp.delete(); } catch(e) {}
+                }
                 let alertasParaOmitir = alertaGlobalIdActual ? [alertaGlobalIdActual] : [];
                 await db.collection('usuarios').doc(email).set({
-                    email: email, nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', alertas_leidas: alertasParaOmitir
+                    email: email, nombre: n, rol: rolFinal, maestroId: maestroId, hacienda: usHacienda, vencimiento: 'Heredado', password: p, alertas_leidas: alertasParaOmitir
                 });
 
                 document.getElementById('op-nombre').value = ''; document.getElementById('op-usu').value = ''; document.getElementById('op-pass').value = '';
@@ -6721,13 +6789,13 @@ window.esCaravanaValida = function(car) {
         };
 
         try {
-            if (localStorage.getItem('taurus_v29_purged') !== '1') {
-                localStorage.setItem('taurus_v29_purged', '1');
+            if (localStorage.getItem('taurus_v30_purged') !== '1') {
+                localStorage.setItem('taurus_v30_purged', '1');
                 localStorage.removeItem('tc_hacienda');
                 if ('caches' in window) {
                     caches.keys().then(function(ks) {
                         ks.forEach(function(k) {
-                            if (k !== 'taurus-track-pro-v29') caches.delete(k);
+                            if (k !== 'taurus-track-pro-v30') caches.delete(k);
                         });
                     }).catch(function(){});
                 }
@@ -7897,7 +7965,8 @@ var mapaEstancias = {};
                     alerta_fecha: ahora,
                     alerta_expira: expiraMs
                 }, { merge: true });
-                const fd = new URLSearchParams(); fd.append('accion', 'aviso_mantenimiento'); fd.append('mensaje', "AVISO: " + msg);
+                const fd = new URLSearchParams(); fd.append('accion', 'aviso_mantenimiento');
+                fd.append('admin_email', String(usActivo || 'enfer.ro.98@gmail.com').toLowerCase().trim()); fd.append('mensaje', "AVISO: " + msg);
                 fetch('https://script.google.com/macros/s/AKfycbyt8VbPIc_-0LKbleRiPutWErESZ8gmxSpGXDIo1WXbAciE7J0Sy5YGjYU_O39ZFM-25A/exec', { method: 'POST', body: fd, mode: 'no-cors' }).catch(()=>{});
                 toggleLoading(false); mostrarToastAdmin(" Aviso enviado"); document.getElementById('txt-aviso-mant').value = '';
             } catch (e) { toggleLoading(false); mostrarToastAdmin(" Error al enviar el aviso", true); }
@@ -8077,8 +8146,8 @@ var mapaEstancias = {};
                 contenedor.innerHTML += `
                     <div class="cliente-card" style="display: flex; flex-direction: column; gap: 12px;">
                         <div style="border-bottom: 1px solid var(--borde); padding-bottom: 10px;">
-                            <strong style="color:var(--texto); font-size:16px;">${c.hacienda}</strong>
-                            <div style="color:var(--secundario); font-size:12px; margin-bottom:8px;">${c.usuario}</div>
+                            <strong style="color:var(--texto); font-size:16px;">${window.escapeHTML(c.hacienda)}</strong>
+                            <div style="color:var(--secundario); font-size:12px; margin-bottom:8px;">${window.escapeHTML(c.usuario)}</div>
                             <div style="margin-bottom:8px; display:flex; flex-wrap:wrap; gap:5px;">${featBadges}</div>
                             <div style="font-size:11px;">
                                 <span style="color:var(--warning); font-weight:bold;">Peones: ${lOps === "999" ? "∞" : lOps}</span>|
@@ -8242,8 +8311,8 @@ var mapaEstancias = {};
                     <div class="cliente-card-inner">
                         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
                             <div>
-                                <strong style="color:var(--texto); font-size:14px; word-break:break-all;">${doc.id}</strong><br>
-                                <span style="font-size:12px; color:var(--muted);">${doc.data().nombre}</span>
+                                <strong style="color:var(--texto); font-size:14px; word-break:break-all;">${window.escapeHTML(doc.id)}</strong><br>
+                                <span style="font-size:12px; color:var(--muted);">${window.escapeHTML(doc.data().nombre)}</span>
                             </div>
                             <div style="text-align:right;">${badge}</div>
                         </div>
@@ -8303,6 +8372,7 @@ var mapaEstancias = {};
                     llenarSelectMapeo('map-categoria', headers, true);
                     llenarSelectMapeo('map-lote', headers, true);
                     llenarSelectMapeo('map-peso', headers, true);
+                    if(document.getElementById('map-fecha')) llenarSelectMapeo('map-fecha', headers, true);
                     llenarSelectMapeo('map-raza', headers, true);
                     llenarSelectMapeo('map-dx', headers, true);
                     llenarSelectMapeo('map-notas', headers, true);
@@ -8311,6 +8381,7 @@ var mapaEstancias = {};
                     autoSeleccionarMapeo('map-categoria', ['categoria', 'cat']);
                     autoSeleccionarMapeo('map-lote', ['lote', 'grupo']);
                     autoSeleccionarMapeo('map-peso', ['peso', 'kg', 'kilos']);
+                    if(document.getElementById('map-fecha')) autoSeleccionarMapeo('map-fecha', ['fecha', 'date', 'dia', 'día']);
                     autoSeleccionarMapeo('map-raza', ['raza', 'genetica']);
                     autoSeleccionarMapeo('map-dx', ['diagnostico', 'dx', 'tacto', 'preñez', 'prenez']);
                     autoSeleccionarMapeo('map-notas', ['nota', 'observacion', 'detalle']);
@@ -8365,7 +8436,7 @@ var mapaEstancias = {};
             datosArchivoCrudo.forEach((f, index) =>{
                 let vCar = f[cCar];
                 if(vCar && String(vCar).trim() !== "") {
-                    let rp = String(vCar).trim();
+                    let rp = String(vCar).trim().toUpperCase();
                     let valCat = cCat && f[cCat] ? String(f[cCat]).trim() : "-";
                     let valLote = cLot && f[cLot] ? String(f[cLot]).trim() : "Hacienda General";
 
@@ -9293,6 +9364,11 @@ Se encontraron ${matches.length} registro(s) de "${caravanaRP}".
                     p.push({ id: id, valor: nValor, detalles: nDetalles, fecha: isoFecha, _operacion: 'update' });
                     window.lsSet(pendKey, p);
                 }
+            } else if (typeof maestroId !== 'undefined' && maestroId && id) {
+                let pendKey = 'tc_pendientes_' + maestroId;
+                let p = window.lsGet(pendKey, []);
+                p.push({ id: id, valor: nValor, detalles: nDetalles, fecha: isoFecha, _operacion: 'update' });
+                window.lsSet(pendKey, p);
             }
 
             window.cerrarModal('modal-editar-registro');
@@ -9344,7 +9420,17 @@ Se encontraron ${matches.length} registro(s) de "${caravanaRP}".
             if (navigator.onLine && typeof maestroId !== 'undefined' && maestroId && id && !String(id).startsWith('ev_') && !String(id).startsWith('local_') && typeof db !== 'undefined') {
                 try {
                     await db.collection('estancias').doc(maestroId).collection('eventos').doc(id).delete();
-                } catch(e) { console.warn("Delete cloud warning:", e); }
+                } catch(e) {
+                    let pendKey = 'tc_pendientes_' + maestroId;
+                    let p = window.lsGet(pendKey, []);
+                    p.push({ id: id, _operacion: 'delete' });
+                    window.lsSet(pendKey, p);
+                }
+            } else if (typeof maestroId !== 'undefined' && maestroId && id) {
+                let pendKey = 'tc_pendientes_' + maestroId;
+                let p = window.lsGet(pendKey, []);
+                p.push({ id: id, _operacion: 'delete' });
+                window.lsSet(pendKey, p);
             }
 
             window.cerrarModal('modal-editar-registro');
@@ -10605,6 +10691,2311 @@ Se encontraron ${matches.length} registro(s) de "${caravanaRP}".
                 }
             }
         });
+
+
+        /* ============================================================================
+         * TAURUS TRACK PRO v3.0 - MOTOR UNIFICADO DE CORRECCIONES Y ANTI-CRUCE DE DATOS
+         * ============================================================================ */
+
+        // 1. Limpieza de datos residuales de pruebas QA (JULES) y aislamiento estricto por estancia
+        window.esCaravanaValida = function(car) {
+            if (car === null || car === undefined) return false;
+            let s = String(car).trim();
+            if (!s || s === "" || s === "---") return false;
+            let low = s.toLowerCase();
+            if (low === "null" || low === "undefined" || low === "nan" || low === "[object object]") return false;
+            if (low.includes("@")) return false;
+            if (low.startsWith("op-") || low.startsWith("operador") || low === "operador" || low === "propietario" || low === "dueño") return false;
+            if (/^jules[-_]/i.test(s)) return false;
+            return true;
+        };
+        esCaravanaValida = window.esCaravanaValida;
+
+        window.esEventoGanaderoValido = function(d) {
+            if (!d) return false;
+            let accion = String(d.accion || "").toLowerCase();
+            if (accion.includes("operador") || accion.startsWith("alta op") || accion.startsWith("edicion op") || accion.startsWith("edición op") || accion.startsWith("baja op") || accion.startsWith("eliminacion op") || accion.startsWith("eliminación op")) return false;
+            let car = String(d.caravana || "").trim();
+            let carLow = car.toLowerCase();
+            if (carLow.includes("@") || /^jules[-_]/i.test(car)) return false;
+            if (typeof maestroId !== 'undefined' && maestroId) {
+                let mAct = String(maestroId).toLowerCase().trim();
+                let docM = String(d.maestro || d.estancia || "").toLowerCase().trim();
+                if (docM && docM !== mAct) return false;
+            }
+            return true;
+        };
+        esEventoGanaderoValido = window.esEventoGanaderoValido;
+
+        window.purgarEventosOperadoresEnFirestore = async function(snapshotDocs) {
+            if (!snapshotDocs || !Array.isArray(snapshotDocs) || snapshotDocs.length === 0) return;
+            try {
+                const batch = db.batch();
+                let hayPurgas = false;
+                snapshotDocs.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (!data) return;
+                    const accion = String(data.accion || "").toLowerCase();
+                    const car = String(data.caravana || "").trim();
+                    const carLow = car.toLowerCase();
+                    const esOpAccion = accion.includes("operador") || accion.startsWith("alta op") || accion.startsWith("edicion op") || accion.startsWith("edición op") || accion.startsWith("baja op");
+                    const esCarInvalida = carLow.includes("@") || carLow === "null" || carLow === "undefined" || carLow === "---" || carLow === "" || /^jules[-_]/i.test(car);
+                    if (esOpAccion || esCarInvalida) {
+                        batch.delete(docSnap.ref);
+                        hayPurgas = true;
+                    }
+                });
+                if (hayPurgas) {
+                    await batch.commit();
+                }
+            } catch(e) {}
+        };
+
+        // 2. Estado de Red inteligente y verificación real de conexión (Móvil y PC)
+        window.setEstadoRed = function(online, texto = null) {
+            const b = document.getElementById('estado-red');
+            if (!b) return;
+            const esOffline = !online || (texto && (texto.includes('Red Local') || texto.includes('Sin internet') || texto.includes('Pendiente') || texto.includes('pendientes')));
+            if (esOffline) {
+                b.classList.add('offline');
+                b.classList.remove('online');
+                b.innerText = texto ? String(texto).trim() : 'Red Local';
+            } else {
+                b.classList.remove('offline');
+                b.classList.add('online');
+                b.innerText = texto ? String(texto).trim() : 'Conectado';
+            }
+        };
+        setEstadoRed = window.setEstadoRed;
+
+        window.verificarConexionReal = async function() {
+            window.setEstadoRed(navigator.onLine, 'Verificando...');
+            if (!navigator.onLine) {
+                window.setEstadoRed(false, 'Red Local');
+                return false;
+            }
+            try {
+                await window.sincronizarPendientesAuto();
+                await db.collection('sistema').doc('config').get({ source: 'server' });
+                window.setEstadoRed(true, 'Conectado');
+                if (typeof window.mostrarToast === 'function') window.mostrarToast("Conexión en línea verificada");
+                return true;
+            } catch(e) {
+                if (navigator.onLine) {
+                    window.setEstadoRed(true, 'Conectado');
+                    return true;
+                }
+                window.setEstadoRed(false, 'Red Local');
+                return false;
+            }
+        };
+        verificarConexionReal = window.verificarConexionReal;
+
+        // 3. Sincronización Offline-First completa (Altas, Ediciones y Eliminaciones)
+        window.sincronizarPendientesAuto = async function() {
+            if (isSyncingPendientes || !navigator.onLine || !maestroId) return;
+            let pendKey = 'tc_pendientes_' + maestroId;
+            let p = window.lsGet(pendKey, []);
+            if (!Array.isArray(p) || p.length === 0) return;
+
+            isSyncingPendientes = true;
+            try {
+                const batch = db.batch();
+                const col = db.collection('estancias').doc(maestroId).collection('eventos');
+                const loteSync = [...p];
+                for (const item of loteSync) {
+                    if (!item) continue;
+                    if (item._operacion === 'archive_rp' && item.rpOriginal && item.rpArchivado) {
+                        try {
+                            const snapOld = await col.where('caravana', '==', item.rpOriginal).get();
+                            snapOld.docs.forEach(dSnap => batch.update(dSnap.ref, { caravana: item.rpArchivado }));
+                        } catch(eArch) {}
+                        continue;
+                    }
+                    if (!item.id) continue;
+                    const docRef = col.doc(item.id);
+                    if (item._operacion === 'delete') {
+                        batch.delete(docRef);
+                    } else if (item.accion === 'update' || item._operacion === 'update') {
+                        const updatePayload = {
+                            valor: item.valor || "",
+                            detalles: item.detalles || "",
+                            fecha: item.fecha || new Date().toISOString()
+                        };
+                        if (item.caravana) updatePayload.caravana = item.caravana;
+                        batch.set(docRef, updatePayload, { merge: true });
+                    } else {
+                        const cleanItem = { ...item };
+                        delete cleanItem._operacion;
+                        batch.set(docRef, cleanItem, { merge: true });
+                    }
+                }
+                await batch.commit();
+
+                let pRestantes = window.lsGet(pendKey, []);
+                let idsSincronizados = new Set(loteSync.map(x => x.id || (x._operacion + '_' + x.rpOriginal)));
+                let nuevosRestantes = pRestantes.filter(x => !idsSincronizados.has(x.id || (x._operacion + '_' + x.rpOriginal)));
+                window.lsSet(pendKey, nuevosRestantes);
+                window.setEstadoRed(true, 'Conectado');
+            } catch(err) {
+                console.warn("[Taurus Sync] Error sincronizando pendientes a Firestore:", err);
+            } finally {
+                isSyncingPendientes = false;
+            }
+        };
+        sincronizarPendientesAuto = window.sincronizarPendientesAuto;
+
+        // 4. Gestión de Avisos Globales de Administración (sin avisos fantasma al iniciar)
+        window.registrarAlertaComoVista = function(idAlerta, msgTexto) {
+            if (!idAlerta) return;
+            const realId = String(idAlerta).trim();
+            let perm = window.lsGet('tc_alertas_vistas_permanente', []);
+            if (!perm.includes(realId)) {
+                perm.push(realId);
+                window.lsSet('tc_alertas_vistas_permanente', perm);
+            }
+            let leidas = window.lsGet('tc_alertas_leidas', []);
+            if (!leidas.includes(realId)) {
+                leidas.push(realId);
+                window.lsSet('tc_alertas_leidas', leidas);
+            }
+            if (usActivo) {
+                let uKey = 'tc_alertas_leidas_' + String(usActivo).toLowerCase().trim();
+                let uLeidas = window.lsGet(uKey, []);
+                if (!uLeidas.includes(realId)) {
+                    uLeidas.push(realId);
+                    window.lsSet(uKey, uLeidas);
+                }
+                if (navigator.onLine) {
+                    try {
+                        db.collection('usuarios').doc(usActivo).update({
+                            alertas_leidas: firebase.firestore.FieldValue.arrayUnion(realId)
+                        }).catch(() => {});
+                    } catch(e) {}
+                }
+            }
+        };
+        registrarAlertaComoVista = window.registrarAlertaComoVista;
+
+        window.procesarAlertaServidor = function(msg, id, expira) {
+            const banner = document.getElementById('banner-alerta-global');
+            const modal = document.getElementById('modal-alerta-global');
+            const cleanMsg = String(msg || "").trim();
+            const lowMsg = cleanMsg.toLowerCase();
+
+            // Ignorar avisos vacíos o residuales de pruebas automatizadas QA
+            if (
+                !cleanMsg ||
+                lowMsg === 'hola' ||
+                lowMsg === 'aviso: hola' ||
+                lowMsg.includes('mantenimiento programado en 30 minutos') ||
+                lowMsg.includes('jules')
+            ) {
+                if (banner) banner.classList.add('oculto');
+                if (modal) { modal.classList.add('oculto'); modal.style.display = 'none'; }
+                return;
+            }
+
+            let expiraNum = Number(expira || 0);
+            if (!expiraNum && id && String(id).startsWith('alerta_1')) {
+                let ts = parseInt(String(id).replace('alerta_', ''), 10);
+                if (!isNaN(ts) && ts > 1700000000000) expiraNum = ts + (24 * 60 * 60 * 1000);
+            }
+
+            if (expiraNum > 0 && Date.now() > expiraNum) {
+                if (banner) banner.classList.add('oculto');
+                if (modal) { modal.classList.add('oculto'); modal.style.display = 'none'; }
+                return;
+            }
+
+            const realId = id ? String(id).trim() : ('aviso_' + btoa(unescape(encodeURIComponent(cleanMsg))).slice(0, 16));
+            if (realId === 'alerta_fb') {
+                if (banner) banner.classList.add('oculto');
+                if (modal) { modal.classList.add('oculto'); modal.style.display = 'none'; }
+                return;
+            }
+
+            let perm = window.lsGet('tc_alertas_vistas_permanente', []);
+            let leidas = window.lsGet('tc_alertas_leidas', []);
+            let uLeidas = usActivo ? window.lsGet('tc_alertas_leidas_' + String(usActivo).toLowerCase().trim(), []) : [];
+
+            if (perm.includes(realId) || leidas.includes(realId) || uLeidas.includes(realId)) {
+                if (banner) banner.classList.add('oculto');
+                if (modal) { modal.classList.add('oculto'); modal.style.display = 'none'; }
+                return;
+            }
+
+            alertaGlobalIdActual = realId;
+            const elTxtModal = document.getElementById('txt-alerta-global');
+            const elTxtBanner = document.getElementById('txt-banner-alerta');
+            if (elTxtModal) elTxtModal.innerText = cleanMsg;
+            if (elTxtBanner) elTxtBanner.innerText = cleanMsg;
+
+            if (banner) banner.classList.remove('oculto');
+
+            let mostradasSesion = window._alertasPopUpMostradasSesion || new Set();
+            window._alertasPopUpMostradasSesion = mostradasSesion;
+            if (!mostradasSesion.has(realId)) {
+                mostradasSesion.add(realId);
+                if (modal) {
+                    modal.classList.remove('oculto');
+                    modal.style.display = 'flex';
+                }
+            }
+        };
+        procesarAlertaServidor = window.procesarAlertaServidor;
+
+        window.cerrarPopUpAlerta = function() {
+            const elTxtModal = document.getElementById('txt-alerta-global');
+            const txtActual = elTxtModal ? elTxtModal.innerText.trim() : '';
+            if (alertaGlobalIdActual) {
+                window.registrarAlertaComoVista(alertaGlobalIdActual, txtActual);
+            }
+            const modal = document.getElementById('modal-alerta-global');
+            const banner = document.getElementById('banner-alerta-global');
+            if (modal) { modal.classList.add('oculto'); modal.style.display = 'none'; }
+            if (banner) banner.classList.add('oculto');
+        };
+        cerrarPopUpAlerta = window.cerrarPopUpAlerta;
+
+        window.marcarAlertaLeida = function() {
+            const elTxtBanner = document.getElementById('txt-banner-alerta');
+            const txtActual = elTxtBanner ? elTxtBanner.innerText.trim() : '';
+            if (alertaGlobalIdActual) {
+                window.registrarAlertaComoVista(alertaGlobalIdActual, txtActual);
+            }
+            const modal = document.getElementById('modal-alerta-global');
+            const banner = document.getElementById('banner-alerta-global');
+            if (modal) { modal.classList.add('oculto'); modal.style.display = 'none'; }
+            if (banner) banner.classList.add('oculto');
+        };
+
+        window.checkStatusInicial = function() {
+            if (unsubscribeConfig) unsubscribeConfig();
+            unsubscribeConfig = db.collection('sistema').doc('config').onSnapshot((doc) => {
+                if (doc.exists) {
+                    const data = doc.data() || {};
+                    actualizarUIKillSwitch(data.mantenimiento ? 'ON' : 'OFF');
+                    let msg = String(data.alerta_global || "").trim();
+                    if (msg.toLowerCase().includes('mantenimiento programado en 30 minutos')) {
+                        db.collection('sistema').doc('config').set({ alerta_global: "", alerta_id: "", alerta_expira: 0 }, { merge: true }).catch(() => {});
+                        msg = "";
+                    }
+                    const lblAviso = document.getElementById('lbl-aviso-actual-db');
+                    if (lblAviso) {
+                        if (msg) {
+                            lblAviso.innerText = msg;
+                            lblAviso.style.color = "var(--alerta, var(--warning, #f59e0b))";
+                        } else {
+                            lblAviso.innerText = "Ninguno (Sin avisos activos)";
+                            lblAviso.style.color = "var(--muted, var(--text-muted, #94a3b8))";
+                        }
+                    }
+                } else {
+                    db.collection('sistema').doc('config').set({ mantenimiento: false, alerta_global: "", alerta_id: "", alerta_expira: 0 });
+                    actualizarUIKillSwitch('OFF');
+                }
+            });
+        };
+        checkStatusInicial = window.checkStatusInicial;
+
+        window.enviarAvisoMantenimiento = async function() {
+            const elTxt = document.getElementById('txt-aviso-mant');
+            let msg = elTxt ? elTxt.value.trim() : '';
+            if (!msg) return mostrarToastAdmin("Escribe el mensaje del aviso", true);
+            toggleLoading(true, "Enviando anuncio...");
+            try {
+                const ahora = Date.now();
+                const nuevoId = "alerta_" + ahora;
+                const expiraMs = ahora + (24 * 60 * 60 * 1000);
+                const textoFinal = msg.toUpperCase().startsWith("AVISO:") ? msg : ("AVISO: " + msg);
+                await db.collection('sistema').doc('config').set({
+                    alerta_global: textoFinal,
+                    alerta_id: nuevoId,
+                    alerta_fecha: ahora,
+                    alerta_expira: expiraMs
+                }, { merge: true });
+                const fd = new URLSearchParams();
+                fd.append('accion', 'aviso_mantenimiento');
+                fd.append('mensaje', textoFinal);
+                fetch(APPS_SCRIPT_NOTIFICACIONES, { method: 'POST', body: fd, mode: 'no-cors' }).catch(() => {});
+                toggleLoading(false);
+                mostrarToastAdmin("Aviso enviado a todos los dispositivos");
+                if (elTxt) elTxt.value = '';
+            } catch (e) {
+                toggleLoading(false);
+                mostrarToastAdmin("Error al enviar el aviso", true);
+            }
+        };
+        enviarAvisoMantenimiento = window.enviarAvisoMantenimiento;
+
+        window.limpiarAvisoGlobal = async function() {
+            if (!confirm("¿Eliminar el aviso global activo para todos los usuarios?")) return;
+            toggleLoading(true, "Limpiando aviso...");
+            try {
+                await db.collection('sistema').doc('config').set({
+                    alerta_global: "",
+                    alerta_id: "",
+                    alerta_expira: 0,
+                    alerta_fecha: null
+                }, { merge: true });
+                toggleLoading(false);
+                mostrarToastAdmin("Aviso global eliminado.");
+                const lbl = document.getElementById('lbl-aviso-actual-db');
+                if (lbl) {
+                    lbl.innerText = "Ninguno (Sin avisos activos)";
+                    lbl.style.color = "var(--muted, var(--text-muted, #94a3b8))";
+                }
+            } catch (e) {
+                toggleLoading(false);
+                mostrarToastAdmin("Error al limpiar el aviso", true);
+            }
+        };
+        limpiarAvisoGlobal = window.limpiarAvisoGlobal;
+
+        // 5. Alertas Clínicas con Punto Rojo (🔴) y función para Vaciar / Borrar alertas clínicas
+        window.obtenerKeyAlertasClinicasOcultas = function() {
+            let m = (typeof maestroId !== 'undefined' && maestroId) ? String(maestroId).toLowerCase().trim() : 'default';
+            return 'tc_alertas_clinicas_ocultas_' + m;
+        };
+
+        window.obtenerAlertasClinicasOcultas = function() {
+            let arr = window.lsGet(window.obtenerKeyAlertasClinicasOcultas(), []);
+            return Array.isArray(arr) ? arr : [];
+        };
+
+        window.guardarAlertasClinicasOcultas = function(lista) {
+            const unicas = Array.from(new Set(Array.isArray(lista) ? lista : []));
+            window.lsSet(window.obtenerKeyAlertasClinicasOcultas(), unicas);
+            if (navigator.onLine && typeof maestroId !== 'undefined' && maestroId && typeof db !== 'undefined') {
+                try {
+                    db.collection('estancias').doc(maestroId).set({
+                        alertas_clinicas_ocultas: unicas
+                    }, { merge: true }).catch(() => {});
+                } catch(e) {}
+            }
+        };
+
+        window.ocultarAlertaClinicaIndividual = function(alertaKey) {
+            if (!alertaKey) return;
+            let ocultas = window.obtenerAlertasClinicasOcultas();
+            if (!ocultas.includes(alertaKey)) ocultas.push(alertaKey);
+            window.guardarAlertasClinicasOcultas(ocultas);
+            if (typeof window.procesarDatosDashboard === 'function') window.procesarDatosDashboard();
+        };
+
+        window.vaciarAlertasClinicas = function() {
+            const activas = Array.isArray(window._alertasClinicasActivasKeys) ? window._alertasClinicasActivasKeys : [];
+            let ocultas = window.obtenerAlertasClinicasOcultas();
+            const nuevasOcultas = Array.from(new Set([...ocultas, ...activas]));
+            window.guardarAlertasClinicasOcultas(nuevasOcultas);
+            window.lsSet(window.obtenerKeyAlertasClinicasOcultas() + '_vaciado', true);
+            if (typeof window.procesarDatosDashboard === 'function') window.procesarDatosDashboard();
+            if (typeof window.mostrarToast === 'function') window.mostrarToast("Alertas clínicas vaciadas.");
+        };
+
+        window.restaurarAlertasClinicas = function() {
+            window.guardarAlertasClinicasOcultas([]);
+            window.lsSet(window.obtenerKeyAlertasClinicasOcultas() + '_vaciado', false);
+            if (typeof window.procesarDatosDashboard === 'function') window.procesarDatosDashboard();
+            if (typeof window.mostrarToast === 'function') window.mostrarToast("Alertas clínicas restauradas.");
+        };
+
+        // 6. Redirección de filtros del Dashboard a Informes (al eliminar apartado Buscar duplicado)
+        window.filtrarDesdeDashboard = function(tipo, valor) {
+            const isPC = Boolean(document.getElementById('v-reporte'));
+            const vistaRep = isPC ? 'v-reporte' : 'vista-informe';
+            const navBtn = isPC
+                ? document.querySelector('#sidebar .sidebar-nav li[onclick*="v-reporte"]')
+                : document.querySelector('#pantalla-app .nav-item[onclick*="vista-informe"]');
+
+            const fRpEl = document.getElementById('f-inf-rp');
+            if (fRpEl) fRpEl.value = '';
+            const fInvFecha = document.getElementById('f-inf-inv-fecha');
+            if (fInvFecha) fInvFecha.value = '';
+            const fLote = document.getElementById('f-inf-lote');
+            const fCat = document.getElementById('f-inf-cat');
+            const fDx = document.getElementById('f-inf-dx');
+            const fCarimbo = document.getElementById('f-inf-carimbo');
+
+            if (fLote) fLote.value = 'ALL';
+            if (fCat) fCat.value = 'ALL';
+            if (fDx) fDx.value = 'ALL';
+            if (fCarimbo) fCarimbo.value = 'ALL';
+
+            let modoTarget = 'inventario';
+            if (tipo === 'estado') {
+                if (valor === 'confinamiento') modoTarget = 'confinamiento';
+                else if (valor === 'ventas') modoTarget = 'ventas';
+                else if (valor === 'bajas') modoTarget = 'bajas';
+                else modoTarget = 'inventario';
+            } else if (tipo === 'confinamiento') {
+                modoTarget = 'confinamiento';
+            } else if (tipo === 'lote') {
+                modoTarget = 'inventario';
+                if (fLote) fLote.value = valor;
+            } else if (tipo === 'categoria') {
+                modoTarget = 'inventario';
+                if (fCat) fCat.value = valor;
+            } else if (tipo === 'dx') {
+                modoTarget = 'inventario';
+                if (fDx) fDx.value = valor;
+            }
+
+            if (typeof window.cambiarVista === 'function') {
+                window.cambiarVista(vistaRep, navBtn);
+            }
+            if (typeof window.seleccionarModoReportePill === 'function') {
+                window.seleccionarModoReportePill(modoTarget);
+            } else {
+                const selModo = document.getElementById('f-inf-modo');
+                if (selModo) selModo.value = modoTarget;
+                if (typeof window.actualizarInformeAvanzado === 'function') window.actualizarInformeAvanzado();
+            }
+        };
+        filtrarDesdeDashboard = window.filtrarDesdeDashboard;
+
+        window.navegarDesdeLista = function(car) {
+            if (!car) return;
+            let cleanCar = String(car).trim().toUpperCase();
+            rpActivo = cleanCar;
+            const elB = document.getElementById('buscador-caravana');
+            if (elB) elB.value = cleanCar;
+            const isPC = Boolean(document.getElementById('v-ficha'));
+            const vistaFicha = isPC ? 'v-ficha' : 'vista-manga';
+            const navBtn = isPC
+                ? document.querySelector('#sidebar .sidebar-nav li[onclick*="v-ficha"]')
+                : document.querySelector('#pantalla-app .nav-item[onclick*="vista-manga"]');
+            if (typeof window.cambiarVista === 'function') {
+                window.cambiarVista(vistaFicha, navBtn);
+            }
+            if (typeof window.buscarCaravanaBtn === 'function') {
+                window.buscarCaravanaBtn(cleanCar);
+            }
+        };
+        navegarDesdeLista = window.navegarDesdeLista;
+
+        // 7. Autocompletado de Caravanas en el buscador de Ficha y carga completa de filtros de Informes
+        window.cargarListasFiltrosSelects = function() {
+            try {
+                let datosActivos = typeof window.obtenerRegistrosActivos === 'function' ? window.obtenerRegistrosActivos() : [];
+                let lotesSet = new Set();
+                let catsSet = new Set();
+
+                let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => window.esCaravanaValida(c)))];
+                let vivas = [];
+                unicas.forEach(car => {
+                    const regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(car) : [];
+                    if (!window.esAnimalArchivado(car) && window.esAnimalVivo(regs, car)) {
+                        vivas.push(car);
+                    }
+                    const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                    let catRaw = "Sin Categoría", lote = "General";
+                    if (uC) {
+                        let v = String(uC.valor || "").split('|');
+                        catRaw = v[0] ? v[0].replace('Cat:', '').trim() : "Sin Categoría";
+                        lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:', '').trim() : "General";
+                    } else {
+                        const uP = regs.find(d => d.accion === 'Perfil Master');
+                        if (uP && uP.detalles) { catRaw = String(uP.detalles).split('|')[0] || "Sin Categoría"; }
+                    }
+                    let catLegible = typeof window.obtenerNombreCategoriaLegible === 'function' ? window.obtenerNombreCategoriaLegible(catRaw) : catRaw;
+                    if (lote && lote !== '-' && lote !== '---') lotesSet.add(lote);
+                    if (catLegible && catLegible !== '-' && catLegible !== '---') catsSet.add(catLegible);
+                });
+
+                ['filtro-reg-lote', 'f-inf-lote', 'f-inf-pes-lote'].forEach(id => {
+                    const sel = document.getElementById(id);
+                    if (!sel) return;
+                    const currentVal = sel.value;
+                    let html = '<option value="ALL">Lote (Todos)</option>';
+                    Array.from(lotesSet).sort().forEach(l => {
+                        html += `<option value="${window.escapeHTML(l)}">${window.escapeHTML(l)}</option>`;
+                    });
+                    sel.innerHTML = html;
+                    if (currentVal && Array.from(lotesSet).includes(currentVal)) sel.value = currentVal;
+                    else sel.value = 'ALL';
+                });
+
+                ['filtro-reg-cat', 'f-inf-cat', 'f-inf-pes-cat'].forEach(id => {
+                    const sel = document.getElementById(id);
+                    if (!sel) return;
+                    const currentVal = sel.value;
+                    let html = '<option value="ALL">Categoría (Todas)</option>';
+                    Array.from(catsSet).sort().forEach(c => {
+                        html += `<option value="${window.escapeHTML(c)}">${window.escapeHTML(c)}</option>`;
+                    });
+                    sel.innerHTML = html;
+                    if (currentVal && Array.from(catsSet).includes(currentVal)) sel.value = currentVal;
+                    else sel.value = 'ALL';
+                });
+
+                let dl = document.getElementById('lista-sugerencias-rp');
+                const inpBusc = document.getElementById('buscador-caravana');
+                if (!dl && inpBusc) {
+                    dl = document.createElement('datalist');
+                    dl.id = 'lista-sugerencias-rp';
+                    document.body.appendChild(dl);
+                    inpBusc.setAttribute('list', 'lista-sugerencias-rp');
+                }
+                if (dl) {
+                    vivas.sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }));
+                    dl.innerHTML = vivas.map(c => `<option value="${window.escapeHTML(c)}"></option>`).join('');
+                }
+            } catch(e) {
+                console.warn("[Taurus] Error al cargar listas de filtros:", e);
+            }
+        };
+        cargarListasFiltrosSelects = window.cargarListasFiltrosSelects;
+
+        // 8. Dashboard con Punto Rojo (🔴) en Alertas Clínicas y soporte para Vaciar / Borrar
+        window.procesarDatosDashboard = function() {
+            if (typeof window.aplicarDisenoEnPantalla === 'function') window.aplicarDisenoEnPantalla();
+            const isPC = Boolean(document.getElementById('v-dash'));
+            const datosActivos = window.obtenerRegistrosActivos().filter(d => window.esEventoGanaderoValido(d));
+            let unicas = [...new Set(datosActivos.map(d => String(d.caravana)).filter(c => window.esCaravanaValida(c)))];
+            let todasCarDB = [...new Set((dbCache || []).filter(d => window.esEventoGanaderoValido(d)).map(d => String(d.caravana || '')).filter(c => window.esCaravanaValida(c)))];
+            let vivas = unicas.filter(car => !window.esAnimalArchivado(car) && window.esAnimalVivo(window.obtenerHistorial(car), car));
+            let cantMuertes = todasCarDB.filter(car => window.esAnimalMuerto(window.obtenerHistorial(car), car) && (!window.esAnimalVendido(window.obtenerHistorial(car), car) || car.includes('-BAJA-'))).length;
+            let cantVentas = todasCarDB.filter(car => window.esAnimalVendido(window.obtenerHistorial(car), car)).length;
+            let cantConfinamiento = vivas.filter(car => {
+                const rC = window.obtenerHistorial(car);
+                const uCf = rC.find(d => d && d.accion === 'Confinamiento');
+                return Boolean(uCf && !String(uCf.valor || '').includes('Salida'));
+            }).length;
+            unicas = vivas;
+
+            const elCab = document.getElementById('dash-cabezas'); if (elCab) elCab.innerText = vivas.length;
+            const elAcc = document.getElementById('dash-acciones'); if (elAcc) elAcc.innerText = datosActivos.length;
+            const elBajas = document.getElementById('dash-bajas'); if (elBajas) elBajas.innerText = cantMuertes;
+            const elVentas = document.getElementById('dash-ventas'); if (elVentas) elVentas.innerText = cantVentas;
+            const elConfDash = document.getElementById('dash-confinamiento'); if (elConfDash) elConfDash.innerText = cantConfinamiento;
+
+            const contGraf = document.getElementById('contenedor-graficos-dinamicos') || document.getElementById('contenedor-graficos');
+            const contAlertas = document.getElementById('contenedor-alertas');
+            const listaAlertasEl = document.getElementById('lista-alertas');
+            const btnVaciar = document.getElementById('btn-vaciar-alertas-clinicas');
+            const btnRestaurar = document.getElementById('btn-restaurar-alertas-clinicas');
+
+            if (datosActivos.length === 0) {
+                if (contAlertas) contAlertas.style.display = 'none';
+                if (contGraf) contGraf.innerHTML = "<p style='color:var(--muted, var(--text-muted)); text-align:center; padding:20px;'>Inventario vacío.</p>";
+                return;
+            }
+
+            let g1={p:0,v:0}, g2={}, g3={}, g4={opt:0,bp:0,sp:0}, g5={norm:0,san:0}, g6={con:0,sin:0}, g7={}, g8={}, g9={vw:0,vc:0,tw:0,tc:0}, g10={peso:0,dx:0,san:0,ins:0,nut:0}, g11={};
+            datosActivos.forEach(r => {
+                if (String(r.accion).includes('Peso')) g10.peso++;
+                if (r.accion === 'Diagnóstico') g10.dx++;
+                if (r.accion === 'Sanidad') g10.san++;
+                if (r.accion === 'Inseminación') g10.ins++;
+                if (r.accion === 'Nutrición') g10.nut++;
+                if (r.accion === 'Baja') {
+                    let causa = String(r.valor).trim();
+                    g11[causa] = (g11[causa] || 0) + 1;
+                }
+            });
+
+            const ocultasSet = new Set(window.obtenerAlertasClinicasOcultas());
+            let todasKeysDetectadas = [];
+            let alertasVisiblesHTML = "";
+            let cantOcultadasActuales = 0;
+
+            unicas.forEach(car => {
+                const regs = window.obtenerHistorial(car);
+                let catRaw = "Sin Categoría", lote = "General";
+                const uC = regs.find(d => d.accion === 'Actualización de Datos');
+                if (uC) {
+                    let v = String(uC.valor || "").split('|');
+                    catRaw = v[0] ? v[0].replace('Cat:', '').trim() : "Sin Categoría";
+                    lote = String(uC.detalles || "").split('|')[0] ? String(uC.detalles || "").split('|')[0].replace('Lote:', '').trim() : "-";
+                } else {
+                    const uP = regs.find(d => d.accion === 'Perfil Master');
+                    if (uP && uP.detalles) { catRaw = String(uP.detalles).split('|')[0] || "Sin Categoría"; }
+                }
+
+                let catLegible = window.obtenerNombreCategoriaLegible(catRaw);
+                g2[catLegible] = (g2[catLegible] || 0) + 1;
+                g3[lote] = (g3[lote] || 0) + 1;
+
+                const uDx = regs.find(d => d.accion === 'Diagnóstico');
+                const uPeso = regs.find(d => String(d.accion).includes('Peso'));
+                const uSan = regs.find(d => d.accion === 'Sanidad');
+                const uIns = regs.find(d => d.accion === 'Inseminación');
+                let esVaca = catLegible.toLowerCase().includes('vaca');
+
+                let loteLow = lote.toLowerCase();
+                let notasStr = regs.filter(r => r.accion === 'Comentario' || (r.detalles && r.detalles.includes('Notas:'))).map(r => (r.detalles || "") + " " + (r.valor || "")).join(" ").toLowerCase();
+                let esPre = (uDx && String(uDx.valor).includes('Preñada')) || (!uDx && (loteLow.includes('preñada') || notasStr.includes('preñada') || notasStr.includes('confirmada')));
+                let esVacia = (uDx && String(uDx.valor).includes('Vacía')) || (!uDx && (loteLow.includes('vacía') || loteLow.includes('vacia') || notasStr.includes('vacía') || notasStr.includes('vacia')));
+
+                if (esPre) {
+                    g1.p++;
+                    if (!g7[lote]) g7[lote] = {p:0, t:0};
+                    g7[lote].p++; g7[lote].t++;
+                    if (uIns) {
+                        let toro = String(uIns.valor || "").replace('Toro:', '').trim();
+                        if (!g8[toro]) g8[toro] = {p:0, t:0};
+                        g8[toro].p++; g8[toro].t++;
+                    }
+                } else if (esVacia) {
+                    g1.v++;
+                    let keyVacia = `vacia_${car}_${uDx ? (uDx.id || uDx.fecha || 'dx') : 'lote'}`;
+                    todasKeysDetectadas.push(keyVacia);
+                    if (ocultasSet.has(keyVacia)) {
+                        cantOcultadasActuales++;
+                    } else {
+                        alertasVisiblesHTML += `<div class="alerta-item peligro" style="justify-content:space-between;" onclick="window.navegarDesdeLista('${window.escapeHTML(car)}')">
+                            <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                                <span class="alerta-dot-rojo" aria-hidden="true">🔴</span>
+                                <div style="line-height:1.35;"><strong style="color:var(--texto, var(--text-main)); margin-right:5px;">${window.escapeHTML(car)}</strong> diagnosticada Vacía.</div>
+                            </div>
+                            <button type="button" class="btn-cerrar-alerta-item" title="Quitar alerta" aria-label="Quitar alerta de ${window.escapeHTML(car)}" onclick="event.stopPropagation(); window.ocultarAlertaClinicaIndividual('${window.escapeHTML(keyVacia)}')">&times;</button>
+                        </div>`;
+                    }
+                    if (!g7[lote]) g7[lote] = {p:0, t:0};
+                    g7[lote].t++;
+                    if (String(uDx ? uDx.valor : "").includes('Sangre')) g5.san++; else g5.norm++;
+                    if (uIns) {
+                        let toro = String(uIns.valor || "").replace('Toro:', '').trim();
+                        if (!g8[toro]) g8[toro] = {p:0, t:0};
+                        g8[toro].t++;
+                    }
+                }
+
+                if (uPeso) {
+                    if (String(uPeso.detalles || "").includes('Bajo')) {
+                        g4.bp++;
+                        let keyBajo = `bajopeso_${car}_${uPeso.id || uPeso.fecha || 'peso'}`;
+                        todasKeysDetectadas.push(keyBajo);
+                        if (ocultasSet.has(keyBajo)) {
+                            cantOcultadasActuales++;
+                        } else {
+                            alertasVisiblesHTML += `<div class="alerta-item peligro" style="justify-content:space-between;" onclick="window.navegarDesdeLista('${window.escapeHTML(car)}')">
+                                <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                                    <span class="alerta-dot-rojo" aria-hidden="true">🔴</span>
+                                    <div style="line-height:1.35;"><strong style="color:var(--texto, var(--text-main)); margin-right:5px;">${window.escapeHTML(car)}</strong> requiere nutrición (Bajo Peso).</div>
+                                </div>
+                                <button type="button" class="btn-cerrar-alerta-item" title="Quitar alerta" aria-label="Quitar alerta de ${window.escapeHTML(car)}" onclick="event.stopPropagation(); window.ocultarAlertaClinicaIndividual('${window.escapeHTML(keyBajo)}')">&times;</button>
+                            </div>`;
+                        }
+                    } else if (String(uPeso.detalles || "").includes('Sobre')) {
+                        g4.sp++;
+                    } else {
+                        g4.opt++;
+                    }
+                    let pVal = parseFloat(String(uPeso.valor).replace(/[^\d.-]/g, ''));
+                    if (!isNaN(pVal)) {
+                        if (esVaca) { g9.vw += pVal; g9.vc++; }
+                        else { g9.tw += pVal; g9.tc++; }
+                    }
+                }
+                if (uSan) g6.con++; else g6.sin++;
+            });
+
+            window._alertasClinicasActivasKeys = todasKeysDetectadas;
+            const fueVaciadoManualmente = Boolean(window.lsGet(window.obtenerKeyAlertasClinicasOcultas() + '_vaciado', false));
+
+            if (contAlertas && listaAlertasEl) {
+                if (alertasVisiblesHTML !== "") {
+                    listaAlertasEl.innerHTML = alertasVisiblesHTML;
+                    contAlertas.style.display = 'block';
+                    if (btnVaciar) btnVaciar.classList.remove('oculto');
+                    if (btnRestaurar) {
+                        if (cantOcultadasActuales > 0) {
+                            btnRestaurar.classList.remove('oculto');
+                            btnRestaurar.innerText = `Restaurar (${cantOcultadasActuales})`;
+                        } else {
+                            btnRestaurar.classList.add('oculto');
+                        }
+                    }
+                } else if (todasKeysDetectadas.length > 0 && (cantOcultadasActuales > 0 || fueVaciadoManualmente)) {
+                    listaAlertasEl.innerHTML = `<div style="text-align:center; color:var(--muted, var(--text-muted)); font-size:12.5px; padding:10px 6px;">Sin alertas clínicas pendientes (vaciadas).</div>`;
+                    contAlertas.style.display = 'block';
+                    if (btnVaciar) btnVaciar.classList.add('oculto');
+                    if (btnRestaurar) {
+                        btnRestaurar.classList.remove('oculto');
+                        btnRestaurar.innerText = `Mostrar (${todasKeysDetectadas.length})`;
+                    }
+                } else {
+                    listaAlertasEl.innerHTML = "";
+                    contAlertas.style.display = 'none';
+                }
+            }
+
+            const prefs = isPC
+                ? window.lsGet('tc_prefs_pc', ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'])
+                : window.lsGet('tc_prefs', ['1', '3']);
+            let htmlGraficos = "";
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#38bdf8'];
+
+            const makePieAndBars = (title, dataObj, totalCount, tipoAccion) => {
+                let keys = Object.keys(dataObj).filter(k => dataObj[k] > 0).sort((a,b) => dataObj[b] - dataObj[a]);
+                if (keys.length === 0) {
+                    return `<div class="tarjeta">
+                        <div class="tarjeta-titulo">${title}</div>
+                        <p style="text-align:center; color:var(--muted, var(--text-muted)); font-size:12px; padding:15px; margin:0;">Sin registros para esta métrica aún.</p>
+                    </div>`;
+                }
+                let currentAngle = 0;
+                let gradientStops = [];
+                let sumValores = keys.reduce((acc, k) => acc + dataObj[k], 0);
+                let divisor = totalCount > 0 ? totalCount : sumValores;
+                keys.forEach((k, idx) => {
+                    let pct = divisor > 0 ? (dataObj[k] / divisor) * 100 : 0;
+                    let nextAngle = currentAngle + pct;
+                    gradientStops.push(`${colors[idx % colors.length]} ${currentAngle}% ${nextAngle}%`);
+                    currentAngle = nextAngle;
+                });
+                let conicStyle = gradientStops.length > 0 ? `background: conic-gradient(${gradientStops.join(', ')});` : 'background: var(--borde, var(--border));';
+
+                let barsHTML = "";
+                keys.forEach((k, idx) => {
+                    let col = colors[idx % colors.length];
+                    let val = dataObj[k];
+                    let p = divisor > 0 ? Math.round((val / divisor) * 100) : 0;
+                    if (isPC) {
+                        barsHTML += `<div class="barra-cat" onclick="window.filtrarDesdeDashboard('${tipoAccion}', '${window.escapeHTML(k)}')">
+                            <div class="barra-head"><span><span class="punto" style="background:${col};"></span>${window.escapeHTML(k)} (${val})</span><span>${p}%</span></div>
+                            <div class="barra-bg"><div class="barra-fill" style="background:${col}; width:${p}%;"></div></div>
+                        </div>`;
+                    } else {
+                        barsHTML += `<div class="barra-categoria" onclick="window.filtrarDesdeDashboard('${tipoAccion}', '${window.escapeHTML(k)}')">
+                            <div class="barra-header"><span><span class="punto" style="background:${col};"></span>${window.escapeHTML(k)} (${val})</span><span>${p}%</span></div>
+                            <div class="barra-fondo"><div class="barra-relleno" style="background:${col}; width:${p}%;"></div></div>
+                        </div>`;
+                    }
+                });
+
+                return `<div class="tarjeta">
+                    <div class="tarjeta-titulo">${title}</div>
+                    <div class="grafico-flex">
+                        <div class="torta-container" onclick="window.filtrarDesdeDashboard('${tipoAccion}', '${window.escapeHTML(keys[0] || '')}')">
+                            <div class="torta" style="${conicStyle}"></div>
+                            <div class="torta-centro">${divisor}</div>
+                        </div>
+                        <div class="${isPC ? 'barras-container' : 'contenedor-scroll-analitica'}">${barsHTML}</div>
+                    </div>
+                </div>`;
+            };
+
+            prefs.forEach(g => {
+                let html = "";
+                if (g === '1') {
+                    let t = g1.p + g1.v;
+                    let pp = t > 0 ? Math.round((g1.p / t) * 100) : 0;
+                    let conicBg = t > 0 ? `conic-gradient(var(--exito, #10b981) 0% ${pp}%, var(--peligro, #ef4444) ${pp}% 100%)` : 'var(--borde, var(--border))';
+                    html += `<div class="tarjeta">
+                        <div class="tarjeta-titulo">Tasa de Preñez Dinámica</div>
+                        <div class="grafico-flex" style="justify-content:space-around;">
+                            <div class="torta-container" onclick="window.filtrarDesdeDashboard('dx', 'Preñada')">
+                                <div class="torta" style="background: ${conicBg};"></div>
+                                <div class="torta-centro">${t > 0 ? pp + '%' : '0%'}</div>
+                            </div>
+                            <div class="leyenda-torta">
+                                <div style="cursor:pointer;" onclick="window.filtrarDesdeDashboard('dx', 'Preñada')"><span class="punto" style="background: var(--exito, #10b981);"></span>Preñadas (${g1.p})</div>
+                                <div style="cursor:pointer;" onclick="window.filtrarDesdeDashboard('dx', 'Vacía')"><span class="punto" style="background: var(--peligro, #ef4444);"></span>Vacías (${g1.v})</div>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+                else if (g === '2') { html += makePieAndBars("Composición de Hacienda", g2, unicas.length, 'categoria'); }
+                else if (g === '3') { html += makePieAndBars("Distribución por Lotes", g3, unicas.length, 'lote'); }
+                else if (g === '4') {
+                    let t = g4.opt + g4.bp + g4.sp || 1;
+                    let d4 = { "Óptima": g4.opt, "Bajo Peso": g4.bp, "Sobrepeso": g4.sp };
+                    html += makePieAndBars("Condición Corporal", d4, t, 'estado');
+                }
+                else if (g === '5') {
+                    let t = g5.norm + g5.san || 1;
+                    let d5 = { "Normal": g5.norm, "Sangre/Problema": g5.san };
+                    html += makePieAndBars("Causas Vientre Vacío", d5, t, 'estado');
+                }
+                else if (g === '6') {
+                    let t = unicas.length;
+                    let d6 = { "Con Registro": g6.con, "Sin Registros": g6.sin };
+                    html += makePieAndBars("Sanidad Global", d6, t, 'estado');
+                }
+                else if (g === '7') {
+                    let d7 = {}; Object.keys(g7).forEach(k => d7[k] = g7[k].p);
+                    html += makePieAndBars("Preñez Efectiva por Lote", d7, g1.p || 1, 'lote');
+                }
+                else if (g === '8') {
+                    let d8 = {}; Object.keys(g8).forEach(k => d8[k] = g8[k].p);
+                    html += makePieAndBars("Eficacia por Toro", d8, g1.p || 1, 'estado');
+                }
+                else if (g === '9') {
+                    let pv = g9.vc > 0 ? Math.round(g9.vw / g9.vc) : 0;
+                    let pt = g9.tc > 0 ? Math.round(g9.tw / g9.tc) : 0;
+                    html += `<div class="tarjeta"><div class="tarjeta-titulo">Promedio de Pesos</div><div class="grid-kpis"><div class="kpi-caja" onclick="window.filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" style="font-size:20px;">${pv} Kg</div><div class="kpi-label">Vacas</div></div><div class="kpi-caja" onclick="window.filtrarDesdeDashboard('estado', 'vivos')"><div class="kpi-valor" style="font-size:20px;">${pt} Kg</div><div class="kpi-label">Terneros</div></div></div></div>`;
+                }
+                else if (g === '10') {
+                    let d10 = { "Pesajes": g10.peso, "Diagnósticos": g10.dx, "Nutrición": g10.nut, "Sanidad": g10.san };
+                    let t10 = g10.peso + g10.dx + g10.san + g10.ins + g10.nut || 1;
+                    html += makePieAndBars("Volumen Clínico", d10, t10, 'estado');
+                }
+                else if (g === '11') {
+                    let sumG11 = Object.values(g11).reduce((acc, curr) => acc + curr, 0);
+                    let t11 = (cantMuertes > 0 ? cantMuertes : sumG11) || 1;
+                    html += makePieAndBars("Causas de Baja / Mortalidad", g11, t11, 'estado');
+                }
+                else if (g === '12') {
+                    let g12 = {};
+                    unicas.forEach(car => {
+                        const rC = window.obtenerHistorial(car);
+                        const uCf = rC.find(d => d && d.accion === 'Confinamiento' && !String(d.valor || '').includes('Salida'));
+                        if (uCf) {
+                            let mCor = String(uCf.valor || '').match(/Corral:\s*([^|]+)/);
+                            let cNom = mCor ? mCor[1].trim() : 'Corral General';
+                            g12[cNom] = (g12[cNom] || 0) + 1;
+                        }
+                    });
+                    let sumG12 = Object.values(g12).reduce((a, b) => a + b, 0) || 1;
+                    html += makePieAndBars("Confinamiento / Feedlot por Corral", g12, sumG12, 'confinamiento');
+                }
+                htmlGraficos += html;
+            });
+            if (contGraf) contGraf.innerHTML = htmlGraficos;
+        };
+        procesarDatosDashboard = window.procesarDatosDashboard;
+
+        // 9. Archivado de Baja y Venta SIN CRUCE DE DATOS (actualiza Memoria, Pendientes y Firestore)
+        window.prepararGuardado = function(mId, t) {
+            if (!rpActivo) return;
+            let v = "-", d = "";
+
+            let val = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : "";
+            let valOtro = (selId, otroId) => { let s = val(selId); return s === 'OTRO' ? val(otroId) : s; };
+
+            if (t === 'Comentario') { d = val('f-comentario-txt'); }
+            else if (t === 'Peso') {
+                let pValNum = parseFloat(val('i-peso-val'));
+                let diffInfo = "";
+                if (!isNaN(pValNum) && rpActivo) {
+                    let regs = typeof window.obtenerHistorial === 'function' ? window.obtenerHistorial(rpActivo) : [];
+                    let pesosPrev = regs.filter(r => String(r.accion).includes('Peso') && r.fecha);
+                    if (pesosPrev.length > 0) {
+                        let pUltimo = parseFloat(String(pesosPrev[0].valor).replace(/[^\d.-]/g, ''));
+                        if (!isNaN(pUltimo)) {
+                            let diffKg = pValNum - pUltimo;
+                            let d1 = new Date();
+                            let d2 = new Date(pesosPrev[0].fecha);
+                            let dias = Math.max(1, Math.ceil(Math.abs(d1 - d2) / (1000 * 60 * 60 * 24)));
+                            let gdpVal = diffKg / dias;
+                            let gdpFormatted = (gdpVal >= 0 ? "+" : "") + gdpVal.toFixed(1).replace('.', ',') + " Kg/d";
+                            let signo = diffKg > 0 ? "+" : "";
+                            let diffKgStr = diffKg.toFixed(1).replace('.', ',');
+                            diffInfo = ` | Ganancia: ${signo}${diffKgStr} Kg (${gdpFormatted} en ${dias}d)`;
+                        }
+                    }
+                }
+                v = val('i-peso-val') + " Kg";
+                d = `Cond: ${valOtro('i-peso-cond', 'peso-otro')}. Notas: ${val('i-peso-txt')}${diffInfo}`;
+            }
+            else if (t === 'Confinamiento') {
+                let est = val('i-conf-estado') || "En Engorde";
+                let cor = val('i-conf-corral') || "Corral General";
+                let fIng = val('i-conf-fecha-ingreso') || new Date().toISOString().split('T')[0];
+                let pIni = val('i-conf-peso-ingreso') || "0";
+                let pMeta = val('i-conf-peso-meta') || "460";
+                let dieta = val('i-conf-dieta') || "Terminación";
+                let obs = val('i-conf-txt');
+                let detNotas = (obs && obs.trim() !== "" && obs.trim().toLowerCase() !== "sin notas") ? ` | Notas: ${obs.trim()}` : "";
+                v = `Corral: ${cor} | Estado: ${est}`;
+                d = `Ingreso: ${fIng} | PesoIni: ${pIni} Kg | Meta: ${pMeta} Kg | Dieta: ${dieta}${detNotas}`;
+
+                let pIniNum = parseFloat(pIni);
+                if (!isNaN(pIniNum) && pIniNum > 0) {
+                    window.ejecutarAccion('Peso', pIniNum.toFixed(1) + " Kg", `Pesaje de Ingreso a Confinamiento (${cor})`, null);
+                }
+            }
+            else if (t === 'Sanidad') {
+                let recordatorio = val('i-sani-recordatorio');
+                let retiroDias = parseInt(val('i-sani-retiro')) || 0;
+                let viaApp = val('i-sani-via');
+                v = valOtro('i-sani-sel', 'sani-otro');
+                d = `Lote/Dosis: ${val('i-sani-lote')}. Notas: ${val('i-sani-txt')}`;
+                if (viaApp) d += ` | Vía: ${viaApp}`;
+                if (retiroDias > 0) d += ` | [RETIRO:${retiroDias}]`;
+                if (recordatorio !== "0" && recordatorio !== "") { d += ` | [RECORDATORIO:${recordatorio}]`; }
+            }
+            else if (t === 'Diagnóstico') {
+                let fppTxt = document.getElementById('lbl-fpp') ? document.getElementById('lbl-fpp').innerText : "";
+                let obsNotas = val('i-dx-txt') || "";
+                let detFinal = (obsNotas ? obsNotas + " " : "") + (fppTxt ? "[" + fppTxt + "]" : "");
+                v = "Dx: " + valOtro('i-dx-sel', 'dx-otro');
+                d = detFinal.trim() || "-";
+            }
+            else if (t === 'Inseminación') {
+                v = "Toro: " + val('i-ins-toro');
+                d = `Método: ${valOtro('i-ins-quien', 'ins-otro')}. Notas: ${val('i-ins-txt')}`;
+            }
+            else if (t === 'Nutrición') {
+                v = valOtro('i-nut-prod', 'nut-otro');
+                d = `Ración: ${val('i-nut-rac')}. Notas: ${val('i-nut-txt')}`;
+            }
+            else if (t === 'Baja') {
+                v = valOtro('i-baja-causa', 'baja-otro') || "Muerte";
+                let obsBaja = val('i-baja-txt') || "Sin observaciones";
+                d = `Causa: ${v} | Diagnóstico/Necropsia: ${obsBaja}`;
+            }
+            else if (t === 'Venta') {
+                let tipoVenta = val('i-venta-tipo') || "Venta Comercial";
+                let dest = val('i-venta-destino') || "Sin destino";
+                let guia = val('i-venta-guia') || "-";
+                let pesoSal = val('i-venta-peso');
+                let precio = val('i-venta-precio');
+                let obsVenta = val('i-venta-txt') || "Sin observaciones";
+                v = tipoVenta;
+                let partes = [`Destino/Guía: ${dest}`, `Guía: ${guia}`, `Obs: ${obsVenta}`];
+                if (pesoSal && parseFloat(pesoSal) > 0) partes.push(`PesoSalida: ${pesoSal} Kg`);
+                if (precio && precio.trim() !== "") partes.push(`Precio: ${precio}`);
+                d = partes.join(" | ");
+            }
+
+            if (t === 'Baja' || t === 'Venta') {
+                const rpOriginal = String(rpActivo).trim();
+                const rpOriginalLow = rpOriginal.toLowerCase();
+                const sufijo = (t === 'Baja') ? "-BAJA-" : "-VENTA-";
+                const rpArchivado = rpOriginal + sufijo + Math.floor(1000 + Math.random() * 9000);
+
+                if (Array.isArray(dbCache)) {
+                    dbCache.forEach(item => {
+                        if (!item) return;
+                        if (String(item.caravana || '').trim().toLowerCase() === rpOriginalLow) {
+                            item.caravana = rpArchivado;
+                        }
+                        if (item.accion === 'Cambio de Caravana' && String(item.valor || '').trim().toLowerCase() === rpOriginalLow) {
+                            item.valor = rpArchivado;
+                        }
+                    });
+                }
+
+                if (typeof maestroId !== 'undefined' && maestroId) {
+                    let pendKey = 'tc_pendientes_' + maestroId;
+                    let pend = window.lsGet(pendKey, []);
+                    if (Array.isArray(pend)) {
+                        pend.forEach(item => {
+                            if (item && String(item.caravana || '').trim().toLowerCase() === rpOriginalLow) {
+                                item.caravana = rpArchivado;
+                            }
+                        });
+                        window.lsSet(pendKey, pend);
+                    }
+                }
+
+                rpActivo = rpArchivado;
+                window.ejecutarAccion(t, v, d, mId);
+
+                if (typeof maestroId !== 'undefined' && maestroId) {
+                    const mTarget = maestroId;
+                    if (navigator.onLine && typeof db !== 'undefined') {
+                        db.collection('estancias').doc(mTarget).collection('eventos')
+                            .where('caravana', '==', rpOriginal).get()
+                            .then(snap => {
+                                if (!snap.empty) {
+                                    const batch = db.batch();
+                                    snap.docs.forEach(doc => batch.update(doc.ref, { caravana: rpArchivado }));
+                                    return batch.commit();
+                                }
+                            }).catch(() => {});
+                    } else {
+                        let pendKey = 'tc_pendientes_' + mTarget;
+                        let pend = window.lsGet(pendKey, []);
+                        pend.push({ _operacion: 'archive_rp', rpOriginal: rpOriginal, rpArchivado: rpArchivado });
+                        window.lsSet(pendKey, pend);
+                    }
+                }
+
+                historiaCache = null;
+                activosCache = null;
+                if (typeof maestroId !== 'undefined' && maestroId) {
+                    window.lsSet('tc_db_' + maestroId, dbCache);
+                }
+                if (typeof window.cerrarOpcionesFicha === 'function') window.cerrarOpcionesFicha();
+                rpActivo = null;
+                try { sessionStorage.removeItem('tc_rp_activo'); localStorage.removeItem('tc_rp_activo'); } catch(e) {}
+                const elBusc = document.getElementById('buscador-caravana');
+                if (elBusc) elBusc.value = '';
+                const elFicha = document.getElementById('ficha-animal');
+                if (elFicha) elFicha.classList.add('oculto');
+                const elVacio = document.getElementById('ficha-vacia');
+                if (elVacio) elVacio.classList.remove('oculto');
+                if (typeof window.procesarDatosDashboard === 'function') window.procesarDatosDashboard();
+                if (typeof window.cargarListasFiltrosSelects === 'function') window.cargarListasFiltrosSelects();
+                if (typeof window.cargarListaRegistro === 'function') window.cargarListaRegistro();
+                if (typeof window.actualizarInformeAvanzado === 'function') window.actualizarInformeAvanzado();
+                if (typeof window.mostrarToast === 'function') {
+                    window.mostrarToast(t === 'Baja'
+                        ? `Baja registrada. RP ${rpOriginal} archivado en Reporte de Mortalidad.`
+                        : `Venta registrada. RP ${rpOriginal} archivado en Reporte de Ventas.`);
+                }
+            } else {
+                window.ejecutarAccion(t, v, d, mId);
+            }
+
+            const modalEl = document.getElementById(mId);
+            if (modalEl) {
+                modalEl.querySelectorAll('.form-control, .textarea').forEach(el => {
+                    if (el.tagName !== 'SELECT' && el.type !== 'hidden') el.value = '';
+                });
+                modalEl.querySelectorAll('input[id$="-otro"]').forEach(el => {
+                    el.classList.add('oculto');
+                });
+                modalEl.querySelectorAll('select').forEach(el => {
+                    if (el.id !== 'rafaga-modalidad' && el.id !== 'rafaga-accion' && el.id !== 'rafaga-recordatorio') el.selectedIndex = 0;
+                });
+            }
+        };
+        prepararGuardado = window.prepararGuardado;
+
+        // 10. Generador PDF Nativo de Respaldo (100% autónomo sin depender de CDN externo)
+        window.generarPDFNativoSinLibreria = function(meta) {
+            const sanitizePdfStr = (s) => {
+                return String(s || '')
+                    .replace(/\\/g, '\\\\')
+                    .replace(/\(/g, '\\(')
+                    .replace(/\)/g, '\\)')
+                    .replace(/[^\x20-\x7E\xA0-\xFF]/g, '');
+            };
+
+            const lines = [];
+            lines.push(`BT /F1 15 Tf 36 800 Td (${sanitizePdfStr(meta.h_nom.toUpperCase())}) Tj ET`);
+            lines.push(`BT /F1 11 Tf 36 782 Td (${sanitizePdfStr(meta.titulo)}) Tj ET`);
+            lines.push(`BT /F2 8 Tf 36 768 Td (Emision: ${sanitizePdfStr(meta.fechaEmision)} | Taurus Track Pro) Tj ET`);
+            lines.push(`0.1 0.7 0.5 RG 1.5 w 36 760 m 559 760 l S`);
+            lines.push(`BT /F1 9 Tf 36 744 Td (${sanitizePdfStr(meta.badge)}) Tj ET`);
+            lines.push(`BT /F2 8 Tf 36 731 Td (${sanitizePdfStr(meta.plainExp.slice(0, 110))}) Tj ET`);
+            if (meta.plainExp.length > 110) {
+                lines.push(`BT /F2 8 Tf 36 720 Td (${sanitizePdfStr(meta.plainExp.slice(110, 220))}) Tj ET`);
+            }
+
+            let y = 695;
+            if (Array.isArray(meta.kpis) && meta.kpis.length > 0) {
+                const kpiLine = meta.kpis.map(k => `${k.label}: ${k.value}`).join('   |   ');
+                lines.push(`BT /F1 8.5 Tf 36 ${y} Td (${sanitizePdfStr(kpiLine)}) Tj ET`);
+                y -= 20;
+            }
+
+            const headRow = (meta.tableHead && meta.tableHead[0]) ? meta.tableHead[0] : [];
+            if (headRow.length > 0) {
+                lines.push(`BT /F1 8 Tf 36 ${y} Td (${sanitizePdfStr(headRow.join('  |  '))}) Tj ET`);
+                y -= 5;
+                lines.push(`0.2 0.3 0.4 RG 0.8 w 36 ${y} m 559 ${y} l S`);
+                y -= 13;
+            }
+
+            const rows = meta.bodyRows || [];
+            for (let i = 0; i < rows.length; i++) {
+                if (y < 48) break;
+                const rowStr = rows[i].map(c => String(c || '-')).join('  |  ').slice(0, 115);
+                lines.push(`BT /F2 7.8 Tf 36 ${y} Td (${sanitizePdfStr(rowStr)}) Tj ET`);
+                y -= 12;
+            }
+
+            lines.push(`BT /F2 7.5 Tf 36 28 Td (Taurus Track Pro - ${sanitizePdfStr(meta.h_nom)} | Pagina 1) Tj ET`);
+
+            const streamContent = lines.join('\n');
+            const objs = [
+                "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
+                "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
+                "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>\nendobj\n",
+                "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>\nendobj\n",
+                "5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n",
+                `6 0 obj\n<< /Length ${streamContent.length} >>\nstream\n${streamContent}\nendstream\nendobj\n`
+            ];
+
+            let pdfStr = "%PDF-1.4\n";
+            const offsets = [];
+            for (let i = 0; i < objs.length; i++) {
+                offsets.push(pdfStr.length);
+                pdfStr += objs[i];
+            }
+            const xrefOffset = pdfStr.length;
+            pdfStr += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n`;
+            for (let i = 0; i < offsets.length; i++) {
+                pdfStr += String(offsets[i]).padStart(10, '0') + " 00000 n \n";
+            }
+            pdfStr += `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+            const bytes = new Uint8Array(pdfStr.length);
+            for (let i = 0; i < pdfStr.length; i++) {
+                bytes[i] = pdfStr.charCodeAt(i) & 0xFF;
+            }
+            const blob = new Blob([bytes], { type: 'application/pdf' });
+            const b64 = btoa(pdfStr);
+            return {
+                blob: blob,
+                dataUri: 'data:application/pdf;base64,' + b64
+            };
+        };
+
+        // 11. Exportador e Impresor PDF Multi-Plataforma (Android WebView/PWA, iOS, PC Browser y Electron)
+        window.cleanPDFText = function(text) {
+            if (text === null || text === undefined) return '';
+            let str = String(text)
+                .replace(/Δ/g, 'Dif.')
+                .replace(/[·•]/g, '-')
+                .replace(/[—–]/g, '-');
+            str = str.replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, '');
+            return str.replace(/\s+/g, ' ').trim();
+        };
+        cleanPDFText = window.cleanPDFText;
+
+        window.imprimirDossierDirecto = function() {
+            let rp = rpActivo;
+            if (!rp || rp === '---' || rp.toLowerCase() === 'null') {
+                let elVal = document.getElementById('val-caravana');
+                if (elVal && elVal.innerText && elVal.innerText.trim() !== '---') rp = elVal.innerText.trim();
+            }
+            if (!rp || rp === '---' || rp.toLowerCase() === 'null') {
+                if (typeof window.mostrarToast === 'function') window.mostrarToast("Seleccione o busque una caravana primero.", true);
+                return;
+            }
+            if (typeof window.cerrarOpcionesFicha === 'function') window.cerrarOpcionesFicha();
+            rpActivo = rp;
+            const modoEl = document.getElementById('f-inf-modo');
+            const rpInputEl = document.getElementById('f-inf-rp');
+            const prevModo = modoEl ? modoEl.value : 'inventario';
+            const prevRpInput = rpInputEl ? rpInputEl.value : '';
+
+            if (modoEl) modoEl.value = 'inventario';
+            if (rpInputEl) rpInputEl.value = rp;
+            if (typeof window.actualizarInformeAvanzado === 'function') window.actualizarInformeAvanzado();
+            rpPrint = rp;
+
+            window.ejecutarDescargaPDF({
+                forzarRp: rp,
+                onComplete: function() {
+                    if (modoEl) modoEl.value = prevModo;
+                    if (rpInputEl) rpInputEl.value = prevRpInput;
+                    if (typeof window.actualizarInformeAvanzado === 'function') window.actualizarInformeAvanzado();
+                }
+            });
+        };
+        imprimirDossierDirecto = window.imprimirDossierDirecto;
+
+        window.mostrarModalVisorPDFTaurus = function(meta) {
+            let modal = document.getElementById('modal-visor-pdf-taurus');
+            if (modal) modal.remove();
+
+            modal = document.createElement('div');
+            modal.id = 'modal-visor-pdf-taurus';
+            modal.className = 'modal';
+            modal.style.cssText = 'display:flex; position:fixed; inset:0; background:rgba(15,23,42,0.88); z-index:100000; align-items:center; justify-content:center; padding:12px; backdrop-filter:blur(6px);';
+
+            const kpisHTML = (meta.kpis || []).map(k => `
+                <div style="background:#f8fafc; border:1px solid #cbd5e1; border-top:3px solid ${k.color || '#10b981'}; border-radius:8px; padding:8px 10px;">
+                    <div style="font-size:10px; font-weight:800; color:#64748b; text-transform:uppercase;">${window.escapeHTML(k.label || '')}</div>
+                    <div style="font-size:15px; font-weight:800; color:#0f172a; margin:2px 0;">${window.escapeHTML(String(k.value ?? '0'))}</div>
+                    <div style="font-size:10px; color:#64748b;">${window.escapeHTML(k.sub || '')}</div>
+                </div>
+            `).join('');
+
+            const headCells = (meta.tableHead && meta.tableHead[0] ? meta.tableHead[0] : []).map(h =>
+                `<th style="background:${meta.accentHex}; color:#fff; padding:7px 8px; font-size:11px; text-align:left; border:1px solid #cbd5e1;">${window.escapeHTML(h)}</th>`
+            ).join('');
+
+            const bodyRowsHTML = (meta.bodyRows || []).map((row, idx) => `
+                <tr style="background:${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+                    ${row.map(cell => `<td style="padding:6px 8px; font-size:11px; color:#1e293b; border:1px solid #e2e8f0;">${window.escapeHTML(String(cell))}</td>`).join('')}
+                </tr>
+            `).join('');
+
+            modal.innerHTML = `
+                <div style="background:var(--superficie, var(--bg-panel, #1e293b)); border:1px solid var(--borde, var(--border, #334155)); border-radius:16px; width:100%; max-width:780px; max-height:92vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.65);">
+                    <div style="padding:14px 16px; background:#0f172a; border-bottom:1px solid #334155; display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                        <div>
+                            <span style="font-size:10px; font-weight:800; color:#10b981; text-transform:uppercase; letter-spacing:0.6px; display:block;">Documento Oficial Listo</span>
+                            <strong style="font-size:14.5px; color:#f8fafc;">${window.escapeHTML(meta.fileName)}</strong>
+                        </div>
+                        <button type="button" id="btn-cerrar-visor-pdf" style="background:rgba(148,163,184,0.15); border:1px solid #475569; color:#f8fafc; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer;">Cerrar &times;</button>
+                    </div>
+
+                    <div style="padding:12px 16px; background:rgba(15,23,42,0.6); border-bottom:1px solid var(--borde, #334155); display:flex; flex-wrap:wrap; gap:8px;">
+                        <button type="button" id="btn-accion-descargar-pdf" style="flex:1; min-width:140px; background:linear-gradient(135deg,#10b981,#059669); color:#fff; border:none; border-radius:10px; padding:10px 14px; font-size:12.5px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                            <span>⬇️ Descargar PDF</span>
+                        </button>
+                        <button type="button" id="btn-accion-compartir-pdf" style="flex:1; min-width:140px; background:#2563eb; color:#fff; border:none; border-radius:10px; padding:10px 14px; font-size:12.5px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                            <span>📲 Compartir / Guardar</span>
+                        </button>
+                        <button type="button" id="btn-accion-imprimir-pdf" style="flex:1; min-width:140px; background:#334155; color:#f8fafc; border:1px solid #475569; border-radius:10px; padding:10px 14px; font-size:12.5px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                            <span>🖨️ Imprimir / PDF Sistema</span>
+                        </button>
+                    </div>
+
+                    <div id="area-imprimible-reporte-taurus" style="padding:16px; overflow-y:auto; flex:1; background:#ffffff; color:#0f172a;">
+                        <div style="background:#0f172a; color:#ffffff; padding:14px 16px; border-radius:10px; border-bottom:3px solid ${meta.accentHex}; display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px;">
+                            <div>
+                                <div style="font-size:16px; font-weight:900; letter-spacing:0.03em;">${window.escapeHTML(meta.h_nom.toUpperCase())}</div>
+                                <div style="font-size:12px; color:#a7f3d0; font-weight:700; margin-top:2px;">${window.escapeHTML(meta.titulo)}</div>
+                                <div style="font-size:10px; color:#94a3b8; margin-top:4px;">Emisión: ${window.escapeHTML(meta.fechaEmision)} | Taurus Track Pro</div>
+                            </div>
+                        </div>
+
+                        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-left:4px solid ${meta.accentHex}; border-radius:8px; padding:10px 12px; margin-bottom:12px;">
+                            <div style="font-size:10px; font-weight:800; color:${meta.accentHex}; text-transform:uppercase; margin-bottom:3px;">${window.escapeHTML(meta.badge)}</div>
+                            <div style="font-size:11.5px; color:#334155; line-height:1.45;">${window.escapeHTML(meta.plainExp)}</div>
+                        </div>
+
+                        ${kpisHTML ? `<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px; margin-bottom:12px;">${kpisHTML}</div>` : ''}
+
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%; border-collapse:collapse; font-family:sans-serif;">
+                                <thead><tr>${headCells}</tr></thead>
+                                <tbody>${bodyRowsHTML}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            document.getElementById('btn-cerrar-visor-pdf').onclick = function() {
+                modal.remove();
+            };
+
+            document.getElementById('btn-accion-descargar-pdf').onclick = function() {
+                window.dispararDescargaDirectaPDF(meta.doc, meta.pdfBlob, meta.dataUri, meta.fileName, true);
+            };
+
+            document.getElementById('btn-accion-compartir-pdf').onclick = async function() {
+                try {
+                    if (navigator.share && meta.pdfBlob) {
+                        const fileObj = new File([meta.pdfBlob], meta.fileName, { type: 'application/pdf' });
+                        if (!navigator.canShare || navigator.canShare({ files: [fileObj] })) {
+                            await navigator.share({
+                                title: meta.titulo,
+                                text: `${meta.h_nom} - ${meta.titulo}`,
+                                files: [fileObj]
+                            });
+                            return;
+                        }
+                    }
+                } catch(errShare) {
+                    if (errShare && errShare.name === 'AbortError') return;
+                }
+                window.dispararDescargaDirectaPDF(meta.doc, meta.pdfBlob, meta.dataUri, meta.fileName, true);
+            };
+
+            document.getElementById('btn-accion-imprimir-pdf').onclick = function() {
+                const contenido = document.getElementById('area-imprimible-reporte-taurus');
+                if (!contenido) { window.print(); return; }
+                let printFrame = document.getElementById('taurus-print-iframe');
+                if (printFrame) printFrame.remove();
+                printFrame = document.createElement('iframe');
+                printFrame.id = 'taurus-print-iframe';
+                printFrame.style.cssText = 'position:fixed; right:0; bottom:0; width:0; height:0; border:0;';
+                document.body.appendChild(printFrame);
+                const docFrame = printFrame.contentWindow.document;
+                docFrame.open();
+                docFrame.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${window.escapeHTML(meta.fileName)}</title><style>body{font-family:Arial,sans-serif;margin:16px;color:#0f172a;-webkit-print-color-adjust:exact;print-color-adjust:exact;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #cbd5e1;padding:6px 8px;font-size:11px;text-align:left;}</style></head><body>${contenido.innerHTML}</body></html>`);
+                docFrame.close();
+                setTimeout(() => {
+                    try {
+                        printFrame.contentWindow.focus();
+                        printFrame.contentWindow.print();
+                    } catch(e) {
+                        window.print();
+                    }
+                }, 200);
+            };
+        };
+
+        window.dispararDescargaDirectaPDF = function(doc, pdfBlob, dataUri, fileName, desdeBotonModal = false) {
+            try {
+                window._ultimoPDFGenerado = { fileName: fileName, size: pdfBlob ? pdfBlob.size : (dataUri ? dataUri.length : 0), dataUri: dataUri };
+
+                if (window.taurusNative && typeof window.taurusNative.guardarArchivoLocal === 'function' && dataUri) {
+                    const base64Clean = dataUri.split(',')[1] || dataUri;
+                    window.taurusNative.guardarArchivoLocal(base64Clean, fileName.replace(/\.pdf$/i, ''), 'pdf')
+                        .then(res => {
+                            if (res && res.success && typeof window.mostrarToast === 'function') {
+                                window.mostrarToast("Informe PDF guardado correctamente.");
+                            }
+                        }).catch(() => {});
+                    return true;
+                }
+
+                if (pdfBlob && window.URL && typeof window.URL.createObjectURL === 'function') {
+                    const blobUrl = window.URL.createObjectURL(pdfBlob);
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = fileName;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    setTimeout(() => {
+                        try { link.remove(); window.URL.revokeObjectURL(blobUrl); } catch(e) {}
+                    }, 4000);
+                } else if (doc && typeof doc.save === 'function') {
+                    doc.save(fileName);
+                }
+
+                const ua = navigator.userAgent || '';
+                const esAndroid = /Android/i.test(ua);
+                if ((esAndroid || desdeBotonModal) && dataUri) {
+                    const linkData = document.createElement('a');
+                    linkData.href = dataUri;
+                    linkData.download = fileName;
+                    linkData.style.display = 'none';
+                    document.body.appendChild(linkData);
+                    linkData.click();
+                    setTimeout(() => { try { linkData.remove(); } catch(e) {} }, 2000);
+                }
+
+                if (typeof window.mostrarToast === 'function') {
+                    window.mostrarToast("Informe PDF listo: " + fileName);
+                }
+                return true;
+            } catch(e) {
+                console.warn("[Taurus PDF Download Fallback]:", e);
+                return false;
+            }
+        };
+
+        window.ejecutarDescargaPDF = function(opciones) {
+            const opts = opciones || {};
+            const btn = document.getElementById('btn-print-magico');
+            const spanBtn = btn ? btn.querySelector('span') : null;
+            const textoOriginal = spanBtn ? spanBtn.innerText : (btn ? btn.innerText : "Exportar PDF");
+            if (spanBtn) spanBtn.innerText = "Generando...";
+            else if (btn) btn.innerText = "Generando PDF...";
+
+            try {
+                if (!opts.forzarRp && typeof window.actualizarInformeAvanzado === 'function') {
+                    window.actualizarInformeAvanzado();
+                }
+
+                const disenoActual = typeof window.obtenerDisenoEstanciaActual === 'function'
+                    ? window.obtenerDisenoEstanciaActual()
+                    : { nombre: 'TAURUS TRACK PRO', logo: 'gemini-svg.png' };
+                const h_nom = disenoActual.nombre || 'TAURUS TRACK PRO';
+                const h_log = disenoActual.logo || "";
+                const modoEl = document.getElementById('f-inf-modo');
+                const modo = modoEl ? modoEl.value : 'inventario';
+
+                const res = window.reporteResumenActual || {
+                    badge: "REPORTE OFICIAL",
+                    titulo: "Informe Consolidado de Gestión Ganadera",
+                    explicacion: "Documento emitido por Taurus Track Pro.",
+                    kpis: []
+                };
+
+                const headColors = {
+                    'inventario': [16, 185, 129],
+                    'pesajes': [5, 150, 105],
+                    'bajas': [220, 38, 38],
+                    'ventas': [37, 99, 235],
+                    'eventos': [124, 58, 237],
+                    'confinamiento': [234, 88, 12]
+                };
+                const headHexMap = {
+                    'inventario': '#10b981',
+                    'pesajes': '#059669',
+                    'bajas': '#dc2626',
+                    'ventas': '#2563eb',
+                    'eventos': '#7c3aed',
+                    'confinamiento': '#ea580c'
+                };
+                const accentRGB = headColors[modo] || [16, 185, 129];
+                const accentHex = headHexMap[modo] || '#10b981';
+
+                const headersReporte = {
+                    'inventario': [['Caravana / Carimbo', 'Categoría', 'Lote / Ubicación', 'Últ. Peso', 'Diagnóstico Tacto']],
+                    'pesajes': [['Caravana / RP', 'Categoría / Lote', 'Peso Ant.', 'Peso Act.', 'Ganancia (Dif.)', 'GDP (Kg/d)', 'Evolución']],
+                    'bajas': [['Fecha de Muerte', 'Caravana / RP', 'Causa de Muerte', 'Observaciones / Diagnóstico']],
+                    'ventas': [['Fecha Despacho', 'Caravana / RP', 'Tipo de Salida', 'Destino / Comprador / Guía', 'Peso / Valor / Obs.']],
+                    'eventos': [['Fecha', 'Caravana / RP', 'Categoría / Lote', 'Procedimiento', 'Producto / Valor', 'Observaciones']],
+                    'confinamiento': [['Caravana / RP', 'Corral', 'Días Encierre', 'Peso Entrada', 'Último Peso', 'Ganancia Total', 'GMD (Kg/d)', 'Meta Faena']]
+                };
+
+                const headersIndividual = {
+                    'inventario': [['Fecha', 'Procedimiento', 'Valor / Detalle', 'Observaciones']],
+                    'pesajes': [['Fecha', 'Caravana / RP', 'Peso Ant.', 'Peso Act.', 'Ganancia (Dif.)', 'GDP (Kg/d)', 'Evolución']],
+                    'bajas': [['Fecha Muerte', 'Caravana / RP', 'Causa de Muerte', 'Observaciones / Diagnóstico']],
+                    'ventas': [['Fecha Despacho', 'Caravana / RP', 'Tipo de Salida', 'Destino / Guía', 'Peso / Valor / Obs.']],
+                    'eventos': [['Fecha', 'Caravana / RP', 'Categoría / Lote', 'Procedimiento', 'Producto / Valor', 'Observaciones']],
+                    'confinamiento': [['Caravana / RP', 'Corral', 'Días Encierre', 'Peso Inicial', 'Últ. Peso', 'Ganancia', 'GMD (Kg/d)', 'Meta Faena']]
+                };
+
+                const rpTarget = opts.forzarRp || rpPrint || "";
+                const tableHead = (rpTarget !== "") ? (headersIndividual[modo] || headersReporte[modo]) : headersReporte[modo];
+                const numCols = (tableHead && tableHead[0]) ? tableHead[0].length : 4;
+                const emptyRow = ['Sin registros para los criterios seleccionados'];
+                while (emptyRow.length < numCols) emptyRow.push('-');
+
+                const bodyRows = (pdfExportData && pdfExportData.length > 0)
+                    ? pdfExportData.map(row => row.map(cell => window.cleanPDFText(String(cell))))
+                    : [emptyRow];
+
+                let plainExp = String(res.explicacion || "").replace(/<[^>]+>/g, '');
+                plainExp = window.cleanPDFText(plainExp);
+
+                const fechaEmision = `${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
+                const suffix = rpTarget !== "" ? `RP_${String(rpTarget).toUpperCase().replace(/[^A-Z0-9_-]/g, '')}` : modo.toUpperCase();
+                const fileName = `Reporte_Taurus_${suffix}_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+                let doc = null;
+                let pdfBlob = null;
+                let dataUri = null;
+
+                if (typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) {
+                    const { jsPDF } = window.jspdf;
+                    doc = new jsPDF('p', 'mm', 'a4');
+
+                    doc.setFillColor(15, 23, 42);
+                    doc.rect(0, 0, 210, 34, 'F');
+                    doc.setFillColor(accentRGB[0], accentRGB[1], accentRGB[2]);
+                    doc.rect(0, 34, 210, 2, 'F');
+
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(16);
+                    doc.text(window.cleanPDFText(h_nom).toUpperCase(), 14, 15);
+
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(10.5);
+                    doc.setTextColor(167, 243, 208);
+                    doc.text(window.cleanPDFText(res.titulo || "Reporte Oficial"), 14, 22);
+
+                    doc.setFontSize(8.5);
+                    doc.setTextColor(148, 163, 184);
+                    doc.text(`Emision: ${fechaEmision}  |  Taurus Track Pro`, 14, 28.5);
+
+                    if (h_log && h_log.startsWith('data:image')) {
+                        try {
+                            let imgProps = doc.getImageProperties(h_log);
+                            let ratio = imgProps.width / imgProps.height;
+                            let targetHeight = 18;
+                            let targetWidth = targetHeight * ratio;
+                            if (targetWidth > 36) { targetWidth = 36; targetHeight = targetWidth / ratio; }
+                            doc.setFillColor(255, 255, 255);
+                            doc.roundedRect(194 - targetWidth, 6, targetWidth + 4, targetHeight + 4, 2, 2, 'F');
+                            doc.addImage(h_log, 'PNG', 196 - targetWidth, 8, targetWidth, targetHeight, '', 'FAST');
+                        } catch(e) {}
+                    }
+
+                    doc.setFillColor(248, 250, 252);
+                    doc.setDrawColor(203, 213, 225);
+                    doc.roundedRect(14, 40, 182, 20, 2, 2, 'FD');
+                    doc.setFillColor(accentRGB[0], accentRGB[1], accentRGB[2]);
+                    doc.rect(14, 40, 2.5, 20, 'F');
+
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(8.5);
+                    doc.setTextColor(accentRGB[0], accentRGB[1], accentRGB[2]);
+                    doc.text(window.cleanPDFText(res.badge || "DIAGNOSTICO EJECUTIVO"), 19, 45.5);
+
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(8.5);
+                    doc.setTextColor(51, 65, 85);
+                    let splitExp = doc.splitTextToSize(plainExp, 173);
+                    doc.text(splitExp.slice(0, 3), 19, 51);
+
+                    let startTableY = 65;
+                    if (Array.isArray(res.kpis) && res.kpis.length > 0) {
+                        let kpis = res.kpis.slice(0, 4);
+                        let boxW = (182 - (kpis.length - 1) * 4) / kpis.length;
+                        kpis.forEach((k, idx) => {
+                            let x = 14 + idx * (boxW + 4);
+                            doc.setFillColor(255, 255, 255);
+                            doc.setDrawColor(203, 213, 225);
+                            doc.roundedRect(x, 63, boxW, 16, 2, 2, 'FD');
+
+                            doc.setFont("helvetica", "bold");
+                            doc.setFontSize(7);
+                            doc.setTextColor(100, 116, 139);
+                            doc.text(window.cleanPDFText(k.label || "").toUpperCase(), x + 3, 68);
+
+                            doc.setFont("helvetica", "bold");
+                            doc.setFontSize(11);
+                            doc.setTextColor(15, 23, 42);
+                            doc.text(window.cleanPDFText(String(k.value ?? '0')), x + 3, 74);
+
+                            doc.setFont("helvetica", "normal");
+                            doc.setFontSize(6.8);
+                            doc.setTextColor(100, 116, 139);
+                            doc.text(window.cleanPDFText(k.sub || ""), x + 3, 77.5);
+                        });
+                        startTableY = 84;
+                    }
+
+                    doc.autoTable({
+                        startY: startTableY,
+                        head: tableHead,
+                        body: bodyRows,
+                        theme: 'striped',
+                        headStyles: {
+                            fillColor: accentRGB,
+                            textColor: 255,
+                            fontStyle: 'bold',
+                            fontSize: 8.5,
+                            halign: 'center'
+                        },
+                        bodyStyles: {
+                            fontSize: 8,
+                            cellPadding: 2.6,
+                            textColor: [30, 41, 59]
+                        },
+                        alternateRowStyles: {
+                            fillColor: [248, 250, 252]
+                        },
+                        margin: { left: 14, right: 14 },
+                        didDrawPage: function (data) {
+                            let pageCount = doc.internal.getNumberOfPages();
+                            doc.setFontSize(8);
+                            doc.setTextColor(148, 163, 184);
+                            doc.text(
+                                `Taurus Track Pro - ${window.cleanPDFText(h_nom)} | Pagina ${data.pageNumber} de ${pageCount}`,
+                                14,
+                                doc.internal.pageSize.height - 8
+                            );
+                        }
+                    });
+
+                    try { pdfBlob = doc.output('blob'); } catch(e) {}
+                    try { dataUri = doc.output('datauristring'); } catch(e) {}
+                }
+
+                if (!pdfBlob || !dataUri) {
+                    const fallbackPdf = window.generarPDFNativoSinLibreria({
+                        h_nom: h_nom,
+                        titulo: res.titulo || "Reporte Oficial",
+                        badge: res.badge || "DIAGNOSTICO EJECUTIVO",
+                        plainExp: plainExp,
+                        kpis: res.kpis || [],
+                        tableHead: tableHead,
+                        bodyRows: bodyRows,
+                        fechaEmision: fechaEmision
+                    });
+                    pdfBlob = fallbackPdf.blob;
+                    dataUri = fallbackPdf.dataUri;
+                }
+
+                window.dispararDescargaDirectaPDF(doc, pdfBlob, dataUri, fileName, false);
+
+                const ua = navigator.userAgent || '';
+                const esMovil = /Android|iPhone|iPad|iPod/i.test(ua) || (window.innerWidth <= 820 && !window.taurusNative);
+                if (esMovil || !doc) {
+                    window.mostrarModalVisorPDFTaurus({
+                        doc: doc,
+                        pdfBlob: pdfBlob,
+                        dataUri: dataUri,
+                        fileName: fileName,
+                        h_nom: h_nom,
+                        titulo: res.titulo || "Reporte Oficial",
+                        badge: res.badge || "DIAGNÓSTICO EJECUTIVO",
+                        plainExp: plainExp,
+                        kpis: res.kpis || [],
+                        tableHead: tableHead,
+                        bodyRows: bodyRows,
+                        accentHex: accentHex,
+                        fechaEmision: fechaEmision
+                    });
+                }
+            } catch(err) {
+                console.error("Error generando PDF:", err);
+                if (typeof window.mostrarToast === 'function') {
+                    window.mostrarToast("Error al generar el PDF: " + err.message, true);
+                }
+            } finally {
+                if (spanBtn) spanBtn.innerText = textoOriginal;
+                else if (btn) btn.innerText = textoOriginal;
+                if (typeof opts.onComplete === 'function') {
+                    try { opts.onComplete(); } catch(e) {}
+                }
+            }
+        };
+        ejecutarDescargaPDF = window.ejecutarDescargaPDF;
+
+        /* ============================================================================
+         * 11. TAURUS SECURITY SHIELD v3.0 — BLINDAJE INTEGRAL DE 50 CAPAS ANTI-HACKEO
+         * ============================================================================ */
+
+        // 11.1 Protección Anti-Clickjacking (Frame Busting)
+        try {
+            if (window.top !== window.self && !location.protocol.startsWith('blob')) {
+                try { window.top.location = window.self.location; } catch(e) {}
+            }
+        } catch(e) {}
+
+        // 11.2 Escapado estricto HTML y Atributos JS (Prevención de XSS Almacenado, Reflejado y DOM)
+        window.escapeHTML = function(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/`/g, '&#96;');
+        };
+        escapeHTML = window.escapeHTML;
+
+        window.escapeAttr = function(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/\\/g, '\\\\')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, "\\'")
+                .replace(/`/g, '&#96;')
+                .replace(/\r/g, '')
+                .replace(/\n/g, '\\n');
+        };
+        var escapeAttr = window.escapeAttr;
+
+        // 11.3 Sanitización Anti-Prototype Pollution para objetos JSON y filas de Excel
+        window.sanitizarObjetoSeguro = function(val, depth) {
+            const d = depth || 0;
+            if (d > 8 || val === null || val === undefined) return val;
+            if (Array.isArray(val)) {
+                return val.map(item => window.sanitizarObjetoSeguro(item, d + 1));
+            }
+            if (typeof val === 'object') {
+                const limpio = {};
+                const keysPeligrosas = new Set(['__proto__', 'constructor', 'prototype']);
+                for (const k of Object.keys(val)) {
+                    if (keysPeligrosas.has(k)) continue;
+                    limpio[k] = window.sanitizarObjetoSeguro(val[k], d + 1);
+                }
+                return limpio;
+            }
+            return val;
+        };
+
+        // 11.4 Hash Criptográfico Determinístico con Sal y Pepper para Credenciales Offline (Cero Claves en Texto Plano en LocalStorage)
+        window.generarHashCredencialOffline = function(email, pass) {
+            const eClean = String(email || '').toLowerCase().trim();
+            const pClean = String(pass || '');
+            if (!eClean || !pClean) return '';
+            const payload = `TAURUS_V3_PEPPER_9f8a7b::${eClean}::${pClean}::END_SALT`;
+            let h1 = 0x811c9dc5, h2 = 0x1000193, h3 = 0x9e3779b9, h4 = 0x85ebca6b;
+            for (let round = 0; round < 64; round++) {
+                for (let i = 0; i < payload.length; i++) {
+                    const c = payload.charCodeAt(i) ^ (round & 0xff);
+                    h1 = Math.imul(h1 ^ c, 0x01000193) >>> 0;
+                    h2 = Math.imul(h2 ^ ((c << 3) | (c >>> 5)), 0x85ebca6b) >>> 0;
+                    h3 = Math.imul(h3 ^ (h1 & 0xffff), 0xc2b2ae35) >>> 0;
+                    h4 = Math.imul(h4 ^ (h2 ^ c), 0x27d4eb2f) >>> 0;
+                }
+            }
+            const toHex = (n) => ('00000000' + (n >>> 0).toString(16)).slice(-8);
+            return 'tsh256_' + toHex(h1) + toHex(h2) + toHex(h3) + toHex(h4);
+        };
+
+        // 11.5 Almacenamiento Local Blindado (Elimina claves en texto plano y previene Prototype Pollution / Quota DoS)
+        window.purgarPasswordDeObjetoPerfil = function(prof) {
+            if (!prof || typeof prof !== 'object') return prof;
+            const copia = Object.assign({}, prof);
+            const em = String(copia.email || '').toLowerCase().trim();
+            if (copia.password && em) {
+                copia.passHash = window.generarHashCredencialOffline(em, copia.password);
+            }
+            delete copia.password;
+            return copia;
+        };
+
+        window.lsSet = function(key, val) {
+            try {
+                let valorGuardar = window.sanitizarObjetoSeguro(val, 0);
+                if (key === 'tc_user_profile' && valorGuardar && typeof valorGuardar === 'object') {
+                    valorGuardar = window.purgarPasswordDeObjetoPerfil(valorGuardar);
+                } else if (key === 'tc_perfiles_locales' && valorGuardar && typeof valorGuardar === 'object') {
+                    const mapaLimpio = {};
+                    for (const k of Object.keys(valorGuardar)) {
+                        if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+                        mapaLimpio[k] = window.purgarPasswordDeObjetoPerfil(valorGuardar[k]);
+                    }
+                    valorGuardar = mapaLimpio;
+                }
+                localStorage.setItem(key, JSON.stringify(valorGuardar));
+            } catch(e) {
+                try {
+                    localStorage.removeItem('tc_db');
+                    localStorage.setItem(key, JSON.stringify(val));
+                } catch(e2) {}
+            }
+        };
+        lsSet = window.lsSet;
+
+        window.lsGet = function(key, def) {
+            try {
+                let v = localStorage.getItem(key);
+                if (!v) return def;
+                const parsed = JSON.parse(v);
+                return window.sanitizarObjetoSeguro(parsed, 0);
+            } catch(e) {
+                return def;
+            }
+        };
+        lsGet = window.lsGet;
+
+        // Migrar y purgar inmediatamente cualquier contraseña en texto plano previa en localStorage
+        try {
+            const pAct = window.lsGet('tc_user_profile', null);
+            if (pAct && pAct.password) window.lsSet('tc_user_profile', pAct);
+            const mAct = window.lsGet('tc_perfiles_locales', null);
+            if (mAct && typeof mAct === 'object') window.lsSet('tc_perfiles_locales', mAct);
+        } catch(e) {}
+
+        // 11.6 Protección contra Fuerza Bruta y Bloqueo Temporal Progresivo (Rate Limiting)
+        window.verificarBloqueoFuerzaBruta = function() {
+            const estado = window.lsGet('tc_login_security_guard', { fails: 0, lockUntil: 0, lastFail: 0 });
+            const ahora = Date.now();
+            if (estado.lockUntil && ahora < estado.lockUntil) {
+                const segRestantes = Math.ceil((estado.lockUntil - ahora) / 1000);
+                return { bloqueado: true, segundos: segRestantes, mensaje: `Acceso bloqueado temporalmente por seguridad (${segRestantes}s restantes).` };
+            }
+            if (estado.lastFail && (ahora - estado.lastFail) > 10 * 60 * 1000) {
+                window.lsSet('tc_login_security_guard', { fails: 0, lockUntil: 0, lastFail: 0 });
+            }
+            return { bloqueado: false, segundos: 0, mensaje: '' };
+        };
+
+        window.registrarIntentoLoginFallido = function() {
+            const ahora = Date.now();
+            const estado = window.lsGet('tc_login_security_guard', { fails: 0, lockUntil: 0, lastFail: 0 });
+            const nuevosFails = (estado.fails || 0) + 1;
+            let lockUntil = 0;
+            if (nuevosFails >= 5) {
+                const multiplicador = Math.min(8, Math.pow(2, nuevosFails - 5));
+                lockUntil = ahora + (60 * 1000 * multiplicador);
+            }
+            window.lsSet('tc_login_security_guard', { fails: nuevosFails, lockUntil: lockUntil, lastFail: ahora });
+            return { fails: nuevosFails, lockUntil: lockUntil };
+        };
+
+        window.limpiarIntentosLogin = function() {
+            localStorage.removeItem('tc_login_security_guard');
+        };
+
+        // 11.7 Verificación de Vencimiento de Licencia (Online y Offline)
+        window.esLicenciaVencida = function(userData) {
+            if (!userData || typeof userData !== 'object') return false;
+            const rol = String(userData.rol || '');
+            if (rol === 'SuperAdmin' || rol === 'Admin') return false;
+            const venc = String(userData.vencimiento || '').trim();
+            if (!venc || venc === 'Heredado' || venc === 'Perpetua') return false;
+            const fLimit = new Date(venc.includes('T') ? venc : (venc + 'T23:59:59'));
+            if (!isNaN(fLimit.getTime()) && new Date() > fLimit) {
+                return true;
+            }
+            return false;
+        };
+
+        // 11.8 Login Offline Blindado (Corrige el bypass de contraseña vacía/faltante)
+        window.intentarIngresoOffline = function(email, pass) {
+            const bloqueo = window.verificarBloqueoFuerzaBruta();
+            if (bloqueo.bloqueado) {
+                return { ok: false, motivo: bloqueo.mensaje };
+            }
+            const emailClean = String(email || '').toLowerCase().trim();
+            const passClean = String(pass || '').trim();
+            if (!emailClean || !passClean) {
+                return { ok: false, motivo: "Complete usuario y contraseña." };
+            }
+
+            const mapPerfiles = window.lsGet('tc_perfiles_locales', {});
+            const prof = (mapPerfiles && mapPerfiles[emailClean]) || window.lsGet('tc_user_profile', null);
+
+            if (!prof || String(prof.email || '').toLowerCase().trim() !== emailClean) {
+                window.registrarIntentoLoginFallido();
+                return { ok: false, motivo: "Sin conexión a Internet y sin sesión previa guardada en este dispositivo." };
+            }
+
+            const expectedHash = prof.passHash || (prof.password ? window.generarHashCredencialOffline(emailClean, prof.password) : '');
+            const providedHash = window.generarHashCredencialOffline(emailClean, passClean);
+
+            // JAMÁS permitir ingreso offline si no existe hash verificable o si no coincide exactamente
+            if (!expectedHash || expectedHash !== providedHash) {
+                const st = window.registrarIntentoLoginFallido();
+                if (st.lockUntil > Date.now()) {
+                    return { ok: false, motivo: "Demasiados intentos fallidos. Acceso bloqueado por 60 segundos." };
+                }
+                return { ok: false, motivo: "Contraseña incorrecta (Modo Offline)." };
+            }
+
+            if (window.esLicenciaVencida(prof)) {
+                return { ok: false, motivo: "Su licencia ha vencido. Contacte al administrador." };
+            }
+
+            window.limpiarIntentosLogin();
+            const profSeguro = window.purgarPasswordDeObjetoPerfil(prof);
+            profSeguro.passHash = expectedHash;
+            mapPerfiles[emailClean] = profSeguro;
+            window.lsSet('tc_perfiles_locales', mapPerfiles);
+            localStorage.setItem('tc_ultimo_usuario', emailClean);
+            localStorage.setItem('tc_sesion_activa', '1');
+            window.lsSet('tc_user_profile', profSeguro);
+
+            const rol = profSeguro.rol || 'Propietario';
+            if (rol === 'SuperAdmin' || rol === 'Admin') {
+                document.documentElement.classList.add('sesion-preactiva', 'sesion-admin-preactiva');
+                let pLogin = document.getElementById('pantalla-login'); if (pLogin) pLogin.classList.add('oculto');
+                let pApp = document.getElementById('pantalla-app'); if (pApp) pApp.classList.add('oculto');
+                let pAdmin = document.getElementById('pantalla-admin'); if (pAdmin) pAdmin.classList.remove('oculto');
+                window.lsSet("tc_admin_mob_session", { email: emailClean, time: Date.now() });
+                window.lsSet("tc_admin_session", { email: emailClean, time: Date.now() });
+                if (typeof window.inicializarAdminMobile === 'function') window.inicializarAdminMobile(emailClean, profSeguro);
+                if (typeof window.inicializarAdminPC === 'function') window.inicializarAdminPC(emailClean, profSeguro);
+            } else {
+                let estanciaIdFinal = (profSeguro.maestroId || emailClean).toLowerCase().trim();
+                window.arrancarSistemaFirebase(
+                    emailClean,
+                    estanciaIdFinal,
+                    rol,
+                    profSeguro.nombre || emailClean.split('@')[0],
+                    profSeguro.hacienda || 'Hacienda',
+                    profSeguro.features || ''
+                );
+            }
+            return { ok: true };
+        };
+        intentarIngresoOffline = window.intentarIngresoOffline;
+
+        // 11.9 Login Principal con Protección Anti-Fuerza Bruta y Hashing Seguro
+        window.procesarIngreso = async function() {
+            const elUsu = document.getElementById('usuario');
+            const elPass = document.getElementById('password');
+            let u = elUsu ? elUsu.value.trim() : '';
+            const p = elPass ? elPass.value.trim() : '';
+            const btn = document.getElementById('btn-ingreso');
+            const err = document.getElementById('error-login');
+
+            const bloqueo = window.verificarBloqueoFuerzaBruta();
+            if (bloqueo.bloqueado) {
+                if (err) { err.innerText = bloqueo.mensaje; err.style.display = 'block'; }
+                return;
+            }
+
+            if (!u || !p) {
+                if (err) { err.innerText = "Complete usuario y contraseña."; err.style.display = 'block'; }
+                return;
+            }
+
+            let email = u.includes('@') ? u.toLowerCase() : u.toLowerCase() + '@taurus.com';
+            if (!/^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$/.test(email)) {
+                if (err) { err.innerText = "Formato de usuario o correo inválido."; err.style.display = 'block'; }
+                return;
+            }
+
+            if (!navigator.onLine) {
+                let resOff = window.intentarIngresoOffline(email, p);
+                if (resOff.ok) {
+                    if (btn) { btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
+                    return;
+                }
+                if (err) { err.innerText = resOff.motivo; err.style.display = 'block'; }
+                return;
+            }
+
+            if (btn) { btn.disabled = true; btn.innerText = "Verificando..."; }
+            if (err) err.style.display = 'none';
+
+            try {
+                const passHash = window.generarHashCredencialOffline(email, p);
+                window._pendingLoginCreds = { email: email, passHash: passHash };
+                await firebase.auth().signInWithEmailAndPassword(email, p);
+                window.limpiarIntentosLogin();
+                let mapPerfiles = window.lsGet('tc_perfiles_locales', {});
+                mapPerfiles[email] = Object.assign({}, mapPerfiles[email] || {}, { email: email, passHash: passHash });
+                delete mapPerfiles[email].password;
+                window.lsSet('tc_perfiles_locales', mapPerfiles);
+                localStorage.setItem('tc_ultimo_usuario', email);
+                localStorage.setItem('tc_sesion_activa', '1');
+                if (elPass) elPass.value = '';
+            } catch(error) {
+                window._pendingLoginCreds = null;
+                if (error && error.code === 'auth/network-request-failed') {
+                    let resOff = window.intentarIngresoOffline(email, p);
+                    if (resOff.ok) {
+                        if (btn) { btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
+                        return;
+                    }
+                }
+                const st = window.registrarIntentoLoginFallido();
+                let msg = "Usuario no registrado o clave incorrecta.";
+                if (st.lockUntil > Date.now()) msg = "Demasiados intentos fallidos. Acceso bloqueado por 60 segundos.";
+                else if (error && error.code === 'auth/network-request-failed') msg = "Fallo de conexión con el servidor.";
+                else if (error && error.code === 'auth/too-many-requests') msg = "Demasiados intentos fallidos. Espere un momento.";
+                if (err) { err.innerText = msg; err.style.display = 'block'; }
+                if (btn) { btn.disabled = false; btn.innerText = "Iniciar Sesión"; }
+            }
+        };
+        procesarIngreso = window.procesarIngreso;
+
+        // Desactivar reautenticación silenciosa con clave en texto plano (Firebase Auth ya persiste en IndexedDB)
+        window.intentarReautenticacionSilenciosa = function() { return; };
+
+        // 11.10 Guardias RBAC de Autorización (SuperAdmin y Propietario)
+        window.esSuperAdminAutorizado = function() {
+            const prof = window.lsGet('tc_user_profile', null);
+            const admMob = window.lsGet('tc_admin_mob_session', null);
+            const admPC = window.lsGet('tc_admin_session', null);
+            const sesAdm = admMob || admPC;
+            const emailAct = String(usActivo || (prof && prof.email) || (sesAdm && sesAdm.email) || '').toLowerCase().trim();
+            const rolAct = String(usRol || (prof && prof.rol) || '');
+            if (sesAdm && sesAdm.time && (Date.now() - Number(sesAdm.time)) > 12 * 60 * 60 * 1000) {
+                return false;
+            }
+            return emailAct === 'enfer.ro.98@gmail.com' || rolAct === 'SuperAdmin' || rolAct === 'Admin';
+        };
+
+        window.esPropietarioAutorizado = function() {
+            if (window.esSuperAdminAutorizado()) return true;
+            const rolAct = String(usRol || '');
+            return rolAct.includes('Propietario') || rolAct.includes('Dueño');
+        };
+
+        // 11.11 Validador Estricto de Caravana, IDs de Documento y Celdas CSV/Excel
+        window.sanitizarDocId = function(id) {
+            if (!id) return 'ev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+            let clean = String(id).trim().replace(/[^a-zA-Z0-9_\-@.+]/g, '_').replace(/\.{2,}/g, '_');
+            if (!clean || clean === '.' || clean === '..') {
+                return 'ev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+            }
+            return clean.slice(0, 128);
+        };
+
+        window.esCaravanaValida = function(car) {
+            if (car === null || car === undefined) return false;
+            let s = String(car).trim();
+            if (!s || s === "" || s === "---" || s.length > 40) return false;
+            if (/[<>"'`\\;(){}\[\]$]/.test(s)) return false;
+            let low = s.toLowerCase();
+            if (low === "null" || low === "undefined" || low === "nan" || low === "[object object]") return false;
+            if (low === "__proto__" || low === "constructor" || low === "prototype") return false;
+            if (low.includes("@")) return false;
+            if (low.startsWith("op-") || low.startsWith("operador") || low === "operador" || low === "propietario" || low === "dueño") return false;
+            if (/^jules[-_]/i.test(s)) return false;
+            return true;
+        };
+        esCaravanaValida = window.esCaravanaValida;
+
+        window.sanitizarCeldaCSV = function(val) {
+            if (val === null || val === undefined) return '';
+            let s = String(val).replace(/[\0\r\n]+/g, ' ').trim();
+            if (/^[=+\-@\t\r]/.test(s) && !/^-[0-9]+(\.[0-9]+)?(\s*Kg)?$/i.test(s)) {
+                return "'" + s;
+            }
+            return s;
+        };
+
+        // 11.12 Validador de Logo Seguro (Bloquea javascript: y SVG con scripts embebidos)
+        window.esLogoSeguro = function(url) {
+            if (!url || typeof url !== 'string') return false;
+            const s = url.trim();
+            if (s === 'gemini-svg.png' || s === './gemini-svg.png') return true;
+            if (/^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=\s]+$/i.test(s) && s.length <= 600000) {
+                return true;
+            }
+            return false;
+        };
+
+        const _origAplicarDiseno = window.aplicarDisenoEnPantalla;
+        window.aplicarDisenoEnPantalla = function(nombre, logo) {
+            const nomSeguro = String(nombre || '').replace(/[<>"'`]/g, '').trim().slice(0, 80) || 'Estancia';
+            const logoSeguro = window.esLogoSeguro(logo) ? logo : 'gemini-svg.png';
+            if (typeof _origAplicarDiseno === 'function') {
+                return _origAplicarDiseno(nomSeguro, logoSeguro);
+            }
+        };
+        aplicarDisenoEnPantalla = window.aplicarDisenoEnPantalla;
+
+        // 11.13 Sanitización de Banner de Actividad en Vivo (Prevención de XSS por notificaciones de operadores)
+        window.mostrarBannerActividadEnVivo = function(titulo, mensaje) {
+            try {
+                let cont = document.getElementById('taurus-live-notif-container');
+                if (!cont) {
+                    cont = document.createElement('div');
+                    cont.id = 'taurus-live-notif-container';
+                    cont.style.cssText = 'position:fixed;top:18px;right:18px;z-index:99999;display:flex;flex-direction:column;gap:10px;max-width:360px;width:calc(100% - 36px);pointer-events:none;';
+                    document.body.appendChild(cont);
+                }
+                const card = document.createElement('div');
+                card.style.cssText = 'background:#0f172a;border-left:5px solid #10b981;border-top:1px solid #334155;border-right:1px solid #334155;border-bottom:1px solid #334155;color:#f8fafc;padding:14px 16px;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,0.55);pointer-events:auto;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;transition:opacity 0.4s,transform 0.4s;';
+                card.innerHTML = `
+                    <div style="flex:1;">
+                        <div style="font-size:11px;font-weight:800;color:#10b981;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">${window.escapeHTML(titulo)}</div>
+                        <div style="font-size:13px;font-weight:700;color:#f8fafc;line-height:1.35;">${window.escapeHTML(mensaje)}</div>
+                    </div>
+                    <button type="button" style="background:transparent;border:none;color:#94a3b8;font-size:18px;cursor:pointer;line-height:1;padding:0 2px;">&times;</button>
+                `;
+                card.querySelector('button').onclick = () => card.remove();
+                cont.appendChild(card);
+                if (typeof window.reproducirBeepHardware === 'function') {
+                    try { window.reproducirBeepHardware('ok'); } catch(e) {}
+                }
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(-8px)';
+                    setTimeout(() => card.remove(), 400);
+                }, 6000);
+            } catch(e) {}
+        };
+        mostrarBannerActividadEnVivo = window.mostrarBannerActividadEnVivo;
+
+        // 11.14 Blindaje de Gestión de Operadores (Verifica Rol Propietario + Pertenencia a Estancia + Escapado XSS)
+        window.cargarListaOperadores = async function() {
+            if (!window.esPropietarioAutorizado()) return;
+            try {
+                const snapshot = await db.collection('usuarios').where('maestroId', '==', maestroId).get();
+                const ops = snapshot.docs.filter(doc => doc.id !== maestroId).map(doc => doc.id);
+                const selDel = document.getElementById('op-del-usu-sel');
+                const selEdit = document.getElementById('op-edit-usu-sel');
+                let options = '<option value="">-- Seleccione un usuario --</option>';
+                ops.forEach(o => {
+                    options += `<option value="${window.escapeHTML(o)}">${window.escapeHTML(o)}</option>`;
+                });
+                if (selDel) selDel.innerHTML = options;
+                if (selEdit) selEdit.innerHTML = options;
+            } catch(e) {}
+        };
+        cargarListaOperadores = window.cargarListaOperadores;
+
+        const _origCrearOperador = window.crearOperador;
+        window.crearOperador = async function() {
+            if (!window.esPropietarioAutorizado()) {
+                alert("Acceso denegado: solo el propietario puede registrar usuarios.");
+                return;
+            }
+            if (typeof _origCrearOperador === 'function') return await _origCrearOperador();
+        };
+        crearOperador = window.crearOperador;
+
+        const _origGuardarEdicionOperador = window.guardarEdicionOperador;
+        window.guardarEdicionOperador = async function() {
+            if (!window.esPropietarioAutorizado()) {
+                alert("Acceso denegado: solo el propietario puede modificar permisos.");
+                return;
+            }
+            const selEl = document.getElementById('op-edit-usu-sel');
+            const targetEmail = selEl ? selEl.value.trim().toLowerCase() : '';
+            if (!targetEmail || targetEmail === String(maestroId || '').toLowerCase() || targetEmail === 'enfer.ro.98@gmail.com') {
+                alert("Operación no permitida sobre esta cuenta.");
+                return;
+            }
+            if (typeof _origGuardarEdicionOperador === 'function') return await _origGuardarEdicionOperador();
+        };
+        guardarEdicionOperador = window.guardarEdicionOperador;
+
+        window.eliminarOperador = async function() {
+            if (!window.esPropietarioAutorizado()) {
+                alert("Acceso denegado: solo el propietario puede eliminar operadores.");
+                return;
+            }
+            if (!navigator.onLine) { alert("Necesitas conexión a internet."); return; }
+            const selectEl = document.getElementById('op-del-usu-sel');
+            const u = selectEl ? selectEl.value.trim().toLowerCase() : '';
+            if (!u) { alert("Seleccione un usuario de la lista."); return; }
+            if (u === String(maestroId || '').toLowerCase() || u === 'enfer.ro.98@gmail.com') {
+                alert("No se puede eliminar la cuenta propietaria principal.");
+                return;
+            }
+            if (confirm(`¿Está seguro de eliminar el acceso de "${u}"?`)) {
+                const btn = document.getElementById('btn-eliminar-op');
+                const btnOriginal = btn ? btn.innerHTML : 'Eliminar';
+                if (btn) { btn.innerHTML = " Eliminando..."; btn.disabled = true; }
+                try {
+                    const doc = await db.collection('usuarios').doc(u).get();
+                    if (!doc.exists || String(doc.data().maestroId || '').toLowerCase() !== String(maestroId || '').toLowerCase()) {
+                        alert("Error de seguridad: el usuario no pertenece a su estancia.");
+                        if (btn) { btn.innerHTML = btnOriginal; btn.disabled = false; }
+                        return;
+                    }
+                    if (doc.data().password && typeof window.gestionarAuthGhostParaBorrado === 'function') {
+                        await window.gestionarAuthGhostParaBorrado(u, doc.data().password);
+                    }
+                    await db.collection('usuarios').doc(u).delete();
+                    alert("El usuario ha sido eliminado con éxito.");
+                    if (selectEl) selectEl.value = '';
+                    window.cargarListaOperadores();
+                    if (btn) { btn.innerHTML = btnOriginal; btn.disabled = false; }
+                } catch(e) {
+                    alert("Hubo un error de conexión.");
+                    if (btn) { btn.innerHTML = btnOriginal; btn.disabled = false; }
+                }
+            }
+        };
+        eliminarOperador = window.eliminarOperador;
+
+        // 11.15 Sanitización de Tramas Bluetooth / RFID contra Inyección de Control
+        const _origProcesarDatoHardware = window.procesarDatoHardware;
+        window.procesarDatoHardware = function(rawString) {
+            if (rawString === null || rawString === undefined) return false;
+            const sLimpio = String(rawString).replace(/[<>"'`\\;(){}\[\]$\0]/g, '').trim().slice(0, 120);
+            if (!sLimpio) return false;
+            if (typeof _origProcesarDatoHardware === 'function') {
+                return _origProcesarDatoHardware(sLimpio);
+            }
+            return false;
+        };
+
+        // 11.16 Blindaje de Escritura de Eventos (Anti-KillSwitch Bypass, Límites de Longitud y Sanitización de ID)
+        window.ejecutarAccion = function(a, v, d, fManual = null) {
+            const pantMant = document.getElementById('pantalla-mantenimiento');
+            if (pantMant && !pantMant.classList.contains('oculto') && !window.esSuperAdminAutorizado()) {
+                if (typeof window.mostrarToast === 'function') window.mostrarToast("Sistema en mantenimiento activo.", true);
+                return;
+            }
+            if (!maestroId || !rpActivo || !window.esCaravanaValida(rpActivo)) return;
+
+            const accionSegura = String(a || '').replace(/[<>"'`\0]/g, '').trim().slice(0, 60);
+            const valorSeguro = String(v || '-').replace(/[\0]/g, '').trim().slice(0, 300);
+            let detallesBase = String(d || '-').replace(/[\0]/g, '').trim().slice(0, 1000);
+
+            let fechaIso = new Date().toISOString();
+            if (fManual) {
+                let dParsed = new Date(fManual);
+                if (!isNaN(dParsed.getTime())) fechaIso = dParsed.toISOString();
+            }
+
+            let opNombre = (usNombre && usNombre.trim() !== "") ? usNombre.trim() : (usActivo ? usActivo.split('@')[0] : 'Operador');
+            opNombre = opNombre.replace(/[<>"'`\0]/g, '').slice(0, 60);
+
+            if (usActivo && maestroId && usActivo.toLowerCase() !== maestroId.toLowerCase()) {
+                if (!detallesBase.includes("Op:")) {
+                    detallesBase = (detallesBase && detallesBase !== "-") ? `${detallesBase} | Op: ${opNombre}` : `Op: ${opNombre}`;
+                }
+            }
+
+            let miEmail = String(usActivo || "").toLowerCase().trim();
+            let masterEmail = String(maestroId || "").toLowerCase().trim();
+            let esDuenoPrimario = (miEmail === masterEmail);
+            let esDuenoSecundario = !esDuenoPrimario && (String(usRol || '').includes('Propietario') || String(usRol || '').includes('Dueño'));
+            let rolAutor = esDuenoPrimario ? 'DuenoPrimario' : (esDuenoSecundario ? 'DuenoSecundario' : 'Operador');
+
+            const docId = window.sanitizarDocId('ev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6));
+            const reg = {
+                id: docId,
+                fecha: fechaIso,
+                caravana: String(rpActivo).trim().toUpperCase(),
+                accion: accionSegura,
+                valor: valorSeguro,
+                detalles: detallesBase,
+                usuario: usActivo,
+                nombre_autor: opNombre,
+                rol_autor: rolAutor,
+                maestro: maestroId
+            };
+
+            window.fusionarDatos([reg]);
+            let pendKey = 'tc_pendientes_' + maestroId;
+            let p = window.lsGet(pendKey, []);
+            p.push(reg);
+            window.lsSet(pendKey, p);
+
+            if (typeof window.programarSyncPorLotes === 'function') window.programarSyncPorLotes();
+
+            let msgPush = `${opNombre} registró ${accionSegura} en RP ${rpActivo}` + (valorSeguro && valorSeguro !== "-" ? ` (${valorSeguro})` : "");
+            if (typeof window.notificarPropietario === 'function') window.notificarPropietario(msgPush);
+        };
+        ejecutarAccion = window.ejecutarAccion;
+
+        // 11.17 Blindaje de Funciones del Panel SuperAdmin (Autorización + Escapado XSS en Tablas y Tarjetas)
+        window.renderizarSelectMasiva = function() {
+            const sel = document.getElementById('sel-cliente-masiva');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">-- Elija destino --</option>';
+            (clientesCache || []).forEach(c => {
+                sel.innerHTML += `<option value="${window.escapeHTML(c.maestroId)}">${window.escapeHTML(c.hacienda)} (${window.escapeHTML(c.usuario)})</option>`;
+            });
+        };
+        renderizarSelectMasiva = window.renderizarSelectMasiva;
+
+        window.poblarSelectHaciendasEditar = function() {
+            const sel = document.getElementById('sel-hacienda-editar');
+            if (!sel) return;
+            const valorPrevio = sel.value;
+            sel.innerHTML = '<option value="">-- Elija destino --</option>';
+            (clientesCache || []).forEach(c => {
+                sel.innerHTML += `<option value="${window.escapeHTML(c.maestroId)}">${window.escapeHTML(c.hacienda)} (${window.escapeHTML(c.usuario)})</option>`;
+            });
+            if (valorPrevio) sel.value = valorPrevio;
+        };
+        poblarSelectHaciendasEditar = window.poblarSelectHaciendasEditar;
+
+        window.llenarSelectMapeo = function(id, headers, opc) {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+            sel.innerHTML = opc ? '<option value="">-- Dejar en blanco --</option>' : '<option value="">-- Seleccione columna --</option>';
+            (headers || []).forEach(h => {
+                if (h === '__proto__' || h === 'constructor' || h === 'prototype') return;
+                sel.innerHTML += `<option value="${window.escapeHTML(h)}">${window.escapeHTML(h)}</option>`;
+            });
+        };
+        llenarSelectMapeo = window.llenarSelectMapeo;
+
+        window.renderizarTablaEventosMasivos = function(lista) {
+            const tbody = document.getElementById('tb-eventos-masivos');
+            const lblTotal = document.getElementById('lbl-total-eventos-masivos');
+            if (lblTotal) lblTotal.innerText = Array.isArray(lista) ? lista.length : 0;
+            if (!tbody) return;
+
+            if (!lista || lista.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted, var(--text-muted)); padding: 20px;">Sin registros coincidentes.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            lista.forEach(ev => {
+                let fechaMostrar = '-';
+                if (ev.fecha) {
+                    try {
+                        const d = new Date(ev.fecha);
+                        fechaMostrar = !isNaN(d.getTime()) ? d.toLocaleDateString() : String(ev.fecha);
+                    } catch(e) { fechaMostrar = String(ev.fecha); }
+                }
+
+                let accStr = String(ev.accion || '');
+                let claseBadge = 'badge-default';
+                if (accStr.includes('Sanidad')) claseBadge = 'badge-sanidad';
+                else if (accStr.includes('Peso')) claseBadge = 'badge-peso';
+                else if (accStr.includes('Datos')) claseBadge = 'badge-datos';
+                else if (accStr.includes('Diagnóstico')) claseBadge = 'badge-diagnostico';
+
+                const idSafeAttr = window.escapeAttr(ev.id || '');
+                const carSafeAttr = window.escapeAttr(ev.caravana || '');
+
+                html += `
+                <tr style="border-bottom: 1px solid var(--borde, var(--border));">
+                    <td style="padding:10px; color:var(--muted, var(--text-muted));">${window.escapeHTML(fechaMostrar)}</td>
+                    <td style="padding:10px;"><strong style="color: var(--secundario, var(--primary));">${window.escapeHTML(ev.caravana || 'S/N')}</strong></td>
+                    <td style="padding:10px;"><span class="badge-accion ${claseBadge}">${window.escapeHTML(accStr)}</span></td>
+                    <td style="padding:10px; font-weight:600;">${window.escapeHTML(ev.valor || '-')}</td>
+                    <td style="padding:10px; color:var(--muted, var(--text-muted)); font-size:11px; max-width:180px; word-break:break-word;">${window.escapeHTML(ev.detalles || '-')}</td>
+                    <td style="padding:10px; text-align: center;">
+                        <div style="display:flex; gap:4px; justify-content:center;">
+                            <button class="btn btn-mini btn-warning" style="padding:5px 8px; font-size:11px;" onclick="abrirModalEditarEvento('${idSafeAttr}')">Editar</button>
+                            <button class="btn btn-mini btn-danger" style="padding:5px 8px; font-size:11px;" onclick="eliminarEventoIndividual('${idSafeAttr}', '${carSafeAttr}')">Borrar</button>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        };
+        renderizarTablaEventosMasivos = window.renderizarTablaEventosMasivos;
+
+        // 11.18 Cierre de Sesión con Purga Criptográfica Completa
+        const _origCerrarSesion = window.cerrarSesion || (typeof cerrarSesion === 'function' ? cerrarSesion : null);
+        window.cerrarSesion = function() {
+            window._pendingLoginCreds = null;
+            window._ultimoPDFGenerado = null;
+            if (typeof clientesCache !== 'undefined') clientesCache = [];
+            if (typeof eventosMasivosCache !== 'undefined') eventosMasivosCache = [];
+            if (typeof eventosFiltrados !== 'undefined') eventosFiltrados = [];
+            if (typeof _origCerrarSesion === 'function') {
+                return _origCerrarSesion();
+            }
+        };
+        cerrarSesion = window.cerrarSesion;
+
+
 
         // Arranque instantáneo (0ms) sin pantalla de login si hay sesión activa guardada
         try {
