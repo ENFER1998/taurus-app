@@ -90,7 +90,7 @@ if ('serviceWorker' in navigator) {
 
       if ('caches' in window) {
         window.addEventListener('load', () =>{
-          caches.open('taurus-track-pro-v31').then(cache =>{
+          caches.open('taurus-track-pro-v32').then(cache =>{
             cache.addAll([
               location.href,
               'gemini-svg.png',
@@ -6789,13 +6789,13 @@ window.esCaravanaValida = function(car) {
         };
 
         try {
-            if (localStorage.getItem('taurus_v31_purged') !== '1') {
-                localStorage.setItem('taurus_v31_purged', '1');
+            if (localStorage.getItem('taurus_v32_purged') !== '1') {
+                localStorage.setItem('taurus_v32_purged', '1');
                 localStorage.removeItem('tc_hacienda');
                 if ('caches' in window) {
                     caches.keys().then(function(ks) {
                         ks.forEach(function(k) {
-                            if (k !== 'taurus-track-pro-v31') caches.delete(k);
+                            if (k !== 'taurus-track-pro-v32') caches.delete(k);
                         });
                     }).catch(function(){});
                 }
@@ -12063,6 +12063,50 @@ Se encontraron ${matches.length} registro(s) de "${caravanaRP}".
             } catch(e) {}
         };
 
+        window.intentarSubidaTemporalStorageAndroid = async function(pdfBlob, fileName) {
+            try {
+                if (!navigator.onLine || !pdfBlob) return false;
+                const bucket = (typeof firebaseConfig !== 'undefined' && firebaseConfig.storageBucket) ? firebaseConfig.storageBucket : 'taurus-cbd59.firebasestorage.app';
+                const objPath = 'reportes_temp/' + Date.now() + '_' + fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+                const urlUpload = `https://firebasestorage.googleapis.com/v0/b/${encodeURIComponent(bucket)}/o?uploadType=media&name=${encodeURIComponent(objPath)}`;
+                const headers = {
+                    'Content-Type': 'application/pdf',
+                    'Content-Disposition': `attachment; filename="${fileName}"`
+                };
+                if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+                    try {
+                        const tok = await firebase.auth().currentUser.getIdToken();
+                        if (tok) headers['Authorization'] = 'Bearer ' + tok;
+                    } catch(eTok) {}
+                }
+                const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                const timer = ctrl ? setTimeout(() => ctrl.abort(), 3500) : null;
+                const resp = await fetch(urlUpload, {
+                    method: 'POST',
+                    headers: headers,
+                    body: pdfBlob,
+                    signal: ctrl ? ctrl.signal : undefined
+                });
+                if (timer) clearTimeout(timer);
+                if (!resp || !resp.ok) return false;
+                const data = await resp.json();
+                const dlToken = data && data.downloadTokens ? String(data.downloadTokens).split(',')[0] : '';
+                const httpsUrl = `https://firebasestorage.googleapis.com/v0/b/${encodeURIComponent(bucket)}/o/${encodeURIComponent(objPath)}?alt=media` + (dlToken ? `&token=${encodeURIComponent(dlToken)}` : '');
+                const a = document.createElement('a');
+                a.href = httpsUrl;
+                a.setAttribute('download', fileName);
+                a.target = '_blank';
+                a.rel = 'noopener';
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => { try { a.remove(); } catch(e) {} }, 5000);
+                return true;
+            } catch(e) {
+                return false;
+            }
+        };
+
         window.dispararDescargaDirectaPDF = function(doc, pdfBlob, dataUri, fileName, metaInfo) {
             try {
                 window._ultimoPDFGenerado = {
@@ -12083,29 +12127,84 @@ Se encontraron ${matches.length} registro(s) de "${caravanaRP}".
                     return true;
                 }
 
-                // 2. Puentes nativos Android APK (si el contenedor APK inyecta interfaz de descarga)
+                // 2. Puentes nativos Android Studio (@JavascriptInterface: AndroidPdf, AndroidBluetooth, Android, WebAppInterface)
                 const base64Raw = dataUri ? (dataUri.split(',')[1] || dataUri) : '';
-                const posiblesBridges = [window.Android, window.AndroidInterface, window.AndroidExporter, window.AndroidBluetooth];
+                const posiblesBridges = [
+                    window.AndroidPdf,
+                    window.AndroidBluetooth,
+                    window.Android,
+                    window.AndroidInterface,
+                    window.AndroidExporter,
+                    window.WebAppInterface
+                ];
                 for (const br of posiblesBridges) {
                     if (!br) continue;
-                    const fnSave = br.guardarPDF || br.descargarPDF || br.savePdf || br.downloadBase64Pdf || br.downloadFile;
+                    const fnSave = br.descargarPDF || br.guardarPDF || br.savePdf || br.downloadPdf || br.downloadBase64Pdf || br.downloadFile;
                     if (typeof fnSave === 'function' && base64Raw) {
                         try {
-                            fnSave.call(br, base64Raw, fileName, 'application/pdf');
-                            if (typeof window.mostrarToast === 'function') window.mostrarToast("Descargando PDF: " + fileName);
+                            try {
+                                fnSave.call(br, base64Raw, fileName);
+                            } catch(eArg) {
+                                fnSave.call(br, dataUri, fileName, 'application/pdf');
+                            }
+                            if (typeof window.mostrarToast === 'function') window.mostrarToast("PDF guardado en Descargas: " + fileName);
                             return true;
-                        } catch(eBr) {}
+                        } catch(eBr) {
+                            console.warn("[Android Bridge PDF Error]:", eBr);
+                        }
                     }
                 }
 
                 const ua = navigator.userAgent || '';
                 const esAndroid = /Android/i.test(ua);
                 const esIOS = /iPhone|iPad|iPod/i.test(ua);
-                const esMovil = esAndroid || esIOS;
                 const esAndroidWebView = esAndroid && (/; wv\)/i.test(ua) || /Version\/[\d.]+.*Chrome\/[\d.]+ Mobile/i.test(ua) || Boolean(window.AndroidBluetooth));
 
-                // 3. Descarga binaria directa única (usando application/octet-stream en Android para forzar descarga de archivo sin doble click)
-                let descargaIniciada = false;
+                // 3. Caso Especial: App Android compilada en Android Studio con WebView
+                //    En Android WebView, las URLs "blob:" fallan porque DownloadListener en Java no puede leer la memoria blob de JS.
+                //    Por eso en Android WebView enviamos la URI "data:application/pdf;base64,..." (que pasa el base64 completo al DownloadListener de Java)
+                //    e intentamos en paralelo una URL HTTPS directa para DownloadManager.
+                if (esAndroidWebView) {
+                    if (typeof navigator.share === 'function' && typeof File === 'function' && pdfBlob) {
+                        try {
+                            const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+                            if (!navigator.canShare || navigator.canShare({ files: [pdfFile] })) {
+                                navigator.share({ files: [pdfFile], title: fileName }).catch(() => {});
+                                return true;
+                            }
+                        } catch(eSh) {}
+                    }
+
+                    if (dataUri) {
+                        const linkData = document.createElement('a');
+                        linkData.href = dataUri;
+                        linkData.setAttribute('download', fileName);
+                        linkData.style.display = 'none';
+                        document.body.appendChild(linkData);
+                        linkData.click();
+                        setTimeout(() => { try { linkData.remove(); } catch(e) {} }, 4000);
+                    }
+
+                    if (pdfBlob) {
+                        window.intentarSubidaTemporalStorageAndroid(pdfBlob, fileName);
+                    }
+
+                    if (typeof window.mostrarToast === 'function') {
+                        window.mostrarToast("Descargando PDF: " + fileName);
+                    }
+                    return true;
+                }
+
+                // 4. iOS (Safari / PWA), Chrome Android y Navegadores de Escritorio
+                if (esIOS && typeof navigator.share === 'function' && typeof File === 'function' && pdfBlob) {
+                    try {
+                        const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+                        if (!navigator.canShare || navigator.canShare({ files: [pdfFile] })) {
+                            navigator.share({ files: [pdfFile], title: fileName }).catch(() => {});
+                        }
+                    } catch(eIos) {}
+                }
+
                 if (pdfBlob && window.URL && typeof window.URL.createObjectURL === 'function') {
                     const blobParaDescarga = esAndroid
                         ? new Blob([pdfBlob], { type: 'application/octet-stream' })
@@ -12117,44 +12216,19 @@ Se encontraron ${matches.length} registro(s) de "${caravanaRP}".
                     link.style.display = 'none';
                     document.body.appendChild(link);
                     link.click();
-                    descargaIniciada = true;
                     setTimeout(() => {
                         try { link.remove(); window.URL.revokeObjectURL(blobUrl); } catch(e) {}
                     }, 60000);
                 } else if (doc && typeof doc.save === 'function') {
                     doc.save(fileName);
-                    descargaIniciada = true;
-                }
-
-                // 4. En Android / iOS: activar simultáneamente el exportador nativo del sistema (navigator.share con archivo PDF real)
-                //    o el spooler nativo "Guardar como PDF" de Android si es un WebView restringido sin soporte de descargas blob.
-                if (esMovil && pdfBlob) {
-                    let compartioNativo = false;
-                    if (typeof navigator.share === 'function' && typeof File === 'function') {
-                        try {
-                            const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-                            const puedeCompartirArchivo = !navigator.canShare || navigator.canShare({ files: [pdfFile] });
-                            if (puedeCompartirArchivo) {
-                                compartioNativo = true;
-                                navigator.share({
-                                    files: [pdfFile],
-                                    title: fileName
-                                }).catch(() => {});
-                            }
-                        } catch(eShare) {}
-                    }
-                    if (!compartioNativo && esAndroidWebView && metaInfo) {
-                        window.imprimirReporteNativoTopLevel(metaInfo);
-                    }
                 }
 
                 if (typeof window.mostrarToast === 'function') {
-                    window.mostrarToast("Exportando PDF: " + fileName);
+                    window.mostrarToast("Informe PDF generado: " + fileName);
                 }
-                return descargaIniciada;
+                return true;
             } catch(e) {
                 console.warn("[Taurus PDF Export Error]:", e);
-                if (metaInfo) window.imprimirReporteNativoTopLevel(metaInfo);
                 return false;
             }
         };
@@ -12382,7 +12456,6 @@ Se encontraron ${matches.length} registro(s) de "${caravanaRP}".
                     dataUri = fallbackPdf.dataUri;
                 }
 
-                // Exportación 100% directa y nativa (sin previsualización modal intermedia)
                 window.dispararDescargaDirectaPDF(doc, pdfBlob, dataUri, fileName, {
                     h_nom: h_nom,
                     titulo: res.titulo || "Reporte Oficial",
