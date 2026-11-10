@@ -1,4 +1,4 @@
-const CACHE_NAME = 'taurus-track-pro-v30';
+const CACHE_NAME = 'taurus-track-pro-v31';
 
 const TRUSTED_CDN_HOSTS = new Set([
   'cdnjs.cloudflare.com',

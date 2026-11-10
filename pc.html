@@ -1104,7 +1104,7 @@ if ('serviceWorker' in navigator) {
     <script>
 if ('caches' in window) {
         window.addEventListener('load', () =>{
-          caches.open('taurus-track-pro-v30').then(cache =>{
+          caches.open('taurus-track-pro-v31').then(cache =>{
             cache.addAll([
               location.href,
               'gemini-svg.png',
@@ -6934,13 +6934,13 @@ window.cerrarModal = cerrarModal; window.toggleTema = toggleTema;
         };
 
         try {
-            if (localStorage.getItem('taurus_v30_purged') !== '1') {
-                localStorage.setItem('taurus_v30_purged', '1');
+            if (localStorage.getItem('taurus_v31_purged') !== '1') {
+                localStorage.setItem('taurus_v31_purged', '1');
                 localStorage.removeItem('tc_hacienda');
                 if ('caches' in window) {
                     caches.keys().then(function(ks) {
                         ks.forEach(function(k) {
-                            if (k !== 'taurus-track-pro-v30') caches.delete(k);
+                            if (k !== 'taurus-track-pro-v31') caches.delete(k);
                         });
                     }).catch(function(){});
                 }
@@ -12076,10 +12076,75 @@ Se encontraron ${matches.length} registro(s) pertenecientes a la caravana "${car
             };
         };
 
-        window.dispararDescargaDirectaPDF = function(doc, pdfBlob, dataUri, fileName, desdeBotonModal = false) {
+        window.imprimirReporteNativoTopLevel = function(meta) {
             try {
-                window._ultimoPDFGenerado = { fileName: fileName, size: pdfBlob ? pdfBlob.size : (dataUri ? dataUri.length : 0), dataUri: dataUri };
+                let styleEl = document.getElementById('taurus-native-print-style');
+                if (styleEl) styleEl.remove();
+                let printRoot = document.getElementById('taurus-native-print-root');
+                if (printRoot) printRoot.remove();
 
+                styleEl = document.createElement('style');
+                styleEl.id = 'taurus-native-print-style';
+                styleEl.innerHTML = `
+                    #taurus-native-print-root { display: none; }
+                    @media print {
+                        body > *:not(#taurus-native-print-root) { display: none !important; }
+                        body, html { background: #ffffff !important; color: #0f172a !important; margin: 0 !important; padding: 0 !important; }
+                        #taurus-native-print-root {
+                            display: block !important;
+                            width: 100% !important;
+                            padding: 12mm !important;
+                            box-sizing: border-box !important;
+                            font-family: Arial, Helvetica, sans-serif !important;
+                            color: #0f172a !important;
+                            background: #ffffff !important;
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+                    }
+                `;
+                document.head.appendChild(styleEl);
+
+                const headCells = ((meta.tableHead && meta.tableHead[0]) || []).map(h =>
+                    `<th style="background:${meta.accentHex || '#10b981'}; color:#ffffff; padding:7px 8px; font-size:10.5px; text-align:left; border:1px solid #cbd5e1;">${window.escapeHTML(h)}</th>`
+                ).join('');
+
+                const bodyRowsHTML = (meta.bodyRows || []).map((row, idx) =>
+                    `<tr style="background:${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">` +
+                    row.map(c => `<td style="padding:6px 8px; border:1px solid #cbd5e1; color:#1e293b; font-size:10px;">${window.escapeHTML(c)}</td>`).join('') +
+                    `</tr>`
+                ).join('');
+
+                printRoot = document.createElement('div');
+                printRoot.id = 'taurus-native-print-root';
+                printRoot.innerHTML = `
+                    <div style="background:#0f172a; color:#ffffff; padding:14px 18px; border-radius:8px; border-bottom:4px solid ${meta.accentHex || '#10b981'}; margin-bottom:12px;">
+                        <div style="font-size:18px; font-weight:800; text-transform:uppercase;">${window.escapeHTML(meta.h_nom)}</div>
+                        <div style="font-size:12px; color:#a7f3d0; font-weight:600; margin-top:2px;">${window.escapeHTML(meta.titulo)}</div>
+                        <div style="font-size:10px; color:#94a3b8; margin-top:4px;">Emisión: ${window.escapeHTML(meta.fechaEmision)} | Taurus Track Pro</div>
+                    </div>
+                    <table style="width:100%; border-collapse:collapse;">
+                        <thead><tr>${headCells}</tr></thead>
+                        <tbody>${bodyRowsHTML}</tbody>
+                    </table>
+                `;
+                document.body.appendChild(printRoot);
+                window.print();
+                setTimeout(() => {
+                    try { printRoot.remove(); styleEl.remove(); } catch(e) {}
+                }, 4000);
+            } catch(e) {}
+        };
+
+        window.dispararDescargaDirectaPDF = function(doc, pdfBlob, dataUri, fileName, metaInfo) {
+            try {
+                window._ultimoPDFGenerado = {
+                    fileName: fileName,
+                    size: pdfBlob ? pdfBlob.size : (dataUri ? dataUri.length : 0),
+                    dataUri: dataUri
+                };
+
+                // 1. Escritorio Electron Nativo
                 if (window.taurusNative && typeof window.taurusNative.guardarArchivoLocal === 'function' && dataUri) {
                     const base64Clean = dataUri.split(',')[1] || dataUri;
                     window.taurusNative.guardarArchivoLocal(base64Clean, fileName.replace(/\.pdf$/i, ''), 'pdf')
@@ -12091,39 +12156,78 @@ Se encontraron ${matches.length} registro(s) pertenecientes a la caravana "${car
                     return true;
                 }
 
-                if (pdfBlob && window.URL && typeof window.URL.createObjectURL === 'function') {
-                    const blobUrl = window.URL.createObjectURL(pdfBlob);
-                    const link = document.createElement('a');
-                    link.href = blobUrl;
-                    link.download = fileName;
-                    link.style.display = 'none';
-                    document.body.appendChild(link);
-                    link.click();
-                    setTimeout(() => {
-                        try { link.remove(); window.URL.revokeObjectURL(blobUrl); } catch(e) {}
-                    }, 4000);
-                } else if (doc && typeof doc.save === 'function') {
-                    doc.save(fileName);
+                // 2. Puentes nativos Android APK (si el contenedor APK inyecta interfaz de descarga)
+                const base64Raw = dataUri ? (dataUri.split(',')[1] || dataUri) : '';
+                const posiblesBridges = [window.Android, window.AndroidInterface, window.AndroidExporter, window.AndroidBluetooth];
+                for (const br of posiblesBridges) {
+                    if (!br) continue;
+                    const fnSave = br.guardarPDF || br.descargarPDF || br.savePdf || br.downloadBase64Pdf || br.downloadFile;
+                    if (typeof fnSave === 'function' && base64Raw) {
+                        try {
+                            fnSave.call(br, base64Raw, fileName, 'application/pdf');
+                            if (typeof window.mostrarToast === 'function') window.mostrarToast("Descargando PDF: " + fileName);
+                            return true;
+                        } catch(eBr) {}
+                    }
                 }
 
                 const ua = navigator.userAgent || '';
                 const esAndroid = /Android/i.test(ua);
-                if ((esAndroid || desdeBotonModal) && dataUri) {
-                    const linkData = document.createElement('a');
-                    linkData.href = dataUri;
-                    linkData.download = fileName;
-                    linkData.style.display = 'none';
-                    document.body.appendChild(linkData);
-                    linkData.click();
-                    setTimeout(() => { try { linkData.remove(); } catch(e) {} }, 2000);
+                const esIOS = /iPhone|iPad|iPod/i.test(ua);
+                const esMovil = esAndroid || esIOS;
+                const esAndroidWebView = esAndroid && (/; wv\)/i.test(ua) || /Version\/[\d.]+.*Chrome\/[\d.]+ Mobile/i.test(ua) || Boolean(window.AndroidBluetooth));
+
+                // 3. Descarga binaria directa única (usando application/octet-stream en Android para forzar descarga de archivo sin doble click)
+                let descargaIniciada = false;
+                if (pdfBlob && window.URL && typeof window.URL.createObjectURL === 'function') {
+                    const blobParaDescarga = esAndroid
+                        ? new Blob([pdfBlob], { type: 'application/octet-stream' })
+                        : pdfBlob;
+                    const blobUrl = window.URL.createObjectURL(blobParaDescarga);
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.setAttribute('download', fileName);
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    descargaIniciada = true;
+                    setTimeout(() => {
+                        try { link.remove(); window.URL.revokeObjectURL(blobUrl); } catch(e) {}
+                    }, 60000);
+                } else if (doc && typeof doc.save === 'function') {
+                    doc.save(fileName);
+                    descargaIniciada = true;
+                }
+
+                // 4. En Android / iOS: activar simultáneamente el exportador nativo del sistema (navigator.share con archivo PDF real)
+                //    o el spooler nativo "Guardar como PDF" de Android si es un WebView restringido sin soporte de descargas blob.
+                if (esMovil && pdfBlob) {
+                    let compartioNativo = false;
+                    if (typeof navigator.share === 'function' && typeof File === 'function') {
+                        try {
+                            const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+                            const puedeCompartirArchivo = !navigator.canShare || navigator.canShare({ files: [pdfFile] });
+                            if (puedeCompartirArchivo) {
+                                compartioNativo = true;
+                                navigator.share({
+                                    files: [pdfFile],
+                                    title: fileName
+                                }).catch(() => {});
+                            }
+                        } catch(eShare) {}
+                    }
+                    if (!compartioNativo && esAndroidWebView && metaInfo) {
+                        window.imprimirReporteNativoTopLevel(metaInfo);
+                    }
                 }
 
                 if (typeof window.mostrarToast === 'function') {
-                    window.mostrarToast("Informe PDF listo: " + fileName);
+                    window.mostrarToast("Exportando PDF: " + fileName);
                 }
-                return true;
+                return descargaIniciada;
             } catch(e) {
-                console.warn("[Taurus PDF Download Fallback]:", e);
+                console.warn("[Taurus PDF Export Error]:", e);
+                if (metaInfo) window.imprimirReporteNativoTopLevel(metaInfo);
                 return false;
             }
         };
@@ -12137,7 +12241,7 @@ Se encontraron ${matches.length} registro(s) pertenecientes a la caravana "${car
             else if (btn) btn.innerText = "Generando PDF...";
 
             try {
-                if (!opts.forzarRp && typeof window.actualizarInformeAvanzado === 'function') {
+                if (!opts.forzarRp && (!Array.isArray(pdfExportData) || pdfExportData.length === 0) && typeof window.actualizarInformeAvanzado === 'function') {
                     window.actualizarInformeAvanzado();
                 }
 
@@ -12215,121 +12319,125 @@ Se encontraron ${matches.length} registro(s) pertenecientes a la caravana "${car
                 let dataUri = null;
 
                 if (typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) {
-                    const { jsPDF } = window.jspdf;
-                    doc = new jsPDF('p', 'mm', 'a4');
+                    try {
+                        const { jsPDF } = window.jspdf;
+                        doc = new jsPDF('p', 'mm', 'a4');
 
-                    doc.setFillColor(15, 23, 42);
-                    doc.rect(0, 0, 210, 34, 'F');
-                    doc.setFillColor(accentRGB[0], accentRGB[1], accentRGB[2]);
-                    doc.rect(0, 34, 210, 2, 'F');
+                        doc.setFillColor(15, 23, 42);
+                        doc.rect(0, 0, 210, 34, 'F');
+                        doc.setFillColor(accentRGB[0], accentRGB[1], accentRGB[2]);
+                        doc.rect(0, 34, 210, 2, 'F');
 
-                    doc.setTextColor(255, 255, 255);
-                    doc.setFont("helvetica", "bold");
-                    doc.setFontSize(16);
-                    doc.text(window.cleanPDFText(h_nom).toUpperCase(), 14, 15);
+                        doc.setTextColor(255, 255, 255);
+                        doc.setFont("helvetica", "bold");
+                        doc.setFontSize(16);
+                        doc.text(window.cleanPDFText(h_nom).toUpperCase(), 14, 15);
 
-                    doc.setFont("helvetica", "normal");
-                    doc.setFontSize(10.5);
-                    doc.setTextColor(167, 243, 208);
-                    doc.text(window.cleanPDFText(res.titulo || "Reporte Oficial"), 14, 22);
+                        doc.setFont("helvetica", "normal");
+                        doc.setFontSize(10.5);
+                        doc.setTextColor(167, 243, 208);
+                        doc.text(window.cleanPDFText(res.titulo || "Reporte Oficial"), 14, 22);
 
-                    doc.setFontSize(8.5);
-                    doc.setTextColor(148, 163, 184);
-                    doc.text(`Emision: ${fechaEmision}  |  Taurus Track Pro`, 14, 28.5);
+                        doc.setFontSize(8.5);
+                        doc.setTextColor(148, 163, 184);
+                        doc.text(`Emision: ${fechaEmision}  |  Taurus Track Pro`, 14, 28.5);
 
-                    if (h_log && h_log.startsWith('data:image')) {
-                        try {
-                            let imgProps = doc.getImageProperties(h_log);
-                            let ratio = imgProps.width / imgProps.height;
-                            let targetHeight = 18;
-                            let targetWidth = targetHeight * ratio;
-                            if (targetWidth > 36) { targetWidth = 36; targetHeight = targetWidth / ratio; }
-                            doc.setFillColor(255, 255, 255);
-                            doc.roundedRect(194 - targetWidth, 6, targetWidth + 4, targetHeight + 4, 2, 2, 'F');
-                            doc.addImage(h_log, 'PNG', 196 - targetWidth, 8, targetWidth, targetHeight, '', 'FAST');
-                        } catch(e) {}
-                    }
-
-                    doc.setFillColor(248, 250, 252);
-                    doc.setDrawColor(203, 213, 225);
-                    doc.roundedRect(14, 40, 182, 20, 2, 2, 'FD');
-                    doc.setFillColor(accentRGB[0], accentRGB[1], accentRGB[2]);
-                    doc.rect(14, 40, 2.5, 20, 'F');
-
-                    doc.setFont("helvetica", "bold");
-                    doc.setFontSize(8.5);
-                    doc.setTextColor(accentRGB[0], accentRGB[1], accentRGB[2]);
-                    doc.text(window.cleanPDFText(res.badge || "DIAGNOSTICO EJECUTIVO"), 19, 45.5);
-
-                    doc.setFont("helvetica", "normal");
-                    doc.setFontSize(8.5);
-                    doc.setTextColor(51, 65, 85);
-                    let splitExp = doc.splitTextToSize(plainExp, 173);
-                    doc.text(splitExp.slice(0, 3), 19, 51);
-
-                    let startTableY = 65;
-                    if (Array.isArray(res.kpis) && res.kpis.length > 0) {
-                        let kpis = res.kpis.slice(0, 4);
-                        let boxW = (182 - (kpis.length - 1) * 4) / kpis.length;
-                        kpis.forEach((k, idx) => {
-                            let x = 14 + idx * (boxW + 4);
-                            doc.setFillColor(255, 255, 255);
-                            doc.setDrawColor(203, 213, 225);
-                            doc.roundedRect(x, 63, boxW, 16, 2, 2, 'FD');
-
-                            doc.setFont("helvetica", "bold");
-                            doc.setFontSize(7);
-                            doc.setTextColor(100, 116, 139);
-                            doc.text(window.cleanPDFText(k.label || "").toUpperCase(), x + 3, 68);
-
-                            doc.setFont("helvetica", "bold");
-                            doc.setFontSize(11);
-                            doc.setTextColor(15, 23, 42);
-                            doc.text(window.cleanPDFText(String(k.value ?? '0')), x + 3, 74);
-
-                            doc.setFont("helvetica", "normal");
-                            doc.setFontSize(6.8);
-                            doc.setTextColor(100, 116, 139);
-                            doc.text(window.cleanPDFText(k.sub || ""), x + 3, 77.5);
-                        });
-                        startTableY = 84;
-                    }
-
-                    doc.autoTable({
-                        startY: startTableY,
-                        head: tableHead,
-                        body: bodyRows,
-                        theme: 'striped',
-                        headStyles: {
-                            fillColor: accentRGB,
-                            textColor: 255,
-                            fontStyle: 'bold',
-                            fontSize: 8.5,
-                            halign: 'center'
-                        },
-                        bodyStyles: {
-                            fontSize: 8,
-                            cellPadding: 2.6,
-                            textColor: [30, 41, 59]
-                        },
-                        alternateRowStyles: {
-                            fillColor: [248, 250, 252]
-                        },
-                        margin: { left: 14, right: 14 },
-                        didDrawPage: function (data) {
-                            let pageCount = doc.internal.getNumberOfPages();
-                            doc.setFontSize(8);
-                            doc.setTextColor(148, 163, 184);
-                            doc.text(
-                                `Taurus Track Pro - ${window.cleanPDFText(h_nom)} | Pagina ${data.pageNumber} de ${pageCount}`,
-                                14,
-                                doc.internal.pageSize.height - 8
-                            );
+                        if (h_log && h_log.startsWith('data:image')) {
+                            try {
+                                let imgProps = doc.getImageProperties(h_log);
+                                let ratio = imgProps.width / imgProps.height;
+                                let targetHeight = 18;
+                                let targetWidth = targetHeight * ratio;
+                                if (targetWidth > 36) { targetWidth = 36; targetHeight = targetWidth / ratio; }
+                                doc.setFillColor(255, 255, 255);
+                                doc.roundedRect(194 - targetWidth, 6, targetWidth + 4, targetHeight + 4, 2, 2, 'F');
+                                doc.addImage(h_log, 'PNG', 196 - targetWidth, 8, targetWidth, targetHeight, '', 'FAST');
+                            } catch(e) {}
                         }
-                    });
 
-                    try { pdfBlob = doc.output('blob'); } catch(e) {}
-                    try { dataUri = doc.output('datauristring'); } catch(e) {}
+                        doc.setFillColor(248, 250, 252);
+                        doc.setDrawColor(203, 213, 225);
+                        doc.roundedRect(14, 40, 182, 20, 2, 2, 'FD');
+                        doc.setFillColor(accentRGB[0], accentRGB[1], accentRGB[2]);
+                        doc.rect(14, 40, 2.5, 20, 'F');
+
+                        doc.setFont("helvetica", "bold");
+                        doc.setFontSize(8.5);
+                        doc.setTextColor(accentRGB[0], accentRGB[1], accentRGB[2]);
+                        doc.text(window.cleanPDFText(res.badge || "DIAGNOSTICO EJECUTIVO"), 19, 45.5);
+
+                        doc.setFont("helvetica", "normal");
+                        doc.setFontSize(8.5);
+                        doc.setTextColor(51, 65, 85);
+                        let splitExp = doc.splitTextToSize(plainExp, 173);
+                        doc.text(splitExp.slice(0, 3), 19, 51);
+
+                        let startTableY = 65;
+                        if (Array.isArray(res.kpis) && res.kpis.length > 0) {
+                            let kpis = res.kpis.slice(0, 4);
+                            let boxW = (182 - (kpis.length - 1) * 4) / kpis.length;
+                            kpis.forEach((k, idx) => {
+                                let x = 14 + idx * (boxW + 4);
+                                doc.setFillColor(255, 255, 255);
+                                doc.setDrawColor(203, 213, 225);
+                                doc.roundedRect(x, 63, boxW, 16, 2, 2, 'FD');
+
+                                doc.setFont("helvetica", "bold");
+                                doc.setFontSize(7);
+                                doc.setTextColor(100, 116, 139);
+                                doc.text(window.cleanPDFText(k.label || "").toUpperCase(), x + 3, 68);
+
+                                doc.setFont("helvetica", "bold");
+                                doc.setFontSize(11);
+                                doc.setTextColor(15, 23, 42);
+                                doc.text(window.cleanPDFText(String(k.value ?? '0')), x + 3, 74);
+
+                                doc.setFont("helvetica", "normal");
+                                doc.setFontSize(6.8);
+                                doc.setTextColor(100, 116, 139);
+                                doc.text(window.cleanPDFText(k.sub || ""), x + 3, 77.5);
+                            });
+                            startTableY = 84;
+                        }
+
+                        doc.autoTable({
+                            startY: startTableY,
+                            head: tableHead,
+                            body: bodyRows,
+                            theme: 'striped',
+                            headStyles: {
+                                fillColor: accentRGB,
+                                textColor: 255,
+                                fontStyle: 'bold',
+                                fontSize: 8.5,
+                                halign: 'center'
+                            },
+                            bodyStyles: {
+                                fontSize: 8,
+                                cellPadding: 2.6,
+                                textColor: [30, 41, 59]
+                            },
+                            alternateRowStyles: {
+                                fillColor: [248, 250, 252]
+                            },
+                            margin: { left: 14, right: 14 },
+                            didDrawPage: function (data) {
+                                let pageCount = doc.internal.getNumberOfPages();
+                                doc.setFontSize(8);
+                                doc.setTextColor(148, 163, 184);
+                                doc.text(
+                                    `Taurus Track Pro - ${window.cleanPDFText(h_nom)} | Pagina ${data.pageNumber} de ${pageCount}`,
+                                    14,
+                                    doc.internal.pageSize.height - 8
+                                );
+                            }
+                        });
+
+                        try { pdfBlob = doc.output('blob'); } catch(e) {}
+                        try { dataUri = doc.output('datauristring'); } catch(e) {}
+                    } catch(eJspdfInner) {
+                        console.warn("[jsPDF Fallback Active]:", eJspdfInner);
+                    }
                 }
 
                 if (!pdfBlob || !dataUri) {
@@ -12347,27 +12455,18 @@ Se encontraron ${matches.length} registro(s) pertenecientes a la caravana "${car
                     dataUri = fallbackPdf.dataUri;
                 }
 
-                window.dispararDescargaDirectaPDF(doc, pdfBlob, dataUri, fileName, false);
-
-                const ua = navigator.userAgent || '';
-                const esMovil = /Android|iPhone|iPad|iPod/i.test(ua) || (window.innerWidth <= 820 && !window.taurusNative);
-                if (esMovil || !doc) {
-                    window.mostrarModalVisorPDFTaurus({
-                        doc: doc,
-                        pdfBlob: pdfBlob,
-                        dataUri: dataUri,
-                        fileName: fileName,
-                        h_nom: h_nom,
-                        titulo: res.titulo || "Reporte Oficial",
-                        badge: res.badge || "DIAGNÓSTICO EJECUTIVO",
-                        plainExp: plainExp,
-                        kpis: res.kpis || [],
-                        tableHead: tableHead,
-                        bodyRows: bodyRows,
-                        accentHex: accentHex,
-                        fechaEmision: fechaEmision
-                    });
-                }
+                // Exportación 100% directa y nativa (sin previsualización modal intermedia)
+                window.dispararDescargaDirectaPDF(doc, pdfBlob, dataUri, fileName, {
+                    h_nom: h_nom,
+                    titulo: res.titulo || "Reporte Oficial",
+                    badge: res.badge || "DIAGNÓSTICO EJECUTIVO",
+                    plainExp: plainExp,
+                    kpis: res.kpis || [],
+                    tableHead: tableHead,
+                    bodyRows: bodyRows,
+                    accentHex: accentHex,
+                    fechaEmision: fechaEmision
+                });
             } catch(err) {
                 console.error("Error generando PDF:", err);
                 if (typeof window.mostrarToast === 'function') {

@@ -19,7 +19,7 @@ self.addEventListener('push', function(event) {
   }
 }, true);
 
-const CACHE_NAME = 'taurus-track-pro-v30';
+const CACHE_NAME = 'taurus-track-pro-v31';
 const TRUSTED_CDN_HOSTS = new Set([
   'cdnjs.cloudflare.com',
   'www.gstatic.com',
